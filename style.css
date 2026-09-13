@@ -1096,13 +1096,23 @@
 
   .robTab {
       width: 100%;
-      margin-top: 1.3rem;
-      border-collapse: collapse;
+      margin-top: 1rem;
+      border-collapse: separate;
+      border-spacing: 0 .45rem;
   }
 
   .robTab td {
-      padding: .5rem 0;
-      border-bottom: 1px solid var(--ln);
+      padding: .7rem .8rem;
+      background: var(--field);
+      border: 0;
+  }
+
+  .robTab td:first-child {
+      border-radius: 9px 0 0 9px;
+  }
+
+  .robTab td:last-child {
+      border-radius: 0 9px 9px 0;
   }
 
   .robTab td.n {
@@ -1111,7 +1121,7 @@
   }
 
   .robTab tr.tot td {
-      border-bottom: none;
+      background: var(--field-hover);
       font-weight: 700;
       font-size: 1.05rem;
   }
