@@ -1906,11 +1906,15 @@ function dadosCategoria(categoria) {
     return { linhas, entradas, saidas, saldo: entradas - saidas, pctUsado, pctRestante: 100 - pctUsado };
 }
 
-// Entrada Econ e Evolução Obra medem execução financeira: o universo é tudo que está
-// ativo na categoria (pago + não pago), e a barra compara o valor já pago com esse total.
+// Entrada Econ, Evolução Obra e Dívida Estudantil medem execução financeira: o universo é tudo que
+// está ativo no recorte (pago + não pago), e a barra compara o valor pago com esse total.
 // Usa valor absoluto porque despesas são armazenadas com sinal negativo.
-function dadosPagamentoCategoria(categoria) {
-    const linhas = Estado.lancamentos.filter(r => r.ativo && ehCategoria(r.categ, categoria));
+function dadosPagamentoCategoria(op) {
+    const campo = op.campo || 'categ';
+    const valor = op.valor || op.categoria;
+    const linhas = Estado.lancamentos.filter(r =>
+        r.ativo && ehCategoria(r[campo], valor) && (!op.somenteNegativos || r.v < 0)
+    );
     const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
     const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
     const naoPago = Math.max(0, total - pago);
@@ -1944,11 +1948,13 @@ function abrirVisCategoria(op) {
 }
 
 function abrirVisPagamentoCategoria(op) {
-    const d = dadosPagamentoCategoria(op.categoria);
+    const d = dadosPagamentoCategoria(op);
     const concluido = d.total > 0 && d.naoPago <= 0.005;
+    const valorFiltro = op.valor || op.categoria;
+    const rotuloFiltro = op.campo == 'nome' ? 'nome' : 'categoria';
     el('tituloVisCategoria').textContent = op.titulo;
     el('robertaCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento ativo na categoria “${escapeHtml(op.categoria)}” ainda.</p>`
+        ? `<p class=meta>Nenhum lançamento ativo com ${rotuloFiltro} “${escapeHtml(valorFiltro)}” ainda.</p>`
         : `<div class="robPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
            <p class=robPctSub>do valor total está pago</p>
            <div class=robBarra><div class=robFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
@@ -1977,11 +1983,43 @@ const VIS_CATEGORIAS = {
     EvolucaoObra: {
         categoria: 'Evolução Obra', titulo: 'Evolução Obra',
     },
+    DividaEstudantil: {
+        categoria: 'Dívida Estudantil', titulo: 'Dívida Estudantil',
+    },
+    RenegociacaoPj: {
+        categoria: 'Renegociação PJ', titulo: 'Renegociação PJ',
+    },
+    Emprestimo: {
+        categoria: 'Empréstimo', titulo: 'Empréstimo',
+    },
+    Pos: {
+        campo: 'nome', valor: 'Pós', titulo: 'Pós',
+    },
+    RenegociacaoNu: {
+        campo: 'nome', valor: 'Renegociação Nu', titulo: 'Renegociação Nu',
+    },
+    Iphone: {
+        campo: 'nome', valor: 'Iphone', titulo: 'Iphone', somenteNegativos: true,
+    },
+    SeguroResidencial: {
+        campo: 'nome', valor: 'Seguro Residencial', titulo: 'Seguro Residencial',
+    },
+    Senac: {
+        campo: 'nome', valor: 'Senac', titulo: 'Senac',
+    },
 };
 
 el('btRoberta').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.Roberta);
 el('btEntradaEcon').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EntradaEcon);
 el('btEvolucaoObra').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EvolucaoObra);
+el('btDividaEstudantil').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.DividaEstudantil);
+el('btRenegociacaoPj').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoPj);
+el('btEmprestimo').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Emprestimo);
+el('btPos').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Pos);
+el('btRenegociacaoNu').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoNu);
+el('btIphone').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Iphone);
+el('btSeguroResidencial').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.SeguroResidencial);
+el('btSenac').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Senac);
 el('fechaRoberta').onclick = () => el('modalRoberta').close();
 el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
 
