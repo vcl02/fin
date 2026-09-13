@@ -135,10 +135,16 @@
         </label>
       </div>
       <div class=row id=rowVis>
-        <label class=f id=fvisRoberta><span>Visualizações</span>
-          <button type=button id=btRoberta class=btFiltro
-            title="Acerto de contas com a Roberta — ignora os filtros acima">Roberta</button>
-        </label>
+        <div class=f id=fvisRoberta><span>Visualizações</span>
+          <div class=visBotoes>
+            <button type=button id=btRoberta class=btFiltro
+              title="Acerto de contas com a Roberta — ignora os filtros acima">Roberta</button>
+            <button type=button id=btEntradaEcon class=btFiltro
+              title="Acompanhamento da categoria Entrada Econ — ignora os filtros acima">Entrada Econ</button>
+            <button type=button id=btEvolucaoObra class=btFiltro
+              title="Acompanhamento da categoria Evolução Obra — ignora os filtros acima">Evolução Obra</button>
+          </div>
+        </div>
       </div>
     </div>
     <div id=out></div>
@@ -274,7 +280,7 @@
 
     <dialog id=modalRoberta>
       <div class=modalHead>
-        <h2>Roberta</h2>
+        <h2 id=tituloVisCategoria>Roberta</h2>
         <button type=button id=fechaRoberta aria-label="Fechar">×</button>
       </div>
       <div id=robertaCorpo></div>

@@ -246,6 +246,12 @@
       color: var(--mu);
   }
 
+  .visBotoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+  }
+
   select {
       font: inherit;
       color: var(--fg);

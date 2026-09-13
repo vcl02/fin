@@ -1895,40 +1895,66 @@ el('btLimparFiltros').onclick = limparFiltros;
 // o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
 // (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
 // saiu, e contar agendado inflaria o progresso do acerto.
-const ehCategoriaRoberta = categ => semAcento(categ).trim() === 'roberta';
+const ehCategoria = (categ, procurada) => semAcento(categ).trim() === semAcento(procurada).trim();
 
-function dadosRoberta() {
-    const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoriaRoberta(r.categ));
-    const elaPagou = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
-    const jaPaguei = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
-    // quitado passa de 100% se pagar a mais; a barra trava em 100 mas 'falta' fica negativo
-    const pctQuitado = elaPagou ? Math.min(100, jaPaguei / elaPagou * 100) : 0;
-    return { linhas, elaPagou, jaPaguei, falta: elaPagou - jaPaguei, pctQuitado, pctFalta: 100 - pctQuitado };
+function dadosCategoria(categoria) {
+    const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoria(r.categ, categoria));
+    const entradas = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
+    const saidas = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
+    // O percentual visual para em 100%, mas o saldo continua mostrando excesso de saída.
+    const pctUsado = entradas ? Math.min(100, saidas / entradas * 100) : 0;
+    return { linhas, entradas, saidas, saldo: entradas - saidas, pctUsado, pctRestante: 100 - pctUsado };
 }
 
 const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
 
-function abrirVisRoberta() {
-    const d = dadosRoberta();
-    const quitado = d.falta <= 0.005;
+function abrirVisCategoria(op) {
+    const d = dadosCategoria(op.categoria);
+    const encerrado = d.saldo <= 0.005;
+    const semBase = d.entradas <= 0.005;
+    const pctDestaque = encerrado ? 0 : d.pctRestante;
+    el('tituloVisCategoria').textContent = op.titulo;
     el('robertaCorpo').innerHTML = !d.linhas.length
-        ? '<p class=meta>Nenhum lançamento pago na categoria “Roberta” ainda.</p>'
-        : `<div class="robPct ${quitado ? 'vd' : 'vm'}">${pct1(quitado ? 0 : d.pctFalta)}</div>
-           <p class=robPctSub>${quitado ? 'quitado — nada a pagar' : 'falta pra quitar com ela'}</p>
-           <div class=robBarra><div class=robFill style="width:${d.pctQuitado.toFixed(2)}%"></div></div>
+        ? `<p class=meta>Nenhum lançamento pago na categoria “${escapeHtml(op.categoria)}” ainda.</p>`
+        : `<div class="robPct ${encerrado ? 'vd' : 'vm'}">${semBase ? '—' : pct1(pctDestaque)}</div>
+           <p class=robPctSub>${encerrado ? op.subEncerrado : op.subAberto}</p>
+           <div class=robBarra><div class=robFill style="width:${d.pctUsado.toFixed(2)}%"></div></div>
            <div class=robLegenda>
-             <span>Você já pagou ${pct1(d.pctQuitado)}</span>
+             <span>${semBase ? 'Sem entrada positiva' : `${op.legendaUsado} ${pct1(d.pctUsado)}`}</span>
              <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
            </div>
            <table class=robTab><tbody>
-             <tr><td>Ela te pagou<td class="n vm">${brl(d.elaPagou)}
-             <tr><td>Você já pagou<td class="n vd">${brl(d.jaPaguei)}
-             <tr class=tot><td>${d.falta < -0.005 ? 'Pagou a mais' : 'Falta'}<td class=n>${brl(Math.abs(d.falta))}
+             <tr><td>${op.rotuloEntrada}<td class="n vm">${brl(d.entradas)}
+             <tr><td>${op.rotuloSaida}<td class="n vd">${brl(d.saidas)}
+             <tr class=tot><td>${d.saldo < -0.005 ? op.rotuloExcesso : op.rotuloSaldo}<td class=n>${brl(Math.abs(d.saldo))}
            </tbody></table>`;
     el('modalRoberta').showModal();
 }
 
-el('btRoberta').onclick = abrirVisRoberta;
+const VIS_CATEGORIAS = {
+    Roberta: {
+        categoria: 'Roberta', titulo: 'Roberta', subAberto: 'falta pra quitar com ela',
+        subEncerrado: 'quitado — nada a pagar', legendaUsado: 'Você já pagou',
+        rotuloEntrada: 'Ela te pagou', rotuloSaida: 'Você já pagou',
+        rotuloSaldo: 'Falta', rotuloExcesso: 'Pagou a mais',
+    },
+    EntradaEcon: {
+        categoria: 'Entrada Econ', titulo: 'Entrada Econ', subAberto: 'saldo disponível',
+        subEncerrado: 'saldo totalmente utilizado', legendaUsado: 'Já saiu',
+        rotuloEntrada: 'Entradas', rotuloSaida: 'Saídas',
+        rotuloSaldo: 'Saldo', rotuloExcesso: 'Saída excedente',
+    },
+    EvolucaoObra: {
+        categoria: 'Evolução Obra', titulo: 'Evolução Obra', subAberto: 'saldo disponível',
+        subEncerrado: 'saldo totalmente utilizado', legendaUsado: 'Já saiu',
+        rotuloEntrada: 'Entradas', rotuloSaida: 'Saídas',
+        rotuloSaldo: 'Saldo', rotuloExcesso: 'Saída excedente',
+    },
+};
+
+el('btRoberta').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.Roberta);
+el('btEntradaEcon').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.EntradaEcon);
+el('btEvolucaoObra').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.EvolucaoObra);
 el('fechaRoberta').onclick = () => el('modalRoberta').close();
 el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
 
