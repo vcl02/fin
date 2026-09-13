@@ -114,6 +114,12 @@ const ehAntecipacaoFatura = categ => {
 // Antecipacao e' TRANSFERENCIA, nao gasto: a despesa ja foi contada na compra do credito. Entra no fluxo de caixa (bloco Debito) e fica fora das analises de gasto (Comparar, Balanco, evolucao, pizza) — senao a mesma despesa conta duas vezes.
 const ehTransferenciaFatura = r => !r.cred && ehAntecipacaoFatura(r.categ);
 
+// Variante da antecipacao pra fatura da Isabella: mesma logica de ehAntecipacaoFatura, so' que a categoria tambem menciona "Isabella" (ex: "Antecipacao Fatura Isabella"). Usada na hora de salvar pra forcar isa=true nesse lancamento mesmo que o checkbox "Isabella" do formulario nao tenha sido marcado — assim essa categoria sozinha ja garante que a antecipacao abate a fatura dela (alocacaoAntecipacoes), sem depender de lembrar do checkbox.
+const ehAntecipacaoFaturaIsabella = categ => ehAntecipacaoFatura(categ) && semAcento(categ).includes('isabella');
+
+// O combo de categoria e' um <select> montado a partir das categorias ja usadas (categoriasPorPopularidade), entao uma categoria inedita nunca teria como ser escolhida na primeira vez. Estas entram sempre na lista, mesmo sem nenhum lancamento.
+const CATEGORIAS_FIXAS = ['Antecipação Fatura Isabella'];
+
 // Captura: o emissor so registra a compra no dia seguinte (D+1) na maioria dos casos. Excecao: NuPay captura no mesmo dia — hoje isso e' sempre Uber. Fora dos dias de fronteira o deslocamento nao muda nada, entao a data que voce lanca continua sendo a da compra; o D+1 so importa quando a compra cai no dia do fechamento.
 const ehCapturaMesmoDia = nome => semAcento(nome).includes('uber');
 const dataCaptura = (dataStr, nome) =>
@@ -465,12 +471,15 @@ const passaFiltroTriEstado = (idSelect, valor) => {
     const v = el(idSelect).value;
     return v == 'B' || (v == 'S') == !!valor;
 };
-// aplica todos os filtros ativos (situacao, origem, titular) sobre a lista de lancamentos
+// aplica todos os filtros ativos (situacao, origem, titular, valor) sobre a lista de lancamentos.
+// Valor: P/N pegam so' o que e' de fato positivo/negativo — lancamento sem valor (v = 0) nao e'
+// nem um nem outro, entao fica de fora dos dois recortes.
 const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
     passaFiltroTriEstado('fativo', r.ativo) &&
     passaFiltroTriEstado('fpago', r.pago) &&
     ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value] &&
-    ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value]
+    ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value] &&
+    ({ T: 1, P: r.v > 0, N: r.v < 0 })[el('fvalor').value]
 );
 
 // ===================================================================
@@ -1424,6 +1433,8 @@ function desenhar() {
     mostraComFade('forigem', !modoBlocos && !simples);
     if (modoBlocos) el('origem').value = 'A';
     el('ftit').hidden = simples;
+    el('fvalWrap').hidden = simples;
+    if (simples) el('fvalor').value = 'T';
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
     if (simples) {
         el('fsit').hidden = el('fativoWrap').hidden = true;
@@ -1857,7 +1868,7 @@ document.querySelectorAll('.tool select,.tool input,#navComparar select').forEac
 // tambem o que o navegador seleciona sozinho na 1a carga. desenhar() ainda pode sobrescrever
 // alguns deles conforme o modo (ex: Ativo vira "Ambos" no Backlog, Origem volta pra "Tudo"
 // no modo blocos) — o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.
-const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', origem: 'A', somenteDif: 'N' };
+const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', origem: 'A', somenteDif: 'N', fvalor: 'T' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
@@ -1874,6 +1885,52 @@ function limparFiltros() {
     desenhar();
 }
 el('btLimparFiltros').onclick = limparFiltros;
+
+// ===================================================================
+// VISUALIZAÇÃO: ROBERTA — acerto de contas
+// ===================================================================
+// Ela adiantou um valor de uma vez (entra POSITIVO na categoria) e a divida vai sendo
+// quitada aos poucos com o que sai pra ela (negativo — credito ou debito, tanto faz).
+// De proposito olha TODOS os lancamentos da categoria e IGNORA os filtros/ciclo da barra:
+// o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
+// (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
+// saiu, e contar agendado inflaria o progresso do acerto.
+const ehCategoriaRoberta = categ => semAcento(categ).trim() === 'roberta';
+
+function dadosRoberta() {
+    const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoriaRoberta(r.categ));
+    const elaPagou = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
+    const jaPaguei = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
+    // quitado passa de 100% se pagar a mais; a barra trava em 100 mas 'falta' fica negativo
+    const pctQuitado = elaPagou ? Math.min(100, jaPaguei / elaPagou * 100) : 0;
+    return { linhas, elaPagou, jaPaguei, falta: elaPagou - jaPaguei, pctQuitado, pctFalta: 100 - pctQuitado };
+}
+
+const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
+
+function abrirVisRoberta() {
+    const d = dadosRoberta();
+    const quitado = d.falta <= 0.005;
+    el('robertaCorpo').innerHTML = !d.linhas.length
+        ? '<p class=meta>Nenhum lançamento pago na categoria “Roberta” ainda.</p>'
+        : `<div class="robPct ${quitado ? 'vd' : 'vm'}">${pct1(quitado ? 0 : d.pctFalta)}</div>
+           <p class=robPctSub>${quitado ? 'quitado — nada a pagar' : 'falta pra quitar com ela'}</p>
+           <div class=robBarra><div class=robFill style="width:${d.pctQuitado.toFixed(2)}%"></div></div>
+           <div class=robLegenda>
+             <span>Você já pagou ${pct1(d.pctQuitado)}</span>
+             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
+           </div>
+           <table class=robTab><tbody>
+             <tr><td>Ela te pagou<td class="n vm">${brl(d.elaPagou)}
+             <tr><td>Você já pagou<td class="n vd">${brl(d.jaPaguei)}
+             <tr class=tot><td>${d.falta < -0.005 ? 'Pagou a mais' : 'Falta'}<td class=n>${brl(Math.abs(d.falta))}
+           </tbody></table>`;
+    el('modalRoberta').showModal();
+}
+
+el('btRoberta').onclick = abrirVisRoberta;
+el('fechaRoberta').onclick = () => el('modalRoberta').close();
+el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
 
 // ===================================================================
 // GRÁFICO DE GASTOS DO CICLO (pizza)
@@ -2268,7 +2325,7 @@ function categoriasPorPopularidade() {
         if (!r.categ || !r.data || dataISO(r.data) < limiteIso) return;
         contagem[r.categ] = (contagem[r.categ] || 0) + 1;
     });
-    const todas = [...new Set(Estado.lancamentos.map(r => r.categ).filter(valorValido))];
+    const todas = [...new Set([...Estado.lancamentos.map(r => r.categ), ...CATEGORIAS_FIXAS].filter(valorValido))];
     return todas.sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
 }
 function popularCategoriasNoForm(idSelect = 'fCateg') {
@@ -2693,7 +2750,8 @@ async function submeteNovoLancamento() {
     const valorTotal = valorDigitado ? valorMascaraParaNumero(valorDigitado) : 0;
 
     const cred = el('fCred').checked;
-    const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
+    // categoria "Antecipacao Fatura Isabella" forca isa=true mesmo sem marcar o checkbox — ver ehAntecipacaoFaturaIsabella.
+    const isa = ehAntecipacaoFaturaIsabella(categ) ? true : (el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked);
     const pago = el('fPago').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
