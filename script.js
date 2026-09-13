@@ -1906,6 +1906,18 @@ function dadosCategoria(categoria) {
     return { linhas, entradas, saidas, saldo: entradas - saidas, pctUsado, pctRestante: 100 - pctUsado };
 }
 
+// Entrada Econ e Evolução Obra medem execução financeira: o universo é tudo que está
+// ativo na categoria (pago + não pago), e a barra compara o valor já pago com esse total.
+// Usa valor absoluto porque despesas são armazenadas com sinal negativo.
+function dadosPagamentoCategoria(categoria) {
+    const linhas = Estado.lancamentos.filter(r => r.ativo && ehCategoria(r.categ, categoria));
+    const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
+    const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
+    const naoPago = Math.max(0, total - pago);
+    const pctPago = total ? Math.min(100, pago / total * 100) : 0;
+    return { linhas, total, pago, naoPago, pctPago };
+}
+
 const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
 
 function abrirVisCategoria(op) {
@@ -1931,6 +1943,27 @@ function abrirVisCategoria(op) {
     el('modalRoberta').showModal();
 }
 
+function abrirVisPagamentoCategoria(op) {
+    const d = dadosPagamentoCategoria(op.categoria);
+    const concluido = d.total > 0 && d.naoPago <= 0.005;
+    el('tituloVisCategoria').textContent = op.titulo;
+    el('robertaCorpo').innerHTML = !d.linhas.length
+        ? `<p class=meta>Nenhum lançamento ativo na categoria “${escapeHtml(op.categoria)}” ainda.</p>`
+        : `<div class="robPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
+           <p class=robPctSub>do valor total está pago</p>
+           <div class=robBarra><div class=robFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
+           <div class=robLegenda>
+             <span>Pago ${pct1(d.pctPago)}</span>
+             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
+           </div>
+           <table class=robTab><tbody>
+             <tr><td>Pago<td class="n vd">${brl(d.pago)}
+             <tr><td>Não pago<td class="n vm">${brl(d.naoPago)}
+             <tr class=tot><td>Total<td class=n>${brl(d.total)}
+           </tbody></table>`;
+    el('modalRoberta').showModal();
+}
+
 const VIS_CATEGORIAS = {
     Roberta: {
         categoria: 'Roberta', titulo: 'Roberta', subAberto: 'falta pra quitar com ela',
@@ -1939,22 +1972,16 @@ const VIS_CATEGORIAS = {
         rotuloSaldo: 'Falta', rotuloExcesso: 'Pagou a mais',
     },
     EntradaEcon: {
-        categoria: 'Entrada Econ', titulo: 'Entrada Econ', subAberto: 'saldo disponível',
-        subEncerrado: 'saldo totalmente utilizado', legendaUsado: 'Já saiu',
-        rotuloEntrada: 'Entradas', rotuloSaida: 'Saídas',
-        rotuloSaldo: 'Saldo', rotuloExcesso: 'Saída excedente',
+        categoria: 'Entrada Econ', titulo: 'Entrada Econ',
     },
     EvolucaoObra: {
-        categoria: 'Evolução Obra', titulo: 'Evolução Obra', subAberto: 'saldo disponível',
-        subEncerrado: 'saldo totalmente utilizado', legendaUsado: 'Já saiu',
-        rotuloEntrada: 'Entradas', rotuloSaida: 'Saídas',
-        rotuloSaldo: 'Saldo', rotuloExcesso: 'Saída excedente',
+        categoria: 'Evolução Obra', titulo: 'Evolução Obra',
     },
 };
 
 el('btRoberta').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.Roberta);
-el('btEntradaEcon').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.EntradaEcon);
-el('btEvolucaoObra').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.EvolucaoObra);
+el('btEntradaEcon').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EntradaEcon);
+el('btEvolucaoObra').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EvolucaoObra);
 el('fechaRoberta').onclick = () => el('modalRoberta').close();
 el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
 
