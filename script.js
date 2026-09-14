@@ -1497,21 +1497,21 @@ function atualizaBarraSelecao() {
 
     const chaves = [...Estado.selecionados.keys()];
     // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
-    // excluidas. A unica excecao de ACAO e' "sug:": o Aporte sugerido pode ser
-    // materializado como um lancamento real com os mesmos data/valor/categoria.
+    // excluidas. As excecoes de ACAO sao os ajustes "sug:" e "res:": Aporte sugerido
+    // e Resgate necessario podem ser materializados como lancamentos reais.
     const ehSintetica = c => /^(fat|cp|sal|res|sug|abt):/.test(c);
     const chaveUnica = chaves.length == 1 ? chaves[0] : null;
-    const ehAporteSugerido = !!chaveUnica?.startsWith('sug:');
+    const ehAjusteMaterializavel = !!chaveUnica && /^(sug|res):/.test(chaveUnica);
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
     // pra somar e selecionar/limpar. Nunca os dois juntos — pra desmarcar uma linha unica,
     // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
     // tela/perfil (mobile e Isabella inclusive) — nao depende mais de modoSimples().
-    el('seldup').hidden = !chaveUnicaReal && !ehAporteSugerido;
-    el('seldup').textContent = ehAporteSugerido ? 'Materializar' : 'Duplicar';
+    el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
+    el('seldup').textContent = ehAjusteMaterializavel ? 'Materializar' : 'Duplicar';
     el('seldel').hidden = !chaveUnicaReal;
-    el('selacao').hidden = !!chaveUnicaReal || ehAporteSugerido;
+    el('selacao').hidden = !!chaveUnicaReal || ehAjusteMaterializavel;
 
     if (chaveUnica) {
         const r = linhaDaChaveSelecao(chaveUnica);
@@ -2783,17 +2783,19 @@ modalNovo.addEventListener('close', () => {
 
 // A mesma posicao da barra tem duas acoes mutuamente exclusivas:
 // - lancamento real: Duplicar abre o modal pre-preenchido;
-// - Aporte sugerido: Materializar grava imediatamente um aporte real, em debito e aberto.
+// - Aporte sugerido/Resgate necessario: Materializar grava imediatamente o ajuste real,
+//   em debito e aberto, preservando data, valor e categoria.
 el('seldup').onclick = async () => {
     const chave = [...Estado.selecionados.keys()][0];
-    if (chave?.startsWith('sug:')) {
-        const sugestao = linhaDaChaveSelecao(chave);
-        if (!sugestao || sugestao._sug == null || el('seldup').disabled) return;
+    if (chave && /^(sug|res):/.test(chave)) {
+        const ajuste = linhaDaChaveSelecao(chave);
+        if (!ajuste || (ajuste._sug == null && !ajuste._res) || el('seldup').disabled) return;
 
         el('seldup').disabled = true;
         el('seldup').textContent = 'Materializando…';
         try {
-            const data = dataISO(sugestao.data) || null;
+            const ehAporte = chave.startsWith('sug:');
+            const data = dataISO(ajuste.data) || null;
             const linhaCriada = await inserirLancamento({
                 data,
                 freq: null,
@@ -2801,9 +2803,9 @@ el('seldup').onclick = async () => {
                 isa: Estado.restrito,
                 pago: false,
                 ativo: true,
-                nome: 'Aporte',
-                categ: sugestao.categ,
-                valor: sugestao._sug,
+                nome: ehAporte ? 'Aporte' : 'Resgate',
+                categ: ajuste.categ,
+                valor: ajuste._sug != null ? ajuste._sug : ajuste.v,
             });
             const periodoIdx = data ? periodoDoDebito(data) : null;
             Estado.lancamentos.push({
@@ -2815,10 +2817,10 @@ el('seldup').onclick = async () => {
             Estado.selecionados.clear();
             desenhar();
         } catch (err) {
-            alert('Falhou ao materializar o aporte: ' + err.message);
+            alert('Falhou ao materializar o ajuste: ' + err.message);
         } finally {
             el('seldup').disabled = false;
-            el('seldup').textContent = chave?.startsWith('sug:') ? 'Materializar' : 'Duplicar';
+            el('seldup').textContent = /^(sug|res):/.test(chave) ? 'Materializar' : 'Duplicar';
         }
         return;
     }
