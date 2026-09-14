@@ -38,7 +38,8 @@
         </div>
       </div>
 
-      <button id=toggleSimulacao title="Modo simulação: injeta lançamentos hipotéticos só na memória (nunca salva) — recarregar ou desligar apaga tudo"
+      <button id=toggleSimulacao
+        title="Modo simulação: injeta lançamentos hipotéticos só na memória (nunca salva) — recarregar ou desligar apaga tudo"
         aria-label="Ativar modo simulação">
         <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
           stroke-linejoin=round>
@@ -80,7 +81,7 @@
         <label class=f id=ftit><span>Titular</span>
           <select id=titular>
             <option value=T>Todos
-            <option value=E>Eu
+            <option value=E>Victor
             <option value=I>Isabella
           </select>
         </label>
@@ -111,20 +112,55 @@
             <option value=F>Crédito
           </select>
         </label>
+        <label class=f id=fvalWrap><span>Valor</span>
+          <select id=fvalor>
+            <option value=T>Tudo
+            <option value=P>Positivo
+            <option value=N>Negativo
+          </select>
+        </label>
         <label class=f id=fdif><span>Linhas</span>
-          <select id=somenteDif hidden>
+          <select id=somenteDif>
             <option value=N>Todas
             <option value=S>Diferentes
+            <option value=I>Diferentes (ignorar repetidas)
           </select>
-          <div class=segCtl id=segSomenteDif role=tablist aria-label="Linhas">
-            <span class=segThumb></span>
-            <button type=button class=segOpt data-valor=N role=tab>Todas</button>
-            <button type=button class=segOpt data-valor=S role=tab>Diferentes</button>
-          </div>
         </label>
         <label class=f id=fevol><span>&nbsp;</span>
           <button type=button id=btEvolucao class=btFiltro>Gráfico</button>
         </label>
+        <label class=f id=flimpar><span>&nbsp;</span>
+          <button type=button id=btLimparFiltros class=btFiltro title="Volta todos os filtros pro padrão inicial">Limpar
+            filtros</button>
+        </label>
+      </div>
+      <div class=row id=rowVis>
+        <div class=f id=fvisRoberta><span>Visualizações</span>
+          <div class=visBotoes>
+            <button type=button id=btRoberta class=btFiltro
+              title="Acerto de contas com a Roberta — ignora os filtros acima">Roberta</button>
+            <button type=button id=btEntradaEcon class=btFiltro
+              title="Acompanhamento da categoria Entrada Econ — ignora os filtros acima">Entrada Econ</button>
+            <button type=button id=btEvolucaoObra class=btFiltro
+              title="Acompanhamento da categoria Evolução Obra — ignora os filtros acima">Evolução Obra</button>
+            <button type=button id=btDividaEstudantil class=btFiltro
+              title="Acompanhamento da categoria Dívida Estudantil — ignora os filtros acima">Dívida Estudantil</button>
+            <button type=button id=btRenegociacaoPj class=btFiltro
+              title="Acompanhamento da categoria Renegociação PJ — ignora os filtros acima">Renegociação PJ</button>
+            <button type=button id=btEmprestimo class=btFiltro
+              title="Acompanhamento da categoria Empréstimo — ignora os filtros acima">Empréstimo</button>
+            <button type=button id=btPos class=btFiltro
+              title="Acompanhamento dos lançamentos com o nome Pós — ignora os filtros acima">Pós</button>
+            <button type=button id=btRenegociacaoNu class=btFiltro
+              title="Acompanhamento dos lançamentos com o nome Renegociação Nu — ignora os filtros acima">Renegociação Nu</button>
+            <button type=button id=btIphone class=btFiltro
+              title="Acompanhamento dos lançamentos negativos com o nome Iphone — ignora os filtros acima">Iphone</button>
+            <button type=button id=btSeguroResidencial class=btFiltro
+              title="Acompanhamento dos lançamentos com o nome Seguro Residencial — ignora os filtros acima">Seguro Residencial</button>
+            <button type=button id=btSenac class=btFiltro
+              title="Acompanhamento dos lançamentos com o nome Senac — ignora os filtros acima">Senac</button>
+          </div>
+        </div>
       </div>
     </div>
     <div id=out></div>
@@ -190,9 +226,23 @@
           </div>
         </label>
 
-        <label class=fm id=fParcelasWrap hidden><span>Parcelas</span>
+        <label class=fm><span>Vezes</span>
           <select id=fParcelas>
             <option value=1>À vista (1x)
+          </select>
+        </label>
+        <label class=fmChk id=fDivideWrap>
+          <input type=checkbox id=fDivide checked><span>Dividir valor entre as vezes (senão repete em cada
+            uma)</span></label>
+
+        <label class=fm><span>Frequência</span>
+          <select id=fFreq>
+            <option value="">— Sem recorrência
+            <option value=Mensal>Mensal — mesmo dia, muda o mês
+            <option value=Semanal>Semanal — mesmo dia da semana
+            <option value=Quinzenal>Quinzenal — a cada 2 semanas
+            <option value=Semestral>Semestral — mesmo dia, a cada 6 meses
+            <option value=Anual>Anual — mesmo dia, muda o ano
           </select>
         </label>
 
@@ -242,6 +292,14 @@
         <button type=button class="calcTecla calcIgual" data-calc=igual title="Inserir valor"
           aria-label="Inserir valor">✓</button>
       </div>
+    </dialog>
+
+    <dialog id=modalRoberta>
+      <div class=modalHead>
+        <h2 id=tituloVisCategoria>Roberta</h2>
+        <button type=button id=fechaRoberta aria-label="Fechar">×</button>
+      </div>
+      <div id=robertaCorpo></div>
     </dialog>
 
     <dialog id=modalGrafico>

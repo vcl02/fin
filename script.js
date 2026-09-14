@@ -87,6 +87,9 @@ const dataISO = s => String(s || '').slice(0, 10);                              
 const hojeISO = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);   // hoje em 'YYYY-MM-DD' no fuso local (toISOString sozinho usa UTC e erra o dia a noite)
 const timestamp = s => Date.parse(dataISO(s)) || 0;                                                             // YYYY-MM-DD -> numero, pra comparar/ordenar
 const dataBR = s => { const p = dataISO(s).split('-'); return p.length == 3 ? `${p[2]}/${p[1]}/${p[0]}` : s };  // YYYY-MM-DD -> DD/MM/YYYY
+// tolerancia da busca por Valor: +/- 5 centavos do que foi digitado, pra achar mesmo sem
+// bater centavo a centavo (ex: buscar "150" acha 149,97 a 150,03)
+const TOLERANCIA_BUSCA_VALOR = 0.05;
 const capitaliza = s => String(s ?? '').replace(/^./, c => c.toUpperCase());
 // nome de exibicao de uma coluna do lancamento ('nome'/'categ') — normaliza 'categ' pra
 // "Categoria" (capitaliza() sozinho faria "Categ") em todo lugar que rotula essa coluna:
@@ -110,6 +113,12 @@ const ehAntecipacaoFatura = categ => {
 
 // Antecipacao e' TRANSFERENCIA, nao gasto: a despesa ja foi contada na compra do credito. Entra no fluxo de caixa (bloco Debito) e fica fora das analises de gasto (Comparar, Balanco, evolucao, pizza) — senao a mesma despesa conta duas vezes.
 const ehTransferenciaFatura = r => !r.cred && ehAntecipacaoFatura(r.categ);
+
+// Variante da antecipacao pra fatura da Isabella: mesma logica de ehAntecipacaoFatura, so' que a categoria tambem menciona "Isabella" (ex: "Antecipacao Fatura Isabella"). Usada na hora de salvar pra forcar isa=true nesse lancamento mesmo que o checkbox "Isabella" do formulario nao tenha sido marcado — assim essa categoria sozinha ja garante que a antecipacao abate a fatura dela (alocacaoAntecipacoes), sem depender de lembrar do checkbox.
+const ehAntecipacaoFaturaIsabella = categ => ehAntecipacaoFatura(categ) && semAcento(categ).includes('isabella');
+
+// O combo de categoria e' um <select> montado a partir das categorias ja usadas (categoriasPorPopularidade), entao uma categoria inedita nunca teria como ser escolhida na primeira vez. Estas entram sempre na lista, mesmo sem nenhum lancamento.
+const CATEGORIAS_FIXAS = ['Antecipação Fatura Isabella'];
 
 // Captura: o emissor so registra a compra no dia seguinte (D+1) na maioria dos casos. Excecao: NuPay captura no mesmo dia — hoje isso e' sempre Uber. Fora dos dias de fronteira o deslocamento nao muda nada, entao a data que voce lanca continua sendo a da compra; o D+1 so importa quando a compra cai no dia do fechamento.
 const ehCapturaMesmoDia = nome => semAcento(nome).includes('uber');
@@ -135,6 +144,61 @@ function menos30(iso) {
     const d = new Date(dataISO(iso) + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() - 30);
     return d.toISOString().slice(0, 10);
+}
+
+// Soma N meses a uma data ISO, preservando o dia (com clamp pro ultimo dia do mes de
+// destino quando ele nao existe — 31/01 + 1 mes = 28 ou 29/02, nunca "03/03" por
+// transbordo). Usada pra datar cada PARCELA de uma compra parcelada: parcela 2 cai ~1
+// mes depois da 1a, parcela 3 ~2 meses depois etc — igual uma fatura de cartao de
+// verdade, onde cada parcela e' cobrada no ciclo seguinte. Sem isso, todas as parcelas
+// ficavam gravadas com a MESMA data no banco; o periodoIdx certo so' existia em memoria
+// (calculado na hora do cadastro) e sumia ao recarregar, porque o recalculo (carregarDados)
+// deriva o periodo so' a partir da 'data' — e' o que fazia as parcelas desmoronarem todas
+// pro mesmo mes depois de dar F5/limpar cache.
+function somaMeses(iso, n) {
+    if (!n) return dataISO(iso);
+    const [y, m, d] = dataISO(iso).split('-').map(Number);
+    const alvo = new Date(Date.UTC(y, m - 1 + n, 1));                    // 1o dia do mes de destino
+    const ultimoDiaAlvo = new Date(Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1, 0)).getUTCDate();
+    alvo.setUTCDate(Math.min(d, ultimoDiaAlvo));
+    return alvo.toISOString().slice(0, 10);
+}
+
+// Soma N dias corridos a uma data ISO (mesmo padrao UTC de proximoDia/menos30, so' que
+// com passo livre) — base das recorrencias que andam por semana, nao por mes.
+function somaDias(iso, n) {
+    if (!n) return dataISO(iso);
+    const d = new Date(dataISO(iso) + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+}
+
+// As opcoes do campo Frequencia, e a REGRA de cada uma: como andar da 1a ocorrencia pra
+// proxima quando o lancamento e' repetido/parcelado em N vezes.
+//  - 'mes' anda de mes em mes preservando o DIA (via somaMeses, ja com clamp: dia 31 cai
+//    no ultimo dia do mes curto, e 29/02 vira 28/02 em ano nao bissexto);
+//  - 'dia' anda em dias corridos, o que mantem o MESMO DIA DA SEMANA (7 e 14 sao multiplos
+//    de 7) sem depender de calendario.
+// A chave e' exatamente o texto gravado na coluna 'freq' do banco — o <option value> no
+// index.html usa esses mesmos nomes, entao ler o select ja da' a regra direto.
+const RECORRENCIAS = {
+    Mensal: { tipo: 'mes', passo: 1 },
+    Semanal: { tipo: 'dia', passo: 7 },
+    Quinzenal: { tipo: 'dia', passo: 14 },   // "quinze" e' so' o nome de costume — a regra e' de 2 em 2 semanas, nao 15 dias
+    Semestral: { tipo: 'mes', passo: 6 },
+    Anual: { tipo: 'mes', passo: 12 },       // +12 meses = mesmo dia, ano seguinte
+};
+
+// Data da p-esima ocorrencia (p=0 e' a 1a, que cai na propria data digitada) conforme a
+// Frequencia escolhida. Frequencia vazia ("sem recorrencia") ou desconhecida cai em
+// Mensal: com 1x so' isso nao muda nada (p=0 devolve a propria data), e a partir de 2x
+// PRECISA haver algum espacamento — sem regra as N linhas nasceriam todas na mesma data,
+// que e' exatamente o bug que fazia as parcelas desabarem no mesmo mes ao recarregar.
+// Mensal e' tambem o unico comportamento que existia antes deste campo virar regra.
+function dataDaOcorrencia(iso, p, freq) {
+    const regra = RECORRENCIAS[freq] || RECORRENCIAS.Mensal;
+    const passo = regra.passo * p;
+    return regra.tipo == 'dia' ? somaDias(iso, passo) : somaMeses(iso, passo);
 }
 
 // Nome de exibicao de um periodo: sempre o MES ANTERIOR ao seu 'fat'. Ex.: periodo com fat=2026-07-06 se chama "Junho 2026" (o mes em que ele comecou).
@@ -407,12 +471,15 @@ const passaFiltroTriEstado = (idSelect, valor) => {
     const v = el(idSelect).value;
     return v == 'B' || (v == 'S') == !!valor;
 };
-// aplica todos os filtros ativos (situacao, origem, titular) sobre a lista de lancamentos
+// aplica todos os filtros ativos (situacao, origem, titular, valor) sobre a lista de lancamentos.
+// Valor: P/N pegam so' o que e' de fato positivo/negativo — lancamento sem valor (v = 0) nao e'
+// nem um nem outro, entao fica de fora dos dois recortes.
 const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
     passaFiltroTriEstado('fativo', r.ativo) &&
     passaFiltroTriEstado('fpago', r.pago) &&
     ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value] &&
-    ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value]
+    ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value] &&
+    ({ T: 1, P: r.v > 0, N: r.v < 0 })[el('fvalor').value]
 );
 
 // ===================================================================
@@ -466,30 +533,54 @@ function cabecalhoTabela(idTabela) {
     // Modo simples (Isabella / mobile) nao tem busca nenhuma — so ordenar pelo header.
     if (modoSimples()) return linhaTitulos;
     const filtroAtual = estadoFiltroTexto(idTabela);
-    const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => tipo == 't'
-        ? `<th><input type=text placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${filtroAtual[chave] ?? ''}" oninput="filtrarColuna('${idTabela}','${chave}',this.value)"></th>`
+    // colunas de texto + Valor tem campo de busca. Valor compara numero (ver
+    // passaFiltroTexto), nao texto, mas a caixinha e' a mesma das outras colunas —
+    // com a mesma mascara de dinheiro do cadastro por cima (ver filtrarColuna).
+    const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => tipo == 't' || chave == 'valor'
+        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric ' : ''}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
         : '<th>'
     ).join('');
     return linhaTitulos + linhaBusca;
 }
 // chamado a cada tecla digitada num campo de busca de coluna.
 // desenhar() reescreve o innerHTML inteiro, o que tiraria o foco do campo a cada letra —
-// por isso guarda qual input estava focado (e onde estava o cursor) e restaura depois.
-window.filtrarColuna = (idTabela, coluna, texto) => {
-    estadoFiltroTexto(idTabela)[coluna] = texto;
-    const ativo = document.activeElement;
-    const posicaoCursor = ativo && ativo.selectionStart;
+// por isso guarda onde estava o cursor e restaura depois, achando o campo novo pelo
+// data-filtro (que sobrevive ao redesenho, ja que e' remontado igual).
+window.filtrarColuna = (idTabela, coluna, input) => {
+    // Valor usa a MESMA mascara de dinheiro do cadastro (formataMascaraDinheiro): os
+    // digitos vao empurrando as casas decimais, tipo caixa eletronico. Assim a caixinha
+    // mostra exatamente o numero procurado — digitar "15000" vira "150,00", sem duvida
+    // sobre onde caem os centavos. Campo esvaziado tem que voltar pra vazio (filtro
+    // desligado), nunca virar "0,00" — que filtraria pelos valores zerados.
+    if (coluna == 'valor') {
+        const cursorNoFim = input.selectionEnd == input.value.length;
+        input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
+        if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+    }
+    estadoFiltroTexto(idTabela)[coluna] = input.value;
+    const posicaoCursor = document.activeElement === input ? input.selectionStart : null;
     desenhar();
-    const novoInput = document.querySelector(`[oninput*="filtrarColuna('${idTabela}','${coluna}'"]`);
+    const novoInput = document.querySelector(`[data-filtro="${idTabela}|${coluna}"]`);
     if (novoInput) { novoInput.focus(); if (posicaoCursor != null) novoInput.setSelectionRange(posicaoCursor, posicaoCursor); }
 };
 // remove acentos e caixa: "Café" e "cafe" viram a mesma coisa pra comparar
 // uma linha passa no filtro de texto da tabela se contem (ignorando acento e maiuscula) todos os termos digitados
 function passaFiltroTexto(r, idTabela) {
     const filtro = estadoFiltroTexto(idTabela);
-    return Object.entries(filtro).every(([coluna, termo]) =>
-        !termo || semAcento(r[coluna]).includes(semAcento(termo))
-    );
+    return Object.entries(filtro).every(([coluna, termo]) => {
+        if (!termo) return true;
+        // Valor nao e' texto: o campo sempre traz um numero ja mascarado (formataMascaraDinheiro),
+        // entao compara por PROXIMIDADE em vez de substring — acha qualquer lancamento a ate
+        // 5 centavos do valor digitado, pra nao exigir acertar o centavo exato. Ignora o sinal
+        // dos dois lados (a mascara nao digita "-"): buscar "150" acha tanto -150 quanto +150.
+        // Linha de Investimento sugerido mostra r._sug no lugar de r.v — busca no que esta visivel.
+        if (coluna == 'valor') {
+            const alvo = valorMascaraParaNumero(termo);
+            const valorLinha = Math.abs(r._sug != null ? r._sug : (r.v || 0));
+            return Math.abs(valorLinha - alvo) <= TOLERANCIA_BUSCA_VALOR;
+        }
+        return semAcento(r[coluna]).includes(semAcento(termo));
+    });
 }
 // clique no header: 1o clique ordena asc, 2o desc, alternando (sem 3o estado "original")
 window.sortCol = (idTabela, coluna) => {
@@ -534,6 +625,16 @@ const textoOuTraco = v => ehVazioTextual(v) ? '—' : v;
 // linha REAL (existe na tabela lancamentos, da' pra dar PATCH): nao e' sintetica (fatura,
 // saldo anterior, resgate/aporte) nem simulada (so' memoria, nunca foi salva)
 const ehLinhaReal = r => !r._sug && !r._res && !r._sal && !r._fat && !r._sim;
+// conteudo da celula Data: DD/MM/AAAA (+ a marca de fronteira, quando for o caso) ou '—'
+const textoData = r => r.data
+    ? dataBR(r.data) + (ehFronteira(r) ? '<span class=fr title="Compra no dia do fechamento: capturada em D+1, entrou na fatura seguinte">*</span>' : '')
+    : '—';
+// mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
+// lancamentos REAIS (id do banco, da' pra dar PATCH) e so' no desktop — no mobile a
+// celula continua sendo so' texto, igual o Valor.
+const celData = r => ehLinhaReal(r) && !isMobile()
+    ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Clique pra editar a data">${textoData(r)}</span>`
+    : textoData(r);
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna
 const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
@@ -543,7 +644,7 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
-            ? (r.data ? dataBR(r.data) + (ehFronteira(r) ? '<span class=fr title="Compra no dia do fechamento: capturada em D+1, entrou na fatura seguinte">*</span>' : '') : '—')
+            ? celData(r)
             : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '') + textoOuTraco(r[chave])}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
@@ -1136,20 +1237,57 @@ function vComp() {
     const nomeMes1 = comparacao2Periodos ? nomeMesPeriodo(Estado.periodos[idxPrimeiro].fat) : '';
     const nomeMes2 = comparacao2Periodos ? nomeMesPeriodo(Estado.periodos[idxSegundo].fat) : '';
 
-    // "Somente Diferentes": com o filtro ligado, mostra so as linhas que sumiram ou
-    // surgiram entre os 2 periodos — as que tem valor nos dois (sem diferenca) somem.
-    const somenteDif = comparacao2Periodos && el('somenteDif').value == 'S';
+    // Dentro de uma categoria x periodo, agrupa os lancamentos REAIS por nome+valor e
+    // avisa quando algum grupo se repete (2+) com datas de MESES DIFERENTES entre si —
+    // sintoma de um lancamento recorrente (mesmo nome, mesmo valor) que caiu 2x dentro do
+    // MESMO ciclo porque a janela do periodo atravessou a virada do mes (ver ehFronteira/
+    // proximoDia), e nao uma despesa que realmente comecou/parou de existir. Sem esse
+    // aviso, "Somente <mes>" fazia parecer que a categoria sumiu no outro mes quando na
+    // verdade ela so' foi contada 2x nesse aqui (e ficou de fora, sem repetir, no outro).
+    // Ignora linhas sinteticas (Saldo/Fatura/Investimento) — a checagem e' so' pra
+    // lancamento de verdade.
+    function temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx) {
+        const linhas = (linhasDaCelula[chave + '||' + periodoIdx] || []).filter(ehLinhaReal);
+        const mesesPorGrupo = {};
+        linhas.forEach(r => {
+            const grupo = semAcento(r.nome).trim() + '|' + Math.round((r.v || 0) * 100);
+            (mesesPorGrupo[grupo] = mesesPorGrupo[grupo] || new Set()).add(dataISO(r.data).slice(0, 7));
+        });
+        return Object.values(mesesPorGrupo).some(meses => meses.size >= 2);
+    }
+    // HTML do asterisco de aviso, colado no "✓" de difOk/difNovo, so' quando o lado que
+    // TEM o lancamento (chave, periodoIdx) apresenta essa duplicata de mes diferente.
+    const avisoRecorrenciaDuplicada = (chave, periodoIdx) => temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx)
+        ? `<span class=avisoDup title="Mesmo nome e valor apareceram 2x dentro deste ciclo, em meses diferentes — pode ser recorrência caindo 2x no mesmo ciclo, não uma mudança real">*</span>`
+        : '';
 
-    // ao LIGAR o filtro, passa a ordenar pela coluna "Somente <2º mês>" (a coisa nova
-    // fica em cima); ao DESLIGAR, volta a ordenar pela coluna principal (nome/categ/o
-    // que estiver em "Agrupar por"). So dispara na TRANSICAO (nao a cada redesenho,
-    // senao o usuario nunca conseguiria reordenar manualmente por outra coluna).
+    // Filtro "Linhas": Todas (N) mostra tudo; Diferentes (S) so' as que sumiram/surgiram
+    // entre os 2 periodos; Diferentes sem recorrência (I) faz a mesma coisa, mas ainda
+    // descarta as que carregam o aviso de recorrência duplicada (avisoRecorrenciaDuplicada
+    // acima) — a categoria so' "sumiu"/"surgiu" por causa da janela do ciclo cortando o mes
+    // ao meio, entao nao e' uma diferenca de verdade.
+    const modoLinhas = el('somenteDif').value;
+    const somenteDif = comparacao2Periodos && modoLinhas != 'N';
+
+    // ao LIGAR o filtro (de Todas pra qualquer um dos dois modos de diferenca), passa a
+    // ordenar pela coluna "Somente <2º mês>" (a coisa nova fica em cima); ao DESLIGAR,
+    // volta a ordenar pela coluna principal (nome/categ/o que estiver em "Agrupar por").
+    // So dispara na TRANSICAO (nao a cada redesenho, senao o usuario nunca conseguiria
+    // reordenar manualmente por outra coluna).
     if (somenteDif && !Estado._somenteDifAnterior) oc.k = 'dif2', oc.d = 2;
     else if (!somenteDif && Estado._somenteDifAnterior) oc.k = 'chave', oc.d = 1;
     Estado._somenteDifAnterior = somenteDif;
 
-    const chavesFiltradas = Object.keys(matriz).filter(chave =>
-        !somenteDif || deixouDePagar(chave) || comecouAPagar(chave));
+    const chavesFiltradas = Object.keys(matriz).filter(chave => {
+        if (!somenteDif) return true;
+        const saiu = deixouDePagar(chave), entrou = comecouAPagar(chave);
+        if (!saiu && !entrou) return false;
+        if (modoLinhas == 'I' && (
+            (saiu && temRecorrenciaDuplicadaNoCiclo(chave, idxPrimeiro)) ||
+            (entrou && temRecorrenciaDuplicadaNoCiclo(chave, idxSegundo))
+        )) return false;
+        return true;
+    });
 
     // com so' 1 periodo no intervalo a coluna Total seria identica a unica coluna de
     // periodo — redundante, entao some nesse caso
@@ -1188,7 +1326,8 @@ function vComp() {
         const marcada = Estado.selecionados.has(sid);
         return `<tr class="${marcada ? 'on' : ''} pick" data-sid="${escapeHtml(sid)}"><td class=c1>${chave}` +
             (comparacao2Periodos
-                ? `<td class="n colDif">${deixouDePagar(chave) ? '<span class=difOk>✓</span>' : ''}</td><td class="n colDif">${comecouAPagar(chave) ? '<span class=difNovo>✓</span>' : ''}</td>`
+                ? `<td class="n colDif">${deixouDePagar(chave) ? `<span class=difOk>✓</span>${avisoRecorrenciaDuplicada(chave, idxPrimeiro)}` : ''}</td>` +
+                `<td class="n colDif">${comecouAPagar(chave) ? `<span class=difNovo>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>`
                 : '') +
             periodosUsados.map(i => {
                 if (matriz[chave][i] == null) return '<td class=n>·';
@@ -1294,6 +1433,9 @@ function desenhar() {
     mostraComFade('forigem', !modoBlocos && !simples);
     if (modoBlocos) el('origem').value = 'A';
     el('ftit').hidden = simples;
+    el('fvalWrap').hidden = simples;
+    if (simples) el('fvalor').value = 'T';
+    el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
     if (simples) {
         el('fsit').hidden = el('fativoWrap').hidden = true;
         el('fpago').value = 'B'; el('fativo').value = 'S';   // ve tudo (pago+aberto), so os ativos
@@ -1342,7 +1484,6 @@ function desenhar() {
     // filtro, digitar em busca, etc), senao a barra de soma nunca fica de pe' no Comparar.
     if (trocouModo) Estado.selecionados.clear();
     if (typeof atualizaBarraSelecao == 'function') atualizaBarraSelecao();
-    if (typeof reposicionaSegCtls == 'function') reposicionaSegCtls();
     if (typeof atualizaBtCicloHoje == 'function') atualizaBtCicloHoje();
     if (typeof atualizaBtsNavCiclo == 'function') atualizaBtsNavCiclo();
     console.timeEnd('[diag] desenhar');
@@ -1554,6 +1695,68 @@ el('out').addEventListener('click', e => {
     input.select();
 });
 
+// Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial
+// (carregarDados) — mudar a data pode jogar a linha pra outro periodo, ou pro Backlog
+// quando a data e' apagada / cai fora de todos os periodos cadastrados.
+function reclassificaPeriodo(r) {
+    const idx = !r.data ? null
+        : r.cred ? periodoDoCredito(r.data, r.isa, r.nome)
+            : periodoDoDebito(dataISO(r.data));
+    r.periodoIdx = idx != null && idx >= 0 && idx < Estado.periodos.length ? idx : null;
+}
+
+// clique na Data troca o <span> por um <input type=date>. O banco ja guarda 'YYYY-MM-DD',
+// que e' exatamente o formato do value/atributo desse input — nao ha conversao nenhuma no
+// meio (a tela e' que mostra DD/MM/AAAA, via dataBR). Enter ou escolher no calendario
+// confirma; Escape cancela. Mesmo esquema do toggle Pago e do Valor: stopImmediatePropagation
+// pra nao disparar a selecao da linha por baixo.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-data]');
+    if (!span) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togData;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = dataISO(r.data);
+    span.classList.add('editando');
+    span.innerHTML = `<input type=date class=inpData value="${original}">`;
+    const input = span.querySelector('input');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const nova = input.value || null;   // apagar a data manda o lancamento pro Backlog
+        if ((nova || '') === original) { desenhar(); return; }   // nada mudou, so' sai do modo edicao
+        input.disabled = true;
+        try {
+            if (!r._sim) await atualizarLancamento(r.id, { data: nova });
+            r.data = nova;
+            reclassificaPeriodo(r);
+            desenhar();
+        } catch (err) {
+            alert('Falhou ao atualizar: ' + err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    input.addEventListener('change', () => confirma());   // escolheu no calendario nativo
+    input.addEventListener('blur', () => confirma());
+    // clique dentro do proprio input (inclusive no icone do calendario) nao pode vazar
+    // pro listener de selecao de linha, que esta no mesmo #out
+    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    input.focus();
+});
+
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
@@ -1603,15 +1806,34 @@ el('cicloHoje').onclick = () => {
     desenhar();
 };
 
-// ‹ / › navegam pro periodo anterior/seguinte, setando De E Ate juntos (entra direto no
-// modo blocos daquele ciclo). Anda pelas OPCOES reais do combo #compDe (ja filtradas
-// certo pra Isabella/perfil restrito e com Backlog como 1a opcao), nao por indice
-// aritmetico — assim respeita os mesmos limites de navegacao sem duplicar a logica.
+// ‹ / › navegam pro periodo anterior/seguinte. Anda pelas OPCOES reais do combo #compDe
+// (ja filtradas certo pra Isabella/perfil restrito e com Backlog como 1a opcao), nao por
+// indice aritmetico — assim respeita os mesmos limites de navegacao sem duplicar a logica.
+// Com De==Ate (1 ciclo so', "modo blocos") sempre foi assim: anda 1 a 1, igualando os
+// dois (entra direto no modo blocos daquele ciclo). Comparando um INTERVALO (De != Ate,
+// ex: 2 meses de distancia) o clique desliza a janela inteira mantendo a MESMA distancia
+// entre De e Ate — um passo pra CADA lado (De e Ate andam +1/-1 juntos), nunca pulando
+// pelo tamanho do intervalo inteiro, senao "Jan-Mar" viraria "Mai-Jul" de uma vez em vez
+// de "Fev-Abr". Backlog nunca entra nesse modo — De='-1' sempre deixa Ate desabilitado
+// (ver desenhar()), entao so' chega aqui com os dois periodos reais.
 function navegaCiclo(direcao) {
     const opcoes = [...el('compDe').options].map(o => o.value).filter(v => v !== '');
-    const atual = el('compDe').value || '';
-    const posAtual = opcoes.indexOf(atual);
-    const novaPos = posAtual < 0 ? (direcao > 0 ? 0 : -1) : posAtual + direcao;
+    const deAtual = el('compDe').value || '', ateAtual = el('compAte').value || '';
+    const posDeAtual = opcoes.indexOf(deAtual);
+    const comparandoIntervalo = deAtual && deAtual !== '-1' && ateAtual && deAtual !== ateAtual;
+
+    if (comparandoIntervalo) {
+        const posAteAtual = opcoes.indexOf(ateAtual);
+        const novaPosDe = posDeAtual + direcao, novaPosAte = posAteAtual + direcao;
+        if (novaPosDe < 1 || novaPosAte >= opcoes.length) return;   // nunca pousa em Backlog nem passa do fim
+        el('compDe').value = opcoes[novaPosDe];
+        el('compAte').value = opcoes[novaPosAte];
+        Estado.selecionados.clear();
+        desenhar();
+        return;
+    }
+
+    const novaPos = posDeAtual < 0 ? (direcao > 0 ? 0 : -1) : posDeAtual + direcao;
     if (novaPos < 0 || novaPos >= opcoes.length) return;
     const novoValor = opcoes[novaPos];
     el('compDe').value = novoValor;
@@ -1621,9 +1843,18 @@ function navegaCiclo(direcao) {
 }
 function atualizaBtsNavCiclo() {
     const opcoes = [...el('compDe').options].map(o => o.value).filter(v => v !== '');
-    const posAtual = opcoes.indexOf(el('compDe').value || '');
-    el('cicloAnterior').disabled = posAtual <= 0;
-    el('cicloProximo').disabled = posAtual < 0 || posAtual >= opcoes.length - 1;
+    const deAtual = el('compDe').value || '', ateAtual = el('compAte').value || '';
+    const posDe = opcoes.indexOf(deAtual);
+    const comparandoIntervalo = deAtual && deAtual !== '-1' && ateAtual && deAtual !== ateAtual;
+
+    if (comparandoIntervalo) {
+        const posAte = opcoes.indexOf(ateAtual);
+        el('cicloAnterior').disabled = posDe <= 1;
+        el('cicloProximo').disabled = posAte < 0 || posAte >= opcoes.length - 1;
+    } else {
+        el('cicloAnterior').disabled = posDe <= 0;
+        el('cicloProximo').disabled = posDe < 0 || posDe >= opcoes.length - 1;
+    }
 }
 el('cicloAnterior').onclick = () => navegaCiclo(-1);
 el('cicloProximo').onclick = () => navegaCiclo(1);
@@ -1639,102 +1870,166 @@ document.querySelectorAll('.tool select,.tool input,#navComparar select').forEac
 });
 
 // ===================================================================
-// SEGMENTED CONTROL (Visão) — liga um <select> escondido a um toggle estilizado, com
-// o "thumb" deslizando entre as opcoes. O <select> continua sendo a fonte de verdade
-// (o resto do app so' le/muda .value dele), o segCtl e' so' a camada visual por cima,
-// sincronizada nos dois sentidos.
+// LIMPAR FILTROS — devolve a tela pro estado em que ela abre
 // ===================================================================
-function ligaSegCtl(idSelect, idSeg) {
-    const select = el(idSelect), seg = el(idSeg);
-    const thumb = seg.querySelector('.segThumb');
-    const botoes = [...seg.querySelectorAll('.segOpt')];
+// Valor padrao de cada select da toolbar: e' a 1a <option> de cada um no index.html, que e'
+// tambem o que o navegador seleciona sozinho na 1a carga. desenhar() ainda pode sobrescrever
+// alguns deles conforme o modo (ex: Ativo vira "Ambos" no Backlog, Origem volta pra "Tudo"
+// no modo blocos) — o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.
+const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', origem: 'A', somenteDif: 'N', fvalor: 'T' };
 
-    function escolhe(valor, arrastando) {
-        const ativo = botoes.find(b => b.dataset.valor == valor);
-        if (!ativo) return;
-        seg.style.setProperty('--segX', ativo.offsetLeft - thumb.parentElement.clientLeft + 'px');
-        seg.style.setProperty('--segW', ativo.offsetWidth + 'px');
-        botoes.forEach(b => b.classList.toggle('on', b === ativo));
-        // durante o arraste o thumb segue o dedo/mouse 1:1 (sem a transicao de mola);
-        // ela volta assim que soltar, pro "snap" final ficar suave
-        thumb.classList.toggle('semTransicao', !!arrastando);
-        if (!arrastando && select.value !== valor) {
-            select.value = valor;
-            select.dispatchEvent(new Event('change'));   // aciona o listener generico que redesenha a tela
-        }
-    }
-
-    botoes.forEach(b => b.addEventListener('click', () => escolhe(b.dataset.valor, false)));
-
-    // arrastar o thumb feito interruptor de verdade: segura em qualquer ponto do
-    // controle, o thumb segue o ponteiro em tempo real, solta = decide pelo lado mais
-    // proximo de onde parou (nao precisa arrastar ate a borda).
-    let arrastando = false, offsetInicial = 0;
-    const larguraSeg = () => {
-        const cs = getComputedStyle(seg);
-        return seg.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    };
-    const valorMaisProximo = x => {
-        const meio = larguraSeg() / 2;
-        return botoes[x < meio ? 0 : botoes.length - 1].dataset.valor;
-    };
-
-    thumb.addEventListener('pointerdown', e => {
-        arrastando = true;
-        thumb.setPointerCapture(e.pointerId);
-        const thumbX = parseFloat(getComputedStyle(seg).getPropertyValue('--segX')) || 0;
-        offsetInicial = e.clientX - thumbX;
-        thumb.classList.add('segurando');
-    });
-    thumb.addEventListener('pointermove', e => {
-        if (!arrastando) return;
-        const largura = larguraSeg();
-        const thumbW = thumb.offsetWidth;
-        const x = Math.min(Math.max(0, e.clientX - offsetInicial), largura - thumbW);
-        seg.style.setProperty('--segX', x + 'px');
-        thumb.classList.add('semTransicao');
-        // troca de valor (e dispara o redesenho) assim que o CENTRO do thumb passa da
-        // metade do controle — nao precisa soltar pra decidir, o valor muda no meio do
-        // arraste, feito um interruptor de verdade que troca o estado ao cruzar o ponto
-        // central, so o "snap" visual final acontece ao soltar.
-        const valorAlvo = valorMaisProximo(x + thumbW / 2);
-        if (select.value !== valorAlvo) {
-            select.value = valorAlvo;
-            select.dispatchEvent(new Event('change'));
-            botoes.forEach(b => b.classList.toggle('on', b.dataset.valor === valorAlvo));
-        }
-    });
-    const soltaArraste = () => {
-        if (!arrastando) return;
-        arrastando = false;
-        thumb.classList.remove('segurando');
-        const x = parseFloat(getComputedStyle(seg).getPropertyValue('--segX')) || 0;
-        escolhe(valorMaisProximo(x + thumb.offsetWidth / 2), false);
-    };
-    thumb.addEventListener('pointerup', soltaArraste);
-    thumb.addEventListener('pointercancel', soltaArraste);
-
-    // enquanto arrastando==true o thumb esta seguindo o dedo/mouse livremente — um
-    // desenhar() disparado pelo proprio dispatchEvent('change') do meio do arraste
-    // NAO pode chamar posicionaThumb() e resetar --segX pro valor "snapado", senao
-    // interrompe o gesto no meio. So reposiciona de fato quando nao ha arraste em curso.
-    function posicionaThumb() { if (!arrastando) escolhe(select.value, false); }
-
-    seg._posiciona = posicionaThumb;   // exposto pra recalcular quando o container reaparece (estava hidden)
-    posicionaThumb();
+function limparFiltros() {
+    Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
+    Estado.filtroTexto = {};      // buscas por coluna (Data/Nome/Valor/Categoria/Frequência)
+    Estado.fechados = {};         // blocos recolhidos voltam a abrir
+    Estado.selecionados.clear();  // as linhas marcadas somem junto com o recorte que as gerou
+    Estado.ordenacaoPorTabela = {};   // volta pra ordenacao padrao (data ascendente)
+    Estado.ordComp = { k: 'total', d: 2 };
+    excluidasDoGrafico = [];      // categorias excluidas da pizza
+    // De/Ate: zerar os dois faz desenhar() repor o ciclo ATUAL nos dois (mesmo caminho da
+    // 1a carga). Sem ciclo atual, ficam em "Todos" — que tambem e' como a pagina abriria.
+    el('compDe').value = '';
+    el('compAte').value = '';
+    desenhar();
 }
-['somenteDif'].forEach(id => ligaSegCtl(id, 'seg' + capitaliza(id)));
+el('btLimparFiltros').onclick = limparFiltros;
 
-// o select fica hidden quando o filtro nao se aplica — reposiciona o thumb (chamado no
-// fim de desenhar(), depois que os hidden ja foram decididos), cobrindo o caso de o
-// container acabar de reaparecer na tela (offsetLeft/offsetWidth so' sao corretos com
-// o elemento visivel)
-function reposicionaSegCtls() {
-    ['segSomenteDif'].forEach(id => {
-        const s = el(id);
-        if (s && !s.closest('[hidden]') && s._posiciona) s._posiciona();
-    });
+// ===================================================================
+// VISUALIZAÇÃO: ROBERTA — acerto de contas
+// ===================================================================
+// Ela adiantou um valor de uma vez (entra POSITIVO na categoria) e a divida vai sendo
+// quitada aos poucos com o que sai pra ela (negativo — credito ou debito, tanto faz).
+// De proposito olha TODOS os lancamentos da categoria e IGNORA os filtros/ciclo da barra:
+// o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
+// (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
+// saiu, e contar agendado inflaria o progresso do acerto.
+const ehCategoria = (categ, procurada) => semAcento(categ).trim() === semAcento(procurada).trim();
+
+function dadosCategoria(categoria) {
+    const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoria(r.categ, categoria));
+    const entradas = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
+    const saidas = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
+    // O percentual visual para em 100%, mas o saldo continua mostrando excesso de saída.
+    const pctUsado = entradas ? Math.min(100, saidas / entradas * 100) : 0;
+    return { linhas, entradas, saidas, saldo: entradas - saidas, pctUsado, pctRestante: 100 - pctUsado };
 }
+
+// Entrada Econ, Evolução Obra e Dívida Estudantil medem execução financeira: o universo é tudo que
+// está ativo no recorte (pago + não pago), e a barra compara o valor pago com esse total.
+// Usa valor absoluto porque despesas são armazenadas com sinal negativo.
+function dadosPagamentoCategoria(op) {
+    const campo = op.campo || 'categ';
+    const valor = op.valor || op.categoria;
+    const linhas = Estado.lancamentos.filter(r =>
+        r.ativo && ehCategoria(r[campo], valor) && (!op.somenteNegativos || r.v < 0)
+    );
+    const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
+    const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
+    const naoPago = Math.max(0, total - pago);
+    const pctPago = total ? Math.min(100, pago / total * 100) : 0;
+    return { linhas, total, pago, naoPago, pctPago };
+}
+
+const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
+
+function abrirVisCategoria(op) {
+    const d = dadosCategoria(op.categoria);
+    const encerrado = d.saldo <= 0.005;
+    const semBase = d.entradas <= 0.005;
+    const pctDestaque = encerrado ? 0 : d.pctRestante;
+    el('tituloVisCategoria').textContent = op.titulo;
+    el('robertaCorpo').innerHTML = !d.linhas.length
+        ? `<p class=meta>Nenhum lançamento pago na categoria “${escapeHtml(op.categoria)}” ainda.</p>`
+        : `<div class="robPct ${encerrado ? 'vd' : 'vm'}">${semBase ? '—' : pct1(pctDestaque)}</div>
+           <p class=robPctSub>${encerrado ? op.subEncerrado : op.subAberto}</p>
+           <div class=robBarra><div class=robFill style="width:${d.pctUsado.toFixed(2)}%"></div></div>
+           <div class=robLegenda>
+             <span>${semBase ? 'Sem entrada positiva' : `${op.legendaUsado} ${pct1(d.pctUsado)}`}</span>
+             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
+           </div>
+           <table class=robTab><tbody>
+             <tr><td>${op.rotuloEntrada}<td class="n vm">${brl(d.entradas)}
+             <tr><td>${op.rotuloSaida}<td class="n vd">${brl(d.saidas)}
+             <tr class=tot><td>${d.saldo < -0.005 ? op.rotuloExcesso : op.rotuloSaldo}<td class=n>${brl(Math.abs(d.saldo))}
+           </tbody></table>`;
+    el('modalRoberta').showModal();
+}
+
+function abrirVisPagamentoCategoria(op) {
+    const d = dadosPagamentoCategoria(op);
+    const concluido = d.total > 0 && d.naoPago <= 0.005;
+    const valorFiltro = op.valor || op.categoria;
+    const rotuloFiltro = op.campo == 'nome' ? 'nome' : 'categoria';
+    el('tituloVisCategoria').textContent = op.titulo;
+    el('robertaCorpo').innerHTML = !d.linhas.length
+        ? `<p class=meta>Nenhum lançamento ativo com ${rotuloFiltro} “${escapeHtml(valorFiltro)}” ainda.</p>`
+        : `<div class="robPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
+           <p class=robPctSub>do valor total está pago</p>
+           <div class=robBarra><div class=robFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
+           <div class=robLegenda>
+             <span>Pago ${pct1(d.pctPago)}</span>
+             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
+           </div>
+           <table class=robTab><tbody>
+             <tr><td>Pago<td class="n vd">${brl(d.pago)}
+             <tr><td>Não pago<td class="n vm">${brl(d.naoPago)}
+             <tr class=tot><td>Total<td class=n>${brl(d.total)}
+           </tbody></table>`;
+    el('modalRoberta').showModal();
+}
+
+const VIS_CATEGORIAS = {
+    Roberta: {
+        categoria: 'Roberta', titulo: 'Roberta', subAberto: 'falta pra quitar com ela',
+        subEncerrado: 'quitado — nada a pagar', legendaUsado: 'Você já pagou',
+        rotuloEntrada: 'Ela te pagou', rotuloSaida: 'Você já pagou',
+        rotuloSaldo: 'Falta', rotuloExcesso: 'Pagou a mais',
+    },
+    EntradaEcon: {
+        categoria: 'Entrada Econ', titulo: 'Entrada Econ',
+    },
+    EvolucaoObra: {
+        categoria: 'Evolução Obra', titulo: 'Evolução Obra',
+    },
+    DividaEstudantil: {
+        categoria: 'Dívida Estudantil', titulo: 'Dívida Estudantil',
+    },
+    RenegociacaoPj: {
+        categoria: 'Renegociação PJ', titulo: 'Renegociação PJ',
+    },
+    Emprestimo: {
+        categoria: 'Empréstimo', titulo: 'Empréstimo',
+    },
+    Pos: {
+        campo: 'nome', valor: 'Pós', titulo: 'Pós',
+    },
+    RenegociacaoNu: {
+        campo: 'nome', valor: 'Renegociação Nu', titulo: 'Renegociação Nu',
+    },
+    Iphone: {
+        campo: 'nome', valor: 'Iphone', titulo: 'Iphone', somenteNegativos: true,
+    },
+    SeguroResidencial: {
+        campo: 'nome', valor: 'Seguro Residencial', titulo: 'Seguro Residencial',
+    },
+    Senac: {
+        campo: 'nome', valor: 'Senac', titulo: 'Senac',
+    },
+};
+
+el('btRoberta').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.Roberta);
+el('btEntradaEcon').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EntradaEcon);
+el('btEvolucaoObra').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EvolucaoObra);
+el('btDividaEstudantil').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.DividaEstudantil);
+el('btRenegociacaoPj').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoPj);
+el('btEmprestimo').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Emprestimo);
+el('btPos').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Pos);
+el('btRenegociacaoNu').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoNu);
+el('btIphone').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Iphone);
+el('btSeguroResidencial').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.SeguroResidencial);
+el('btSenac').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Senac);
+el('fechaRoberta').onclick = () => el('modalRoberta').close();
+el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
 
 // ===================================================================
 // GRÁFICO DE GASTOS DO CICLO (pizza)
@@ -2129,7 +2424,7 @@ function categoriasPorPopularidade() {
         if (!r.categ || !r.data || dataISO(r.data) < limiteIso) return;
         contagem[r.categ] = (contagem[r.categ] || 0) + 1;
     });
-    const todas = [...new Set(Estado.lancamentos.map(r => r.categ).filter(valorValido))];
+    const todas = [...new Set([...Estado.lancamentos.map(r => r.categ), ...CATEGORIAS_FIXAS].filter(valorValido))];
     return todas.sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
 }
 function popularCategoriasNoForm(idSelect = 'fCateg') {
@@ -2179,15 +2474,27 @@ if (el('fParcelas').options.length < 40) {
     for (let n = 2; n <= 40; n++) el('fParcelas').add(new Option(`${n}x`, n));
 }
 
-// mostra/esconde "Parcelas" conforme Credito: parcelar so' faz sentido no credito (debito
-// e' sempre a vista). Desmarcar Credito com uma opcao de parcela ja escolhida volta pra 1x
-// sozinho, senao um "3x" escondido ficaria selecionado por baixo dos panos.
-function atualizaVisibilidadeParcelas() {
-    const mostra = el('fCred').checked;
-    el('fParcelasWrap').hidden = !mostra;
-    if (!mostra) el('fParcelas').value = 1;
+// "Dividir valor entre as vezes" e' independente de Credito/Debito — o usuario escolhe
+// nos dois modos (ver submeteNovoLancamento: marcado, o valor digitado e' DIVIDIDO entre
+// as N linhas, ex: R$300 em 3x = R$100 cada; desmarcado, o valor se REPETE em cada uma,
+// ex: R$50 3x = R$50 + R$50 + R$50 — util pra lancar de uma vez uma assinatura/conta
+// recorrente de valor fixo). So' um PALPITE inicial segue Credito ao ligar/desligar (compras
+// no credito costumam ser parceladas — dividir; contas fora do credito costumam repetir o
+// mesmo valor todo mes) — o usuario pode mudar na hora, o toggle nao trava em nada.
+function sugereModoValorParcelas() {
+    el('fDivide').checked = el('fCred').checked;
 }
-el('fCred').addEventListener('change', atualizaVisibilidadeParcelas);
+el('fCred').addEventListener('change', sugereModoValorParcelas);
+
+// Frequencia abre em "— Sem recorrencia", que e' o certo pra compra avulsa (1x) — o caso
+// mais comum de longe, e o que mantem a coluna Frequencia significando alguma coisa (se
+// todo lancamento nascesse "Mensal", a coluna nao distinguiria mais nada). A partir de 2x
+// a recorrencia passa a IMPORTAR (e' ela que decide a data de cada ocorrencia, ver
+// dataDaOcorrencia), entao aqui ela sobe pro padrao Mensal sozinha — so' quando ainda
+// estava vazia, pra nunca atropelar uma escolha explicita (Semanal, Anual...).
+el('fParcelas').addEventListener('change', () => {
+    if (+el('fParcelas').value > 1 && !el('fFreq').value) el('fFreq').value = 'Mensal';
+});
 
 function abreModalNovo(prefill) {
     el('formNovo').reset();
@@ -2214,6 +2521,11 @@ function abreModalNovo(prefill) {
         el('fCred').checked = !!prefill.cred;
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
+        // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
+        // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
+        // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
+        // verdade (selectedIndex -1), sem opcao nenhuma marcada
+        el('fFreq').value = RECORRENCIAS[prefill.freq] ? prefill.freq : '';
         const bruto = Math.abs(prefill.v || 0);
         if (bruto) {
             el('fValor').value = formataMascaraDinheiro(String(Math.round(bruto * 100)));
@@ -2222,10 +2534,11 @@ function abreModalNovo(prefill) {
     }
     else {
         el('fData').value = hojeISO();
+        el('fFreq').value = '';   // avulso ate' que o Vezes diga o contrario (ver listener de #fParcelas)
     }
     atualizaSinalUI();
     atualizaAvisoFronteira();
-    atualizaVisibilidadeParcelas();
+    sugereModoValorParcelas();
 
     modalNovo.showModal();
     // duplicando, o foco vai pro Valor (o que mais muda); do zero, vai pro Nome
@@ -2557,7 +2870,11 @@ function valorDasParcelas(valorTotal, parcelas) {
 // global no topo): ligado, as parcelas viram lancamentos _sim=true SO' na memoria
 // (nunca chamam inserirLancamento, nunca tocam o Supabase — ver o bloco MODO SIMULACAO
 // mais abaixo); desligado, cada parcela e' um POST real, sequencial, uma fatura depois
-// da outra. Fora do credito (ou 1x), e' sempre uma unica linha.
+// da outra. "Dividir valor" (independente de Credito/Debito) escolhe se o campo "Vezes"
+// DIVIDE o valor digitado entre as N linhas (valorDasParcelas, ex: R$300 em 3x = R$100
+// cada) ou REPETE o mesmo valor em cada uma (ex: R$50 3x = R$50 + R$50 + R$50) — pensado
+// pra lancar de uma vez uma conta recorrente de valor fixo (ex: assinatura, mensalidade)
+// que ainda nao foi cadastrada.
 async function submeteNovoLancamento() {
     el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
 
@@ -2571,23 +2888,28 @@ async function submeteNovoLancamento() {
     const valorTotal = valorDigitado ? valorMascaraParaNumero(valorDigitado) : 0;
 
     const cred = el('fCred').checked;
-    const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
+    // categoria "Antecipacao Fatura Isabella" forca isa=true mesmo sem marcar o checkbox — ver ehAntecipacaoFaturaIsabella.
+    const isa = ehAntecipacaoFaturaIsabella(categ) ? true : (el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked);
     const pago = el('fPago').checked;
+    const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
-    // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir, entao
-    // parcelar fica sem efeito — 1 unica linha com valor null, igual sempre foi.
-    const parcelas = valorTotal && cred ? +el('fParcelas').value : 1;
-    const valores = valorTotal
-        ? valorDasParcelas(valorTotal, parcelas).map(v => v * (sinalPositivo ? 1 : -1))
-        : [null];
+    // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
+    // entao o campo Vezes/Dividir fica sem efeito — 1 unica linha com valor null, igual
+    // sempre foi.
+    const parcelas = valorTotal ? +el('fParcelas').value : 1;
+    const dividir = el('fDivide').checked;
+    const valorAssinado = valorTotal * (sinalPositivo ? 1 : -1);
+    const valores = !valorTotal ? [null]
+        : dividir ? valorDasParcelas(valorTotal, parcelas).map(v => v * (sinalPositivo ? 1 : -1))
+            : Array(parcelas).fill(valorAssinado);   // repete o mesmo valor digitado em cada linha, sem dividir
 
     if (el('salvaNovo').disabled) return;   // trava clique duplo / Enter repetido
     el('salvaNovo').disabled = true;
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, data, cred, isa, pago, parcelas, valores });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, data, cred, isa, pago, parcelas, valores });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data, mantem nome/categoria/cred/isa
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
@@ -2612,20 +2934,27 @@ async function submeteNovoLancamento() {
 }
 
 // grava as N parcelas como lancamentos REAIS no Supabase, uma por vez (sequencial, pra
-// preservar a ordem e simplificar o tratamento de erro no meio do caminho). A 1a parcela
-// usa o periodoIdx calculado a partir da data digitada; cada parcela seguinte so' avanca
-// +1 nesse INDICE de periodo (nao recalcula fechamento/fronteira de novo) — cada parcela
-// cai exatamente 1 fatura depois da anterior, como parcelamento de verdade.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, data, cred, isa, pago, parcelas, valores }) {
-    let periodoIdx = !data ? null : cred ? periodoDoCredito(data, isa, nome) : periodoDoDebito(dataISO(data));
-
+// preservar a ordem e simplificar o tratamento de erro no meio do caminho). Cada parcela
+// p grava sua PROPRIA data (a data digitada avancada p vezes pela regra da Frequencia
+// escolhida — ver dataDaOcorrencia) — nao so' a mesma data repetida — porque o
+// periodoIdx nao e' uma coluna do banco: ele e' recalculado do
+// zero a partir da 'data' toda vez que os dados sao carregados (ver carregarDados). Se
+// todas as parcelas fossem gravadas com a mesma data, o recalculo jogava todas de volta
+// pro mesmo mes ao dar F5/recarregar, mesmo com o periodoIdx correto (e passageiro) na
+// memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
+// funcao (periodoDoCredito/periodoDoDebito) que carregarDados() usaria com essa data —
+// garante que o que aparece na hora e' EXATAMENTE o que vai aparecer depois de recarregar.
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores }) {
     for (let p = 0; p < parcelas; p++) {
+        const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const payload = {
-            data, freq: null, cred, isa, pago, ativo: true,
+            data: dataParcela, freq, cred, isa, pago, ativo: true,
             nome,
             categ, valor: valores[p],
         };
         const linhaCriada = await inserirLancamento(payload);
+        const periodoIdx = !dataParcela ? null
+            : cred ? periodoDoCredito(dataParcela, isa, nome) : periodoDoDebito(dataISO(dataParcela));
         const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null;
         Estado.lancamentos.push({
             ...linhaCriada,
@@ -2633,7 +2962,6 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, data, cred, isa, p
             inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
             periodoIdx: idxValido,
         });
-        if (periodoIdx != null) periodoIdx += 1;
     }
 }
 
@@ -2675,20 +3003,23 @@ el('toggleSimulacao').onclick = async () => {
 };
 
 // cria N lancamentos simulados (parcelas), um por periodo seguinte, injetados direto em
-// Estado.lancamentos com _sim=true. periodoIdx da 1a parcela vem da mesma regra de
-// qualquer compra real (periodoDoCredito/periodoDoDebito); as parcelas seguintes so'
-// avancam +1 no INDICE de periodo (nao recalculam data de fechamento/fronteira de novo —
-// cada parcela cai exatamente 1 fatura depois da anterior, como parcelamento de verdade).
-function simulaLancamentoParcelado({ nome, categ, data, cred, isa, pago, parcelas, valores }) {
-    const periodoIdx1a = !data ? null : cred ? periodoDoCredito(data, isa, nome) : periodoDoDebito(dataISO(data));
+// Estado.lancamentos com _sim=true. Cada parcela p ganha sua PROPRIA data (a digitada
+// avancada p vezes pela regra da Frequencia, via dataDaOcorrencia — mesma ideia de
+// salvaLancamentoParceladoNoBanco) e o periodoIdx e'
+// derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
+// +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
+// enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
 
     const criadas = valores.map((valorAssinado, p) => {
-        const periodoIdx = periodoIdx1a == null ? null : periodoIdx1a + p;
+        const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
+        const periodoIdx = !dataParcela ? null
+            : cred ? periodoDoCredito(dataParcela, isa, nome) : periodoDoDebito(dataISO(dataParcela));
         return {
             id: `sim-${grupoSimulado}-${p}`,
             nome,
-            categ, freq: null, data,
+            categ, freq, data: dataParcela,
             cred, isa, pago, ativo: true,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),

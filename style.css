@@ -246,6 +246,12 @@
       color: var(--mu);
   }
 
+  .visBotoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+  }
+
   select {
       font: inherit;
       color: var(--fg);
@@ -271,94 +277,6 @@
   select option {
       background: var(--field);
       color: var(--fg);
-  }
-
-  /* =========================================================
-       SEGMENTED CONTROL (Visão / Titular / Origem — liga-desliga estilizado)
-       ========================================================= */
-
-  .segCtl {
-      position: relative;
-      display: inline-flex;
-
-      padding: .2rem;
-      border: 1px solid var(--ln);
-      border-radius: 11px;
-      background: var(--field);
-  }
-
-  /* thumb arrastavel de verdade: segura e joga de um lado pro outro, feito um
-     interruptor fisico. Fica ATRAS do texto (z-index menor que .segOpt) — e' so' a
-     "pastilha" de fundo que realca a opcao ativa, nunca cobre o texto por cima. Pra
-     ainda dar pra segurar e arrastar de cima do texto ativo, o proprio .segOpt.on fica
-     com pointer-events:none (o clique atravessa ele e chega no thumb); o botao INATIVO
-     continua 100% clicavel normalmente. touch-action:none evita scroll/zoom ao arrastar. */
-  .segThumb {
-      position: absolute;
-      top: .2rem;
-      bottom: .2rem;
-      left: .2rem;
-      width: var(--segW, 0);
-      z-index: 0;
-
-      background: var(--pa);
-      border: 1px solid var(--line-strong);
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
-
-      transform: translateX(var(--segX, 0));
-      transition: transform .28s cubic-bezier(.34, 1.56, .64, 1), width .28s cubic-bezier(.4, 0, .2, 1), box-shadow .15s ease;
-      pointer-events: auto;
-      cursor: grab;
-      touch-action: none;
-  }
-
-  .segThumb.semTransicao {
-      transition: width .28s cubic-bezier(.4, 0, .2, 1);
-  }
-
-  .segThumb.segurando {
-      cursor: grabbing;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, .4);
-      transform: translateX(var(--segX, 0)) scale(1.04);
-  }
-
-  .segOpt {
-      position: relative;
-      z-index: 1;
-
-      border: 0;
-      background: transparent;
-      color: var(--mu);
-
-      font: 600 .85rem/1 inherit;
-      padding: .5rem .85rem;
-      border-radius: 8px;
-
-      cursor: pointer;
-      transition: color .2s ease;
-      white-space: nowrap;
-  }
-
-  .segOpt:hover {
-      color: var(--fg);
-  }
-
-  .segOpt.on {
-      color: var(--fg);
-      pointer-events: none;
-      cursor: grab;
-  }
-
-  .segOpt:active {
-      transform: scale(.96);
-      transition: transform .1s ease;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-      .segThumb {
-          transition: none;
-      }
   }
 
   .multiSel {
@@ -551,6 +469,11 @@
       padding: .2rem .4rem;
   }
 
+  /* busca da coluna Valor: numero alinhado a direita, igual as celulas dessa coluna */
+  thead tr.filtros th.n input {
+      text-align: right;
+  }
+
   thead tr.filtros input:focus {
       border-color: #68727A;
       background: #24292E;
@@ -625,6 +548,17 @@
       background: var(--vm);
   }
 
+  /* asterisco de aviso colado no ✓ de difOk/difNovo: mesmo nome+valor apareceu 2x dentro
+     do MESMO ciclo, em meses diferentes — pode ser recorrencia caindo 2x no mesmo ciclo
+     (janela do periodo atravessando a virada do mes), nao uma mudanca real. So' um alerta
+     visual discreto, sem quebrar o layout do check redondo ao lado. */
+  .avisoDup {
+      margin-left: .15rem;
+      color: #F0A83A;
+      font-weight: 700;
+      cursor: help;
+  }
+
   /* =========================================================
        CORES DE VALORES
        ========================================================= */
@@ -662,6 +596,40 @@
   .togValor:hover {
       text-decoration: underline dotted;
       text-underline-offset: .2em;
+  }
+
+  /* Data clicavel na tabela: mesma ideia do Valor, edicao inline com <input type=date>
+     (ver listener em #out no script.js). */
+  .togData {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togData:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  .inpData {
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: .15rem .4rem;
+  }
+
+  .inpData:focus {
+      outline: 2px solid var(--fg);
+      outline-offset: -1px;
+  }
+
+  /* o icone nativo do calendario e' preto por padrao e some no tema escuro */
+  .inpData::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: .6;
+      cursor: pointer;
   }
 
   .inpValorSinal {
@@ -1087,6 +1055,90 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
   }
 
+  /* Roberta: ela adiantou um valor (o positivo da categoria) e a divida vai sendo quitada
+     com o que sai pra ela. Por isso o trilho e' VERMELHO (a divida inteira) e o
+     preenchimento VERDE (o que ja foi devolvido) — o verde cresce ate' cobrir tudo. */
+  dialog#modalRoberta {
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      padding: 1.3rem;
+      width: min(30rem, 92vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  .robPct {
+      font-size: 2.6rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 1.4rem;   /* .modalHead nao tem margem propria */
+  }
+
+  .robPctSub {
+      color: var(--mu);
+      font-size: .9rem;
+      margin: .3rem 0 1.2rem;
+  }
+
+  .robBarra {
+      height: 1.7rem;
+      border-radius: 999px;
+      background: var(--vm);
+      border: 1px solid var(--ln);
+      overflow: hidden;
+  }
+
+  .robFill {
+      height: 100%;
+      background: var(--vd);
+      transition: width .45s ease;
+  }
+
+  .robLegenda {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: .5rem;
+      font-size: .85rem;
+      color: var(--mu);
+  }
+
+  .robTab {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: separate;
+      border-spacing: 0 .45rem;
+      background: transparent;
+  }
+
+  .robTab td {
+      padding: .7rem .8rem;
+      background: var(--field);
+      border: 0;
+  }
+
+  .robTab td:first-child {
+      border-radius: 9px 0 0 9px;
+  }
+
+  .robTab td:last-child {
+      border-radius: 0 9px 9px 0;
+  }
+
+  .robTab td.n {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .robTab tr.tot td {
+      background: var(--field-hover);
+      font-weight: 700;
+      font-size: 1.05rem;
+  }
+
+  dialog#modalRoberta::backdrop,
   dialog#modalNovo::backdrop,
   dialog#modalCalc::backdrop,
   dialog#modalGrafico::backdrop,
@@ -1635,17 +1687,23 @@
           justify-content: center;
       }
 
+      /* dvh (viewport visivel de verdade) e nao vh: com a barra de endereco embaixo, 100vh
+         e' MAIOR que a area visivel e o fim do form — o botao Salvar — fica atras dela.
+         O par vh/dvh e' proposital: vh e' o fallback de quem nao suporta dvh. */
       dialog#modalNovo {
           width: 100vw;
           max-width: 100vw;
           height: 100vh;
           max-height: 100vh;
+          height: 100dvh;
+          max-height: 100dvh;
           border-radius: 0;
           margin: 0;
       }
 
       #formNovo {
           max-height: 100vh;
+          max-height: 100dvh;
           padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
       }
 
@@ -1659,6 +1717,8 @@
           max-width: 100vw;
           height: 100vh;
           max-height: 100vh;
+          height: 100dvh;
+          max-height: 100dvh;
           border-radius: 0;
           margin: 0;
           padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
