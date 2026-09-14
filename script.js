@@ -1355,25 +1355,25 @@ function atualizaBarraSelecao() {
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
 
     const chaves = [...Estado.selecionados.keys()];
-    // linhas sinteticas (fatura do Ciclo "fat:" ou categoria da matriz Comparar "cp:") nao
-    // sao lancamentos reais — nao tem o que duplicar, entao ficam fora de chaveUnica
-    // (mostrar nome+valor sozinho continua fazendo sentido, so' sem o botao Duplicar).
-    const ehSintetica = c => c.startsWith('fat:') || c.startsWith('cp:');
+    // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
+    // excluidas. A unica excecao de ACAO e' "sug:": o Aporte sugerido pode ser
+    // materializado como um lancamento real com os mesmos data/valor/categoria.
+    const ehSintetica = c => /^(fat|cp|sal|res|sug|abt):/.test(c);
     const chaveUnica = chaves.length == 1 ? chaves[0] : null;
+    const ehAporteSugerido = !!chaveUnica?.startsWith('sug:');
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
     // pra somar e selecionar/limpar. Nunca os dois juntos — pra desmarcar uma linha unica,
     // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
     // tela/perfil (mobile e Isabella inclusive) — nao depende mais de modoSimples().
-    el('seldup').hidden = !chaveUnicaReal;
+    el('seldup').hidden = !chaveUnicaReal && !ehAporteSugerido;
+    el('seldup').textContent = ehAporteSugerido ? 'Materializar' : 'Duplicar';
     el('seldel').hidden = !chaveUnicaReal;
-    el('selacao').hidden = !!chaveUnicaReal;
+    el('selacao').hidden = !!chaveUnicaReal || ehAporteSugerido;
 
     if (chaveUnica) {
-        const r = chaveUnica.startsWith('cp:')
-            ? (Estado.linhasVisiveis['cp'] || []).find(x => chaveSelecao(x) === chaveUnica)
-            : Estado.lancamentos.find(x => String(x.id) == chaveUnica);
+        const r = linhaDaChaveSelecao(chaveUnica);
         el('selinfo').innerHTML =
             `<span class=cnt>Selecionado</span>` +
             `<span class="val ${corValor(r?.v || 0)}">${escapeHtml(r?.nome ?? '')}</span>`;
@@ -1388,6 +1388,16 @@ function atualizaBarraSelecao() {
 
     el('selbar').style.display = 'flex';
 }
+// Resolve tanto lancamentos reais quanto linhas sinteticas que so existem nas tabelas
+// renderizadas (ex.: Aporte sugerido). Centralizar isso tambem garante que a barra mostre
+// nome/valor dessas linhas em vez de tentar acha-las apenas em Estado.lancamentos.
+function linhaDaChaveSelecao(chave) {
+    for (const linhas of Object.values(Estado.linhasVisiveis)) {
+        const r = linhas.find(x => chaveSelecao(x) === chave);
+        if (r) return r;
+    }
+    return Estado.lancamentos.find(x => String(x.id) === chave) || null;
+}
 // valor de uma linha a partir da sua chave de selecao (linha real ou fatura sintetica)
 function valorDaChave(chave) {
     // Fatura sintetica
@@ -1398,10 +1408,8 @@ function valorDaChave(chave) {
     // Procura primeiro nas linhas atualmente renderizadas.
     // Isso inclui Saldo do mês anterior, Resgate necessário
     // e Investimento sugerido, que não existem em Estado.lancamentos.
-    for (const linhas of Object.values(Estado.linhasVisiveis)) {
-        const r = linhas.find(x => chaveSelecao(x) === chave);
-        if (r) return r._sug != null ? r._sug : (r.v || 0);
-    }
+    const visivel = linhaDaChaveSelecao(chave);
+    if (visivel) return visivel._sug != null ? visivel._sug : (visivel.v || 0);
 
     // Linha real vinda do banco
     const r = Estado.lancamentos.find(x => String(x.id) === chave);
@@ -2460,9 +2468,48 @@ modalNovo.addEventListener('close', () => {
     delete modalNovo.dataset.viaDuplicar;
 });
 
-// duplicar a linha selecionada: o modal abre pre-preenchido a partir dela
-el('seldup').onclick = () => {
+// A mesma posicao da barra tem duas acoes mutuamente exclusivas:
+// - lancamento real: Duplicar abre o modal pre-preenchido;
+// - Aporte sugerido: Materializar grava imediatamente um aporte real, em debito e aberto.
+el('seldup').onclick = async () => {
     const chave = [...Estado.selecionados.keys()][0];
+    if (chave?.startsWith('sug:')) {
+        const sugestao = linhaDaChaveSelecao(chave);
+        if (!sugestao || sugestao._sug == null || el('seldup').disabled) return;
+
+        el('seldup').disabled = true;
+        el('seldup').textContent = 'Materializando…';
+        try {
+            const data = dataISO(sugestao.data) || null;
+            const linhaCriada = await inserirLancamento({
+                data,
+                freq: null,
+                cred: false,
+                isa: Estado.restrito,
+                pago: false,
+                ativo: true,
+                nome: 'Aporte',
+                categ: sugestao.categ,
+                valor: sugestao._sug,
+            });
+            const periodoIdx = data ? periodoDoDebito(data) : null;
+            Estado.lancamentos.push({
+                ...linhaCriada,
+                v: +linhaCriada.valor || 0,
+                inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
+                periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null,
+            });
+            Estado.selecionados.clear();
+            desenhar();
+        } catch (err) {
+            alert('Falhou ao materializar o aporte: ' + err.message);
+        } finally {
+            el('seldup').disabled = false;
+            el('seldup').textContent = chave?.startsWith('sug:') ? 'Materializar' : 'Duplicar';
+        }
+        return;
+    }
+
     const r = Estado.lancamentos.find(x => String(x.id) == chave);
     if (r) { modalNovo.dataset.viaDuplicar = '1'; abreModalNovo(r); }
 };

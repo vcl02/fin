@@ -934,6 +934,11 @@
       border-color: var(--fg);
   }
 
+  #selbar #seldup:disabled {
+      opacity: .6;
+      cursor: default;
+  }
+
   /* Excluir: mesma forma discreta do Duplicar, so' que em vermelho — a acao e'
      irreversivel, entao nao deve parecer o botao primario (branco) da barra. */
   #selbar #seldel {
