@@ -363,10 +363,10 @@ const atualizarLancamento = async (id, campos) => {
 };
 
 // Uma unica atualizacao no banco para todos os lancamentos com o nome exatamente igual.
-// JSON.stringify envolve e escapa o nome entre aspas para o filtro do PostgREST,
-// inclusive se tiver virgula, ponto, aspas ou parenteses.
+// No filtro simples "eq", o PostgREST trata aspas como parte do valor.
+// Codifique o nome diretamente para preservar acentos e caracteres especiais.
 const atualizarVolatilPorNome = async (nome, volatil) => {
-    const filtroNome = encodeURIComponent(JSON.stringify(nome));
+    const filtroNome = encodeURIComponent(nome);
     const r = await fetch(`${API}/rest/v1/lancamentos?nome=eq.${filtroNome}&select=id,nome,volatil`, {
         method: 'PATCH',
         headers: {
