@@ -586,7 +586,7 @@
       text-underline-offset: .2em;
   }
 
-  .togNaoVolatil {
+  .togVolatil {
       display: inline-block;
       padding: .12rem .4rem;
       border: 1px solid var(--ln);
@@ -595,20 +595,20 @@
       white-space: nowrap;
   }
 
-  .togNaoVolatil.marcado {
+  .togVolatil.marcado {
       color: var(--vd);
       border-color: currentColor;
   }
 
-  .togNaoVolatil[data-tog-nao-volatil] {
+  .togVolatil[data-tog-volatil] {
       cursor: pointer;
   }
 
-  .togNaoVolatil[data-tog-nao-volatil]:hover {
+  .togVolatil[data-tog-volatil]:hover {
       background: var(--field-hover);
   }
 
-  .naoVolatilMobile {
+  .volatilMobile {
       display: inline-block;
       margin-left: .25rem;
       font-size: .7rem;

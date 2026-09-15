@@ -7,7 +7,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['nao_volatil', 'Não Volátil', 'nv'], ['id', 'ID', 'n'],
+    ['volatil', 'Volátil', 'vol'], ['id', 'ID', 'n'],
 ];
 const COLS_MOBILE = [['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n']];
 const isMobile = () => matchMedia('(max-width: 640px)').matches;
@@ -478,7 +478,7 @@ const passaFiltroTriEstado = (idSelect, valor) => {
 const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
     passaFiltroTriEstado('fativo', r.ativo) &&
     passaFiltroTriEstado('fpago', r.pago) &&
-    passaFiltroTriEstado('fnaoVolatil', r.nao_volatil) &&
+    passaFiltroTriEstado('fvolatil', r.volatil) &&
     ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value] &&
     ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value] &&
     ({ T: 1, P: r.v > 0, N: r.v < 0 })[el('fvalor').value]
@@ -493,7 +493,7 @@ function ordenarLinhas(linhas, idTabela) {
     const copia = [...linhas];
     copia.sort((a, b) => {
         const A = a[coluna], B = b[coluna];
-        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'nv' ? ((+A || 0) - (+B || 0))
+        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
             : tipo == 'd' ? (timestamp(A) - timestamp(B))
                 : String(A ?? '').localeCompare(String(B ?? ''), 'pt');
         const ordenado = direcao == 1 ? cmp : -cmp;
@@ -637,21 +637,21 @@ const textoData = r => r.data
 const celData = r => ehLinhaReal(r) && !isMobile()
     ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Clique pra editar a data">${textoData(r)}</span>`
     : textoData(r);
-const badgeNaoVolatil = r => r.nao_volatil == null ? '—'
-    : `<span class="togNaoVolatil ${r.nao_volatil ? 'marcado' : ''}" ${ehLinhaReal(r) || r._sim ? `data-tog-nao-volatil="${escapeHtml(String(r.id))}" title="Clique para alternar Não Volátil"` : ''}>${r.nao_volatil ? 'Sim' : 'Não'}</span>`;
+const badgeVolatil = r => r.volatil == null ? '—'
+    : `<span class="togVolatil ${r.volatil ? 'marcado' : ''}" ${ehLinhaReal(r) || r._sim ? `data-tog-volatil="${escapeHtml(String(r.id))}" title="Clique para alternar Volátil"` : ''}>${r.volatil ? 'Sim' : 'Não'}</span>`;
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna
 const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
         : (isMobile() ? celValorMobile(r) : (ehLinhaReal(r) ? celValorEditavel(r) : celValor(r.v)))).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
-    : tipo == 'nv' ? `<td>${badgeNaoVolatil(r)}`
+    : tipo == 'vol' ? `<td>${badgeVolatil(r)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '') + textoOuTraco(r[chave])
-                + (chave == 'nome' && isMobile() && (ehLinhaReal(r) || r._sim) ? ` <span class=naoVolatilMobile>NV: ${badgeNaoVolatil(r)}</span>` : '')}`
+                + (chave == 'nome' && isMobile() && (ehLinhaReal(r) || r._sim) ? ` <span class=volatilMobile>V: ${badgeVolatil(r)}</span>` : '')}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
@@ -1634,35 +1634,35 @@ el('out').addEventListener('click', async e => {
     }
 });
 
-async function alternarNaoVolatil(e) {
-    const badge = e.target.closest('[data-tog-nao-volatil]');
+async function alternarVolatil(e) {
+    const badge = e.target.closest('[data-tog-volatil]');
     if (!badge) return;
     e.stopImmediatePropagation();
     if (badge.dataset.salvando) return;
-    const r = Estado.lancamentos.find(x => String(x.id) === badge.dataset.togNaoVolatil);
+    const r = Estado.lancamentos.find(x => String(x.id) === badge.dataset.togVolatil);
     if (!r || (!ehLinhaReal(r) && !r._sim)) return;
-    const novoValor = !r.nao_volatil;
+    const novoValor = !r.volatil;
     badge.dataset.salvando = '1';
     badge.style.opacity = .5;
     try {
-        if (!r._sim) await atualizarLancamento(r.id, { nao_volatil: novoValor });
-        r.nao_volatil = novoValor;
+        if (!r._sim) await atualizarLancamento(r.id, { volatil: novoValor });
+        r.volatil = novoValor;
         desenhar();
-        atualizarDetalheNaoVolatil();
+        atualizarDetalheVolatil();
     } catch (err) {
-        alert('Falhou ao atualizar Não Volátil: ' + err.message);
+        alert('Falhou ao atualizar Volátil: ' + err.message);
         desenhar();
-        atualizarDetalheNaoVolatil();
+        atualizarDetalheVolatil();
     }
 }
-function atualizarDetalheNaoVolatil() {
+function atualizarDetalheVolatil() {
     const detalhe = Estado._detalheAtual;
     if (!detalhe || !el('modalDetalheCel').open) return;
     detalhe.linhas = Estado._detalheComparar?.matriz[detalhe.categoria + '||' + detalhe.periodoIdx] || [];
     renderizaDetalheCel();
 }
-el('out').addEventListener('click', alternarNaoVolatil);
-el('corpoDetalheCel').addEventListener('click', alternarNaoVolatil);
+el('out').addEventListener('click', alternarVolatil);
+el('corpoDetalheCel').addEventListener('click', alternarVolatil);
 
 // clique no Valor troca o <span> por um <input> mascarado (mesma mascara do form de
 // lancamento), focado e com o texto ja selecionado. Enter ou blur confirma; Escape
@@ -1912,7 +1912,7 @@ document.querySelectorAll('.tool select,.tool input,#navComparar select').forEac
 // tambem o que o navegador seleciona sozinho na 1a carga. desenhar() ainda pode sobrescrever
 // alguns deles conforme o modo (ex: Ativo vira "Ambos" no Backlog, Origem volta pra "Tudo"
 // no modo blocos) — o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.
-const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', fnaoVolatil: 'B', origem: 'A', somenteDif: 'N', fvalor: 'T' };
+const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', fvolatil: 'B', origem: 'A', somenteDif: 'N', fvalor: 'T' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
@@ -2138,7 +2138,7 @@ function renderizaDetalheCel() {
         `${nomePeriodo(periodo.fat)} · ${linhas.length} ${linhas.length == 1 ? 'lançamento' : 'lançamentos'}`;
 
     const seta = k => ord.k == k ? (ord.d == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
-    const valorOrd = { data: r => timestamp(r.data), nome: r => semAcento(r.nome ?? ''), valor: r => r.v, nao_volatil: r => +(!!r.nao_volatil) };
+    const valorOrd = { data: r => timestamp(r.data), nome: r => semAcento(r.nome ?? ''), valor: r => r.v, volatil: r => +(!!r.volatil) };
     const ordenadas = [...linhas].sort((a, b) => {
         const A = valorOrd[ord.k](a), B = valorOrd[ord.k](b);
         const cmp = typeof A == 'string' ? A.localeCompare(B, 'pt') : A - B;
@@ -2151,9 +2151,9 @@ function renderizaDetalheCel() {
         `<th onclick="sortDetalheCel('data')">Data${seta('data')}` +
         `<th onclick="sortDetalheCel('nome')">Nome${seta('nome')}` +
         `<th class=n onclick="sortDetalheCel('valor')">Valor${seta('valor')}` +
-        `<th onclick="sortDetalheCel('nao_volatil')">Não Volátil${seta('nao_volatil')}` +
+        `<th onclick="sortDetalheCel('volatil')">Volátil${seta('volatil')}` +
         `</thead><tbody>` +
-        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${escapeHtml(r.nome ?? '')}${celValor(r.v)}<td>${badgeNaoVolatil(r)}`).join('') +
+        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${escapeHtml(r.nome ?? '')}${celValor(r.v)}<td>${badgeVolatil(r)}`).join('') +
         `<tr class=tot><td colspan=3>Total${celSoma(total)}</tbody></table>`;
 }
 
@@ -2558,7 +2558,7 @@ function abreModalNovo(prefill) {
         el('fCred').checked = !!prefill.cred;
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
-        el('fNaoVolatil').checked = !!prefill.nao_volatil;
+        el('fVolatil').checked = prefill.volatil !== false;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
         // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
@@ -2841,7 +2841,7 @@ el('seldup').onclick = async () => {
                 isa: Estado.restrito,
                 pago: false,
                 ativo: true,
-                nao_volatil: false,
+                volatil: true,
                 nome: ehAporte ? 'Aporte' : 'Resgate',
                 categ: ajuste.categ,
                 valor: ajuste._sug != null ? ajuste._sug : ajuste.v,
@@ -2932,7 +2932,7 @@ async function submeteNovoLancamento() {
     // categoria "Antecipacao Fatura Isabella" forca isa=true mesmo sem marcar o checkbox — ver ehAntecipacaoFaturaIsabella.
     const isa = ehAntecipacaoFaturaIsabella(categ) ? true : (el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked);
     const pago = el('fPago').checked;
-    const nao_volatil = el('fNaoVolatil').checked;
+    const volatil = el('fVolatil').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
     // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
@@ -2950,8 +2950,8 @@ async function submeteNovoLancamento() {
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, nao_volatil, parcelas, valores });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, nao_volatil, parcelas, valores });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data, mantem nome/categoria/cred/isa
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
@@ -2986,11 +2986,11 @@ async function submeteNovoLancamento() {
 // memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
 // funcao (periodoDoCredito/periodoDoDebito) que carregarDados() usaria com essa data —
 // garante que o que aparece na hora e' EXATAMENTE o que vai aparecer depois de recarregar.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, nao_volatil, parcelas, valores }) {
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores }) {
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const payload = {
-            data: dataParcela, freq, cred, isa, pago, ativo: true, nao_volatil,
+            data: dataParcela, freq, cred, isa, pago, ativo: true, volatil,
             nome,
             categ, valor: valores[p],
         };
@@ -3051,7 +3051,7 @@ el('toggleSimulacao').onclick = async () => {
 // derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
 // +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
-function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, nao_volatil, parcelas, valores }) {
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
 
     const criadas = valores.map((valorAssinado, p) => {
@@ -3062,7 +3062,7 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, n
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, ativo: true, nao_volatil,
+            cred, isa, pago, ativo: true, volatil,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null,
