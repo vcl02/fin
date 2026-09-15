@@ -362,6 +362,25 @@ const atualizarLancamento = async (id, campos) => {
     return linhas[0];
 };
 
+// Uma unica atualizacao no banco para todos os lancamentos com o nome exatamente igual.
+// JSON.stringify envolve e escapa o nome entre aspas para o filtro do PostgREST,
+// inclusive se tiver virgula, ponto, aspas ou parenteses.
+const atualizarVolatilPorNome = async (nome, volatil) => {
+    const filtroNome = encodeURIComponent(JSON.stringify(nome));
+    const r = await fetch(`${API}/rest/v1/lancamentos?nome=eq.${filtroNome}&select=id,nome,volatil`, {
+        method: 'PATCH',
+        headers: {
+            apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(),
+            'Content-Type': 'application/json', Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ volatil }),
+    });
+    if (!r.ok) throw Error(`atualizar Volátil: ${r.status} ${await r.text()}`);
+    const linhas = await r.json();
+    if (!linhas.length) throw Error('nenhum lançamento com esse nome foi atualizado (RLS/policy pode estar bloqueando UPDATE)');
+    return linhas;
+};
+
 // Busca periodos + lancamentos no Supabase e monta Estado.periodos / Estado.lancamentos, ja com a competencia (periodoIdx) de cada lancamento calculada. Nao mexe na tela.
 async function carregarDados() {
     const [periodosCrus, lancamentosCrus] = await Promise.all([buscar('periodos'), buscar('lancamentos')]);
@@ -1634,25 +1653,43 @@ el('out').addEventListener('click', async e => {
     }
 });
 
+const nomesVolatilSalvando = new Set();
 async function alternarVolatil(e) {
     const badge = e.target.closest('[data-tog-volatil]');
     if (!badge) return;
     e.stopImmediatePropagation();
-    if (badge.dataset.salvando) return;
     const r = Estado.lancamentos.find(x => String(x.id) === badge.dataset.togVolatil);
     if (!r || (!ehLinhaReal(r) && !r._sim)) return;
+    const nome = r.nome;
+    if (!nome?.trim()) { alert('Esse lançamento não tem um nome para atualizar o grupo.'); return; }
+    if (nomesVolatilSalvando.has(nome)) return;
+    nomesVolatilSalvando.add(nome);
     const novoValor = !r.volatil;
-    badge.dataset.salvando = '1';
     badge.style.opacity = .5;
     try {
-        if (!r._sim) await atualizarLancamento(r.id, { volatil: novoValor });
-        r.volatil = novoValor;
+        if (r._sim) {
+            Estado.lancamentos.filter(x => x._sim && x.nome === nome).forEach(x => { x.volatil = novoValor; });
+        } else {
+            const atualizados = await atualizarVolatilPorNome(nome, novoValor);
+            const idsAtualizados = new Set(atualizados.map(x => String(x.id)));
+            const reaisDoNome = Estado.lancamentos.filter(x => ehLinhaReal(x) && x.nome === nome);
+            if (reaisDoNome.some(x => !idsAtualizados.has(String(x.id))))
+                throw Error('a API não atualizou todos os lançamentos desse nome; recarregue os dados e confira as permissões');
+            reaisDoNome.forEach(x => { x.volatil = novoValor; });
+        }
         desenhar();
         atualizarDetalheVolatil();
     } catch (err) {
+        if (!r._sim) {
+            const simulados = Estado.lancamentos.filter(x => x._sim);
+            try { await carregarDados(); Estado.lancamentos.push(...simulados); }
+            catch (erroCarga) { console.error('[diag] erro ao recarregar após PATCH:', erroCarga); }
+        }
         alert('Falhou ao atualizar Volátil: ' + err.message);
         desenhar();
         atualizarDetalheVolatil();
+    } finally {
+        nomesVolatilSalvando.delete(nome);
     }
 }
 function atualizarDetalheVolatil() {

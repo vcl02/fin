@@ -5,7 +5,8 @@
 - `lancamentos.volatil` é uma flag booleana manual. `true` é o padrão para registros existentes e novos; desmarcar a flag indica que o lançamento não é volátil.
 - A flag não muda valor, categoria, frequência, datas, pagamento, saldo nem cálculos financeiros. O filtro “Volátil” apenas recorta os lançamentos exibidos nas visões.
 - Ciclo e Backlog mostram a flag por lançamento. Comparar mostra a flag no detalhamento de cada célula. Em telas pequenas, ela aparece junto ao nome.
-- A flag pode ser alternada nas linhas reais por `id` via `PATCH`. Se o banco rejeitar a atualização, a tela volta ao valor anterior. Linhas simuladas são alteradas somente em memória.
+- Ao marcar ou desmarcar Volátil em uma linha real, o `PATCH` atualiza todos os lançamentos cujo `nome` é exatamente igual, em qualquer ciclo, categoria ou situação. O retorno da API é conferido pelos IDs carregados antes de refletir a mudança na tela.
+- Se o banco rejeitar a atualização ou alterar só parte do grupo, os dados são recarregados e o erro é mostrado. Linhas simuladas com o mesmo nome são alteradas juntas apenas em memória; clicar nelas não grava mudanças nos lançamentos reais.
 - Cada parcela criada recebe o valor escolhido no cadastro. Duplicar herda a flag do lançamento de origem, que pode ser alterada antes de salvar.
 - Linhas sintéticas não têm flag nem podem ser atualizadas. Ao materializar Aporte/Resgate, o novo lançamento real começa com `volatil = true`.
 
