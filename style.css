@@ -586,6 +586,35 @@
       text-underline-offset: .2em;
   }
 
+  .togNaoVolatil {
+      display: inline-block;
+      padding: .12rem .4rem;
+      border: 1px solid var(--ln);
+      border-radius: 999px;
+      color: var(--mu);
+      white-space: nowrap;
+  }
+
+  .togNaoVolatil.marcado {
+      color: var(--vd);
+      border-color: currentColor;
+  }
+
+  .togNaoVolatil[data-tog-nao-volatil] {
+      cursor: pointer;
+  }
+
+  .togNaoVolatil[data-tog-nao-volatil]:hover {
+      background: var(--field-hover);
+  }
+
+  .naoVolatilMobile {
+      display: inline-block;
+      margin-left: .25rem;
+      font-size: .7rem;
+      white-space: nowrap;
+  }
+
   /* Valor clicavel na tabela: mesma ideia do badge Pago, edicao inline (ver listener
      em #out no script.js). */
   .togValor {
@@ -1281,7 +1310,7 @@
 
   .fmChecks {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: .6rem;
   }
 
