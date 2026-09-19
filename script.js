@@ -1790,9 +1790,7 @@ el('out').addEventListener('click', e => {
     alternarSelecao(linha.dataset.sid);
 });
 el('selacao').onclick = () => { Estado.selecionados.clear(); desenhar(); };
-el('ciclo').addEventListener('change', () => { Estado.selecionados.clear(); atualizaBarraSelecao(); });
-// trocar De/Ate refaz a matriz do zero (outras categorias/periodos podem entrar ou sair)
-// — limpa a selecao pelo mesmo motivo que trocar o combo Ciclo limpa, acima.
+el('ciclo').addEventListener('change', () => { atualizaBarraSelecao(); });
 // Intervalo invertido (De > Ate) nao faz sentido: o campo que o usuario ACABOU de
 // escolher "ganha", empurrando o outro pra igualar ele — mexeu no De e ficou maior que
 // o Ate? o Ate sobe junto. Mexeu no Ate e ficou menor que o De? o De desce junto.
@@ -1801,14 +1799,14 @@ el('compDe').addEventListener('change', () => {
         && +el('compDe').value > +el('compAte').value) {
         el('compAte').value = el('compDe').value;
     }
-    Estado.selecionados.clear(); atualizaBarraSelecao();
+    atualizaBarraSelecao();
 });
 el('compAte').addEventListener('change', () => {
     if (el('compDe').value && el('compDe').value != '-1' && el('compAte').value
         && +el('compAte').value < +el('compDe').value) {
         el('compDe').value = el('compAte').value;
     }
-    Estado.selecionados.clear(); atualizaBarraSelecao();
+    atualizaBarraSelecao();
 });
 
 el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
@@ -1823,7 +1821,6 @@ el('cicloHoje').onclick = () => {
     if (Estado.idxHoje < 0) return;
     el('compDe').value = Estado.idxHoje;
     el('compAte').value = Estado.idxHoje;
-    Estado.selecionados.clear();
     desenhar();
 };
 
@@ -1849,7 +1846,6 @@ function navegaCiclo(direcao) {
         if (novaPosDe < 1 || novaPosAte >= opcoes.length) return;   // nunca pousa em Backlog nem passa do fim
         el('compDe').value = opcoes[novaPosDe];
         el('compAte').value = opcoes[novaPosAte];
-        Estado.selecionados.clear();
         desenhar();
         return;
     }
@@ -1859,7 +1855,6 @@ function navegaCiclo(direcao) {
     const novoValor = opcoes[novaPos];
     el('compDe').value = novoValor;
     el('compAte').value = novoValor == '-1' ? el('compAte').value : novoValor;
-    Estado.selecionados.clear();
     desenhar();
 }
 function atualizaBtsNavCiclo() {
