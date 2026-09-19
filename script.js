@@ -1,20 +1,21 @@
 const API = 'https://yzmyncxoskvqzdczaill.supabase.co', KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
 const EMAIL_ISABELLA = 'isabella.251200@gmail.com';   // login que recebe a visao restrita
 
-const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const MESES = ['Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const SALDO_INICIAL = 0;
 const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
-    ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['volatil', 'Volátil', 'vol'], ['id', 'ID', 'n'],
+    ['categ', 'Categoria', 't'], ['freq', 'FrequÃªncia', 't'], ['pago', 'Pago', 'b'],
+    ['id', 'ID', 'n'],
 ];
 const COLS_MOBILE = [['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n']];
 const isMobile = () => matchMedia('(max-width: 640px)').matches;
 const colunasAtivas = () => isMobile() ? COLS_MOBILE : COLS;
 
 const Estado = {
-    periodos: [],              // linhas da tabela 'periodos', ja com o campo 'ini' calculado
+    ciclos: [],                // ciclos efemeros derivados exclusivamente de Faturamento PJ
+    faturas: [],               // faturas DB-first; cada credito novo aponta manualmente para uma delas
     lancamentos: [],           // linhas da tabela 'lancamentos', ja com 'v' (numero) e 'periodoIdx'
     valorFaturaPorCiclo: {},   // chave 'fat:<indice>' -> total da fatura daquele periodo (usado na selecao)
     selecionados: new Map(),   // chave de selecao -> valor da linha (soma da barra flutuante)
@@ -37,14 +38,14 @@ const estadoFiltroTexto = id => Estado.filtroTexto[id] || (Estado.filtroTexto[id
 const el = id => document.getElementById(id);
 // mostra/esconde um campo da barra de filtros com fade suave, em vez do corte seco do
 // atributo hidden. Ao aparecer: tira o hidden e roda o fadeIn. Ao sumir: roda o fadeOut
-// e SO' entao aplica hidden (fora do fluxo, sem deixar buraco) quando a animacao termina —
+// e SO' entao aplica hidden (fora do fluxo, sem deixar buraco) quando a animacao termina â€”
 // nao antes, senao o hidden corta a transicao no meio.
 // Duas redes de seguranca contra o campo ficar preso visivel pra sempre:
 //  1) se for chamada de novo antes do fadeOut anterior terminar (troca rapida de visao,
 //     ida e volta), o timer/listener pendentes sao cancelados aqui e reagendados do zero;
 //  2) um setTimeout um pouco mais longo que a animacao aplica hidden=true de qualquer
 //     jeito, caso o evento 'animationend' nunca dispare (prefers-reduced-motion desativa
-//     a animacao sem disparar o evento, aba em background, etc) — sem essa rede, o campo
+//     a animacao sem disparar o evento, aba em background, etc) â€” sem essa rede, o campo
 //     fica visivel escondido atras do 'return' de jaResolvidoAssim pra sempre.
 function mostraComFade(id, mostrar) {
     const alvo = el(id);
@@ -75,13 +76,13 @@ function mostraComFade(id, mostrar) {
 const brl = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const corValor = v => v < 0 ? 'vm' : v > 0 ? 'vd' : '';                                     // classe css: vermelho/verde conforme o sinal
 const celValor = v => `<td class="n ${corValor(v)}">${brl(v)}`;                             // celula <td> ja formatada em R$
-// mesma celValor, mas clicavel pra edicao inline — so' pra lancamentos REAIS (id numerico
+// mesma celValor, mas clicavel pra edicao inline â€” so' pra lancamentos REAIS (id numerico
 // vindo do banco; linhas sinteticas tem id negativo fixo -1..-6, e simuladas tem id tipo
 // "sim-N-P", nenhum dos dois casos existe na tabela lancamentos pra dar PATCH).
 const celValorEditavel = r => `<td class="n ${corValor(r.v)}"><span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Clique pra editar o valor">${brl(r.v)}</span>`;
 
 // Zona morta pra SOMAS/TOTAIS (nunca pra valor de lancamento individual): entre -R$50 e +R$50 (inclusive) fica cinza,
-// porque uma diferenca tao pequena nao muda decisao nenhuma — so pinta vermelho/verde quando o total realmente sai desse intervalo.
+// porque uma diferenca tao pequena nao muda decisao nenhuma â€” so pinta vermelho/verde quando o total realmente sai desse intervalo.
 const corSoma = v => (v >= -50 && v <= 50) ? '' : corValor(v);
 const celSoma = v => `<td class="n ${corSoma(v)}">${brl(v)}`;
 const dataISO = s => String(s || '').slice(0, 10);                                                              // normaliza pra 'YYYY-MM-DD'
@@ -92,7 +93,7 @@ const dataBR = s => { const p = dataISO(s).split('-'); return p.length == 3 ? `$
 // bater centavo a centavo (ex: buscar "150" acha 149,97 a 150,03)
 const TOLERANCIA_BUSCA_VALOR = 0.05;
 const capitaliza = s => String(s ?? '').replace(/^./, c => c.toUpperCase());
-// nome de exibicao de uma coluna do lancamento ('nome'/'categ') — normaliza 'categ' pra
+// nome de exibicao de uma coluna do lancamento ('nome'/'categ') â€” normaliza 'categ' pra
 // "Categoria" (capitaliza() sozinho faria "Categ") em todo lugar que rotula essa coluna:
 // combo "Agrupar por", cabecalho da matriz Comparar e o subtitulo dela.
 const nomeColuna = c => c == 'categ' ? 'Categoria' : capitaliza(c);
@@ -106,32 +107,14 @@ const valorValido = v => {
     return !['null', 'undefined', 'nan', 'none', 'n/a'].includes(limpo);
 };
 
-// categoria dedicada pra antecipacao de fatura: um debito nessa categoria abate o quanto ainda falta sair da conta na linha dinamica "Fatura do cartao" (nao duplica o lancamento — ele continua aparecendo normal na tabela de Debito).
+// categoria dedicada pra antecipacao de fatura: um debito nessa categoria abate o quanto ainda falta sair da conta na linha dinamica "Fatura do cartao" (nao duplica o lancamento â€” ele continua aparecendo normal na tabela de Debito).
 const ehAntecipacaoFatura = categ => {
     const c = semAcento(categ).trim();
     return c.includes('antecipacao') && c.includes('fatura');
 };
 
-// Antecipacao e' TRANSFERENCIA, nao gasto: a despesa ja foi contada na compra do credito. Entra no fluxo de caixa (bloco Debito) e fica fora das analises de gasto (Comparar, Balanco, evolucao, pizza) — senao a mesma despesa conta duas vezes.
+// Antecipacao e' TRANSFERENCIA, nao gasto: a despesa ja foi contada na compra do credito. Entra no fluxo de caixa (bloco Debito) e fica fora das analises de gasto (Comparar, Balanco, evolucao, pizza) â€” senao a mesma despesa conta duas vezes.
 const ehTransferenciaFatura = r => !r.cred && ehAntecipacaoFatura(r.categ);
-
-// Variante da antecipacao pra fatura da Isabella: mesma logica de ehAntecipacaoFatura, so' que a categoria tambem menciona "Isabella" (ex: "Antecipacao Fatura Isabella"). Usada na hora de salvar pra forcar isa=true nesse lancamento mesmo que o checkbox "Isabella" do formulario nao tenha sido marcado — assim essa categoria sozinha ja garante que a antecipacao abate a fatura dela (alocacaoAntecipacoes), sem depender de lembrar do checkbox.
-const ehAntecipacaoFaturaIsabella = categ => ehAntecipacaoFatura(categ) && semAcento(categ).includes('isabella');
-
-// O combo de categoria e' um <select> montado a partir das categorias ja usadas (categoriasPorPopularidade), entao uma categoria inedita nunca teria como ser escolhida na primeira vez. Estas entram sempre na lista, mesmo sem nenhum lancamento.
-const CATEGORIAS_FIXAS = ['Antecipação Fatura Isabella'];
-
-// Captura: o emissor so registra a compra no dia seguinte (D+1) na maioria dos casos. Excecao: NuPay captura no mesmo dia — hoje isso e' sempre Uber. Fora dos dias de fronteira o deslocamento nao muda nada, entao a data que voce lanca continua sendo a da compra; o D+1 so importa quando a compra cai no dia do fechamento.
-const ehCapturaMesmoDia = nome => semAcento(nome).includes('uber');
-const dataCaptura = (dataStr, nome) =>
-    ehCapturaMesmoDia(nome) ? dataISO(dataStr) : proximoDia(dataStr);
-
-// Dia de fronteira: a compra caiu no fechamento (ou depois dele, ja na virada), entao o D+1 da captura empurrou ela pra fatura seguinte. E' o unico caso em que a data lancada e a fatura resultante parecem nao bater — por isso a marca na tela.
-function ehFronteira(r) {
-    if (!r.cred || !r.data || ehCapturaMesmoDia(r.nome)) return false;
-    const d = dataISO(r.data);
-    return Estado.periodos.some(per => dataISO(r.isa ? per.fecha_isa : per.fecha) === d);
-}
 
 // Data a partir da qual voce passou a lancar os pagamentos de fatura. Faturas que venceram antes disso foram pagas sem lancamento, entao tem saldo "fantasma" e engoliriam as antecipacoes novas. AJUSTE aqui quando comecar a lancar. proximo dia (usado pra calcular o inicio de um periodo a partir do 'fat' do anterior)
 function proximoDia(iso) {
@@ -140,21 +123,14 @@ function proximoDia(iso) {
     return d.toISOString().slice(0, 10);
 }
 
-// 30 dias antes de uma data (usado so pro limite inferior do primeiro periodo, que nao tem "anterior")
-function menos30(iso) {
-    const d = new Date(dataISO(iso) + 'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() - 30);
-    return d.toISOString().slice(0, 10);
-}
-
 // Soma N meses a uma data ISO, preservando o dia (com clamp pro ultimo dia do mes de
-// destino quando ele nao existe — 31/01 + 1 mes = 28 ou 29/02, nunca "03/03" por
+// destino quando ele nao existe â€” 31/01 + 1 mes = 28 ou 29/02, nunca "03/03" por
 // transbordo). Usada pra datar cada PARCELA de uma compra parcelada: parcela 2 cai ~1
-// mes depois da 1a, parcela 3 ~2 meses depois etc — igual uma fatura de cartao de
+// mes depois da 1a, parcela 3 ~2 meses depois etc â€” igual uma fatura de cartao de
 // verdade, onde cada parcela e' cobrada no ciclo seguinte. Sem isso, todas as parcelas
 // ficavam gravadas com a MESMA data no banco; o periodoIdx certo so' existia em memoria
 // (calculado na hora do cadastro) e sumia ao recarregar, porque o recalculo (carregarDados)
-// deriva o periodo so' a partir da 'data' — e' o que fazia as parcelas desmoronarem todas
+// deriva o periodo so' a partir da 'data' â€” e' o que fazia as parcelas desmoronarem todas
 // pro mesmo mes depois de dar F5/limpar cache.
 function somaMeses(iso, n) {
     if (!n) return dataISO(iso);
@@ -166,7 +142,7 @@ function somaMeses(iso, n) {
 }
 
 // Soma N dias corridos a uma data ISO (mesmo padrao UTC de proximoDia/menos30, so' que
-// com passo livre) — base das recorrencias que andam por semana, nao por mes.
+// com passo livre) â€” base das recorrencias que andam por semana, nao por mes.
 function somaDias(iso, n) {
     if (!n) return dataISO(iso);
     const d = new Date(dataISO(iso) + 'T00:00:00Z');
@@ -180,12 +156,12 @@ function somaDias(iso, n) {
 //    no ultimo dia do mes curto, e 29/02 vira 28/02 em ano nao bissexto);
 //  - 'dia' anda em dias corridos, o que mantem o MESMO DIA DA SEMANA (7 e 14 sao multiplos
 //    de 7) sem depender de calendario.
-// A chave e' exatamente o texto gravado na coluna 'freq' do banco — o <option value> no
+// A chave e' exatamente o texto gravado na coluna 'freq' do banco â€” o <option value> no
 // index.html usa esses mesmos nomes, entao ler o select ja da' a regra direto.
 const RECORRENCIAS = {
     Mensal: { tipo: 'mes', passo: 1 },
     Semanal: { tipo: 'dia', passo: 7 },
-    Quinzenal: { tipo: 'dia', passo: 14 },   // "quinze" e' so' o nome de costume — a regra e' de 2 em 2 semanas, nao 15 dias
+    Quinzenal: { tipo: 'dia', passo: 14 },   // "quinze" e' so' o nome de costume â€” a regra e' de 2 em 2 semanas, nao 15 dias
     Semestral: { tipo: 'mes', passo: 6 },
     Anual: { tipo: 'mes', passo: 12 },       // +12 meses = mesmo dia, ano seguinte
 };
@@ -193,7 +169,7 @@ const RECORRENCIAS = {
 // Data da p-esima ocorrencia (p=0 e' a 1a, que cai na propria data digitada) conforme a
 // Frequencia escolhida. Frequencia vazia ("sem recorrencia") ou desconhecida cai em
 // Mensal: com 1x so' isso nao muda nada (p=0 devolve a propria data), e a partir de 2x
-// PRECISA haver algum espacamento — sem regra as N linhas nasceriam todas na mesma data,
+// PRECISA haver algum espacamento â€” sem regra as N linhas nasceriam todas na mesma data,
 // que e' exatamente o bug que fazia as parcelas desabarem no mesmo mes ao recarregar.
 // Mensal e' tambem o unico comportamento que existia antes deste campo virar regra.
 function dataDaOcorrencia(iso, p, freq) {
@@ -210,7 +186,7 @@ function nomePeriodo(fatStr) {
     return `${MESES[mesAnterior - 1]} ${ano}`;
 }
 
-// Mesma logica de nomePeriodo, mas abreviada ("Set/26") — usada no titulo da visao Comparar.
+// Mesma logica de nomePeriodo, mas abreviada ("Set/26") â€” usada no titulo da visao Comparar.
 function nomePeriodoAbrev(fatStr) {
     const iso = dataISO(fatStr), y = +iso.slice(0, 4), m = +iso.slice(5, 7);
     let mesAnterior = m - 1, ano = y;
@@ -218,7 +194,7 @@ function nomePeriodoAbrev(fatStr) {
     return `${MESES[mesAnterior - 1].slice(0, 3)}/${String(ano).slice(-2)}`;
 }
 
-// So' o nome do mes (sem ano) de um periodo — usado nas colunas "Somente <mes>" da
+// So' o nome do mes (sem ano) de um periodo â€” usado nas colunas "Somente <mes>" da
 // comparacao 1-a-1 entre 2 periodos.
 function nomeMesPeriodo(fatStr) {
     const iso = dataISO(fatStr), m = +iso.slice(5, 7);
@@ -227,52 +203,41 @@ function nomeMesPeriodo(fatStr) {
     return MESES[mesAnterior - 1];
 }
 
-// Dado o 'venc' de uma fatura, em qual periodo ela APARECE na tela: o periodo cujo 'fat' cai no mes seguinte ao vencimento (nome do periodo = mes anterior ao 'fat').
-function periodoQueExibeVencimento(vencimento) {
-    if (!vencimento) return -1;
-    const v = dataISO(vencimento), anoVenc = +v.slice(0, 4), mesVenc = +v.slice(5, 7);
-    let mesAlvo = mesVenc + 1, anoAlvo = anoVenc;
-    if (mesAlvo == 13) { mesAlvo = 1; anoAlvo++; }
-    return Estado.periodos.findIndex(per => {
-        const f = dataISO(per.fat);
-        return +f.slice(0, 4) == anoAlvo && +f.slice(5, 7) == mesAlvo;
-    });
+// Credito nao e' classificado pela data da compra: a fatura foi escolhida manualmente
+// e o vencimento dela determina em qual ciclo de caixa o total aparece.
+function periodoDaFatura(faturaId) {
+    const fatura = Estado.faturas.find(f => String(f.id) === String(faturaId));
+    return fatura ? periodoDoDebito(dataISO(fatura.vencimento)) : null;
 }
 
-// Em qual PERIODO uma compra no CREDITO aparece.
-// Passos:
-//  1) acha a fatura que recebe a compra: primeiro periodo cujo 'fecha' (ou 'fecha_isa')
-//     e maior ou igual a data da compra
-//  2) essa fatura vence no 'venc' (ou 'venc_isa') desse mesmo periodo
-//  3) a compra aparece no periodo cujo NOME bate com o mes/ano desse vencimento
-//     (nome do periodo = mes anterior ao seu 'fat', entao fat.mes = venc.mes + 1)
-// Se o vencimento nao estiver preenchido, retorna null (a compra cai no Backlog).
-function periodoDoCredito(dataStr, ehIsabella, nome) {
-    const dataCompra = dataCaptura(dataStr, nome);
-    const iFatura = Estado.periodos.findIndex(per => {
-        const fechamento = ehIsabella ? per.fecha_isa : per.fecha;
-        return fechamento && dataISO(fechamento) >= dataCompra;
-    });
-
-    if (iFatura < 0) return null;
-    const vencimento = ehIsabella ? Estado.periodos[iFatura].venc_isa : Estado.periodos[iFatura].venc;
-    if (!vencimento) return null;   // sem vencimento cadastrado -> Backlog
-    return periodoQueExibeVencimento(vencimento);
+function vencimentoDoCiclo(idx) {
+    const faturas = Estado.faturas
+        .filter(f => periodoDaFatura(f.id) === idx)
+        .sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento));
+    return faturas[0] ? dataISO(faturas[0].vencimento) : dataISO(Estado.ciclos[idx]?.fat);
 }
 
-// Distribui as antecipacoes de um titular pelas faturas, da mais antiga pra mais nova: cada antecipacao abate a fatura mais antiga que ainda tem saldo, e o excedente transborda pra seguinte. Assim quitar a fatura fechada joga o resto na aberta sozinho, sem depender de calendario nem de marcar nada como pago. Devolve { idxDoCiclo: valorAbatido (positivo) }.
-function alocacaoAntecipacoes(linhas, ehIsa) {
+function tituloFaturaDoCiclo(idx) {
+    const fatura = Estado.faturas
+        .filter(f => periodoDaFatura(f.id) === idx)
+        .sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento))[0];
+    return fatura ? nomeFatura(fatura) : '—';
+}
+
+// Distribui as antecipacoes do unico cartao detalhado pelas faturas, da mais antiga pra
+// mais nova. A fatura da Isabella e' um lancamento comum e nao participa deste calculo.
+function alocacaoAntecipacoes(linhas) {
     // saldo devido de cada fatura, na ordem em que aparecem na tela
     const faturas = [];
-    Estado.periodos.forEach((per, idx) => {
+    Estado.ciclos.forEach((per, idx) => {
         const bruto = linhas
-            .filter(r => r.cred && !!r.isa === ehIsa && r.periodoIdx === idx)
+            .filter(r => r.cred && r.periodoIdx === idx)
             .reduce((s, r) => s + r.v, 0);
         if (bruto < 0) faturas.push({ idx, saldo: -bruto });
     });
 
     const antecipacoes = linhas
-        .filter(r => ehTransferenciaFatura(r) && r.data && !!r.isa === ehIsa && r.v < 0)
+        .filter(r => ehTransferenciaFatura(r) && r.data && r.v < 0)
         .sort((a, b) => timestamp(a.data) - timestamp(b.data));
 
     const abatido = {};
@@ -295,10 +260,10 @@ function alocacaoAntecipacoes(linhas, ehIsa) {
 // Em qual PERIODO uma movimentacao de DEBITO cai: o periodo cujo intervalo [ini, fat] contem a data. Retorna null se a data for vazia (Backlog) ou nao cair em nenhum periodo cadastrado.
 function periodoDoDebito(iso) {
     if (!iso) return null;
-    return Estado.periodos.findIndex(per => iso >= per.ini && iso <= dataISO(per.fat));
+    return Estado.ciclos.findIndex(per => iso >= per.ini && iso <= dataISO(per.fat));
 }
 
-// CARGA DE DADOS — busca no Supabase e processa (sem tocar na tela)
+// CARGA DE DADOS â€” busca no Supabase e processa (sem tocar na tela)
 
 // pega o token da sessao NA HORA: o supabase-js renova sozinho em background, entao guardar o token do login numa variavel garante 401 depois de ~1h. Se nao ha sessao, cai na chave publica (modo dev).
 const tokenAtual = async (forcar) => {
@@ -340,8 +305,8 @@ const excluirLancamento = async id => {
     if (!r.ok) throw Error(`excluir: ${r.status} ${await r.text()}`);
     const linhas = await r.json();
     // com RLS sem policy de DELETE pra essa linha, o Postgrest devolve 200 OK e 0 linhas
-    // apagadas (nao e' erro HTTP) — mesma armadilha do atualizarLancamento (UPDATE).
-    if (!linhas.length) throw Error('nenhuma linha excluída (RLS/policy do Supabase pode estar bloqueando DELETE)');
+    // apagadas (nao e' erro HTTP) â€” mesma armadilha do atualizarLancamento (UPDATE).
+    if (!linhas.length) throw Error('nenhuma linha excluÃ­da (RLS/policy do Supabase pode estar bloqueando DELETE)');
 };
 
 const atualizarLancamento = async (id, campos) => {
@@ -356,39 +321,31 @@ const atualizarLancamento = async (id, campos) => {
     if (!r.ok) throw Error(`atualizar: ${r.status} ${await r.text()}`);
     const linhas = await r.json();
     // com RLS sem policy de UPDATE pra essa linha, o Postgrest devolve 200 OK e 0 linhas
-    // afetadas (nao e' erro HTTP) — sem essa checagem, o app "achava" que salvou e so'
+    // afetadas (nao e' erro HTTP) â€” sem essa checagem, o app "achava" que salvou e so'
     // o redraw local mudava, enquanto o banco continuava intocado.
     if (!linhas.length) throw Error('nenhuma linha atualizada (RLS/policy do Supabase pode estar bloqueando UPDATE)');
     return linhas[0];
 };
 
-// Uma unica atualizacao no banco para todos os lancamentos com o nome exatamente igual.
-// No filtro simples "eq", o PostgREST trata aspas como parte do valor.
-// Codifique o nome diretamente para preservar acentos e caracteres especiais.
-const atualizarVolatilPorNome = async (nome, volatil) => {
-    const filtroNome = encodeURIComponent(nome);
-    const r = await fetch(`${API}/rest/v1/lancamentos?nome=eq.${filtroNome}&select=id,nome,volatil`, {
-        method: 'PATCH',
-        headers: {
-            apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(),
-            'Content-Type': 'application/json', Prefer: 'return=representation',
-        },
-        body: JSON.stringify({ volatil }),
-    });
-    if (!r.ok) throw Error(`atualizar Volátil: ${r.status} ${await r.text()}`);
-    const linhas = await r.json();
-    if (!linhas.length) throw Error('nenhum lançamento com esse nome foi atualizado (RLS/policy pode estar bloqueando UPDATE)');
-    return linhas;
-};
-
-// Busca periodos + lancamentos no Supabase e monta Estado.periodos / Estado.lancamentos, ja com a competencia (periodoIdx) de cada lancamento calculada. Nao mexe na tela.
+// Busca faturas + lancamentos. Os ciclos sao derivados somente das datas reais de
+// "Faturamento PJ"; nenhuma data de fechamento ou calendario projetado e' lida do banco.
 async function carregarDados() {
-    const [periodosCrus, lancamentosCrus] = await Promise.all([buscar('periodos'), buscar('lancamentos')]);
+    const [lancamentosCrus, faturasCrus] = await Promise.all([
+        buscar('lancamentos'),
+        buscar('faturas'),
+    ]);
 
-    // ordena por 'fat' e calcula o inicio de cada periodo (= fat do anterior + 1 dia). o primeiro periodo nao tem anterior, entao usa fat-30dias so como limite inferior.
-    Estado.periodos = periodosCrus
-        .sort((a, b) => timestamp(a.fat) - timestamp(b.fat))
-        .map((per, i, arr) => ({ ...per, ini: i == 0 ? menos30(per.fat) : proximoDia(arr[i - 1].fat) }));
+    Estado.faturas = faturasCrus.sort((a, b) => timestamp(a.referencia) - timestamp(b.referencia));
+
+    const ancoras = lancamentosCrus
+        .filter(r => !r.cred && String(r.nome || '').trim() === 'Faturamento PJ' && r.data)
+        .sort((a, b) => timestamp(a.data) - timestamp(b.data));
+    Estado.ciclos = ancoras.map((ancora, i) => ({
+        id: `pj:${ancora.id}`,
+        ini: dataISO(ancora.data),
+        // O ultimo ciclo fica deliberadamente aberto ate' existir o proximo faturamento.
+        fat: ancoras[i + 1] ? somaDias(dataISO(ancoras[i + 1].data), -1) : '9999-12-31',
+    }));
 
     // classifica cada lancamento na sua competencia (periodoIdx)
     Estado.lancamentos = lancamentosCrus.map(r => {
@@ -396,32 +353,32 @@ async function carregarDados() {
         if (!r.data)
             periodoIdx = null;                                      // sem data -> Backlog, sempre
         else if (r.cred)
-            periodoIdx = periodoDoCredito(r.data, r.isa, r.nome);
+            periodoIdx = periodoDaFatura(r.fatura_id);
         else
             periodoIdx = periodoDoDebito(dataISO(r.data));          // debito segue o intervalo do periodo
         return {
             ...r,
             v: +r.valor || 0,                                                    // valor numerico seguro
             inv: /^investimento$/i.test(String(r.categ || '').trim()),           // e da categoria Investimento?
-            periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null,
+            periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
         };
     });
 
-    return { periodosCrus, lancamentosCrus };                       // devolve os crus tambem, usados so na montagem dos combos
+    return { lancamentosCrus, faturasCrus };
 }
 
-// ATUALIZAÇÃO DE UI — popula os <select> a partir do Estado já carregado
+// ATUALIZAÃ‡ÃƒO DE UI â€” popula os <select> a partir do Estado jÃ¡ carregado
 
 // Monta o combo de periodos (so os que tem algum lancamento, mais o periodo atual mesmo se vazio) e o combo "Agrupar por" (colunas disponiveis pra visao Comparar).
 function atualizarCombos(lancamentosCrus) {
     const selecaoAnterior = el('ciclo').value;
     const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
-    const idxAtual = Estado.periodos.findIndex(per => hoje >= per.ini && hoje <= dataISO(per.fat));
+    const idxAtual = Estado.ciclos.findIndex(per => hoje >= per.ini && hoje <= dataISO(per.fat));
     const usados = [...new Set(Estado.lancamentos.map(r => r.periodoIdx).filter(p => p != null))];
 
     if (idxAtual >= 0 && !usados.includes(idxAtual)) usados.push(idxAtual);
     usados.sort((a, b) => a - b);
-    const opcoesCiclo = '<option value=-1>Backlog' + usados.map(i => `<option value=${i}>${nomePeriodo(Estado.periodos[i].fat)}`).join('');
+    const opcoesCiclo = '<option value=-1>Backlog' + usados.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i].fat)}`).join('');
     el('ciclo').innerHTML = opcoesCiclo;
 
     // preserva a selecao anterior se ainda for valida; senao cai no periodo atual (ou no mais recente usado)
@@ -433,24 +390,24 @@ function atualizarCombos(lancamentosCrus) {
 
     Estado.idxHoje = idxAtual;      // ancora do pre-preenchimento inicial de De/Ate (ciclo atual + proximo)
 
-    // Comparar sempre agrupa por Categoria agora (sem filtro "Agrupar por" na toolbar) —
+    // Comparar sempre agrupa por Categoria agora (sem filtro "Agrupar por" na toolbar) â€”
     // ver vComp(), que fixa coluna='categ' direto.
 
     // Categoria do formulario e' populada por popularCategoriasNoForm() (ordenada por uso
-    // recente), chamada toda vez que o modal abre — nao precisa duplicar aqui.
+    // recente), chamada toda vez que o modal abre â€” nao precisa duplicar aqui.
 
-    // combos De/Até: a Isabella (perfil restrito) fica presa aos tres ciclos em volta de
-    // hoje (anterior, atual, proximo — mesma janela de antes do navegador ‹›Atual), sem
+    // combos De/AtÃ©: a Isabella (perfil restrito) fica presa aos tres ciclos em volta de
+    // hoje (anterior, atual, proximo â€” mesma janela de antes do navegador â€¹â€ºAtual), sem
     // Backlog; o resto ve todos os periodos usados. "Todos" (value vazio) e' a opcao
-    // padrao — a matriz so recorta quando o usuario escolhe explicitamente um De ou Ate,
+    // padrao â€” a matriz so recorta quando o usuario escolhe explicitamente um De ou Ate,
     // nunca vem pre-preenchida sozinha. Backlog so' existe no De (nao faz sentido comparar
-    // Backlog com outro periodo) — escolher Backlog desabilita e ignora o Ate (ver desenhar()).
+    // Backlog com outro periodo) â€” escolher Backlog desabilita e ignora o Ate (ver desenhar()).
     const usadosNaveg = Estado.restrito
         ? usados.filter(i => Math.abs(i - idxAtual) <= 1)
         : usados;
-    const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.periodos[i].fat)}`).join('');
+    const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i].fat)}`).join('');
     const opcoesPeriodoDe = Estado.restrito ? opcoesPeriodo
-        : '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.periodos[i].fat)}`).join('');
+        : '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i].fat)}`).join('');
     const deAnterior = el('compDe').value, ateAnterior = el('compAte').value;
 
     el('compDe').innerHTML = opcoesPeriodoDe;
@@ -468,7 +425,7 @@ async function load() {
         console.time('[diag] carregarDados');
         const { lancamentosCrus } = await carregarDados();
         console.timeEnd('[diag] carregarDados');
-        console.log('[diag] carregado — periodos:', Estado.periodos.length, 'lancamentos:', Estado.lancamentos.length);
+        console.log('[diag] carregado â€” ciclos PJ:', Estado.ciclos.length, 'lancamentos:', Estado.lancamentos.length);
 
         console.time('[diag] atualizarCombos');
         atualizarCombos(lancamentosCrus);
@@ -484,27 +441,26 @@ async function load() {
 }
 
 // ===================================================================
-// FILTROS — os selects/checkboxes da barra de ferramentas
+// FILTROS â€” os selects/checkboxes da barra de ferramentas
 // ===================================================================
-// le um select de 3 estados (Ambos/Sim/Não) e diz se um valor booleano passa no filtro
+// le um select de 3 estados (Ambos/Sim/NÃ£o) e diz se um valor booleano passa no filtro
 const passaFiltroTriEstado = (idSelect, valor) => {
     const v = el(idSelect).value;
     return v == 'B' || (v == 'S') == !!valor;
 };
 // aplica todos os filtros ativos (situacao, origem, titular, valor) sobre a lista de lancamentos.
-// Valor: P/N pegam so' o que e' de fato positivo/negativo — lancamento sem valor (v = 0) nao e'
+// Valor: P/N pegam so' o que e' de fato positivo/negativo â€” lancamento sem valor (v = 0) nao e'
 // nem um nem outro, entao fica de fora dos dois recortes.
 const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
     passaFiltroTriEstado('fativo', r.ativo) &&
     passaFiltroTriEstado('fpago', r.pago) &&
-    passaFiltroTriEstado('fvolatil', r.volatil) &&
     ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value] &&
     ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value] &&
     ({ T: 1, P: r.v > 0, N: r.v < 0 })[el('fvalor').value]
 );
 
 // ===================================================================
-// ORDENAÇÃO DE TABELAS — cada tabela (id) guarda seu proprio estado
+// ORDENAÃ‡ÃƒO DE TABELAS â€” cada tabela (id) guarda seu proprio estado
 // ===================================================================
 function ordenarLinhas(linhas, idTabela) {
     const { k: coluna, d: direcao } = estadoOrdenacao(idTabela);
@@ -524,22 +480,9 @@ function ordenarLinhas(linhas, idTabela) {
     return copia;
 }
 
-// avisa quando a compra cai no dia do fechamento: o D+1 da captura vai jogar ela
-// pra fatura seguinte, entao vale conferir na fatura real antes de salvar
 function atualizaAvisoFronteira() {
-    const data = el('fData').value;
-    const simulado = {
-        cred: el('fCred').checked, data, nome: el('fNome').value,
-        isa: el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked
-    };
-    const mostra = !!data && ehFronteira(simulado);
-    el('avisoFr').hidden = !mostra;
-    if (!mostra) return;
-    const idx = periodoDoCredito(data, simulado.isa, simulado.nome);
-    const alvo = idx != null && idx >= 0 && Estado.periodos[idx]
-        ? nomePeriodo(Estado.periodos[idx].fat) : 'a fatura seguinte';
-    el('avisoFr').textContent =
-        `Dia do fechamento: capturada em D+1, vai cair em ${alvo}. Confira na fatura.`;
+    // A fatura e' escolhida manualmente no formulario; nao existe mais aviso de fechamento.
+    el('avisoFr').hidden = true;
 }
 
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
@@ -547,32 +490,32 @@ function cabecalhoTabela(idTabela) {
     const cols = colunasAtivas();
     const { k: colunaAtiva, d: direcao } = estadoOrdenacao(idTabela);
     const linhaTitulos = cols.map(([chave, rotulo, tipo]) => {
-        const seta = colunaAtiva == chave ? (direcao == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
+        const seta = colunaAtiva == chave ? (direcao == 1 ? ' <span class=ar>â†‘</span>' : ' <span class=ar>â†“</span>') : '';
         return `<th class="${tipo == 'n' ? 'n' : ''}" onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
     }).join('');
     // 2a linha do header: campo de busca por coluna, so nas colunas de texto (tipo 't').
-    // Modo simples (Isabella / mobile) nao tem busca nenhuma — so ordenar pelo header.
+    // Modo simples (Isabella / mobile) nao tem busca nenhuma â€” so ordenar pelo header.
     if (modoSimples()) return linhaTitulos;
     const filtroAtual = estadoFiltroTexto(idTabela);
     // colunas de texto + Valor tem campo de busca. Valor compara numero (ver
-    // passaFiltroTexto), nao texto, mas a caixinha e' a mesma das outras colunas —
+    // passaFiltroTexto), nao texto, mas a caixinha e' a mesma das outras colunas â€”
     // com a mesma mascara de dinheiro do cadastro por cima (ver filtrarColuna).
     const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => tipo == 't' || chave == 'valor'
-        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric ' : ''}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
+        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric ' : ''}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}â€¦" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
         : '<th>'
     ).join('');
     return linhaTitulos + linhaBusca;
 }
 // chamado a cada tecla digitada num campo de busca de coluna.
-// desenhar() reescreve o innerHTML inteiro, o que tiraria o foco do campo a cada letra —
+// desenhar() reescreve o innerHTML inteiro, o que tiraria o foco do campo a cada letra â€”
 // por isso guarda onde estava o cursor e restaura depois, achando o campo novo pelo
 // data-filtro (que sobrevive ao redesenho, ja que e' remontado igual).
 window.filtrarColuna = (idTabela, coluna, input) => {
     // Valor usa a MESMA mascara de dinheiro do cadastro (formataMascaraDinheiro): os
     // digitos vao empurrando as casas decimais, tipo caixa eletronico. Assim a caixinha
-    // mostra exatamente o numero procurado — digitar "15000" vira "150,00", sem duvida
+    // mostra exatamente o numero procurado â€” digitar "15000" vira "150,00", sem duvida
     // sobre onde caem os centavos. Campo esvaziado tem que voltar pra vazio (filtro
-    // desligado), nunca virar "0,00" — que filtraria pelos valores zerados.
+    // desligado), nunca virar "0,00" â€” que filtraria pelos valores zerados.
     if (coluna == 'valor') {
         const cursorNoFim = input.selectionEnd == input.value.length;
         input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
@@ -584,17 +527,17 @@ window.filtrarColuna = (idTabela, coluna, input) => {
     const novoInput = document.querySelector(`[data-filtro="${idTabela}|${coluna}"]`);
     if (novoInput) { novoInput.focus(); if (posicaoCursor != null) novoInput.setSelectionRange(posicaoCursor, posicaoCursor); }
 };
-// remove acentos e caixa: "Café" e "cafe" viram a mesma coisa pra comparar
+// remove acentos e caixa: "CafÃ©" e "cafe" viram a mesma coisa pra comparar
 // uma linha passa no filtro de texto da tabela se contem (ignorando acento e maiuscula) todos os termos digitados
 function passaFiltroTexto(r, idTabela) {
     const filtro = estadoFiltroTexto(idTabela);
     return Object.entries(filtro).every(([coluna, termo]) => {
         if (!termo) return true;
         // Valor nao e' texto: o campo sempre traz um numero ja mascarado (formataMascaraDinheiro),
-        // entao compara por PROXIMIDADE em vez de substring — acha qualquer lancamento a ate
+        // entao compara por PROXIMIDADE em vez de substring â€” acha qualquer lancamento a ate
         // 5 centavos do valor digitado, pra nao exigir acertar o centavo exato. Ignora o sinal
         // dos dois lados (a mascara nao digita "-"): buscar "150" acha tanto -150 quanto +150.
-        // Linha de Investimento sugerido mostra r._sug no lugar de r.v — busca no que esta visivel.
+        // Linha de Investimento sugerido mostra r._sug no lugar de r.v â€” busca no que esta visivel.
         if (coluna == 'valor') {
             const alvo = valorMascaraParaNumero(termo);
             const valorLinha = Math.abs(r._sug != null ? r._sug : (r.v || 0));
@@ -625,7 +568,7 @@ window.sortComp = k => {
 el('fNome').addEventListener('input', atualizaAvisoFronteira);
 
 // ===================================================================
-// RENDERIZAÇÃO DE TABELAS
+// RENDERIZAÃ‡ÃƒO DE TABELAS
 // ===================================================================
 // chave de selecao de uma linha: usa o _sid sintetico (linha de fatura) ou o id real
 const chaveSelecao = r => r._sid ? r._sid : (r.id != null ? String(r.id) : '');
@@ -642,35 +585,30 @@ const ehVazioTextual = v => {
     const limpo = String(v).trim().toLowerCase().replace(/^<|>$/g, '');
     return ['', 'null', 'undefined', 'nan', 'none', 'n/a'].includes(limpo);
 };
-const textoOuTraco = v => ehVazioTextual(v) ? '—' : v;
+const textoOuTraco = v => ehVazioTextual(v) ? 'â€”' : v;
 // linha REAL (existe na tabela lancamentos, da' pra dar PATCH): nao e' sintetica (fatura,
 // saldo anterior, resgate/aporte) nem simulada (so' memoria, nunca foi salva)
 const ehLinhaReal = r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._sim;
-// conteudo da celula Data: DD/MM/AAAA (+ a marca de fronteira, quando for o caso) ou '—'
-const textoData = r => r.data
-    ? dataBR(r.data) + (ehFronteira(r) ? '<span class=fr title="Compra no dia do fechamento: capturada em D+1, entrou na fatura seguinte">*</span>' : '')
-    : '—';
+// conteudo da celula Data: DD/MM/AAAA ou 'â€”'. A fatura e' escolhida manualmente,
+// portanto nao existe mais marca de fechamento/D+1.
+const textoData = r => r.data ? dataBR(r.data) : 'â€”';
 // mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
-// lancamentos REAIS (id do banco, da' pra dar PATCH) e so' no desktop — no mobile a
+// lancamentos REAIS (id do banco, da' pra dar PATCH) e so' no desktop â€” no mobile a
 // celula continua sendo so' texto, igual o Valor.
 const celData = r => ehLinhaReal(r) && !isMobile()
     ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Clique pra editar a data">${textoData(r)}</span>`
     : textoData(r);
-const badgeVolatil = r => r.volatil == null ? '—'
-    : `<span class="togVolatil ${r.volatil ? 'marcado' : ''}" ${ehLinhaReal(r) || r._sim ? `data-tog-volatil="${escapeHtml(String(r.id))}" title="Clique para alternar Volátil"` : ''}>${r.volatil ? 'Sim' : 'Não'}</span>`;
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna
 const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
         : (isMobile() ? celValorMobile(r) : (ehLinhaReal(r) ? celValorEditavel(r) : celValor(r.v)))).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
-    : tipo == 'vol' ? `<td>${badgeVolatil(r)}`
-    : tipo == 'b' ? `<td>${r[chave] == null ? '—'
+    : tipo == 'b' ? `<td>${r[chave] == null ? 'â€”'
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
-            : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '') + textoOuTraco(r[chave])
-                + (chave == 'nome' && isMobile() && (ehLinhaReal(r) || r._sim) ? ` <span class=volatilMobile>V: ${badgeVolatil(r)}</span>` : '')}`
+            : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado â€” nÃ£o foi salvo">âœ¦</span> ' : '') + textoOuTraco(r[chave])}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
@@ -678,11 +616,11 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     if (!linhasBrutas.length) { Estado.linhasVisiveis[idTabela] = []; return '<p class=empty>Vazio</p>'; }
     if (!linhas.length) { Estado.linhasVisiveis[idTabela] = []; return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead></table></div><p class=empty>Nenhum resultado com esse filtro.</p>`; }
     const ordenadas = ordenarLinhas(linhas, idTabela);
-    // guarda na ordem REAL da tela (pos-ordenacao) — usado por "Selecionar tudo" e pelo
+    // guarda na ordem REAL da tela (pos-ordenacao) â€” usado por "Selecionar tudo" e pelo
     // shift-click de intervalo, que dependem do indice bater com a posicao visual.
     Estado.linhasVisiveis[idTabela] = ordenadas;
 
-    // saldo do dia: so na tabela de Debito e so com data ASCENDENTE — em qualquer outra
+    // saldo do dia: so na tabela de Debito e so com data ASCENDENTE â€” em qualquer outra
     // ordem "fim do dia" nao corresponde ao que esta na tela. Marca DEPOIS de ordenar,
     // na ultima linha de cada dia como ela realmente aparece.
     const ord = estadoOrdenacao(idTabela);
@@ -704,45 +642,45 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
         }).join('') + '</tbody></table></div>';
 };
 
-// casca comum de TODOS os blocos (Débito/Crédito/Backlog/Comparar): titulo com botao
+// casca comum de TODOS os blocos (DÃ©bito/CrÃ©dito/Backlog/Comparar): titulo com botao
 // de collapse + linha de meta info + corpo por baixo. E' a MESMA estrutura/diagramacao
-// pra todo mundo, inclusive o collapse (▾/▸, Estado.fechados[idTabela]) — assim trocar
+// pra todo mundo, inclusive o collapse (â–¾/â–¸, Estado.fechados[idTabela]) â€” assim trocar
 // de visao (Ciclo <-> Comparar) fica impercetivel, os blocos sao visualmente identicos.
 // 'corpoFn' e' chamada so' quando o bloco esta aberto (evita montar a tabela/matriz a
 // toa quando esta fechado).
 function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn) {
     const fechado = !!Estado.fechados[idTabela];
-    const btnTog = `<button type=button class=tog onclick="alternarBloco('${idTabela}')" aria-label="${fechado ? 'Expandir' : 'Recolher'}">${fechado ? '▸' : '▾'}</button>`;
+    const btnTog = `<button type=button class=tog onclick="alternarBloco('${idTabela}')" aria-label="${fechado ? 'Expandir' : 'Recolher'}">${fechado ? 'â–¸' : 'â–¾'}</button>`;
     const corpo = fechado ? '' : corpoFn();
-    return `<div class=blk><h3>${btnTog}${tituloHtml}</h3><p class=meta>${n} ${n == 1 ? 'registro' : 'registros'} · ${subtitulo}</p>${corpo}</div>`;
+    return `<div class=blk><h3>${btnTog}${tituloHtml}</h3><p class=meta>${n} ${n == 1 ? 'registro' : 'registros'} Â· ${subtitulo}</p>${corpo}</div>`;
 }
 
-// um card "Débito"/"Crédito"/"Backlog": titulo + total, subtitulo, tabela por baixo.
+// um card "DÃ©bito"/"CrÃ©dito"/"Backlog": titulo + total, subtitulo, tabela por baixo.
 // quando selecionavel, ganha um botao "Selecionar tudo" que marca/desmarca todas as linhas
 // dessa tabela de uma vez (respeitando o filtro de texto ativo, se houver).
-// "Ver gráfico" mora na toolbar (#btGrafico, ao lado do filtro Ativo), nao mais aqui.
+// "Ver grÃ¡fico" mora na toolbar (#btGrafico, ao lado do filtro Ativo), nao mais aqui.
 const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = false, extra = '') => {
     // 'extra' preenchido substitui o total no destaque: o titulo passa a exibir o que
     // falta pagar em evidencia, com o bruto de lado, apagado.
     const valor = extra.startsWith('<b') ? extra
         : `<b class="${corSoma(total)}">${brl(Math.abs(total))}</b>${extra}`;
-    return blocoCasca(`${titulo} · ${valor}`, subtitulo, linhas.length, idTabela,
+    return blocoCasca(`${titulo} Â· ${valor}`, subtitulo, linhas.length, idTabela,
         () => renderTabela(linhas, idTabela, selecionavel));
 };
 
 
 
 // ===================================================================
-// AS TRÊS VISÕES: Ciclo, Comparar, Investimento
+// AS TRÃŠS VISÃ•ES: Ciclo, Comparar, Investimento
 // ===================================================================
 
-// alocacaoAntecipacoes ja varre TODOS os periodos sozinha (e' O(periodos*lancamentos)) —
+// alocacaoAntecipacoes ja varre TODOS os periodos sozinha (e' O(periodos*lancamentos)) â€”
 // chama-la de novo pra cada ciclo individual faz o custo virar O(periodos^2*lancamentos),
 // que com uma tabela de periodos grande (ex: 1000 linhas) trava o navegador por dezenas de
 // segundos. Por isso ela e' calculada UMA VEZ POR RENDER aqui, memoizada por base, e
-// reaproveitada — nunca chamada dentro de um loop por idx.
+// reaproveitada â€” nunca chamada dentro de um loop por idx.
 function abatimentosDaBase(base) {
-    return { false: alocacaoAntecipacoes(base, false), true: alocacaoAntecipacoes(base, true) };
+    return alocacaoAntecipacoes(base);
 }
 let _baseFiltrada = null, _abatFiltrada = null;
 function baseEAbatFiltrados() {
@@ -761,61 +699,58 @@ function baseContaUnica() {
 // as 4 caches acima (filtrada e conta unica) sao zeradas em desenhar() a cada redesenho.
 
 // Saldo bruto (ANTES de aplicar Resgate necessario / Aporte sugerido) de um ciclo, a partir de
-// uma lista `base` ja filtrada e o `abat` (alocacaoAntecipacoes) JA CALCULADO pra essa base —
+// uma lista `base` ja filtrada e o `abat` (alocacaoAntecipacoes) JA CALCULADO pra essa base â€”
 // nunca chame alocacaoAntecipacoes aqui dentro. `saldoAnteriorFn` devolve o saldo (com ajuste
 // aplicado) do ciclo anterior NA MESMA BASE.
 function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
-    if (idx < 0 || !Estado.periodos[idx]) return 0;
-    if (dataISO(Estado.periodos[idx].fat) < SALDO_DESDE) return 0;
+    if (idx < 0 || !Estado.ciclos[idx]) return 0;
+    if (dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
 
     const doCiclo = base
         .filter(r => r.periodoIdx === idx && !r.cred)
         .reduce((s, r) => s + r.v, 0);
 
-    let fatura = 0;
-    [false, true].forEach(ehIsa => {
-        const bruto = base
-            .filter(r => r.cred && !!r.isa === ehIsa && r.periodoIdx === idx)
-            .reduce((s, r) => s + r.v, 0);
-        if (bruto) fatura += bruto + (abat[ehIsa][idx] || 0);
-    });
+    const brutoFatura = base
+        .filter(r => r.cred && r.periodoIdx === idx)
+        .reduce((s, r) => s + r.v, 0);
+    const fatura = brutoFatura ? brutoFatura + (abat[idx] || 0) : 0;
 
-    const anterior = idx > 0 && dataISO(Estado.periodos[idx - 1].fat) >= SALDO_DESDE
+    const anterior = idx > 0 && dataISO(Estado.ciclos[idx - 1].fat) >= SALDO_DESDE
         ? saldoAnteriorFn(idx - 1) : 0;
 
     return anterior + doCiclo + fatura;
 }
 
 // Linha sintetica de Resgate necessario / Aporte sugerido de um ciclo, a partir do seu saldo
-// bruto (totalBaseDoCiclo). Regra UNICA usada em todo lugar que soma dinheiro por ciclo —
-// Ciclo, saldo por dia, Comparar, pizza de gastos e evolucao — pra garantir que o mesmo numero
-// e o mesmo criterio apareçam em todos: saldo negativo -> resgate cobrindo o deficit; saldo
+// bruto (totalBaseDoCiclo). Regra UNICA usada em todo lugar que soma dinheiro por ciclo â€”
+// Ciclo, saldo por dia, Comparar, pizza de gastos e evolucao â€” pra garantir que o mesmo numero
+// e o mesmo criterio apareÃ§am em todos: saldo negativo -> resgate cobrindo o deficit; saldo
 // positivo -> aporte sugerido escoando o excedente (sempre, mesmo sem aporte real no ciclo).
 // `guardadoDisponivel` (patrimonio acumulado ATE O CICLO ANTERIOR, de guardadoAte(idx-1)) LIMITA
 // o resgate: nao da' pra resgatar mais do que existe guardado. Se o deficit for maior que o
-// guardado, resgata so' o que tem — o resto do deficit fica negativo de verdade no saldo do
+// guardado, resgata so' o que tem â€” o resto do deficit fica negativo de verdade no saldo do
 // ciclo, em vez de fingir (via um resgate maior que o patrimonio real) que o mes fechou em zero.
 function ajusteInvestimento(totalBase, guardadoDisponivel = Infinity) {
     if (totalBase < -0.005) {
         const deficit = -totalBase;
         const resgate = Math.min(deficit, Math.max(0, guardadoDisponivel));
-        if (resgate <= 0.005) return null;   // sem nada guardado pra resgatar — o mes fica negativo, sem linha de ajuste
-        return { tipo: 'resgate', nome: 'Resgate necessário', categ: 'Investimento', v: resgate };
+        if (resgate <= 0.005) return null;   // sem nada guardado pra resgatar â€” o mes fica negativo, sem linha de ajuste
+        return { tipo: 'resgate', nome: 'Resgate necessÃ¡rio', categ: 'Investimento', v: resgate };
     }
     if (totalBase > 0.005) return { tipo: 'aporte', nome: 'Aporte sugerido', categ: 'Investimento', v: -totalBase };
     return null;
 }
 
 // Total do bloco Debito de um ciclo: lancamentos + fatura + saldo do ciclo anterior + o
-// Resgate necessario / Aporte sugerido do proprio ciclo. E' recursivo — cada ciclo carrega o
-// anterior — e para no SALDO_DESDE. Respeita os filtros de Origem/Titular; pra conta unica
+// Resgate necessario / Aporte sugerido do proprio ciclo. E' recursivo â€” cada ciclo carrega o
+// anterior â€” e para no SALDO_DESDE. Respeita os filtros de Origem/Titular; pra conta unica
 // ignorando Titular, ver saldoCicloContaUnica. Memoizado (idx -> total, idx -> ajuste) porque
 // a cascata reprocessa os mesmos ciclos varias vezes por render.
 const _cacheSaldo = {};
 const _cacheAjuste = {};
 function saldoDoCiclo(idx) {
-    if (idx < 0 || !Estado.periodos[idx]) return 0;
-    if (dataISO(Estado.periodos[idx].fat) < SALDO_DESDE) return 0;
+    if (idx < 0 || !Estado.ciclos[idx]) return 0;
+    if (dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
     if (_cacheSaldo[idx] != null) return _cacheSaldo[idx];
 
     _cacheSaldo[idx] = 0;   // trava recursao circular enquanto calcula
@@ -831,22 +766,22 @@ function saldoDoCiclo(idx) {
     return total;
 }
 // Resgate necessario / Aporte sugerido de um ciclo (base "respeita filtros"). SEMPRE usar
-// esta funcao em vez de chamar totalBaseDoCiclo/ajusteInvestimento direto — ela reaproveita
+// esta funcao em vez de chamar totalBaseDoCiclo/ajusteInvestimento direto â€” ela reaproveita
 // o calculo memoizado de saldoDoCiclo, garantindo O(1) amortizado por idx no render inteiro.
 function ajusteDoCiclo(idx) {
-    if (idx < 0 || !Estado.periodos[idx] || dataISO(Estado.periodos[idx].fat) < SALDO_DESDE) return null;
+    if (idx < 0 || !Estado.ciclos[idx] || dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return null;
     saldoDoCiclo(idx);   // efeito colateral: preenche _cacheAjuste[idx]
     return _cacheAjuste[idx] || null;
 }
 
 // Mesma logica de saldoDoCiclo, mas na base "conta unica" (so Ativo/Pago, ignora Origem/
-// Titular) — usada por saldoPorDia e pela pizza de gastos, que ja tratavam a conta como
+// Titular) â€” usada por saldoPorDia e pela pizza de gastos, que ja tratavam a conta como
 // uma so antes desta mudanca. Cache proprio pra nao misturar com _cacheSaldo/_cacheAjuste.
 const _cacheSaldoUnico = {};
 const _cacheAjusteUnico = {};
 function saldoCicloContaUnica(idx) {
-    if (idx < 0 || !Estado.periodos[idx]) return 0;
-    if (dataISO(Estado.periodos[idx].fat) < SALDO_DESDE) return 0;
+    if (idx < 0 || !Estado.ciclos[idx]) return 0;
+    if (dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
     if (_cacheSaldoUnico[idx] != null) return _cacheSaldoUnico[idx];
 
     _cacheSaldoUnico[idx] = 0;
@@ -864,7 +799,7 @@ function saldoCicloContaUnica(idx) {
 // Resgate necessario / Aporte sugerido de um ciclo (base "conta unica"). Mesma ideia de
 // ajusteDoCiclo, so que pra quem ignora o filtro de Titular (saldoPorDia, pizza de gastos).
 function ajusteDoCicloContaUnica(idx) {
-    if (idx < 0 || !Estado.periodos[idx] || dataISO(Estado.periodos[idx].fat) < SALDO_DESDE) return null;
+    if (idx < 0 || !Estado.ciclos[idx] || dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return null;
     saldoCicloContaUnica(idx);
     return _cacheAjusteUnico[idx] || null;
 }
@@ -872,31 +807,28 @@ function ajusteDoCicloContaUnica(idx) {
 // Saldo em conta ao fim de cada dia, acumulado desde SALDO_INICIAL. Considera o que
 // de fato passa pela conta: os debitos (compra no credito nao sai da conta) mais as
 // linhas sinteticas de fatura, que representam o que ainda vai sair no vencimento, mais
-// o Resgate necessario / Aporte sugerido de cada ciclo (na data de fechamento dele) — pra
+// o Resgate necessario / Aporte sugerido de cada ciclo (na data de fechamento dele) â€” pra
 // que o saldo do ultimo dia do ciclo bata com saldoCicloContaUnica(idx).
-// Ignora o filtro de Titular — a conta e' uma so.
+// Ignora o filtro de Titular â€” a conta e' uma so.
 function saldoPorDia() {
     const { base, abat } = baseEAbatContaUnica();
 
     // faturas em aberto de todos os ciclos, ja liquidas de antecipacao
     const faturas = [];
-    Estado.periodos.forEach((per, idx) => {
-        [false, true].forEach(ehIsa => {
-            const bruto = base
-                .filter(r => r.cred && !!r.isa === ehIsa && r.periodoIdx === idx)
-                .reduce((s, r) => s + r.v, 0);
-            if (!bruto) return;
-            const liquido = bruto + (abat[ehIsa][idx] || 0);
-            const ant = Estado.periodos[idx - 1];
-            const venc = ant && (ehIsa ? ant.venc_isa : ant.venc);
-            if (Math.abs(liquido) > 0.005) faturas.push({ data: dataISO(venc || per.fat), v: liquido });
-        });
+    Estado.ciclos.forEach((per, idx) => {
+        const bruto = base
+            .filter(r => r.cred && r.periodoIdx === idx)
+            .reduce((s, r) => s + r.v, 0);
+        if (!bruto) return;
+        const liquido = bruto + (abat[idx] || 0);
+        const venc = vencimentoDoCiclo(idx);
+        if (Math.abs(liquido) > 0.005) faturas.push({ data: venc, v: liquido });
     });
 
-    // um evento de Resgate/Aporte por ciclo, na data de fechamento (usa o cache — nunca
+    // um evento de Resgate/Aporte por ciclo, na data de fechamento (usa o cache â€” nunca
     // recalcula alocacaoAntecipacoes por periodo)
     const ajustes = [];
-    Estado.periodos.forEach((per, idx) => {
+    Estado.ciclos.forEach((per, idx) => {
         const ajuste = ajusteDoCicloContaUnica(idx);
         if (ajuste) ajustes.push({ data: dataISO(per.fat), v: ajuste.v });
     });
@@ -921,7 +853,7 @@ function saldoPorDia() {
 // Quanto esta guardado no fim do ciclo: todos os aportes menos todos os resgates REAIS, de
 // todos os ciclos ate este, MAIS o efeito hipotetico do Resgate necessario / Aporte sugerido
 // de cada ciclo ate aqui (tratado como se o dinheiro tivesse de fato mudado de bolso, do
-// mesmo jeito que um aporte/resgate real ja lancado). Nao entra no saldo da conta — e'
+// mesmo jeito que um aporte/resgate real ja lancado). Nao entra no saldo da conta â€” e'
 // patrimonio separado.
 function guardadoAte(idx) {
     const reais = filtrarLancamentos()
@@ -940,7 +872,7 @@ function guardadoAte(idx) {
 // Quanto SOBRA pra bancar o Resgate necessario do ciclo `idx`: o guardado que veio do ciclo
 // anterior MENOS o efeito dos investimentos REAIS ja lancados dentro do proprio ciclo `idx`.
 // Sem descontar esses, um resgate real do mes (ex: R$2.456,34) era ignorado no limite e o
-// Resgate necessario podia sacar dinheiro que aquele resgate real ja tinha levado — deixando
+// Resgate necessario podia sacar dinheiro que aquele resgate real ja tinha levado â€” deixando
 // o guardado negativo e sobrando um residuo no saldo do ciclo (o caso "-R$10,00" no titulo
 // do Debito, com o guardado do mes seguinte aparecendo em -9,99).
 function guardadoDisponivelNoCiclo(idx, base, guardadoAnterior) {
@@ -950,7 +882,7 @@ function guardadoDisponivelNoCiclo(idx, base, guardadoAnterior) {
     return guardadoAnterior + reaisDoCiclo;
 }
 
-// Mesma logica de guardadoAte, mas na base "conta unica" (ignora o filtro de Titular) —
+// Mesma logica de guardadoAte, mas na base "conta unica" (ignora o filtro de Titular) â€”
 // usada so' pra limitar o Resgate necessario de saldoCicloContaUnica/ajusteDoCicloContaUnica
 // (saldoPorDia, pizza de gastos), que tem que respeitar a MESMA base que calculou o saldo,
 // nunca misturar com a base filtrada por Titular que guardadoAte usa.
@@ -969,7 +901,7 @@ function guardadoAteContaUnica(idx) {
 }
 
 // HTML do saldo de um ciclo com o mesmo tratamento usado no titulo do bloco Debito: ciclo
-// equalizado (saldo ~0) vira destaque verde de sucesso — "R$ 0,00" sem nada guardado, ou
+// equalizado (saldo ~0) vira destaque verde de sucesso â€” "R$ 0,00" sem nada guardado, ou
 // so' o valor guardado quando houver (o guardado ja fala por si, sem repetir o "R$ 0,00").
 // Saldo negativo (faltou) continua mostrando o valor normal, sem tratamento especial. Usado
 // tanto no titulo do bloco Debito (vCiclo) quanto na linha Total da matriz Comparar, pra os
@@ -979,7 +911,7 @@ function celulaSaldoCiclo(idx) {
     const guardado = guardadoAte(idx);
     const temGuardado = Math.abs(guardado) > 0.005;
     if (Math.abs(total) < 0.005) {
-        // guardado pode ser NEGATIVO (resgatou mais do que aportou historicamente) — a
+        // guardado pode ser NEGATIVO (resgatou mais do que aportou historicamente) â€” a
         // cor segue o sinal de verdade, nunca fixa em verde
         return temGuardado ? `<b class="${corValor(guardado)}">${brl(guardado)}</b>` : `<b class=vd>${brl(0)}</b>`;
     }
@@ -988,7 +920,7 @@ function celulaSaldoCiclo(idx) {
 
 
 
-// Visão "Ciclo": mostra um periodo por vez, com os blocos Debito e Credito (ou o Backlog).
+// VisÃ£o "Ciclo": mostra um periodo por vez, com os blocos Debito e Credito (ou o Backlog).
 function vCiclo() {
     const i = +el('ciclo').value;
 
@@ -997,54 +929,48 @@ function vCiclo() {
         return renderBloco('Backlog', linhas.reduce((s, r) => s + r.v, 0), 'Sem data ou fora dos ciclos', linhas, 'bk', true);
     }
 
-    const periodo = Estado.periodos[i];
+    const periodo = Estado.ciclos[i];
     if (!periodo) return '<p class=empty>Sem ciclos</p>';
 
     const debitos = filtrarLancamentos().filter(r => r.periodoIdx == i && !r.cred);
     const creditos = filtrarLancamentos().filter(r => r.periodoIdx == i && r.cred);
     const totalCredito = creditos.reduce((s, r) => s + r.v, 0);
 
-    // Uma linha de fatura por titular: cada cartao tem fechamento, vencimento e
-    // antecipacoes proprios, entao juntar os dois numa linha so escondia informacao.
-    // O vencimento vem do periodo ANTERIOR (ver periodoDoCredito).
-    const periodoDoVencimento = Estado.periodos[i - 1];
+    // Ha um unico cartao detalhado. A fatura da Isabella e' um lancamento comum no bloco
+    // Debito, com valor atualizado manualmente, e nunca vira uma linha sintetica aqui.
+    // O vencimento vem da fatura escolhida manualmente em cada credito.
+    const vencimentoDaFatura = vencimentoDoCiclo(i);
     const visiveis = filtrarLancamentos();
-    // a alocacao e' global (varre todos os ciclos), entao roda uma vez por titular
-    const abatidoEu = alocacaoAntecipacoes(visiveis, false);
-    const abatidoIsa = alocacaoAntecipacoes(visiveis, true);
+    const abatido = alocacaoAntecipacoes(visiveis);
 
-    const montaLinhaFatura = (ehIsa, rotulo) => {
-        const total = creditos.filter(r => !!r.isa === ehIsa).reduce((s, r) => s + r.v, 0);
-        if (!total) return null;   // sem compras desse titular, sem linha
-        const liquido = total + ((ehIsa ? abatidoIsa : abatidoEu)[i] || 0);
+    const montaLinhaFatura = () => {
+        const total = creditos.reduce((s, r) => s + r.v, 0);
+        if (!total) return null;   // sem compras no cartao, sem linha
+        const liquido = total + (abatido[i] || 0);
         // fatura quitada nao aparece: nao ha mais nada pra sair da conta
         if (Math.abs(liquido) < 0.005) return null;
-        const venc = periodoDoVencimento &&
-            (ehIsa ? periodoDoVencimento.venc_isa : periodoDoVencimento.venc);
-        const sid = `fat:${i}:${ehIsa ? 'isa' : 'eu'}`;
+        const venc = vencimentoDaFatura;
+        const sid = `fat:${i}`;
         Estado.valorFaturaPorCiclo[sid] = liquido;
         return {
-            data: venc || periodo.fat, nome: rotulo, categ: 'Fatura',
-            freq: '', id: ehIsa ? -4 : -3, v: liquido, valor: liquido, isa: ehIsa, _fat: 1, _sid: sid,
+            data: venc || periodo.fat, nome: 'Fatura do cartÃ£o', categ: 'Fatura',
+            freq: '', id: -3, v: liquido, valor: liquido, isa: false, _fat: 1, _sid: sid,
         };
     };
-    const linhasFatura = [
-        montaLinhaFatura(false, 'Fatura do cartão'),
-        montaLinhaFatura(true, 'Fatura do cartão (Isabella)'),
-    ].filter(Boolean);
+    const linhasFatura = [montaLinhaFatura()].filter(Boolean);
 
     // total liquido do credito: o bruto menos o que ja foi antecipado. E' o mesmo numero
-    // que aparece na linha de fatura do bloco Debito — aqui so como referencia no titulo.
+    // que aparece na linha de fatura do bloco Debito â€” aqui so como referencia no titulo.
     const totalFaturaLiquido = linhasFatura.reduce((s, r) => s + r.v, 0);
 
     const simples = modoSimples();
-    // saldo que veio do ciclo anterior — positivo ou negativo, entra como uma linha
+    // saldo que veio do ciclo anterior â€” positivo ou negativo, entra como uma linha
     // normal no comeco do bloco
     const anterior = saldoDoCiclo(i - 1);
-    const linhaAnterior = Math.abs(anterior) > 0.005 && Estado.periodos[i - 1] &&
-        dataISO(Estado.periodos[i - 1].fat) >= SALDO_DESDE
+    const linhaAnterior = Math.abs(anterior) > 0.005 && Estado.ciclos[i - 1] &&
+        dataISO(Estado.ciclos[i - 1].fat) >= SALDO_DESDE
         ? [{
-            data: periodo.ini, nome: 'Saldo do mês anterior', categ: 'Saldo',
+            data: periodo.ini, nome: 'Saldo do mÃªs anterior', categ: 'Saldo',
             freq: '', id: -1, _sid: `sal:${i}`, v: anterior, valor: anterior, _sal: 1
         }]
         : [];
@@ -1061,10 +987,10 @@ function vCiclo() {
     const totalCiclo = movimentosDoSaldo.reduce((s, r) => s + r.v, 0);
 
     // Resgate necessario / Aporte sugerido: mesma regra usada em todo o app (ajusteInvestimento),
-    // aplicada sobre o totalCiclo — que e' o mesmo valor que totalBaseDoCiclo(i) calcularia.
+    // aplicada sobre o totalCiclo â€” que e' o mesmo valor que totalBaseDoCiclo(i) calcularia.
     // Limitado ao que sobra de guardado NO MOMENTO do ajuste: o guardado do ciclo anterior
     // menos os investimentos reais ja lancados dentro deste ciclo (ver
-    // guardadoDisponivelNoCiclo) — nao da' pra resgatar dinheiro que um resgate real do
+    // guardadoDisponivelNoCiclo) â€” nao da' pra resgatar dinheiro que um resgate real do
     // proprio mes ja levou.
     const ajuste = dataISO(periodo.fat) >= SALDO_DESDE
         ? ajusteInvestimento(totalCiclo,
@@ -1072,7 +998,7 @@ function vCiclo() {
         : null;
 
     // _sid namespaced ("res:"/"sug:") pra nao colidir com o id de um lancamento real (ou
-    // simulado) que por acaso seja -1/-2/-5 — sem isso, chaveSelecao() (que prefere _sid
+    // simulado) que por acaso seja -1/-2/-5 â€” sem isso, chaveSelecao() (que prefere _sid
     // mas cai pra String(id) quando falta) tratava as duas linhas como a MESMA chave,
     // e o Map de selecao (1 valor por chave) descartava uma delas silenciosamente: a
     // soma da barra flutuante ficava menor que o total do titulo, sem nenhum erro visivel.
@@ -1115,10 +1041,10 @@ function vCiclo() {
     // tolerancia de ponto flutuante do resto do app (0.005) em vez de igualdade estrita,
     // senao um resto de arredondamento tipo 0.0000000001 escapava do "== 0" mas ainda
     // formatava como "R$ 0,00" na tela. Saldo negativo continua normal. Com algo guardado,
-    // o enfoque vira o valor guardado (e' o que importa agora) — o guardado ja fala por si,
+    // o enfoque vira o valor guardado (e' o que importa agora) â€” o guardado ja fala por si,
     // sem repetir o "R$ 0,00".
     const temGuardado = Math.abs(guardado) > 0.005;
-    // guardado pode ser NEGATIVO (resgatou mais do que aportou historicamente) — a cor
+    // guardado pode ser NEGATIVO (resgatou mais do que aportou historicamente) â€” a cor
     // tem que seguir o sinal de verdade (corValor), nunca fixa em verde, senao um
     // patrimonio negativo aparece com destaque de sucesso por engano.
     const extraDebito = Math.abs(totalDebito) < 0.005
@@ -1128,7 +1054,7 @@ function vCiclo() {
         : (temGuardado ? `<span class="bruto ${corValor(guardado)}">${brl(guardado)}</span>` : '');
 
     const blocoDebito = renderBloco(
-        'Débito', totalDebito,
+        'DÃ©bito', totalDebito,
         `${periodo.ini ? dataBR(periodo.ini) : 'inicio'} a ${dataBR(periodo.fat)}`,
         linhasDebito, 'db', true, extraDebito
     );
@@ -1142,8 +1068,8 @@ function vCiclo() {
     const faltaPagar = Math.abs(totalFaturaLiquido);
     const houveAbatimento = Math.abs(totalFaturaLiquido - totalCredito) > 0.005;
     const blocoCredito = renderBloco(
-        'Crédito', totalCredito,
-        Estado.periodos[i - 1] ? nomePeriodo(Estado.periodos[i - 1].fat) : '—',
+        'CrÃ©dito', totalCredito,
+        tituloFaturaDoCiclo(i),
         creditos, 'cr', true,
         houveAbatimento && faltaPagar > 0.005
             ? `<b class="${corSoma(totalFaturaLiquido)}">${brl(faltaPagar)}</b><span class=bruto>de ${brl(Math.abs(totalCredito))}</span>`
@@ -1153,23 +1079,23 @@ function vCiclo() {
     return blocoDebito + blocoCredito;
 }
 
-// Visão "Comparar": uma matriz [categoria/nome/etc × periodo], com totais por linha e coluna.
+// VisÃ£o "Comparar": uma matriz [categoria/nome/etc Ã— periodo], com totais por linha e coluna.
 function vComp() {
-    // reseta ANTES de qualquer return antecipado — senao um valor de uma chamada
+    // reseta ANTES de qualquer return antecipado â€” senao um valor de uma chamada
     // anterior fica "preso" (ex: filtro "Somente Diferentes" continua aparecendo mesmo
     // depois de trocar De/Ate pra um intervalo que nao tem mais 2 periodos)
     Estado._comparacao2Periodos = false;
 
-    const coluna = 'categ';   // Comparar sempre agrupa por Categoria — sem filtro "Agrupar por" na toolbar
-    // so mostra a matriz depois que o usuario escolhe De E Ate — nunca vem preenchida sozinha
+    const coluna = 'categ';   // Comparar sempre agrupa por Categoria â€” sem filtro "Agrupar por" na toolbar
+    // so mostra a matriz depois que o usuario escolhe De E Ate â€” nunca vem preenchida sozinha
     const deTexto = el('compDe').value, ateTexto = el('compAte').value;
-    if (!deTexto || !ateTexto || deTexto == '-1') return '<p class=empty>Escolha o período (De / Até) para comparar.</p>';
+    if (!deTexto || !ateTexto || deTexto == '-1') return '<p class=empty>Escolha o perÃ­odo (De / AtÃ©) para comparar.</p>';
 
     const de = +deTexto, ate = +ateTexto;
     const dentroDoIntervalo = i => i >= de && i <= ate;
 
     // rede de seguranca: desenhar() ja decide "modo blocos" (De==Ate) e chama vCiclo()
-    // direto nesse caso, entao vComp() normalmente nunca chega aqui com de==ate — mas se
+    // direto nesse caso, entao vComp() normalmente nunca chega aqui com de==ate â€” mas se
     // for chamada de outro lugar no futuro, continua se comportando corretamente.
     if (de == ate) {
         el('ciclo').value = de;
@@ -1180,44 +1106,42 @@ function vComp() {
     // NAO exclui ehTransferenciaFatura aqui: a antecipacao e' uma TRANSFERENCIA (nao gasto
     // de analise), mas ainda e' uma SAIDA DE CAIXA real, e vCiclo() a inclui normalmente
     // dentro de `debitos` (ver bloco Debito). Excluir esse debito e so' recolocar o
-    // abatimento (linha "Antecipação Fatura" abaixo) deixava a soma da matriz R$ igual ao
-    // valor antecipado A MAIS do que o Total (saldoDoCiclo) — faltava o lado debito.
+    // abatimento (linha "AntecipaÃ§Ã£o Fatura" abaixo) deixava a soma da matriz R$ igual ao
+    // valor antecipado A MAIS do que o Total (saldoDoCiclo) â€” faltava o lado debito.
     const reais = visiveis.filter(r => r.periodoIdx != null);
 
     // abatido[idxDoCiclo] = quanto foi antecipado daquela fatura (mesma logica usada em
-    // vCiclo() pro bloco Credito) — as compras no credito ja entram em `reais` por
+    // vCiclo() pro bloco Credito) â€” as compras no credito ja entram em `reais` por
     // categoria, BRUTAS; sem essa injecao a soma da matriz ficaria sem o abatimento.
-    const abatidoEu = alocacaoAntecipacoes(visiveis, false);
-    const abatidoIsa = alocacaoAntecipacoes(visiveis, true);
+    const abatido = alocacaoAntecipacoes(visiveis);
 
     // injeta as MESMAS linhas sinteticas que a visao Ciclo usa, senao o Total da matriz
     // (saldo equalizado, igual ao Ciclo) nao bate com a soma das categorias mostradas:
-    // "Saldo do mês anterior" (categoria "Saldo"), Resgate/Aporte (categoria "Investimento")
-    // e "Antecipação Fatura" (categoria "Fatura", o abatimento das antecipacoes na fatura
-    // que vence naquele periodo — sem essa linha a fatura ficaria bruta, sem abater).
+    // "Saldo do mÃªs anterior" (categoria "Saldo"), Resgate/Aporte (categoria "Investimento")
+    // e "AntecipaÃ§Ã£o Fatura" (categoria "Fatura", o abatimento das antecipacoes na fatura
+    // que vence naquele periodo â€” sem essa linha a fatura ficaria bruta, sem abater).
     const sinteticas = [];
-    Estado.periodos.forEach((per, idx) => {
+    Estado.ciclos.forEach((per, idx) => {
         if (!dentroDoIntervalo(idx)) return;
         const anterior = saldoDoCiclo(idx - 1);
-        if (Math.abs(anterior) > 0.005 && Estado.periodos[idx - 1] && dataISO(Estado.periodos[idx - 1].fat) >= SALDO_DESDE) {
+        if (Math.abs(anterior) > 0.005 && Estado.ciclos[idx - 1] && dataISO(Estado.ciclos[idx - 1].fat) >= SALDO_DESDE) {
             sinteticas.push({
-                nome: 'Saldo do mês anterior', categ: 'Saldo', freq: '', pago: null,
+                nome: 'Saldo do mÃªs anterior', categ: 'Saldo', freq: '', pago: null,
                 id: -1, _sid: `sal:${idx}`, data: per.ini, isa: null, cred: false, ativo: true,
                 v: anterior, valor: anterior, periodoIdx: idx,
             });
         }
         // abatimento da fatura: cancela o valor BRUTO da(s) compra(s) de credito que ja
-        // entraram em `reais` (por categoria original, ex. "Mercado") — a saida de caixa
+        // entraram em `reais` (por categoria original, ex. "Mercado") â€” a saida de caixa
         // real da antecipacao ja esta em `reais` tambem, na propria categoria dela.
-        [[abatidoEu, false, ''], [abatidoIsa, true, ' (Isabella)']].forEach(([abat, ehIsa, sufixo]) => {
-            const valor = abat[idx];
-            if (!valor) return;   // valor abatido e' positivo; entra como CREDITO na fatura (v positivo abate o debito)
+        const valorAbatido = abatido[idx];
+        if (valorAbatido) {
             sinteticas.push({
-                nome: 'Abatimento de fatura' + sufixo, categ: 'Abatimento de fatura', freq: '', pago: null,
-                id: -6, _sid: `abt:${idx}:${ehIsa ? 'isa' : 'eu'}`, data: dataISO(per.fat), isa: ehIsa, cred: false, ativo: true,
-                v: valor, valor: valor, periodoIdx: idx,
+                nome: 'Abatimento de fatura', categ: 'Abatimento de fatura', freq: '', pago: null,
+                id: -6, _sid: `abt:${idx}`, data: dataISO(per.fat), isa: false, cred: false, ativo: true,
+                v: valorAbatido, valor: valorAbatido, periodoIdx: idx,
             });
-        });
+        }
         const ajuste = ajusteDoCiclo(idx);
         if (!ajuste) return;
         sinteticas.push({
@@ -1247,7 +1171,7 @@ function vComp() {
     Estado._detalheComparar = { matriz: linhasDaCelula, coluna };   // lido por abreDetalheCelComparar()
 
     const oc = Estado.ordComp;
-    const seta = k => oc.k == k ? (oc.d == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
+    const seta = k => oc.k == k ? (oc.d == 1 ? ' <span class=ar>â†‘</span>' : ' <span class=ar>â†“</span>') : '';
 
     // com EXATAMENTE 2 periodos no intervalo (De/Ate cronologicos), duas colunas extras
     // no inicio marcam o que sumiu do 1o pro 2o mes ("Somente <mes 1>": tinha valor no
@@ -1259,17 +1183,17 @@ function vComp() {
     const [idxPrimeiro, idxSegundo] = periodosUsados;
     const deixouDePagar = chave => comparacao2Periodos && matriz[chave][idxPrimeiro] != null && matriz[chave][idxSegundo] == null;
     const comecouAPagar = chave => comparacao2Periodos && matriz[chave][idxPrimeiro] == null && matriz[chave][idxSegundo] != null;
-    const nomeMes1 = comparacao2Periodos ? nomeMesPeriodo(Estado.periodos[idxPrimeiro].fat) : '';
-    const nomeMes2 = comparacao2Periodos ? nomeMesPeriodo(Estado.periodos[idxSegundo].fat) : '';
+    const nomeMes1 = comparacao2Periodos ? nomeMesPeriodo(Estado.ciclos[idxPrimeiro].fat) : '';
+    const nomeMes2 = comparacao2Periodos ? nomeMesPeriodo(Estado.ciclos[idxSegundo].fat) : '';
 
     // Dentro de uma categoria x periodo, agrupa os lancamentos REAIS por nome+valor e
-    // avisa quando algum grupo se repete (2+) com datas de MESES DIFERENTES entre si —
+    // avisa quando algum grupo se repete (2+) com datas de MESES DIFERENTES entre si â€”
     // sintoma de um lancamento recorrente (mesmo nome, mesmo valor) que caiu 2x dentro do
-    // MESMO ciclo porque a janela do periodo atravessou a virada do mes (ver ehFronteira/
-    // proximoDia), e nao uma despesa que realmente comecou/parou de existir. Sem esse
+    // MESMO ciclo porque a janela entre dois Faturamentos PJ atravessou a virada do mes,
+    // e nao uma despesa que realmente comecou/parou de existir. Sem esse
     // aviso, "Somente <mes>" fazia parecer que a categoria sumiu no outro mes quando na
     // verdade ela so' foi contada 2x nesse aqui (e ficou de fora, sem repetir, no outro).
-    // Ignora linhas sinteticas (Saldo/Fatura/Investimento) — a checagem e' so' pra
+    // Ignora linhas sinteticas (Saldo/Fatura/Investimento) â€” a checagem e' so' pra
     // lancamento de verdade.
     function temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx) {
         const linhas = (linhasDaCelula[chave + '||' + periodoIdx] || []).filter(ehLinhaReal);
@@ -1280,22 +1204,22 @@ function vComp() {
         });
         return Object.values(mesesPorGrupo).some(meses => meses.size >= 2);
     }
-    // HTML do asterisco de aviso, colado no "✓" de difOk/difNovo, so' quando o lado que
+    // HTML do asterisco de aviso, colado no "âœ“" de difOk/difNovo, so' quando o lado que
     // TEM o lancamento (chave, periodoIdx) apresenta essa duplicata de mes diferente.
     const avisoRecorrenciaDuplicada = (chave, periodoIdx) => temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx)
-        ? `<span class=avisoDup title="Mesmo nome e valor apareceram 2x dentro deste ciclo, em meses diferentes — pode ser recorrência caindo 2x no mesmo ciclo, não uma mudança real">*</span>`
+        ? `<span class=avisoDup title="Mesmo nome e valor apareceram 2x dentro deste ciclo, em meses diferentes â€” pode ser recorrÃªncia caindo 2x no mesmo ciclo, nÃ£o uma mudanÃ§a real">*</span>`
         : '';
 
     // Filtro "Linhas": Todas (N) mostra tudo; Diferentes (S) so' as que sumiram/surgiram
-    // entre os 2 periodos; Diferentes sem recorrência (I) faz a mesma coisa, mas ainda
-    // descarta as que carregam o aviso de recorrência duplicada (avisoRecorrenciaDuplicada
-    // acima) — a categoria so' "sumiu"/"surgiu" por causa da janela do ciclo cortando o mes
+    // entre os 2 periodos; Diferentes sem recorrÃªncia (I) faz a mesma coisa, mas ainda
+    // descarta as que carregam o aviso de recorrÃªncia duplicada (avisoRecorrenciaDuplicada
+    // acima) â€” a categoria so' "sumiu"/"surgiu" por causa da janela do ciclo cortando o mes
     // ao meio, entao nao e' uma diferenca de verdade.
     const modoLinhas = el('somenteDif').value;
     const somenteDif = comparacao2Periodos && modoLinhas != 'N';
 
     // ao LIGAR o filtro (de Todas pra qualquer um dos dois modos de diferenca), passa a
-    // ordenar pela coluna "Somente <2º mês>" (a coisa nova fica em cima); ao DESLIGAR,
+    // ordenar pela coluna "Somente <2Âº mÃªs>" (a coisa nova fica em cima); ao DESLIGAR,
     // volta a ordenar pela coluna principal (nome/categ/o que estiver em "Agrupar por").
     // So dispara na TRANSICAO (nao a cada redesenho, senao o usuario nunca conseguiria
     // reordenar manualmente por outra coluna).
@@ -1315,15 +1239,15 @@ function vComp() {
     });
 
     // com so' 1 periodo no intervalo a coluna Total seria identica a unica coluna de
-    // periodo — redundante, entao some nesse caso
+    // periodo â€” redundante, entao some nesse caso
     const mostraColTotal = periodosUsados.length > 1;
 
     const cabecalho = `<tr><th class=c1 onclick="sortComp('chave')">${nomeColuna(coluna)}${seta('chave')}` +
         (comparacao2Periodos
-            ? `<th class="n colDif" title="Tinha em ${nomeMes1}, não tem mais em ${nomeMes2}" onclick="sortComp('dif1')">Somente ${nomeMes1}${seta('dif1')}</th>` +
-            `<th class="n colDif" title="Não tinha em ${nomeMes1}, passou a ter em ${nomeMes2}" onclick="sortComp('dif2')">Somente ${nomeMes2}${seta('dif2')}</th>`
+            ? `<th class="n colDif" title="Tinha em ${nomeMes1}, nÃ£o tem mais em ${nomeMes2}" onclick="sortComp('dif1')">Somente ${nomeMes1}${seta('dif1')}</th>` +
+            `<th class="n colDif" title="NÃ£o tinha em ${nomeMes1}, passou a ter em ${nomeMes2}" onclick="sortComp('dif2')">Somente ${nomeMes2}${seta('dif2')}</th>`
             : '') +
-        periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.periodos[i].fat)}${seta(String(i))}`).join('') +
+        periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i].fat)}${seta(String(i))}`).join('') +
         (mostraColTotal ? `<th class=n onclick="sortComp('total')">Total${seta('total')}` : '') +
         `</thead>`;
 
@@ -1336,7 +1260,7 @@ function vComp() {
                 : oc.k == 'dif2' ? (comecouAPagar(chave) ? 1 : 0)
                     : (matriz[chave][+oc.k] || 0);
     // cada linha de categoria vira selecionavel igual as tabelas do Ciclo (clique marca,
-    // shift-click marca intervalo, soma na barra flutuante) — o valor usado e' o Total da
+    // shift-click marca intervalo, soma na barra flutuante) â€” o valor usado e' o Total da
     // categoria no intervalo (totalDaChave), nao uma celula especifica. `_sid` prefixado
     // com "cp:" pra nao colidir com as chaves sinteticas de fatura ("fat:") do Ciclo.
     const linhasSelecionaveis = [];
@@ -1351,11 +1275,11 @@ function vComp() {
         const marcada = Estado.selecionados.has(sid);
         return `<tr class="${marcada ? 'on' : ''} pick" data-sid="${escapeHtml(sid)}"><td class=c1>${chave}` +
             (comparacao2Periodos
-                ? `<td class="n colDif">${deixouDePagar(chave) ? `<span class=difOk>✓</span>${avisoRecorrenciaDuplicada(chave, idxPrimeiro)}` : ''}</td>` +
-                `<td class="n colDif">${comecouAPagar(chave) ? `<span class=difNovo>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>`
+                ? `<td class="n colDif">${deixouDePagar(chave) ? `<span class=difOk>âœ“</span>${avisoRecorrenciaDuplicada(chave, idxPrimeiro)}` : ''}</td>` +
+                `<td class="n colDif">${comecouAPagar(chave) ? `<span class=difNovo>âœ“</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>`
                 : '') +
             periodosUsados.map(i => {
-                if (matriz[chave][i] == null) return '<td class=n>·';
+                if (matriz[chave][i] == null) return '<td class=n>Â·';
                 const v = matriz[chave][i];
                 const chaveJs = escapeHtml(chave).replace(/'/g, '&#39;');
                 return `<td class="n ${corSoma(v)} celClicavel" onclick="event.stopPropagation();abrirDetalheCelComparar('${chaveJs}',${i})">${brl(v)}`;
@@ -1367,37 +1291,37 @@ function vComp() {
     const linhasNoIntervalo = linhas.filter(r => dentroDoIntervalo(r.periodoIdx));
     // Total = mesmo saldo "equalizado" da visao Ciclo (saldo do mes anterior + movimentos
     // do ciclo + ajuste de Resgate/Aporte). Bate com a soma das categorias mostradas
-    // ACIMA porque "Saldo do mês anterior" e "Resgate/Aporte" agora entram como linhas
-    // sinteticas na matriz (ver injeção de `sinteticas` mais acima) — sem elas, um mes
+    // ACIMA porque "Saldo do mÃªs anterior" e "Resgate/Aporte" agora entram como linhas
+    // sinteticas na matriz (ver injeÃ§Ã£o de `sinteticas` mais acima) â€” sem elas, um mes
     // zerado na visao Ciclo apareceria com saldo bruto (nao-zero) aqui no Comparar.
     // cada celula usa o MESMO tratamento do titulo do bloco Debito na visao Ciclo: mes
     // equalizado (saldo ~0) vira "R$ 0,00" em verde de destaque, ou o valor guardado quando
-    // houver — os dois lugares (aqui e o bloco Debito) sempre concordam.
+    // houver â€” os dois lugares (aqui e o bloco Debito) sempre concordam.
     const celTotalPeriodo = i => `<td class=n>${celulaSaldoCiclo(i)}`;
     const linhaTotal = '<tr class=tot><td class=c1>Total' +
         (comparacao2Periodos ? '<td class="n colDif"><td class="n colDif">' : '') +
         periodosUsados.map(celTotalPeriodo).join('') +
         (mostraColTotal ? celTotalPeriodo(periodosUsados.at(-1)) : '');
 
-    // subtitulo: quantas linhas a matriz tem (varia com o "Agrupar por" — cada valor
+    // subtitulo: quantas linhas a matriz tem (varia com o "Agrupar por" â€” cada valor
     // distinto da coluna escolhida vira uma linha) e o intervalo de datas do periodo
     // De/Ate. A contagem de "N registros" (quantos lancamentos foram somados) ja vem
-    // de graca da blocoCasca, igual nos blocos Debito/Credito — nao repete aqui.
+    // de graca da blocoCasca, igual nos blocos Debito/Credito â€” nao repete aqui.
     const nGrupos = chavesFiltradas.length;
     const nRegistros = linhasNoIntervalo.length;
-    const iniPeriodo = Estado.periodos[periodosUsados[0]];
-    const fimPeriodo = Estado.periodos[periodosUsados.at(-1)];
+    const iniPeriodo = Estado.ciclos[periodosUsados[0]];
+    const fimPeriodo = Estado.ciclos[periodosUsados.at(-1)];
     const subtitulo =
         `${nGrupos} ${nGrupos == 1 ? nomeColuna(coluna) : nomeColuna(coluna) + 's'}` +
-        (iniPeriodo && fimPeriodo ? ` · ${dataBR(iniPeriodo.ini)} a ${dataBR(fimPeriodo.fat)}` : '');
+        (iniPeriodo && fimPeriodo ? ` Â· ${dataBR(iniPeriodo.ini)} a ${dataBR(fimPeriodo.fat)}` : '');
 
     // titulo no mesmo estilo dos blocos Debito/Credito
     const tituloPeriodo = iniPeriodo && fimPeriodo
-        ? `Comparação ${nomePeriodoAbrev(iniPeriodo.fat)} até ${nomePeriodoAbrev(fimPeriodo.fat)}`
-        : 'Comparação';
+        ? `ComparaÃ§Ã£o ${nomePeriodoAbrev(iniPeriodo.fat)} atÃ© ${nomePeriodoAbrev(fimPeriodo.fat)}`
+        : 'ComparaÃ§Ã£o';
 
     // MESMA casca (blocoCasca) usada por Debito/Credito/Backlog: titulo, botao de
-    // collapse (▾/▸), linha de meta info e o corpo por baixo — pra trocar de visao
+    // collapse (â–¾/â–¸), linha de meta info e o corpo por baixo â€” pra trocar de visao
     // (Ciclo <-> Comparar) ser impercetivel, os blocos ficam visualmente identicos.
     return blocoCasca(tituloPeriodo, subtitulo, nRegistros, 'cp',
         () => `<div class="wrap wx"><table><thead>${cabecalho}<tbody>${corpo}${linhaTotal}</tbody></table></div>`);
@@ -1409,7 +1333,7 @@ function vComp() {
 // PERFIL RESTRITO (Isabella) e DESENHO GERAL DA TELA
 // ===================================================================
 // perfil restrito (Isabella): desenhar() ja forca sozinho o "modo blocos" (De==Ate) e
-// esconde os demais filtros quando modoSimples() e' true — nao ha mais nada especifico
+// esconde os demais filtros quando modoSimples() e' true â€” nao ha mais nada especifico
 // pra aplicar aqui no login, a funcao fica so' documentando esse ponto de entrada.
 function aplicaPerfil() { }
 
@@ -1427,18 +1351,18 @@ function desenhar() {
     el('fciclo').hidden = true;   // #ciclo e' so' a fonte de verdade interna que vCiclo() le, nunca aparece
 
     // ao nao ter De/Ate escolhidos ainda (1a carga), pre-preenche com o ciclo ATUAL nos
-    // dois — abre direto no modo blocos do mes corrente (De=Ate=atual), igual o botao
+    // dois â€” abre direto no modo blocos do mes corrente (De=Ate=atual), igual o botao
     // "Atual" faz e igual a visao Ciclo antiga sempre abria
     if (!el('compDe').value && !el('compAte').value && Estado.idxHoje >= 0) {
         el('compDe').value = Estado.idxHoje;
         el('compAte').value = Estado.idxHoje;
     }
 
-    // "modo blocos" (De==Ate, De=Backlog, ou modo simples — mobile/Isabella sempre
+    // "modo blocos" (De==Ate, De=Backlog, ou modo simples â€” mobile/Isabella sempre
     // navegam ciclo a ciclo) delega a tela pra vCiclo() (via vComp()); fora disso e'
-    // "modo matriz". So' existe esse UM criterio — a antiga visao "Ciclo"/"Comparar"
+    // "modo matriz". So' existe esse UM criterio â€” a antiga visao "Ciclo"/"Comparar"
     // separada foi removida, unificada dentro do fluxo Comparar (De==Ate cobre
-    // exatamente o que a visao Ciclo cobria), e o navegador ‹›Atual tambem saiu — De/Ate
+    // exatamente o que a visao Ciclo cobria), e o navegador â€¹â€ºAtual tambem saiu â€” De/Ate
     // ficam sempre visiveis, e Backlog e' so' mais uma opcao do De.
     if (simples && el('compDe').value !== el('compAte').value) {
         // simples troca pro ciclo ATUAL (nunca deixa De != Ate escapar pro modo simples)
@@ -1447,12 +1371,12 @@ function desenhar() {
     }
     const ehBacklog = el('compDe').value == '-1';
     const modoBlocos = ehBacklog || (!!el('compDe').value && el('compDe').value == el('compAte').value);
-    // Backlog nao compara com outro periodo — o Ate fica desabilitado e ignorado
+    // Backlog nao compara com outro periodo â€” o Ate fica desabilitado e ignorado
     // enquanto o De for Backlog (nao da' pra escolher um Ate junto com Backlog).
     el('compAte').disabled = ehBacklog;
     if (modoBlocos) el('ciclo').value = ehBacklog ? -1 : el('compDe').value;   // vCiclo() le o combo interno
 
-    // Origem so faz sentido comparando a matriz de verdade (2+ periodos) — some de
+    // Origem so faz sentido comparando a matriz de verdade (2+ periodos) â€” some de
     // verdade (hidden) fora do fluxo, sem deixar buraco reservado, mas com um fade suave
     // em vez de corte seco.
     mostraComFade('forigem', !modoBlocos && !simples);
@@ -1469,21 +1393,21 @@ function desenhar() {
     if (!simples) el('fativo').value = noBacklog ? 'B' : 'S';
     if (!modoBlocos) el('origem').value = 'A';
 
-    // "Ver gráfico" so faz sentido com um ciclo de verdade selecionado (fora do Backlog,
+    // "Ver grÃ¡fico" so faz sentido com um ciclo de verdade selecionado (fora do Backlog,
     // que nao tem periodo pra desenhar a pizza).
     mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
     el('btGrafico').dataset.idx = el('ciclo').value;
     mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
 
-    // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
+    // fade suave SO' quando muda de modo (blocos <-> matriz) â€” nao em todo redesenho
     // (ex: digitar num filtro de texto), senao a tela piscaria a cada tecla
     const trocouModo = Estado._modoBlocosAnterior != null && Estado._modoBlocosAnterior != modoBlocos;
     Estado._modoBlocosAnterior = modoBlocos;
     // #out.innerHTML e' reescrito do zero a cada desenhar() (ex: a cada linha marcada
-    // no shift-click) — sem isso, o scroll INTERNO de cada tabela (.wx/.wrap tem
+    // no shift-click) â€” sem isso, o scroll INTERNO de cada tabela (.wx/.wrap tem
     // overflow:auto proprio) e' perdido a cada redesenho, dando a impressao de que a
     // tabela "reseta" a visao no meio de um shift-click. Guarda a posicao de cada
-    // container rolavel (por indice — o mesmo modo gera os mesmos blocos, na mesma
+    // container rolavel (por indice â€” o mesmo modo gera os mesmos blocos, na mesma
     // ordem, entre um redesenho e outro) e restaura depois, exceto ao trocar de modo
     // de verdade (blocos <-> matriz), onde nao ha posicao antiga que faca sentido.
     const scrollsAntigos = [...el('out').querySelectorAll('.wx, .wrap')].map(e => [e.scrollTop, e.scrollLeft]);
@@ -1494,7 +1418,7 @@ function desenhar() {
             [e.scrollTop, e.scrollLeft] = scrollsAntigos[i];
         });
     }
-    // "Somente Diferentes" so faz sentido comparando EXATAMENTE 2 periodos — vComp()
+    // "Somente Diferentes" so faz sentido comparando EXATAMENTE 2 periodos â€” vComp()
     // deixa a informacao pronta em Estado._comparacao2Periodos como efeito colateral,
     // porque so' ali se sabe quantos periodos a matriz de fato usou.
     mostraComFade('fdif', !modoBlocos && !simples && !!Estado._comparacao2Periodos);
@@ -1503,7 +1427,7 @@ function desenhar() {
         void el('out').offsetWidth;   // forca reflow pra reiniciar a animacao mesmo se ja rodou antes
         el('out').classList.add('fadeIn');
     }
-    // limpa a selecao SO' na troca de modo (blocos <-> matriz) — as chaves de selecao de
+    // limpa a selecao SO' na troca de modo (blocos <-> matriz) â€” as chaves de selecao de
     // um lado nao existem no outro (linhas reais do Ciclo vs categorias "cp:" do Comparar),
     // mas dentro do MESMO modo a selecao tem que sobreviver a redesenhos normais (trocar
     // filtro, digitar em busca, etc), senao a barra de soma nunca fica de pe' no Comparar.
@@ -1515,7 +1439,7 @@ function desenhar() {
 }
 
 // ===================================================================
-// SELEÇÃO DE LINHAS (barra flutuante de soma)
+// SELEÃ‡ÃƒO DE LINHAS (barra flutuante de soma)
 // ===================================================================
 function atualizaBarraSelecao() {
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
@@ -1530,9 +1454,9 @@ function atualizaBarraSelecao() {
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
-    // pra somar e selecionar/limpar. Nunca os dois juntos — pra desmarcar uma linha unica,
+    // pra somar e selecionar/limpar. Nunca os dois juntos â€” pra desmarcar uma linha unica,
     // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
-    // tela/perfil (mobile e Isabella inclusive) — nao depende mais de modoSimples().
+    // tela/perfil (mobile e Isabella inclusive) â€” nao depende mais de modoSimples().
     el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
     el('seldup').textContent = ehAjusteMaterializavel ? 'Materializar' : 'Duplicar';
     el('seldel').hidden = !chaveUnicaReal;
@@ -1572,8 +1496,8 @@ function valorDaChave(chave) {
     }
 
     // Procura primeiro nas linhas atualmente renderizadas.
-    // Isso inclui Saldo do mês anterior, Resgate necessário
-    // e Investimento sugerido, que não existem em Estado.lancamentos.
+    // Isso inclui Saldo do mÃªs anterior, Resgate necessÃ¡rio
+    // e Investimento sugerido, que nÃ£o existem em Estado.lancamentos.
     const visivel = linhaDaChaveSelecao(chave);
     if (visivel) return visivel._sug != null ? visivel._sug : (visivel.v || 0);
 
@@ -1621,14 +1545,14 @@ window.alternarBloco = idTabela => {
 };
 
 // clique no badge "Pago"/"Aberto" alterna o status na hora, sem selecionar a linha (o
-// listener de selecao abaixo esta no MESMO #out — precisa vir ANTES e parar a propagacao,
+// listener de selecao abaixo esta no MESMO #out â€” precisa vir ANTES e parar a propagacao,
 // senao o clique tambem selecionaria a linha inteira por baixo do badge).
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-pago]');
     if (!badge) return;
     // stopPropagation NAO basta aqui: os dois listeners estao no MESMO elemento (#out),
     // entao ambos disparam na mesma fase de bubbling nao importa o que este pare de
-    // propagar — precisa de stopImmediatePropagation pra impedir o listener de selecao
+    // propagar â€” precisa de stopImmediatePropagation pra impedir o listener de selecao
     // (registrado logo abaixo, no mesmo #out) de rodar tambem.
     e.stopImmediatePropagation();
 
@@ -1653,54 +1577,6 @@ el('out').addEventListener('click', async e => {
     }
 });
 
-const nomesVolatilSalvando = new Set();
-async function alternarVolatil(e) {
-    const badge = e.target.closest('[data-tog-volatil]');
-    if (!badge) return;
-    e.stopImmediatePropagation();
-    const r = Estado.lancamentos.find(x => String(x.id) === badge.dataset.togVolatil);
-    if (!r || (!ehLinhaReal(r) && !r._sim)) return;
-    const nome = r.nome;
-    if (!nome?.trim()) { alert('Esse lançamento não tem um nome para atualizar o grupo.'); return; }
-    if (nomesVolatilSalvando.has(nome)) return;
-    nomesVolatilSalvando.add(nome);
-    const novoValor = !r.volatil;
-    badge.style.opacity = .5;
-    try {
-        if (r._sim) {
-            Estado.lancamentos.filter(x => x._sim && x.nome === nome).forEach(x => { x.volatil = novoValor; });
-        } else {
-            const atualizados = await atualizarVolatilPorNome(nome, novoValor);
-            const idsAtualizados = new Set(atualizados.map(x => String(x.id)));
-            const reaisDoNome = Estado.lancamentos.filter(x => ehLinhaReal(x) && x.nome === nome);
-            if (reaisDoNome.some(x => !idsAtualizados.has(String(x.id))))
-                throw Error('a API não atualizou todos os lançamentos desse nome; recarregue os dados e confira as permissões');
-            reaisDoNome.forEach(x => { x.volatil = novoValor; });
-        }
-        desenhar();
-        atualizarDetalheVolatil();
-    } catch (err) {
-        if (!r._sim) {
-            const simulados = Estado.lancamentos.filter(x => x._sim);
-            try { await carregarDados(); Estado.lancamentos.push(...simulados); }
-            catch (erroCarga) { console.error('[diag] erro ao recarregar após PATCH:', erroCarga); }
-        }
-        alert('Falhou ao atualizar Volátil: ' + err.message);
-        desenhar();
-        atualizarDetalheVolatil();
-    } finally {
-        nomesVolatilSalvando.delete(nome);
-    }
-}
-function atualizarDetalheVolatil() {
-    const detalhe = Estado._detalheAtual;
-    if (!detalhe || !el('modalDetalheCel').open) return;
-    detalhe.linhas = Estado._detalheComparar?.matriz[detalhe.categoria + '||' + detalhe.periodoIdx] || [];
-    renderizaDetalheCel();
-}
-el('out').addEventListener('click', alternarVolatil);
-el('corpoDetalheCel').addEventListener('click', alternarVolatil);
-
 // clique no Valor troca o <span> por um <input> mascarado (mesma mascara do form de
 // lancamento), focado e com o texto ja selecionado. Enter ou blur confirma; Escape
 // cancela sem salvar. Mesmo esquema do toggle Pago acima: stopImmediatePropagation pra
@@ -1709,7 +1585,7 @@ el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-valor]');
     if (!span) return;
     // ja esta em edicao (input aberto): so' impede o clique de vazar pra selecao de
-    // linha por baixo — o proprio <input> cuida do cursor/foco nativamente.
+    // linha por baixo â€” o proprio <input> cuida do cursor/foco nativamente.
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
     e.stopImmediatePropagation();
 
@@ -1720,7 +1596,7 @@ el('out').addEventListener('click', e => {
     const bruto = Math.abs(r.v || 0);
     const negativo = (r.v || 0) < 0;
     span.classList.add('editando');
-    span.innerHTML = `<span class=inpValorSinal>${negativo ? '−' : '+'}</span>` +
+    span.innerHTML = `<span class=inpValorSinal>${negativo ? 'âˆ’' : '+'}</span>` +
         `<input type=text inputmode=numeric class=inpValor value="${bruto ? formataMascaraDinheiro(String(Math.round(bruto * 100))) : ''}" placeholder="0,00">`;
     const input = span.querySelector('input');
     const sinalEl = span.querySelector('.inpValorSinal');
@@ -1731,11 +1607,11 @@ el('out').addEventListener('click', e => {
         input.value = formataMascaraDinheiro(input.value);
         if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
     });
-    // clique no sinal (+/−) alterna, sem submeter nem perder o foco do input
+    // clique no sinal (+/âˆ’) alterna, sem submeter nem perder o foco do input
     sinalEl.onclick = ev => {
         ev.stopImmediatePropagation();
         sinalNegativo = !sinalNegativo;
-        sinalEl.textContent = sinalNegativo ? '−' : '+';
+        sinalEl.textContent = sinalNegativo ? 'âˆ’' : '+';
         input.focus();
     };
 
@@ -1769,17 +1645,17 @@ el('out').addEventListener('click', e => {
 });
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial
-// (carregarDados) — mudar a data pode jogar a linha pra outro periodo, ou pro Backlog
+// (carregarDados) â€” mudar a data pode jogar a linha pra outro periodo, ou pro Backlog
 // quando a data e' apagada / cai fora de todos os periodos cadastrados.
 function reclassificaPeriodo(r) {
     const idx = !r.data ? null
-        : r.cred ? periodoDoCredito(r.data, r.isa, r.nome)
+        : r.cred ? periodoDaFatura(r.fatura_id)
             : periodoDoDebito(dataISO(r.data));
-    r.periodoIdx = idx != null && idx >= 0 && idx < Estado.periodos.length ? idx : null;
+    r.periodoIdx = idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
 }
 
 // clique na Data troca o <span> por um <input type=date>. O banco ja guarda 'YYYY-MM-DD',
-// que e' exatamente o formato do value/atributo desse input — nao ha conversao nenhuma no
+// que e' exatamente o formato do value/atributo desse input â€” nao ha conversao nenhuma no
 // meio (a tela e' que mostra DD/MM/AAAA, via dataBR). Enter ou escolher no calendario
 // confirma; Escape cancela. Mesmo esquema do toggle Pago e do Valor: stopImmediatePropagation
 // pra nao disparar a selecao da linha por baixo.
@@ -1844,9 +1720,9 @@ el('out').addEventListener('click', e => {
 el('selacao').onclick = () => { Estado.selecionados.clear(); desenhar(); };
 el('ciclo').addEventListener('change', () => { Estado.selecionados.clear(); atualizaBarraSelecao(); });
 // trocar De/Ate refaz a matriz do zero (outras categorias/periodos podem entrar ou sair)
-// — limpa a selecao pelo mesmo motivo que trocar o combo Ciclo limpa, acima.
+// â€” limpa a selecao pelo mesmo motivo que trocar o combo Ciclo limpa, acima.
 // Intervalo invertido (De > Ate) nao faz sentido: o campo que o usuario ACABOU de
-// escolher "ganha", empurrando o outro pra igualar ele — mexeu no De e ficou maior que
+// escolher "ganha", empurrando o outro pra igualar ele â€” mexeu no De e ficou maior que
 // o Ate? o Ate sobe junto. Mexeu no Ate e ficou menor que o De? o De desce junto.
 el('compDe').addEventListener('change', () => {
     if (el('compDe').value && el('compDe').value != '-1' && el('compAte').value
@@ -1866,7 +1742,7 @@ el('compAte').addEventListener('change', () => {
 el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
 el('btEvolucao').onclick = () => abrirGraficoEvolucao(+el('compDe').value, +el('compAte').value);
 
-// volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
+// volta pro ciclo atual (De=Ate=hoje) â€” mesmo padrao com que a pagina abre. Fica
 // desabilitado quando hoje nao cai em periodo nenhum.
 function atualizaBtCicloHoje() {
     el('cicloHoje').disabled = Estado.idxHoje < 0;
@@ -1879,15 +1755,15 @@ el('cicloHoje').onclick = () => {
     desenhar();
 };
 
-// ‹ / › navegam pro periodo anterior/seguinte. Anda pelas OPCOES reais do combo #compDe
+// â€¹ / â€º navegam pro periodo anterior/seguinte. Anda pelas OPCOES reais do combo #compDe
 // (ja filtradas certo pra Isabella/perfil restrito e com Backlog como 1a opcao), nao por
-// indice aritmetico — assim respeita os mesmos limites de navegacao sem duplicar a logica.
+// indice aritmetico â€” assim respeita os mesmos limites de navegacao sem duplicar a logica.
 // Com De==Ate (1 ciclo so', "modo blocos") sempre foi assim: anda 1 a 1, igualando os
 // dois (entra direto no modo blocos daquele ciclo). Comparando um INTERVALO (De != Ate,
 // ex: 2 meses de distancia) o clique desliza a janela inteira mantendo a MESMA distancia
-// entre De e Ate — um passo pra CADA lado (De e Ate andam +1/-1 juntos), nunca pulando
+// entre De e Ate â€” um passo pra CADA lado (De e Ate andam +1/-1 juntos), nunca pulando
 // pelo tamanho do intervalo inteiro, senao "Jan-Mar" viraria "Mai-Jul" de uma vez em vez
-// de "Fev-Abr". Backlog nunca entra nesse modo — De='-1' sempre deixa Ate desabilitado
+// de "Fev-Abr". Backlog nunca entra nesse modo â€” De='-1' sempre deixa Ate desabilitado
 // (ver desenhar()), entao so' chega aqui com os dois periodos reais.
 function navegaCiclo(direcao) {
     const opcoes = [...el('compDe').options].map(o => o.value).filter(v => v !== '');
@@ -1933,34 +1809,34 @@ el('cicloAnterior').onclick = () => navegaCiclo(-1);
 el('cicloProximo').onclick = () => navegaCiclo(1);
 
 // qualquer select/checkbox da barra de ferramentas redesenha a tela ao mudar
-// >>> LOG TEMP: try/catch aqui so pra diagnostico — sem isso, um erro no desenhar()
+// >>> LOG TEMP: try/catch aqui so pra diagnostico â€” sem isso, um erro no desenhar()
 // disparado por um filtro (fora do try do load()) sumia sem aparecer em lugar nenhum.
 // compDe/compAte moraram em .tool ate virarem parte do slot #navComparar (em .head,
-// pra nao dar "tremor" de layout ao trocar Ciclo/Comparar) — por isso entram na
-// selecao aqui tambem, senao o "onchange" generico da toolbar nunca os alcança.
+// pra nao dar "tremor" de layout ao trocar Ciclo/Comparar) â€” por isso entram na
+// selecao aqui tambem, senao o "onchange" generico da toolbar nunca os alcanÃ§a.
 document.querySelectorAll('.tool select,.tool input,#navComparar select').forEach(e => e.onchange = () => {
     try { desenhar(); } catch (err) { console.error('[diag] erro ao redesenhar apos mudar filtro:', err); }
 });
 
 // ===================================================================
-// LIMPAR FILTROS — devolve a tela pro estado em que ela abre
+// LIMPAR FILTROS â€” devolve a tela pro estado em que ela abre
 // ===================================================================
 // Valor padrao de cada select da toolbar: e' a 1a <option> de cada um no index.html, que e'
 // tambem o que o navegador seleciona sozinho na 1a carga. desenhar() ainda pode sobrescrever
 // alguns deles conforme o modo (ex: Ativo vira "Ambos" no Backlog, Origem volta pra "Tudo"
-// no modo blocos) — o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.
-const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', fvolatil: 'B', origem: 'A', somenteDif: 'N', fvalor: 'T' };
+// no modo blocos) â€” o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.
+const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', origem: 'A', somenteDif: 'N', fvalor: 'T' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
-    Estado.filtroTexto = {};      // buscas por coluna (Data/Nome/Valor/Categoria/Frequência)
+    Estado.filtroTexto = {};      // buscas por coluna (Data/Nome/Valor/Categoria/FrequÃªncia)
     Estado.fechados = {};         // blocos recolhidos voltam a abrir
     Estado.selecionados.clear();  // as linhas marcadas somem junto com o recorte que as gerou
     Estado.ordenacaoPorTabela = {};   // volta pra ordenacao padrao (data ascendente)
     Estado.ordComp = { k: 'total', d: 2 };
     excluidasDoGrafico = [];      // categorias excluidas da pizza
     // De/Ate: zerar os dois faz desenhar() repor o ciclo ATUAL nos dois (mesmo caminho da
-    // 1a carga). Sem ciclo atual, ficam em "Todos" — que tambem e' como a pagina abriria.
+    // 1a carga). Sem ciclo atual, ficam em "Todos" â€” que tambem e' como a pagina abriria.
     el('compDe').value = '';
     el('compAte').value = '';
     desenhar();
@@ -1968,13 +1844,13 @@ function limparFiltros() {
 el('btLimparFiltros').onclick = limparFiltros;
 
 // ===================================================================
-// VISUALIZAÇÃO: ROBERTA — acerto de contas
+// VISUALIZAÃ‡ÃƒO: ROBERTA â€” acerto de contas
 // ===================================================================
 // Ela adiantou um valor de uma vez (entra POSITIVO na categoria) e a divida vai sendo
-// quitada aos poucos com o que sai pra ela (negativo — credito ou debito, tanto faz).
+// quitada aos poucos com o que sai pra ela (negativo â€” credito ou debito, tanto faz).
 // De proposito olha TODOS os lancamentos da categoria e IGNORA os filtros/ciclo da barra:
 // o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
-// (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
+// (desativado foi cancelado) e 'pago' â€” enquanto o pagamento nao aconteceu o dinheiro nao
 // saiu, e contar agendado inflaria o progresso do acerto.
 const ehCategoria = (categ, procurada) => semAcento(categ).trim() === semAcento(procurada).trim();
 
@@ -1982,14 +1858,14 @@ function dadosCategoria(categoria) {
     const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoria(r.categ, categoria));
     const entradas = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
     const saidas = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
-    // O percentual visual para em 100%, mas o saldo continua mostrando excesso de saída.
+    // O percentual visual para em 100%, mas o saldo continua mostrando excesso de saÃ­da.
     const pctUsado = entradas ? Math.min(100, saidas / entradas * 100) : 0;
     return { linhas, entradas, saidas, saldo: entradas - saidas, pctUsado, pctRestante: 100 - pctUsado };
 }
 
-// Entrada Econ, Evolução Obra e Dívida Estudantil medem execução financeira: o universo é tudo que
-// está ativo no recorte (pago + não pago), e a barra compara o valor pago com esse total.
-// Usa valor absoluto porque despesas são armazenadas com sinal negativo.
+// Entrada Econ, EvoluÃ§Ã£o Obra e DÃ­vida Estudantil medem execuÃ§Ã£o financeira: o universo Ã© tudo que
+// estÃ¡ ativo no recorte (pago + nÃ£o pago), e a barra compara o valor pago com esse total.
+// Usa valor absoluto porque despesas sÃ£o armazenadas com sinal negativo.
 function dadosPagamentoCategoria(op) {
     const campo = op.campo || 'categ';
     const valor = op.valor || op.categoria;
@@ -2012,13 +1888,13 @@ function abrirVisCategoria(op) {
     const pctDestaque = encerrado ? 0 : d.pctRestante;
     el('tituloVisCategoria').textContent = op.titulo;
     el('robertaCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento pago na categoria “${escapeHtml(op.categoria)}” ainda.</p>`
-        : `<div class="robPct ${encerrado ? 'vd' : 'vm'}">${semBase ? '—' : pct1(pctDestaque)}</div>
+        ? `<p class=meta>Nenhum lanÃ§amento pago na categoria â€œ${escapeHtml(op.categoria)}â€ ainda.</p>`
+        : `<div class="robPct ${encerrado ? 'vd' : 'vm'}">${semBase ? 'â€”' : pct1(pctDestaque)}</div>
            <p class=robPctSub>${encerrado ? op.subEncerrado : op.subAberto}</p>
            <div class=robBarra><div class=robFill style="width:${d.pctUsado.toFixed(2)}%"></div></div>
            <div class=robLegenda>
              <span>${semBase ? 'Sem entrada positiva' : `${op.legendaUsado} ${pct1(d.pctUsado)}`}</span>
-             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
+             <span>${d.linhas.length} lanÃ§amento${d.linhas.length > 1 ? 's' : ''}</span>
            </div>
            <table class=robTab><tbody>
              <tr><td>${op.rotuloEntrada}<td class="n vm">${brl(d.entradas)}
@@ -2035,17 +1911,17 @@ function abrirVisPagamentoCategoria(op) {
     const rotuloFiltro = op.campo == 'nome' ? 'nome' : 'categoria';
     el('tituloVisCategoria').textContent = op.titulo;
     el('robertaCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento ativo com ${rotuloFiltro} “${escapeHtml(valorFiltro)}” ainda.</p>`
+        ? `<p class=meta>Nenhum lanÃ§amento ativo com ${rotuloFiltro} â€œ${escapeHtml(valorFiltro)}â€ ainda.</p>`
         : `<div class="robPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
-           <p class=robPctSub>do valor total está pago</p>
+           <p class=robPctSub>do valor total estÃ¡ pago</p>
            <div class=robBarra><div class=robFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
            <div class=robLegenda>
              <span>Pago ${pct1(d.pctPago)}</span>
-             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
+             <span>${d.linhas.length} lanÃ§amento${d.linhas.length > 1 ? 's' : ''}</span>
            </div>
            <table class=robTab><tbody>
              <tr><td>Pago<td class="n vd">${brl(d.pago)}
-             <tr><td>Não pago<td class="n vm">${brl(d.naoPago)}
+             <tr><td>NÃ£o pago<td class="n vm">${brl(d.naoPago)}
              <tr class=tot><td>Total<td class=n>${brl(d.total)}
            </tbody></table>`;
     el('modalRoberta').showModal();
@@ -2054,30 +1930,30 @@ function abrirVisPagamentoCategoria(op) {
 const VIS_CATEGORIAS = {
     Roberta: {
         categoria: 'Roberta', titulo: 'Roberta', subAberto: 'falta pra quitar com ela',
-        subEncerrado: 'quitado — nada a pagar', legendaUsado: 'Você já pagou',
-        rotuloEntrada: 'Ela te pagou', rotuloSaida: 'Você já pagou',
+        subEncerrado: 'quitado â€” nada a pagar', legendaUsado: 'VocÃª jÃ¡ pagou',
+        rotuloEntrada: 'Ela te pagou', rotuloSaida: 'VocÃª jÃ¡ pagou',
         rotuloSaldo: 'Falta', rotuloExcesso: 'Pagou a mais',
     },
     EntradaEcon: {
         categoria: 'Entrada Econ', titulo: 'Entrada Econ',
     },
     EvolucaoObra: {
-        categoria: 'Evolução Obra', titulo: 'Evolução Obra',
+        categoria: 'EvoluÃ§Ã£o Obra', titulo: 'EvoluÃ§Ã£o Obra',
     },
     DividaEstudantil: {
-        categoria: 'Dívida Estudantil', titulo: 'Dívida Estudantil',
+        categoria: 'DÃ­vida Estudantil', titulo: 'DÃ­vida Estudantil',
     },
     RenegociacaoPj: {
-        categoria: 'Renegociação PJ', titulo: 'Renegociação PJ',
+        categoria: 'RenegociaÃ§Ã£o PJ', titulo: 'RenegociaÃ§Ã£o PJ',
     },
     Emprestimo: {
-        categoria: 'Empréstimo', titulo: 'Empréstimo',
+        categoria: 'EmprÃ©stimo', titulo: 'EmprÃ©stimo',
     },
     Pos: {
-        campo: 'nome', valor: 'Pós', titulo: 'Pós',
+        campo: 'nome', valor: 'PÃ³s', titulo: 'PÃ³s',
     },
     RenegociacaoNu: {
-        campo: 'nome', valor: 'Renegociação Nu', titulo: 'Renegociação Nu',
+        campo: 'nome', valor: 'RenegociaÃ§Ã£o Nu', titulo: 'RenegociaÃ§Ã£o Nu',
     },
     Iphone: {
         campo: 'nome', valor: 'Iphone', titulo: 'Iphone', somenteNegativos: true,
@@ -2105,11 +1981,11 @@ el('fechaRoberta').onclick = () => el('modalRoberta').close();
 el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
 
 // ===================================================================
-// GRÁFICO DE GASTOS DO CICLO (pizza)
+// GRÃFICO DE GASTOS DO CICLO (pizza)
 // ===================================================================
 // Regra: total = soma de TUDO positivo no ciclo (renda, sem selecao manual).
 // Fatias = cada categoria com saldo negativo no ciclo (gasto), com a linha
-// sintetica "Fatura do cartão" contando como a categoria "Fatura do cartão", e o
+// sintetica "Fatura do cartÃ£o" contando como a categoria "Fatura do cartÃ£o", e o
 // Resgate necessario / Aporte sugerido do ciclo contando como renda / categoria
 // "Investimento", igual um resgate/aporte real contaria.
 // O usuario pode excluir categorias especificas da pizza via multi-select.
@@ -2117,7 +1993,7 @@ let graficoChart = null;
 let excluidasDoGrafico = [];
 
 function dadosDoGraficoCiclo(idxPeriodo) {
-    const periodo = Estado.periodos[idxPeriodo];
+    const periodo = Estado.ciclos[idxPeriodo];
     const visiveis = Estado.lancamentos.filter(r =>
         passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago)
     );
@@ -2125,18 +2001,14 @@ function dadosDoGraficoCiclo(idxPeriodo) {
         r.periodoIdx == idxPeriodo && !r.cred && !ehTransferenciaFatura(r));
 
 
-    // fatia BRUTA por titular: a pizza mostra onde o dinheiro foi gasto, e antecipar
-    // e' so a forma de pagar — quem paga a fatura inteira nao gastou menos.
+    // A fatia BRUTA do unico cartao mostra onde o dinheiro foi gasto, e antecipar
+    // e' so a forma de pagar â€” quem paga a fatura inteira nao gastou menos.
     const creditosDoPeriodo = Estado.lancamentos.filter(r => r.periodoIdx == idxPeriodo && r.cred);
-    const fatiaFatura = (ehIsa, rotulo) => {
-        const total = creditosDoPeriodo.filter(r => !!r.isa === ehIsa).reduce((s, r) => s + r.v, 0);
-        return total ? { categ: rotulo, v: total } : null;
-    };
+    const totalFatura = creditosDoPeriodo.reduce((s, r) => s + r.v, 0);
     const ajuste = ajusteDoCicloContaUnica(idxPeriodo);
     const linhas = [
         ...doPeriodo,
-        fatiaFatura(false, 'Fatura do cartão'),
-        fatiaFatura(true, 'Fatura do cartão (Isabella)'),
+        totalFatura ? { categ: 'Fatura do cartÃ£o', v: totalFatura } : null,
         ajuste ? { categ: ajuste.categ, v: ajuste.v } : null,
     ].filter(Boolean);
 
@@ -2168,14 +2040,14 @@ function renderizaDetalheCel() {
     const info = Estado._detalheAtual;
     if (!info) return;
     const { categoria, periodoIdx, linhas, ord } = info;
-    const periodo = Estado.periodos[periodoIdx];
+    const periodo = Estado.ciclos[periodoIdx];
 
     el('tituloDetalheCel').textContent = categoria;
     el('subDetalheCel').textContent =
-        `${nomePeriodo(periodo.fat)} · ${linhas.length} ${linhas.length == 1 ? 'lançamento' : 'lançamentos'}`;
+        `${nomePeriodo(periodo.fat)} Â· ${linhas.length} ${linhas.length == 1 ? 'lanÃ§amento' : 'lanÃ§amentos'}`;
 
-    const seta = k => ord.k == k ? (ord.d == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
-    const valorOrd = { data: r => timestamp(r.data), nome: r => semAcento(r.nome ?? ''), valor: r => r.v, volatil: r => +(!!r.volatil) };
+    const seta = k => ord.k == k ? (ord.d == 1 ? ' <span class=ar>â†‘</span>' : ' <span class=ar>â†“</span>') : '';
+    const valorOrd = { data: r => timestamp(r.data), nome: r => semAcento(r.nome ?? ''), valor: r => r.v };
     const ordenadas = [...linhas].sort((a, b) => {
         const A = valorOrd[ord.k](a), B = valorOrd[ord.k](b);
         const cmp = typeof A == 'string' ? A.localeCompare(B, 'pt') : A - B;
@@ -2188,14 +2060,13 @@ function renderizaDetalheCel() {
         `<th onclick="sortDetalheCel('data')">Data${seta('data')}` +
         `<th onclick="sortDetalheCel('nome')">Nome${seta('nome')}` +
         `<th class=n onclick="sortDetalheCel('valor')">Valor${seta('valor')}` +
-        `<th onclick="sortDetalheCel('volatil')">Volátil${seta('volatil')}` +
         `</thead><tbody>` +
-        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${escapeHtml(r.nome ?? '')}${celValor(r.v)}<td>${badgeVolatil(r)}`).join('') +
-        `<tr class=tot><td colspan=3>Total${celSoma(total)}</tbody></table>`;
+        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : 'â€”'}<td>${escapeHtml(r.nome ?? '')}${celValor(r.v)}`).join('') +
+        `<tr class=tot><td colspan=2>Total${celSoma(total)}</tbody></table>`;
 }
 
 // clique no header da mini-tabela do modal: mesma logica de sortComp (1o clique ordena
-// desc — mais relevante primeiro — clique de novo alterna asc/desc)
+// desc â€” mais relevante primeiro â€” clique de novo alterna asc/desc)
 window.sortDetalheCel = k => {
     const ord = Estado._detalheAtual.ord;
     if (ord.k != k) { ord.k = k; ord.d = 2; }
@@ -2211,7 +2082,7 @@ window.abrirGraficoGastos = idxPeriodo => {
     const todasCategorias = Object.keys(porCategoria).sort((a, b) => porCategoria[b] - porCategoria[a]);
     excluidasDoGrafico = excluidasDoGrafico.filter(c => todasCategorias.includes(c));
 
-    el('graficoSubtitulo').textContent = `${nomePeriodo(periodo.fat)} · Renda do ciclo: ${brl(renda)}`;
+    el('graficoSubtitulo').textContent = `${nomePeriodo(periodo.fat)} Â· Renda do ciclo: ${brl(renda)}`;
     montaExcluirCatDrop(todasCategorias);
     desenhaGraficoPizza(idxPeriodo);
     el('modalGrafico').showModal();
@@ -2225,7 +2096,7 @@ function montaExcluirCatDrop(categorias) {
 }
 function atualizaBotaoExcluirCat() {
     const n = excluidasDoGrafico.length;
-    el('excluirCatBtn').textContent = n == 0 ? 'Nenhuma excluída' : `${n} excluída${n > 1 ? 's' : ''}`;
+    el('excluirCatBtn').textContent = n == 0 ? 'Nenhuma excluÃ­da' : `${n} excluÃ­da${n > 1 ? 's' : ''}`;
 }
 // checkbox MARCADO = categoria incluida na pizza; desmarcar exclui
 window.toggleCategoriaGrafico = (categoria, incluida) => {
@@ -2281,7 +2152,7 @@ function desenhaGraficoPizza(idxPeriodo) {
                             const total = valores.reduce((a, b) => a + b, 0);
                             const pctRenda = renda ? (ctx.parsed / renda * 100).toFixed(1) : '0.0';
                             const pctGasto = total ? (ctx.parsed / total * 100).toFixed(1) : '0.0';
-                            return `${ctx.label}: ${brl(ctx.parsed)} · ${pctGasto}% dos gastos · ${pctRenda}% da renda`;
+                            return `${ctx.label}: ${brl(ctx.parsed)} Â· ${pctGasto}% dos gastos Â· ${pctRenda}% da renda`;
                         }
                     }
                 }
@@ -2296,9 +2167,9 @@ el('modalGrafico').addEventListener('click', e => {
 });
 
 // ===================================================================
-// GRÁFICO DE EVOLUÇÃO (Comparar) — ganho x gasto x aportado x resgatado, mês a mês
+// GRÃFICO DE EVOLUÃ‡ÃƒO (Comparar) â€” ganho x gasto x aportado x resgatado, mÃªs a mÃªs
 // ===================================================================
-// Regra por período:
+// Regra por perÃ­odo:
 //   Ganho     = soma dos positivos, exceto categoria Investimento (nao inclui Resgate
 //               real nem o Resgate necessario hipotetico)
 //   Aportado  = soma dos negativos DA categoria Investimento (invertido pra positivo),
@@ -2311,7 +2182,7 @@ let graficoEvolucaoChart = null;
 
 function dadosEvolucao(de, ate) {
     const periodosUsados = [];
-    for (let i = de; i <= ate; i++) if (Estado.periodos[i]) periodosUsados.push(i);
+    for (let i = de; i <= ate; i++) if (Estado.ciclos[i]) periodosUsados.push(i);
 
     const { base, abat } = baseEAbatFiltrados();
 
@@ -2319,20 +2190,20 @@ function dadosEvolucao(de, ate) {
         // compras no CREDITO nao entram uma a uma: o que sai da conta no mes e' a fatura
         // LIQUIDA (bruto + antecipacao ja paga), a mesma linha sintetica que o bloco Debito
         // da visao Ciclo mostra. Somar o bruto de cada compra inflava o Gasto pela
-        // antecipacao — ex: R$5.008,42 em compras que viram R$3.026,14 a pagar.
+        // antecipacao â€” ex: R$5.008,42 em compras que viram R$3.026,14 a pagar.
         //
         // A ANTECIPACAO de fatura entra normalmente (regime de caixa): ela saiu da conta
-        // NESTE mes, entao conta como gasto aqui — e a fatura que ela quita ja vem abatida
+        // NESTE mes, entao conta como gasto aqui â€” e a fatura que ela quita ja vem abatida
         // do mesmo valor (alocacaoAntecipacoes), no mes seguinte. Sem dupla contagem: o
         // desembolso aparece uma vez, no mes em que aconteceu. Excluir a antecipacao (como
         // a pizza de categorias faz, onde ela e' transferencia e nao gasto) sumia com o
-        // dinheiro do grafico — nem no mes do pagamento nem no da fatura.
+        // dinheiro do grafico â€” nem no mes do pagamento nem no da fatura.
         const linhas = base.filter(r => r.periodoIdx == i && !r.cred);
         const investimento = linhas.filter(r => r.inv);
         const resto = linhas.filter(r => !r.inv);
 
         // guarda as linhas que compoem cada barra (nao so o total) pra o clique na barra
-        // poder abrir o detalhamento item a item — sem isso, uma divergencia entre o
+        // poder abrir o detalhamento item a item â€” sem isso, uma divergencia entre o
         // grafico e a soma manual do bloco Debito nao tem como ser conferida na tela.
         const linhasDe = {
             Ganho: resto.filter(r => r.v > 0),
@@ -2341,32 +2212,32 @@ function dadosEvolucao(de, ate) {
             Aportado: investimento.filter(r => r.v < 0),
         };
 
-        // uma linha de fatura por titular, liquida de antecipacao (mesmo criterio de vCiclo:
-        // fatura ja quitada — liquido ~0 — nao vira linha nenhuma)
-        [[false, 'Fatura do cartão'], [true, 'Fatura do cartão (Isabella)']].forEach(([ehIsa, rotulo]) => {
-            const bruto = base
-                .filter(r => r.cred && !!r.isa === ehIsa && r.periodoIdx == i)
-                .reduce((s, r) => s + r.v, 0);
-            if (!bruto) return;
-            const liquido = bruto + (abat[ehIsa][i] || 0);
-            if (Math.abs(liquido) < 0.005) return;
-            linhasDe[liquido < 0 ? 'Gasto' : 'Ganho'].push({
-                data: dataISO(Estado.periodos[i].fat), nome: rotulo, categ: 'Fatura', v: liquido,
-            });
-        });
+        // uma linha da unica fatura detalhada, liquida de antecipacao (mesmo criterio de
+        // vCiclo: fatura ja quitada â€” liquido ~0 â€” nao vira linha nenhuma)
+        const brutoFatura = base
+            .filter(r => r.cred && r.periodoIdx == i)
+            .reduce((s, r) => s + r.v, 0);
+        if (brutoFatura) {
+            const liquido = brutoFatura + (abat[i] || 0);
+            if (Math.abs(liquido) >= 0.005) {
+                linhasDe[liquido < 0 ? 'Gasto' : 'Ganho'].push({
+                    data: vencimentoDoCiclo(i), nome: 'Fatura do cartÃ£o', categ: 'Fatura', v: liquido,
+                });
+            }
+        }
 
         // o Resgate necessario / Aporte sugerido do ciclo entra como uma linha sintetica na
         // barra correspondente, do mesmo jeito que aparece no bloco Debito da visao Ciclo
         const ajuste = ajusteDoCiclo(i);
         if (ajuste) {
             linhasDe[ajuste.tipo == 'resgate' ? 'Resgatado' : 'Aportado'].push({
-                data: dataISO(Estado.periodos[i].fat), nome: ajuste.nome, categ: ajuste.categ, v: ajuste.v,
+                data: dataISO(Estado.ciclos[i].fat), nome: ajuste.nome, categ: ajuste.categ, v: ajuste.v,
             });
         }
 
         const soma = k => linhasDe[k].reduce((s, r) => s + Math.abs(r.v), 0);
         return {
-            nome: nomePeriodo(Estado.periodos[i].fat), periodoIdx: i, linhasDe,
+            nome: nomePeriodo(Estado.ciclos[i].fat), periodoIdx: i, linhasDe,
             ganho: soma('Ganho'), gasto: soma('Gasto'),
             aportado: soma('Aportado'), resgatado: soma('Resgatado'),
         };
@@ -2389,7 +2260,7 @@ function desenhaGraficoEvolucao(dados) {
             // duas colunas por mes, cada uma empilhando duas barras:
             //   entrada = Ganho (verde) + Resgatado (azul) em cima  -> tudo que entrou na conta
             //   saida   = Gasto (vermelho) + Aportado (laranja) em cima -> tudo que saiu
-            // com as duas na mesma altura, o mes fechou equalizado — da' pra ver de relance.
+            // com as duas na mesma altura, o mes fechou equalizado â€” da' pra ver de relance.
             datasets: [
                 { label: 'Ganho', data: dados.map(d => d.ganho), backgroundColor: '#35B982', stack: 'entrada' },
                 { label: 'Resgatado', data: dados.map(d => d.resgatado), backgroundColor: '#4C9BE8', stack: 'entrada' },
@@ -2408,8 +2279,8 @@ function desenhaGraficoEvolucao(dados) {
                             const valor = ctx.parsed.y;
                             // % da renda: so faz sentido pra Gasto e Aportado (Ganho e' a propria renda, sempre 100%)
                             if (ctx.dataset.label == 'Ganho') return `Ganho: ${brl(valor)}`;
-                            const pct = renda ? (valor / renda * 100).toFixed(1) : '—';
-                            return `${ctx.dataset.label}: ${brl(valor)} · ${pct}% da renda`;
+                            const pct = renda ? (valor / renda * 100).toFixed(1) : 'â€”';
+                            return `${ctx.dataset.label}: ${brl(valor)} Â· ${pct}% da renda`;
                         }
                     }
                 },
@@ -2422,7 +2293,7 @@ function desenhaGraficoEvolucao(dados) {
             },
             // clique numa barra abre o detalhamento item a item daquela barra (mesmo modal
             // do clique numa celula da matriz Comparar), pra dar pra conferir de onde vem
-            // cada total — e bater com a soma manual do bloco Debito quando divergirem.
+            // cada total â€” e bater com a soma manual do bloco Debito quando divergirem.
             onClick: (_evt, elementos) => {
                 if (!elementos.length) return;
                 const { datasetIndex, index } = elementos[0];
@@ -2453,7 +2324,7 @@ el('modalComparativo').addEventListener('click', e => {
 });
 
 // ===================================================================
-// NOVO LANÇAMENTO (modal de insercao) — otimizado pra cadastro rapido:
+// NOVO LANÃ‡AMENTO (modal de insercao) â€” otimizado pra cadastro rapido:
 // foco automatico, navegacao por Enter, busca de categoria por nome
 // parecido, categorias ordenadas por uso recente, modal fica aberto
 // apos salvar (pronto pro proximo).
@@ -2483,7 +2354,7 @@ function atualizaSinalUI() {
     el('fSinal').disabled = semValor;
     el('fSinal').classList.toggle('pos', sinalPositivo && !semValor);
     el('fSinal').classList.toggle('neutro', semValor);
-    el('fSinal').textContent = semValor ? '±' : (sinalPositivo ? '+' : '−');
+    el('fSinal').textContent = semValor ? 'Â±' : (sinalPositivo ? '+' : 'âˆ’');
 }
 el('fSinal').onclick = () => { sinalPositivo = !sinalPositivo; atualizaSinalUI(); };
 
@@ -2498,13 +2369,13 @@ function categoriasPorPopularidade() {
         if (!r.categ || !r.data || dataISO(r.data) < limiteIso) return;
         contagem[r.categ] = (contagem[r.categ] || 0) + 1;
     });
-    const todas = [...new Set([...Estado.lancamentos.map(r => r.categ), ...CATEGORIAS_FIXAS].filter(valorValido))];
+    const todas = [...new Set(Estado.lancamentos.map(r => r.categ).filter(valorValido))];
     return todas.sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
 }
 function popularCategoriasNoForm(idSelect = 'fCateg') {
     const select = el(idSelect);
     const atual = select.value;
-    select.innerHTML = '<option value="" disabled selected>Selecione…</option>' +
+    select.innerHTML = '<option value="" disabled selected>Selecioneâ€¦</option>' +
         categoriasPorPopularidade().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     if (atual) select.value = atual;
 }
@@ -2543,31 +2414,84 @@ el('fValor').addEventListener('keydown', e => {
 });
 
 // ---- abrir modal: foco no Nome, categorias populares, Isa so pra quem nao e' a Isabella ----
-// select de Parcelas so' precisa ser populado uma vez (1x a 40x) — nao muda entre aberturas
+// select de Parcelas so' precisa ser populado uma vez (1x a 40x) â€” nao muda entre aberturas
 if (el('fParcelas').options.length < 40) {
     for (let n = 2; n <= 40; n++) el('fParcelas').add(new Option(`${n}x`, n));
 }
 
-// "Dividir valor entre as vezes" e' independente de Credito/Debito — o usuario escolhe
+// "Dividir valor entre as vezes" e' independente de Credito/Debito â€” o usuario escolhe
 // nos dois modos (ver submeteNovoLancamento: marcado, o valor digitado e' DIVIDIDO entre
 // as N linhas, ex: R$300 em 3x = R$100 cada; desmarcado, o valor se REPETE em cada uma,
-// ex: R$50 3x = R$50 + R$50 + R$50 — util pra lancar de uma vez uma assinatura/conta
+// ex: R$50 3x = R$50 + R$50 + R$50 â€” util pra lancar de uma vez uma assinatura/conta
 // recorrente de valor fixo). So' um PALPITE inicial segue Credito ao ligar/desligar (compras
-// no credito costumam ser parceladas — dividir; contas fora do credito costumam repetir o
-// mesmo valor todo mes) — o usuario pode mudar na hora, o toggle nao trava em nada.
+// no credito costumam ser parceladas â€” dividir; contas fora do credito costumam repetir o
+// mesmo valor todo mes) â€” o usuario pode mudar na hora, o toggle nao trava em nada.
 function sugereModoValorParcelas() {
     el('fDivide').checked = el('fCred').checked;
 }
-el('fCred').addEventListener('change', sugereModoValorParcelas);
 
-// Frequencia abre em "— Sem recorrencia", que e' o certo pra compra avulsa (1x) — o caso
+function nomeFatura(fatura) {
+    const referencia = dataISO(fatura.referencia);
+    const ano = referencia.slice(0, 4);
+    const mes = +referencia.slice(5, 7);
+    return `${MESES[mes - 1]} ${ano} â€” vence ${dataBR(fatura.vencimento)}`;
+}
+
+function idsFaturasDoFormulario() {
+    return [...document.querySelectorAll('[data-fatura-parcela]')]
+        .map(select => select.value ? +select.value : null);
+}
+
+// Credito nao tem mais inferencia por fechamento: cada parcela recebe sua fatura
+// explicitamente. Assim uma compra 3x pode apontar para tres faturas diferentes sem
+// depender de datas calculadas no frontend.
+function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()) {
+    const wrap = el('fFaturasWrap');
+    const destino = el('faturasPorParcela');
+    const cred = el('fCred').checked;
+    wrap.hidden = !cred;
+    if (!cred) { destino.innerHTML = ''; return; }
+
+    const parcelas = +el('fParcelas').value || 1;
+    if (!Estado.faturas.length) {
+        destino.innerHTML = '<p class=avisoFr>Cadastre a fatura no DataGrip ou aplique a permissÃ£o de leitura antes de lanÃ§ar crÃ©dito.</p>';
+        return;
+    }
+
+    const opcoes = Estado.faturas.map(f =>
+        `<option value="${f.id}">${escapeHtml(nomeFatura(f))}</option>`
+    ).join('');
+    destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
+        const selecionada = idsSelecionados[parcela];
+        const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Fatura';
+        return `<label class=fm><span>${titulo} <b class=req>*</b></span>` +
+            `<select data-fatura-parcela="${parcela}" required>` +
+            `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a faturaâ€¦</option>` +
+            opcoes +
+            '</select></label>';
+    }).join('');
+
+    [...document.querySelectorAll('[data-fatura-parcela]')].forEach((select, parcela) => {
+        if (idsSelecionados[parcela] && Estado.faturas.some(f => +f.id === +idsSelecionados[parcela])) {
+            select.value = String(idsSelecionados[parcela]);
+        }
+    });
+}
+
+el('fCred').addEventListener('change', () => {
+    sugereModoValorParcelas();
+    atualizarFaturasDoFormulario();
+});
+
+// Frequencia abre em "â€” Sem recorrencia", que e' o certo pra compra avulsa (1x) â€” o caso
 // mais comum de longe, e o que mantem a coluna Frequencia significando alguma coisa (se
 // todo lancamento nascesse "Mensal", a coluna nao distinguiria mais nada). A partir de 2x
 // a recorrencia passa a IMPORTAR (e' ela que decide a data de cada ocorrencia, ver
-// dataDaOcorrencia), entao aqui ela sobe pro padrao Mensal sozinha — so' quando ainda
+// dataDaOcorrencia), entao aqui ela sobe pro padrao Mensal sozinha â€” so' quando ainda
 // estava vazia, pra nunca atropelar uma escolha explicita (Semanal, Anual...).
 el('fParcelas').addEventListener('change', () => {
     if (+el('fParcelas').value > 1 && !el('fFreq').value) el('fFreq').value = 'Mensal';
+    atualizarFaturasDoFormulario();
 });
 
 function abreModalNovo(prefill) {
@@ -2579,12 +2503,12 @@ function abreModalNovo(prefill) {
     el('fIsaWrap').hidden = Estado.restrito;   // Isabella nao lanca "pra" Isabella, ja e' o padrao dela
 
     // titulo e aviso mudam conforme o modo simulacao global (Estado.simulando): o MESMO
-    // formulario serve pra lancamento real (vai pro banco) e simulado (so' memoria) —
+    // formulario serve pra lancamento real (vai pro banco) e simulado (so' memoria) â€”
     // ver submeteNovoLancamento, que decide o destino no momento de salvar.
     el('avisoSimulando').hidden = !Estado.simulando;
     el('tituloNovo').textContent = Estado.simulando
         ? 'Simular compra'
-        : (prefill ? 'Duplicar lançamento' : 'Novo lançamento');
+        : (prefill ? 'Duplicar lanÃ§amento' : 'Novo lanÃ§amento');
     el('salvaNovo').textContent = Estado.simulando ? 'Simular' : 'Salvar';
 
     if (prefill) {
@@ -2593,11 +2517,11 @@ function abreModalNovo(prefill) {
         el('fCateg').value = prefill.categ || '';
         el('fData').value = dataISO(prefill.data) || '';
         el('fCred').checked = !!prefill.cred;
+        atualizarFaturasDoFormulario(prefill.fatura_id ? [prefill.fatura_id] : []);
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
-        el('fVolatil').checked = prefill.volatil !== false;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
-        // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
+        // cai em "sem recorrencia" â€” lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
         // verdade (selectedIndex -1), sem opcao nenhuma marcada
         el('fFreq').value = RECORRENCIAS[prefill.freq] ? prefill.freq : '';
@@ -2610,6 +2534,7 @@ function abreModalNovo(prefill) {
     else {
         el('fData').value = hojeISO();
         el('fFreq').value = '';   // avulso ate' que o Vezes diga o contrario (ver listener de #fParcelas)
+        atualizarFaturasDoFormulario([]);
     }
     atualizaSinalUI();
     atualizaAvisoFronteira();
@@ -2628,15 +2553,15 @@ el('fDataHoje').onclick = () => {
 // CALCULADORA (modal auxiliar do campo Valor)
 // ===================================================================
 // Avalia so o subconjunto de expressao aceito pelo visor (numeros, + - X / %,
-// parenteses e virgula decimal) — nunca usa eval. O visor e' um <input> de verdade:
+// parenteses e virgula decimal) â€” nunca usa eval. O visor e' um <input> de verdade:
 // aceita digitacao direta do teclado e clique/toque pra posicionar o cursor no meio
-// da expressao (o proprio input cuida do caret — os botoes so inserem/apagam ali).
+// da expressao (o proprio input cuida do caret â€” os botoes so inserem/apagam ali).
 const modalCalc = el('modalCalc');
 const calcInput = el('calcVisor');
 const calcExprAtual = () => calcInput.value;
 
 // insere um texto na posicao atual do cursor (substituindo a selecao, se houver) e
-// deixa o cursor logo depois do que foi inserido — igual digitar de verdade
+// deixa o cursor logo depois do que foi inserido â€” igual digitar de verdade
 function calcInsere(texto) {
     const ini = calcInput.selectionStart ?? calcInput.value.length;
     const fim = calcInput.selectionEnd ?? calcInput.value.length;
@@ -2654,7 +2579,7 @@ function calcApaga() {
 }
 
 // re-formata SO' o numero onde o cursor esta (nunca a expressao inteira) com ponto de
-// milhar automatico na parte inteira — ex: digitar 1234567 vira "1.234.567" sozinho — e
+// milhar automatico na parte inteira â€” ex: digitar 1234567 vira "1.234.567" sozinho â€” e
 // so' poe virgula decimal quando o proprio usuario digita ela (nunca insere sozinha).
 // O numero e' o trecho contiguo de digitos/pontos/virgula ao redor do cursor, delimitado
 // por operador, parenteses ou borda da string (os outros numeros da expressao ficam
@@ -2663,7 +2588,7 @@ function calcApaga() {
 function calcFormataMilharAoRedorDoCursor() {
     const valor = calcInput.value;
     const pos = calcInput.selectionStart ?? valor.length;
-    const delimitador = /[+\-×÷()]/;
+    const delimitador = /[+\-Ã—Ã·()]/;
 
     let ini = pos; while (ini > 0 && !delimitador.test(valor[ini - 1])) ini--;
     let fim = pos; while (fim < valor.length && !delimitador.test(valor[fim])) fim++;
@@ -2691,10 +2616,10 @@ function calcFormataMilharAoRedorDoCursor() {
 }
 
 // mostra, numa linha abaixo, o resultado parcial em tempo real (so quando a expressao
-// ja tem pelo menos um operador — um numero solto nao precisa repetir embaixo)
+// ja tem pelo menos um operador â€” um numero solto nao precisa repetir embaixo)
 function calcRenderiza() {
     const expr = calcExprAtual();
-    const temOperador = /[+\-×÷%]/.test(expr.slice(1));   // ignora um '-' inicial (numero negativo)
+    const temOperador = /[+\-Ã—Ã·%]/.test(expr.slice(1));   // ignora um '-' inicial (numero negativo)
     const resultado = expr && temOperador ? calcAvalia(expr) : null;
     el('calcResultado').innerHTML = resultado != null ? '= ' + brl(resultado).replace('R$', '').trim() : '&nbsp;';
 }
@@ -2716,11 +2641,11 @@ function calcTokeniza(expr) {
 // expressao ou vier antes de um operador/fecha-parenteses, e' percentual do numero
 // anterior sozinho (ex: 50%+10 = 0,5+10). Precisao de ponto flutuante corrigida no final.
 function calcAvalia(expr) {
-    // visor usa os simbolos matematicos de verdade (× ÷), ponto de milhar automatico
-    // e virgula decimal — a avaliacao interna usa os operadores JS (* /) e ponto decimal.
+    // visor usa os simbolos matematicos de verdade (Ã— Ã·), ponto de milhar automatico
+    // e virgula decimal â€” a avaliacao interna usa os operadores JS (* /) e ponto decimal.
     // ORDEM IMPORTA: primeiro tira os pontos de MILHAR (senao "1.234,56" viraria
     // "1.234.56" depois de trocar a virgula por ponto), so' depois troca ',' por '.'.
-    const tokens = calcTokeniza(expr.replace(/(\d)\.(?=\d{3}(\D|$))/g, '$1').replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/'));
+    const tokens = calcTokeniza(expr.replace(/(\d)\.(?=\d{3}(\D|$))/g, '$1').replace(/,/g, '.').replace(/Ã—/g, '*').replace(/Ã·/g, '/'));
     if (!tokens.length) return null;
 
     const precedencia = { '+': 1, '-': 1, '*': 2, '/': 2 };
@@ -2762,7 +2687,7 @@ function calcAvalia(expr) {
 
 function calcConfirma() {
     const resultado = calcAvalia(calcExprAtual());
-    if (resultado == null) { el('calcResultado').textContent = 'Expressão inválida'; return; }
+    if (resultado == null) { el('calcResultado').textContent = 'ExpressÃ£o invÃ¡lida'; return; }
     const bruto = Math.abs(resultado);
     el('fValor').value = formataMascaraDinheiro(String(Math.round(bruto * 100)));
     sinalPositivo = resultado > 0;
@@ -2773,7 +2698,7 @@ function calcConfirma() {
 function calcToque(tecla) {
     const pos = calcInput.selectionStart ?? calcInput.value.length;
     const anterior = calcExprAtual().slice(0, pos).slice(-1);
-    const ehOperador = c => '+-×÷'.includes(c);
+    const ehOperador = c => '+-Ã—Ã·'.includes(c);
 
     if (tecla == 'ac') { calcInput.value = ''; calcRenderiza(); calcInput.focus(); return; }
     if (tecla == 'back') { calcApaga(); calcInput.focus(); return; }
@@ -2788,11 +2713,11 @@ function calcToque(tecla) {
     }
     if (tecla == 'igual') { calcConfirma(); return; }
 
-    const mapa = { div: '÷', mul: '×', sub: '-', add: '+', ponto: ',' };
+    const mapa = { div: 'Ã·', mul: 'Ã—', sub: '-', add: '+', ponto: ',' };
     const chr = mapa[tecla] ?? tecla;   // digitos vem com o proprio valor em data-calc
 
     if (chr == ',') {
-        const segmento = calcExprAtual().slice(0, pos).split(/[+\-×÷()]/).pop();
+        const segmento = calcExprAtual().slice(0, pos).split(/[+\-Ã—Ã·()]/).pop();
         if (segmento.includes(',')) { calcInput.focus(); return; }
         calcInsere((segmento ? '' : '0') + ',');
     } else if (ehOperador(chr)) {
@@ -2814,7 +2739,7 @@ el('abreCalc').onclick = () => {
 el('fechaCalc').onclick = () => modalCalc.close();
 modalCalc.addEventListener('click', e => { if (e.target == modalCalc) modalCalc.close(); });
 // mousedown num botao tira o foco do input ANTES do click disparar, colapsando a
-// selecao/cursor — por isso cada clique inseria sempre na posicao errada (ex: "1+1"
+// selecao/cursor â€” por isso cada clique inseria sempre na posicao errada (ex: "1+1"
 // virava "11+"). preventDefault aqui mantem o foco (e o cursor) no input o tempo todo.
 document.querySelectorAll('#modalCalc [data-calc]').forEach(bt => {
     bt.addEventListener('mousedown', e => e.preventDefault());
@@ -2849,7 +2774,7 @@ el('salvaNovo').onclick = () => submeteNovoLancamento();
 modalNovo.addEventListener('click', e => { if (e.target == modalNovo) modalNovo.close(); });
 
 // ao fechar o modal (por qualquer via: X, clique fora, Esc, ou apos salvar), se ele foi
-// aberto pelo "Duplicar", desmarca a linha que originou o duplicado — senao ela ficava
+// aberto pelo "Duplicar", desmarca a linha que originou o duplicado â€” senao ela ficava
 // selecionada na tabela depois de fechar, o que nao faz mais sentido.
 modalNovo.addEventListener('close', () => {
     if (modalNovo.dataset.viaDuplicar) { Estado.selecionados.clear(); desenhar(); }
@@ -2867,7 +2792,7 @@ el('seldup').onclick = async () => {
         if (!ajuste || (ajuste._sug == null && !ajuste._res) || el('seldup').disabled) return;
 
         el('seldup').disabled = true;
-        el('seldup').textContent = 'Materializando…';
+        el('seldup').textContent = 'Materializandoâ€¦';
         try {
             const ehAporte = chave.startsWith('sug:');
             const data = dataISO(ajuste.data) || null;
@@ -2878,7 +2803,6 @@ el('seldup').onclick = async () => {
                 isa: Estado.restrito,
                 pago: false,
                 ativo: true,
-                volatil: true,
                 nome: ehAporte ? 'Aporte' : 'Resgate',
                 categ: ajuste.categ,
                 valor: ajuste._sug != null ? ajuste._sug : ajuste.v,
@@ -2888,7 +2812,7 @@ el('seldup').onclick = async () => {
                 ...linhaCriada,
                 v: +linhaCriada.valor || 0,
                 inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
-                periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null,
+                periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
             });
             Estado.selecionados.clear();
             desenhar();
@@ -2906,7 +2830,7 @@ el('seldup').onclick = async () => {
 };
 
 // excluir a linha selecionada, uma por vez. So' aparece com UMA linha real marcada (ver
-// chaveUnicaReal em atualizaBarraSelecao) — linha sintetica (fatura, saldo, resgate) nao
+// chaveUnicaReal em atualizaBarraSelecao) â€” linha sintetica (fatura, saldo, resgate) nao
 // existe no banco e nao tem o que apagar. Pede confirmacao porque nao da' pra desfazer.
 // Lancamento simulado (_sim) nunca foi salvo: sai so' do array em memoria, sem DELETE.
 el('seldel').onclick = async () => {
@@ -2915,11 +2839,11 @@ el('seldel').onclick = async () => {
     if (i < 0) return;
 
     const r = Estado.lancamentos[i];
-    if (!confirm(`Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`)) return;
+    if (!confirm(`Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNÃ£o dÃ¡ pra desfazer.`)) return;
 
     if (el('seldel').disabled) return;   // trava clique duplo enquanto o DELETE esta no ar
     el('seldel').disabled = true;
-    el('seldel').textContent = 'Excluindo…';
+    el('seldel').textContent = 'Excluindoâ€¦';
     try {
         if (!r._sim) await excluirLancamento(r.id);
         Estado.lancamentos.splice(i, 1);
@@ -2934,7 +2858,7 @@ el('seldel').onclick = async () => {
 };
 
 // divide um valor total em N parcelas iguais, jogando o resto de arredondamento na
-// ultima (ex: R$100 em 3x = 33,33 + 33,33 + 33,34) — a soma das parcelas nunca diverge
+// ultima (ex: R$100 em 3x = 33,33 + 33,33 + 33,34) â€” a soma das parcelas nunca diverge
 // do total digitado por causa de arredondamento.
 function valorDasParcelas(valorTotal, parcelas) {
     const valorParcela = Math.round((valorTotal / parcelas) * 100) / 100;
@@ -2944,13 +2868,13 @@ function valorDasParcelas(valorTotal, parcelas) {
 }
 
 // ---- salvar: nao fecha o modal, so limpa valor/data e mostra confirmacao ----
-// MESMO formulario serve pros dois destinos — a chave e' Estado.simulando (o toggle
+// MESMO formulario serve pros dois destinos â€” a chave e' Estado.simulando (o toggle
 // global no topo): ligado, as parcelas viram lancamentos _sim=true SO' na memoria
-// (nunca chamam inserirLancamento, nunca tocam o Supabase — ver o bloco MODO SIMULACAO
+// (nunca chamam inserirLancamento, nunca tocam o Supabase â€” ver o bloco MODO SIMULACAO
 // mais abaixo); desligado, cada parcela e' um POST real, sequencial, uma fatura depois
 // da outra. "Dividir valor" (independente de Credito/Debito) escolhe se o campo "Vezes"
 // DIVIDE o valor digitado entre as N linhas (valorDasParcelas, ex: R$300 em 3x = R$100
-// cada) ou REPETE o mesmo valor em cada uma (ex: R$50 3x = R$50 + R$50 + R$50) — pensado
+// cada) ou REPETE o mesmo valor em cada uma (ex: R$50 3x = R$50 + R$50 + R$50) â€” pensado
 // pra lancar de uma vez uma conta recorrente de valor fixo (ex: assinatura, mensalidade)
 // que ainda nao foi cadastrada.
 async function submeteNovoLancamento() {
@@ -2966,14 +2890,13 @@ async function submeteNovoLancamento() {
     const valorTotal = valorDigitado ? valorMascaraParaNumero(valorDigitado) : 0;
 
     const cred = el('fCred').checked;
-    // categoria "Antecipacao Fatura Isabella" forca isa=true mesmo sem marcar o checkbox — ver ehAntecipacaoFaturaIsabella.
-    const isa = ehAntecipacaoFaturaIsabella(categ) ? true : (el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked);
+    const faturaIds = cred ? idsFaturasDoFormulario() : [];
+    const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
     const pago = el('fPago').checked;
-    const volatil = el('fVolatil').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
     // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
-    // entao o campo Vezes/Dividir fica sem efeito — 1 unica linha com valor null, igual
+    // entao o campo Vezes/Dividir fica sem efeito â€” 1 unica linha com valor null, igual
     // sempre foi.
     const parcelas = valorTotal ? +el('fParcelas').value : 1;
     const dividir = el('fDivide').checked;
@@ -2982,19 +2905,25 @@ async function submeteNovoLancamento() {
         : dividir ? valorDasParcelas(valorTotal, parcelas).map(v => v * (sinalPositivo ? 1 : -1))
             : Array(parcelas).fill(valorAssinado);   // repete o mesmo valor digitado em cada linha, sem dividir
 
+    if (cred && (faturaIds.length !== parcelas || faturaIds.some(id => !id))) {
+        el('erroNovo').textContent = 'Escolha uma fatura para cada parcela de crÃ©dito.';
+        el('fFaturasWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return;
+    }
+
     if (el('salvaNovo').disabled) return;   // trava clique duplo / Enter repetido
     el('salvaNovo').disabled = true;
-    el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
+    el('salvaNovo').textContent = Estado.simulando ? 'Simulandoâ€¦' : 'Salvandoâ€¦';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data, mantem nome/categoria/cred/isa
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
         const totalAssinado = valores.reduce((s, v) => s + v, 0);
         el('erroNovo').textContent = (Estado.simulando ? 'Simulado: ' : 'Salvo: ') +
-            (parcelas > 1 ? `${parcelas}x ${brl(Math.abs(valores[0]))} · ${brl(Math.abs(totalAssinado))} no total` : brl(totalAssinado));
+            (parcelas > 1 ? `${parcelas}x ${brl(Math.abs(valores[0]))} Â· ${brl(Math.abs(totalAssinado))} no total` : brl(totalAssinado));
         el('erroNovo').classList.add('ok');
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
@@ -3015,26 +2944,26 @@ async function submeteNovoLancamento() {
 // grava as N parcelas como lancamentos REAIS no Supabase, uma por vez (sequencial, pra
 // preservar a ordem e simplificar o tratamento de erro no meio do caminho). Cada parcela
 // p grava sua PROPRIA data (a data digitada avancada p vezes pela regra da Frequencia
-// escolhida — ver dataDaOcorrencia) — nao so' a mesma data repetida — porque o
+// escolhida â€” ver dataDaOcorrencia) â€” nao so' a mesma data repetida â€” porque o
 // periodoIdx nao e' uma coluna do banco: ele e' recalculado do
 // zero a partir da 'data' toda vez que os dados sao carregados (ver carregarDados). Se
 // todas as parcelas fossem gravadas com a mesma data, o recalculo jogava todas de volta
 // pro mesmo mes ao dar F5/recarregar, mesmo com o periodoIdx correto (e passageiro) na
 // memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
-// funcao (periodoDoCredito/periodoDoDebito) que carregarDados() usaria com essa data —
-// garante que o que aparece na hora e' EXATAMENTE o que vai aparecer depois de recarregar.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores }) {
+// regra de classificacao que carregarDados() usa: debito pela propria data, credito pelo
+// vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds = [] }) {
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const payload = {
-            data: dataParcela, freq, cred, isa, pago, ativo: true, volatil,
+            data: dataParcela, freq, cred, isa, pago, ativo: true,
             nome,
-            categ, valor: valores[p],
+            categ, valor: valores[p], fatura_id: cred ? faturaIds[p] : null,
         };
         const linhaCriada = await inserirLancamento(payload);
         const periodoIdx = !dataParcela ? null
-            : cred ? periodoDoCredito(dataParcela, isa, nome) : periodoDoDebito(dataISO(dataParcela));
-        const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null;
+            : cred ? periodoDaFatura(faturaIds[p]) : periodoDoDebito(dataISO(dataParcela));
+        const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null;
         Estado.lancamentos.push({
             ...linhaCriada,
             v: +linhaCriada.valor || 0,
@@ -3046,15 +2975,15 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
 
 
 // ===================================================================
-// MODO SIMULAÇÃO — lancamentos hipoteticos injetados DIRETO em Estado.lancamentos,
+// MODO SIMULAÃ‡ÃƒO â€” lancamentos hipoteticos injetados DIRETO em Estado.lancamentos,
 // marcados com _sim=true. Nunca tocam o banco (nao passam por inserirLancamento):
 // desligar o modo ou recarregar dados (load() reconstroi Estado.lancamentos do zero a
-// partir do Supabase) apaga tudo sozinho, de graca — nao precisa filtrar nada em lugar
+// partir do Supabase) apaga tudo sozinho, de graca â€” nao precisa filtrar nada em lugar
 // nenhum do resto do app pra "esconder" a simulacao, ela simplesmente deixa de existir.
 // Enquanto ativo, os simulados entram em TODAS as metricas (saldo, matriz Comparar,
 // graficos) exatamente como um lancamento real entraria, porque sao um.
 //
-// O formulario de lancamento e' o MESMO de sempre (modalNovo/#abreNovo) — nao ha mais um
+// O formulario de lancamento e' o MESMO de sempre (modalNovo/#abreNovo) â€” nao ha mais um
 // modal "Simular compra" separado. Enquanto o toggle abaixo estiver ligado,
 // submeteNovoLancamento() desvia pra simulaLancamentoParcelado() em vez de gravar no
 // banco (ver abreModalNovo, que tambem troca titulo/texto do botao conforme o modo).
@@ -3062,8 +2991,8 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
 function atualizaBotaoSimulacao() {
     el('toggleSimulacao').classList.toggle('ativo', Estado.simulando);
     el('toggleSimulacao').title = Estado.simulando
-        ? 'Modo simulação ATIVO — clique pra desligar (apaga os lançamentos simulados)'
-        : 'Modo simulação: injeta lançamentos hipotéticos só na memória (nunca salva) — recarregar ou desligar apaga tudo';
+        ? 'Modo simulaÃ§Ã£o ATIVO â€” clique pra desligar (apaga os lanÃ§amentos simulados)'
+        : 'Modo simulaÃ§Ã£o: injeta lanÃ§amentos hipotÃ©ticos sÃ³ na memÃ³ria (nunca salva) â€” recarregar ou desligar apaga tudo';
     document.body.classList.toggle('simulando', Estado.simulando);
 }
 
@@ -3083,26 +3012,26 @@ el('toggleSimulacao').onclick = async () => {
 
 // cria N lancamentos simulados (parcelas), um por periodo seguinte, injetados direto em
 // Estado.lancamentos com _sim=true. Cada parcela p ganha sua PROPRIA data (a digitada
-// avancada p vezes pela regra da Frequencia, via dataDaOcorrencia — mesma ideia de
+// avancada p vezes pela regra da Frequencia, via dataDaOcorrencia â€” mesma ideia de
 // salvaLancamentoParceladoNoBanco) e o periodoIdx e'
 // derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
 // +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
-function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, volatil, parcelas, valores }) {
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds = [] }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
 
     const criadas = valores.map((valorAssinado, p) => {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const periodoIdx = !dataParcela ? null
-            : cred ? periodoDoCredito(dataParcela, isa, nome) : periodoDoDebito(dataISO(dataParcela));
+            : cred ? periodoDaFatura(faturaIds[p]) : periodoDoDebito(dataISO(dataParcela));
         return {
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, ativo: true, volatil,
+            cred, isa, pago, ativo: true, fatura_id: cred ? faturaIds[p] : null,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),
-            periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.periodos.length ? periodoIdx : null,
+            periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
             _sim: true,
         };
     });
@@ -3137,7 +3066,7 @@ async function entrar() {
     });
 
     if (error) {
-        el('lerr').textContent = 'E-mail ou senha inválidos.';
+        el('lerr').textContent = 'E-mail ou senha invÃ¡lidos.';
         return;
     }
 

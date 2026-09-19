@@ -586,35 +586,6 @@
       text-underline-offset: .2em;
   }
 
-  .togVolatil {
-      display: inline-block;
-      padding: .12rem .4rem;
-      border: 1px solid var(--ln);
-      border-radius: 999px;
-      color: var(--mu);
-      white-space: nowrap;
-  }
-
-  .togVolatil.marcado {
-      color: var(--vd);
-      border-color: currentColor;
-  }
-
-  .togVolatil[data-tog-volatil] {
-      cursor: pointer;
-  }
-
-  .togVolatil[data-tog-volatil]:hover {
-      background: var(--field-hover);
-  }
-
-  .volatilMobile {
-      display: inline-block;
-      margin-left: .25rem;
-      font-size: .7rem;
-      white-space: nowrap;
-  }
-
   /* Valor clicavel na tabela: mesma ideia do badge Pago, edicao inline (ver listener
      em #out no script.js). */
   .togValor {

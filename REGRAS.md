@@ -1,19 +1,24 @@
 # Regras dos lançamentos
 
-## Volátil
+## Faturas
 
-- `lancamentos.volatil` é uma flag booleana manual. `true` é o padrão para registros existentes e novos; desmarcar a flag indica que o lançamento não é volátil.
-- A flag não muda valor, categoria, frequência, datas, pagamento, saldo nem cálculos financeiros. O filtro “Volátil” apenas recorta os lançamentos exibidos nas visões.
-- Ciclo e Backlog mostram a flag por lançamento. Comparar mostra a flag no detalhamento de cada célula. Em telas pequenas, ela aparece junto ao nome.
-- Ao marcar ou desmarcar Volátil em uma linha real, o `PATCH` atualiza todos os lançamentos cujo `nome` é exatamente igual, em qualquer ciclo, categoria ou situação. O retorno da API é conferido pelos IDs carregados antes de refletir a mudança na tela.
-- O filtro `nome=eq.` envia o nome sem aspas adicionais, com codificação de URL. Assim, nomes com espaços, acentos e pontuação continuam sendo comparados exatamente; aspas extras buscariam outro nome e deixariam o grupo sem atualização.
-- Se o banco rejeitar a atualização ou alterar só parte do grupo, os dados são recarregados e o erro é mostrado. Linhas simuladas com o mesmo nome são alteradas juntas apenas em memória; clicar nelas não grava mudanças nos lançamentos reais.
-- Cada parcela criada recebe o valor escolhido no cadastro. Duplicar herda a flag do lançamento de origem, que pode ser alterada antes de salvar.
-- Linhas sintéticas não têm flag nem podem ser atualizadas. Ao materializar Aporte/Resgate, o novo lançamento real começa com `volatil = true`.
+- A fonte de verdade das faturas passa a ser `public.faturas`: `referencia` (primeiro dia do mês, apenas identificação), `vencimento` e `pago`.
+- Todo lançamento novo com `cred = true` deverá receber `fatura_id` escolhido manualmente. O total da fatura nunca é gravado: é a soma dos `lancamentos.valor` ligados a ela.
+- O banco protege essa distinção: crédito sem `fatura_id` e débito com `fatura_id` são inválidos.
+- `periodos` não é lida pela aplicação. Ela permanece temporariamente apenas como histórico para auditoria da migração dos créditos e poderá ser removida depois da conferência.
+- Cada lançamento `Faturamento PJ` abre um ciclo de débito. O ciclo vai dessa data até o dia anterior ao próximo `Faturamento PJ`; uma fatura entra no ciclo que contém seu `vencimento`.
+
+- Existe um único cartão detalhado. Todo lançamento com `cred = true` usa `periodos.fecha` e `periodos.venc` para definir a fatura; `isa` não seleciona outro calendário de cartão.
+- A fatura da Isabella é um lançamento real comum: `cred = false`, `isa = true`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
+- A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações do cartão detalhado.
+- `periodos` não possui mais `fecha_isa` nem `venc_isa`. O campo `isa` continua identificando lançamentos da Isabella para filtros e para a visão restrita.
+- Antecipações de fatura abatem somente a única fatura detalhada, da mais antiga para a mais nova.
 
 ## Migrations
 
 - `migrations/00-esquema-existente.sql` registra o esquema anterior e não deve ser executado no projeto `fin` existente.
-- `migrations/01-nao-volatil-lancamentos.sql` já foi aplicada e permanece como histórico.
-- Execute `migrations/02-volatil-lancamentos.sql` para renomear a coluna e inverter os valores existentes: `nao_volatil = false` passa a `volatil = true` e vice-versa.
-- Depois de executar `02`, confira cadastro, duplicação e alternância da flag na interface autenticada.
+- `migrations/01-nao-volatil-lancamentos.sql` e `migrations/02-volatil-lancamentos.sql` permanecem somente como histórico das alterações já aplicadas.
+- `migrations/03-remover-fatura-isabella-periodos.sql` registra a remoção de `periodos.fecha_isa` e `periodos.venc_isa`. Ela é idempotente porque essas colunas podem já ter sido removidas diretamente no banco.
+- `migrations/04-remover-volatil-lancamentos.sql` remove definitivamente `lancamentos.volatil`. O aplicativo não exibe, filtra, grava nem atualiza essa flag.
+- `migrations/05-faturas-db-first.sql` registra `faturas`, a chave `lancamentos.fatura_id` e a política RLS de somente leitura para a aplicação. Nenhum valor de fatura é calculado ou armazenado no banco.
+- `migrations/06-exigir-fatura-no-credito.sql` registra a validação que mantém crédito e débito coerentes com a fatura escolhida.
