@@ -1839,3 +1839,19 @@
   .simIco {
       color: #F0A83A;
   }
+
+  .tagFatura {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(139, 132, 245, 0.15);
+      color: #A8A0FF;
+      border: 1px solid rgba(139, 132, 245, 0.35);
+      margin-left: 6px;
+      vertical-align: middle;
+      white-space: nowrap;
+      cursor: help;
+  }

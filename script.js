@@ -178,17 +178,44 @@ function dataDaOcorrencia(iso, p, freq) {
     return regra.tipo == 'dia' ? somaDias(iso, passo) : somaMeses(iso, passo);
 }
 
-// Nome de exibicao de um periodo: sempre o MES ANTERIOR ao seu 'fat'. Ex.: periodo com fat=2026-07-06 se chama "Junho 2026" (o mes em que ele comecou).
-function nomePeriodo(fatStr) {
-    const iso = dataISO(fatStr), y = +iso.slice(0, 4), m = +iso.slice(5, 7);
+// Nome de exibicao de um periodo: baseado no mes de inicio do ciclo ou no mes anterior ao fat seguinte.
+function nomePeriodo(fatOuCiclo) {
+    if (!fatOuCiclo) return '—';
+    if (typeof fatOuCiclo === 'object' && fatOuCiclo.ini) {
+        const iso = dataISO(fatOuCiclo.ini);
+        const y = +iso.slice(0, 4), m = +iso.slice(5, 7);
+        return `${MESES[m - 1]} ${y}`;
+    }
+    const iso = dataISO(fatOuCiclo);
+    if (iso.startsWith('9999')) {
+        const ultimo = Estado.ciclos[Estado.ciclos.length - 1];
+        if (ultimo?.ini) {
+            const uIso = dataISO(ultimo.ini);
+            return `${MESES[+uIso.slice(5, 7) - 1]} ${uIso.slice(0, 4)}`;
+        }
+    }
+    const y = +iso.slice(0, 4), m = +iso.slice(5, 7);
     let mesAnterior = m - 1, ano = y;
-    if (mesAnterior == 0) { mesAnterior = 12; ano--; }   // janeiro -> volta pra dezembro do ano anterior
+    if (mesAnterior == 0) { mesAnterior = 12; ano--; }
     return `${MESES[mesAnterior - 1]} ${ano}`;
 }
 
 // Mesma logica de nomePeriodo, mas abreviada ("Set/26") — usada no titulo da visao Comparar.
-function nomePeriodoAbrev(fatStr) {
-    const iso = dataISO(fatStr), y = +iso.slice(0, 4), m = +iso.slice(5, 7);
+function nomePeriodoAbrev(fatOuCiclo) {
+    if (!fatOuCiclo) return '—';
+    if (typeof fatOuCiclo === 'object' && fatOuCiclo.ini) {
+        const iso = dataISO(fatOuCiclo.ini);
+        return `${MESES[+iso.slice(5, 7) - 1].slice(0, 3)}/${iso.slice(2, 4)}`;
+    }
+    const iso = dataISO(fatOuCiclo);
+    if (iso.startsWith('9999')) {
+        const ultimo = Estado.ciclos[Estado.ciclos.length - 1];
+        if (ultimo?.ini) {
+            const uIso = dataISO(ultimo.ini);
+            return `${MESES[+uIso.slice(5, 7) - 1].slice(0, 3)}/${uIso.slice(2, 4)}`;
+        }
+    }
+    const y = +iso.slice(0, 4), m = +iso.slice(5, 7);
     let mesAnterior = m - 1, ano = y;
     if (mesAnterior == 0) { mesAnterior = 12; ano--; }
     return `${MESES[mesAnterior - 1].slice(0, 3)}/${String(ano).slice(-2)}`;
@@ -196,8 +223,17 @@ function nomePeriodoAbrev(fatStr) {
 
 // So' o nome do mes (sem ano) de um periodo — usado nas colunas "Somente <mes>" da
 // comparacao 1-a-1 entre 2 periodos.
-function nomeMesPeriodo(fatStr) {
-    const iso = dataISO(fatStr), m = +iso.slice(5, 7);
+function nomeMesPeriodo(fatOuCiclo) {
+    if (!fatOuCiclo) return '—';
+    if (typeof fatOuCiclo === 'object' && fatOuCiclo.ini) {
+        return MESES[+dataISO(fatOuCiclo.ini).slice(5, 7) - 1];
+    }
+    const iso = dataISO(fatOuCiclo);
+    if (iso.startsWith('9999')) {
+        const ultimo = Estado.ciclos[Estado.ciclos.length - 1];
+        if (ultimo?.ini) return MESES[+dataISO(ultimo.ini).slice(5, 7) - 1];
+    }
+    const m = +iso.slice(5, 7);
     let mesAnterior = m - 1;
     if (mesAnterior == 0) mesAnterior = 12;
     return MESES[mesAnterior - 1];
@@ -404,7 +440,7 @@ function atualizarCombos(lancamentosCrus) {
 
     if (idxAtual >= 0 && !usados.includes(idxAtual)) usados.push(idxAtual);
     usados.sort((a, b) => a - b);
-    const opcoesCiclo = '<option value=-1>Backlog' + usados.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i].fat)}`).join('');
+    const opcoesCiclo = '<option value=-1>Backlog' + usados.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
     el('ciclo').innerHTML = opcoesCiclo;
 
     // preserva a selecao anterior se ainda for valida; senao cai no periodo atual (ou no mais recente usado)
@@ -431,9 +467,9 @@ function atualizarCombos(lancamentosCrus) {
     const usadosNaveg = Estado.restrito
         ? usados.filter(i => Math.abs(i - idxAtual) <= 1)
         : usados;
-    const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i].fat)}`).join('');
+    const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
     const opcoesPeriodoDe = Estado.restrito ? opcoesPeriodo
-        : '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i].fat)}`).join('');
+        : '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
     const deAnterior = el('compDe').value, ateAnterior = el('compAte').value;
 
     el('compDe').innerHTML = opcoesPeriodoDe;
@@ -624,6 +660,16 @@ const textoData = r => r.data ? dataBR(r.data) : '—';
 const celData = r => ehLinhaReal(r) && !isMobile()
     ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Clique pra editar a data">${textoData(r)}</span>`
     : textoData(r);
+const celNome = r => {
+    const sim = r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '';
+    const nome = escapeHtml(textoOuTraco(r.nome));
+    const fatRef = r.fatura_venc || r.fatura_id;
+    const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
+        ? ` <span class="tagFatura" title="Abatendo da fatura que vence em ${dataBR(fatRef)}">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
+        : '';
+    return `${sim}${nome}${badgeFatura}`;
+};
+
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna
 const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
@@ -634,7 +680,7 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
-            : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '') + textoOuTraco(r[chave])}`
+            : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
@@ -1273,7 +1319,7 @@ function vComp() {
             ? `<th class="n colDif" title="Tinha em ${nomeMes1}, não tem mais em ${nomeMes2}" onclick="sortComp('dif1')">Somente ${nomeMes1}${seta('dif1')}</th>` +
             `<th class="n colDif" title="Não tinha em ${nomeMes1}, passou a ter em ${nomeMes2}" onclick="sortComp('dif2')">Somente ${nomeMes2}${seta('dif2')}</th>`
             : '') +
-        periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i].fat)}${seta(String(i))}`).join('') +
+        periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i])}${seta(String(i))}`).join('') +
         (mostraColTotal ? `<th class=n onclick="sortComp('total')">Total${seta('total')}` : '') +
         `</thead>`;
 
@@ -2070,7 +2116,7 @@ function renderizaDetalheCel() {
 
     el('tituloDetalheCel').textContent = categoria;
     el('subDetalheCel').textContent =
-        `${nomePeriodo(periodo.fat)} · ${linhas.length} ${linhas.length == 1 ? 'lançamento' : 'lançamentos'}`;
+        `${nomePeriodo(periodo)} · ${linhas.length} ${linhas.length == 1 ? 'lançamento' : 'lançamentos'}`;
 
     const seta = k => ord.k == k ? (ord.d == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
     const valorOrd = { data: r => timestamp(r.data), nome: r => semAcento(r.nome ?? ''), valor: r => r.v };
@@ -2087,7 +2133,7 @@ function renderizaDetalheCel() {
         `<th onclick="sortDetalheCel('nome')">Nome${seta('nome')}` +
         `<th class=n onclick="sortDetalheCel('valor')">Valor${seta('valor')}` +
         `</thead><tbody>` +
-        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${escapeHtml(r.nome ?? '')}${celValor(r.v)}`).join('') +
+        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${celNome(r)}${celValor(r.v)}`).join('') +
         `<tr class=tot><td colspan=2>Total${celSoma(total)}</tbody></table>`;
 }
 
@@ -2108,7 +2154,7 @@ window.abrirGraficoGastos = idxPeriodo => {
     const todasCategorias = Object.keys(porCategoria).sort((a, b) => porCategoria[b] - porCategoria[a]);
     excluidasDoGrafico = excluidasDoGrafico.filter(c => todasCategorias.includes(c));
 
-    el('graficoSubtitulo').textContent = `${nomePeriodo(periodo.fat)} · Renda do ciclo: ${brl(renda)}`;
+    el('graficoSubtitulo').textContent = `${nomePeriodo(periodo)} · Renda do ciclo: ${brl(renda)}`;
     montaExcluirCatDrop(todasCategorias);
     desenhaGraficoPizza(idxPeriodo);
     el('modalGrafico').showModal();
@@ -2263,7 +2309,7 @@ function dadosEvolucao(de, ate) {
 
         const soma = k => linhasDe[k].reduce((s, r) => s + Math.abs(r.v), 0);
         return {
-            nome: nomePeriodo(Estado.ciclos[i].fat), periodoIdx: i, linhasDe,
+            nome: nomePeriodo(Estado.ciclos[i]), periodoIdx: i, linhasDe,
             ganho: soma('Ganho'), gasto: soma('Gasto'),
             aportado: soma('Aportado'), resgatado: soma('Resgatado'),
         };
