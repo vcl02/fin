@@ -355,7 +355,7 @@ async function carregarDados() {
         buscar('faturas'),
     ]);
 
-    Estado.faturas = faturasCrus.sort((a, b) => timestamp(a.referencia) - timestamp(b.referencia));
+    Estado.faturas = faturasCrus.sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento));
 
     const ancoras = lancamentosCrus
         .filter(r => !r.cred && String(r.nome || '').trim() === 'Faturamento PJ' && r.data)
@@ -2451,9 +2451,9 @@ function sugereModoValorParcelas() {
 }
 
 function nomeFatura(fatura) {
-    const referencia = dataISO(fatura.referencia);
-    const ano = referencia.slice(0, 4);
-    const mes = +referencia.slice(5, 7);
+    const venc = dataISO(fatura.vencimento);
+    const ano = venc.slice(0, 4);
+    const mes = +venc.slice(5, 7);
     return `${MESES[mes - 1]} ${ano} — vence ${dataBR(fatura.vencimento)}`;
 }
 
