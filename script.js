@@ -348,15 +348,10 @@ const atualizarLancamento = async (id, campos) => {
     return linhas[0];
 };
 
-// Busca faturas + lancamentos. Os ciclos sao derivados somente das datas reais de
-// "Faturamento PJ"; nenhuma data de fechamento ou calendario projetado e' lida do banco.
+// Busca lancamentos. As faturas e ciclos sao derivados dinamicamente: faturas via DISTINCT
+// de fatura_venc dos lancamentos e ciclos derivados das datas reais de "Faturamento PJ".
 async function carregarDados() {
-    const [lancamentosCrus, faturasCrus] = await Promise.all([
-        buscar('lancamentos'),
-        buscar('faturas'),
-    ]);
-
-    Estado.faturas = faturasCrus.sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento));
+    const lancamentosCrus = await buscar('lancamentos');
 
     const ancoras = lancamentosCrus
         .filter(r => !r.cred && String(r.nome || '').trim() === 'Faturamento PJ' && r.data)
@@ -371,21 +366,31 @@ async function carregarDados() {
     // classifica cada lancamento na sua competencia (periodoIdx)
     Estado.lancamentos = lancamentosCrus.map(r => {
         let periodoIdx;
-        if (!r.data)
+        const faturaRef = r.fatura_venc || r.fatura_id;
+        if (!r.data && !faturaRef)
             periodoIdx = null;                                      // sem data -> Backlog, sempre
         else if (r.cred)
-            periodoIdx = periodoDaFatura(r.fatura_venc || r.fatura_id);
+            periodoIdx = periodoDaFatura(faturaRef);
         else
             periodoIdx = periodoDoDebito(dataISO(r.data));          // debito segue o intervalo do periodo
         return {
             ...r,
+            fatura_venc: faturaRef ? dataISO(faturaRef) : null,
             v: +r.valor || 0,                                                    // valor numerico seguro
             inv: /^investimento$/i.test(String(r.categ || '').trim()),           // e da categoria Investimento?
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
         };
     });
 
-    return { lancamentosCrus, faturasCrus };
+    const faturasSet = new Set();
+    Estado.lancamentos.forEach(r => {
+        if (r.fatura_venc) faturasSet.add(r.fatura_venc);
+    });
+    Estado.faturas = [...faturasSet]
+        .sort((a, b) => timestamp(a) - timestamp(b))
+        .map(vencimento => ({ vencimento }));
+
+    return { lancamentosCrus };
 }
 
 // ATUALIZAÇÃO DE UI — popula os <select> a partir do Estado já carregado
@@ -2463,11 +2468,37 @@ function idsFaturasDoFormulario() {
         .map(select => select.value ? dataISO(select.value) : null);
 }
 
-// Credito nao tem mais inferencia por fechamento: cada parcela recebe sua fatura
-// explicitamente. Assim uma compra 3x pode apontar para tres faturas diferentes sem
-// depender de datas calculadas no frontend.
-// Antecipacao de fatura (debito) tambem exige uma fatura explicita — pra que o
-// abatimento seja preciso (vai direto na fatura certa, sem depender de ordem cronologica).
+function opcoesFaturasDisponiveis() {
+    const mapa = new Map();
+    // 1. Todas as faturas já lançadas
+    Estado.lancamentos.forEach(r => {
+        if (r.fatura_venc) {
+            const iso = dataISO(r.fatura_venc);
+            mapa.set(iso, nomeFatura({ vencimento: iso }));
+        }
+    });
+    // 2. Faturas sugeridas baseadas nos ciclos
+    Estado.ciclos.forEach(c => {
+        if (c.fat && c.fat !== '9999-12-31') {
+            const iso = dataISO(c.fat);
+            if (!mapa.has(iso)) mapa.set(iso, nomeFatura({ vencimento: iso }));
+        }
+    });
+    // 3. Garante sugestões para o mês atual e próximos 12 meses
+    const base = hojeISO();
+    for (let m = -1; m <= 12; m++) {
+        const iso = somaMeses(base, m);
+        if (!mapa.has(iso)) mapa.set(iso, nomeFatura({ vencimento: iso }));
+    }
+
+    return [...mapa.entries()]
+        .sort((a, b) => timestamp(a[0]) - timestamp(b[0]))
+        .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
+}
+
+// Credito nao tem mais inferencia por fechamento: cada parcela recebe seu vencimento
+// explicitamente. Assim uma compra 3x pode apontar para tres faturas diferentes.
+// Antecipacao de fatura (debito) tambem exige uma fatura explicita para abatimento direto.
 function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()) {
     const wrap = el('fFaturasWrap');
     const destino = el('faturasPorParcela');
@@ -2478,13 +2509,10 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     if (!cred && !ehAntecip) { destino.innerHTML = ''; return; }
 
     const parcelas = +el('fParcelas').value || 1;
-    if (!Estado.faturas.length) {
-        destino.innerHTML = '<p class=avisoFr>Cadastre a fatura no DataGrip ou aplique a permissão de leitura antes de lançar crédito.</p>';
-        return;
-    }
+    const faturas = opcoesFaturasDisponiveis();
 
-    const opcoes = Estado.faturas.map(f =>
-        `<option value="${dataISO(f.vencimento)}">${escapeHtml(nomeFatura(f))}</option>`
+    const opcoes = faturas.map(f =>
+        `<option value="${dataISO(f.vencimento)}">${escapeHtml(f.rotulo || nomeFatura(f))}</option>`
     ).join('');
     destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
         const selecionada = idsSelecionados[parcela];
@@ -2498,7 +2526,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
 
     [...document.querySelectorAll('[data-fatura-parcela]')].forEach((select, parcela) => {
         const sel = idsSelecionados[parcela];
-        if (sel && Estado.faturas.some(f => dataISO(f.vencimento) === dataISO(sel))) {
+        if (sel) {
             select.value = dataISO(sel);
         }
     });
