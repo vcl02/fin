@@ -669,8 +669,7 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
-            : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '') + textoOuTraco(r[chave])
-                + (chave == 'nome' && isMobile() && (ehLinhaReal(r) || r._sim) ? ` <span class=volatilMobile>V: ${badgeVolatil(r)}</span>` : '')}`
+            : (chave == 'nome' && r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '') + textoOuTraco(r[chave])}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {

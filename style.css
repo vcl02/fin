@@ -608,13 +608,6 @@
       background: var(--field-hover);
   }
 
-  .volatilMobile {
-      display: inline-block;
-      margin-left: .25rem;
-      font-size: .7rem;
-      white-space: nowrap;
-  }
-
   /* Valor clicavel na tabela: mesma ideia do badge Pago, edicao inline (ver listener
      em #out no script.js). */
   .togValor {
