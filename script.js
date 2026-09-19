@@ -226,14 +226,23 @@ function tituloFaturaDoCiclo(idx) {
 
 // Distribui as antecipacoes do unico cartao detalhado pelas faturas, da mais antiga pra
 // mais nova. A fatura da Isabella e' um lancamento comum e nao participa deste calculo.
+// Antecipacoes com fatura_id explicito vao direto para a fatura apontada (sem depender de
+// ordenacao cronologica). Antecipacoes antigas sem fatura_id continuam usando o fallback
+// cronologico (ponteiro p na lista de faturas com saldo).
 function alocacaoAntecipacoes(linhas) {
-    // saldo devido de cada fatura, na ordem em que aparecem na tela
+    // saldo devido de cada fatura, na ordem em que aparecem na tela.
+    // faturaId e' o id do banco (para cruzar com r.fatura_id das antecipacoes novas).
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
         const bruto = linhas
             .filter(r => r.cred && r.periodoIdx === idx)
             .reduce((s, r) => s + r.v, 0);
-        if (bruto < 0) faturas.push({ idx, saldo: -bruto });
+        if (bruto < 0) {
+            // descobre qual fatura do banco corresponde a este ciclo (pode ser null se nao houver)
+            const faturasDoCiclo = Estado.faturas.filter(f => periodoDaFatura(f.id) === idx);
+            const faturaId = faturasDoCiclo.length === 1 ? faturasDoCiclo[0].id : null;
+            faturas.push({ idx, saldo: -bruto, faturaId });
+        }
     });
 
     const antecipacoes = linhas
@@ -241,18 +250,29 @@ function alocacaoAntecipacoes(linhas) {
         .sort((a, b) => timestamp(a.data) - timestamp(b.data));
 
     const abatido = {};
-    let p = 0;                                                  // ponteiro na fatura mais antiga ainda com saldo
+    let p = 0;                                                  // ponteiro no fallback cronologico
     antecipacoes.forEach(r => {
-        let resto = -r.v;
-        while (resto > 0.005 && p < faturas.length) {
-            const f = faturas[p];
-            const usa = Math.min(resto, f.saldo);
-            f.saldo -= usa; resto -= usa;
-            abatido[f.idx] = (abatido[f.idx] || 0) + usa;
-            if (f.saldo <= 0.005) p++;                              // fatura quitada: proxima antecipacao vai pra seguinte
-            else break;                                                 // sobrou saldo: nada transborda
+        if (r.fatura_id) {
+            // vinculo explicito: abate direto na fatura apontada, independente de ordem
+            const f = faturas.find(x => x.faturaId != null && String(x.faturaId) === String(r.fatura_id));
+            if (f) {
+                const usa = Math.min(-r.v, f.saldo);
+                f.saldo -= usa;
+                abatido[f.idx] = (abatido[f.idx] || 0) + usa;
+            }
+        } else {
+            // fallback cronologico: comportamento anterior para antecipacoes sem fatura_id
+            let resto = -r.v;
+            while (resto > 0.005 && p < faturas.length) {
+                const f = faturas[p];
+                const usa = Math.min(resto, f.saldo);
+                f.saldo -= usa; resto -= usa;
+                abatido[f.idx] = (abatido[f.idx] || 0) + usa;
+                if (f.saldo <= 0.005) p++;                              // fatura quitada: proxima antecipacao vai pra seguinte
+                else break;                                                 // sobrou saldo: nada transborda
+            }
+            // resto que sobrar depois da ultima fatura conhecida simplesmente nao abate nada
         }
-        // resto que sobrar depois da ultima fatura conhecida simplesmente nao abate nada
     });
     return abatido;
 }
@@ -2445,12 +2465,16 @@ function idsFaturasDoFormulario() {
 // Credito nao tem mais inferencia por fechamento: cada parcela recebe sua fatura
 // explicitamente. Assim uma compra 3x pode apontar para tres faturas diferentes sem
 // depender de datas calculadas no frontend.
+// Antecipacao de fatura (debito) tambem exige uma fatura explicita — pra que o
+// abatimento seja preciso (vai direto na fatura certa, sem depender de ordem cronologica).
 function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()) {
     const wrap = el('fFaturasWrap');
     const destino = el('faturasPorParcela');
     const cred = el('fCred').checked;
-    wrap.hidden = !cred;
-    if (!cred) { destino.innerHTML = ''; return; }
+    const categ = el('fCateg').value || '';
+    const ehAntecip = ehAntecipacaoFatura(categ);
+    wrap.hidden = !cred && !ehAntecip;
+    if (!cred && !ehAntecip) { destino.innerHTML = ''; return; }
 
     const parcelas = +el('fParcelas').value || 1;
     if (!Estado.faturas.length) {
@@ -2482,6 +2506,10 @@ el('fCred').addEventListener('change', () => {
     sugereModoValorParcelas();
     atualizarFaturasDoFormulario();
 });
+
+// quando a categoria muda pra "Antecipacao Fatura" (debito), o seletor de fatura
+// deve aparecer igual ao credito — e desaparecer se sair dessa categoria.
+el('fCateg').addEventListener('change', () => atualizarFaturasDoFormulario());
 
 // Frequencia abre em "— Sem recorrencia", que e' o certo pra compra avulsa (1x) — o caso
 // mais comum de longe, e o que mantem a coluna Frequencia significando alguma coisa (se
@@ -2890,7 +2918,9 @@ async function submeteNovoLancamento() {
     const valorTotal = valorDigitado ? valorMascaraParaNumero(valorDigitado) : 0;
 
     const cred = el('fCred').checked;
-    const faturaIds = cred ? idsFaturasDoFormulario() : [];
+    const ehAntecip = ehAntecipacaoFatura(categ || '');
+    // credito sempre exige fatura; antecipacao de debito tambem (agora com vinculo explicito)
+    const faturaIds = (cred || ehAntecip) ? idsFaturasDoFormulario() : [];
     const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
     const pago = el('fPago').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
@@ -2905,8 +2935,10 @@ async function submeteNovoLancamento() {
         : dividir ? valorDasParcelas(valorTotal, parcelas).map(v => v * (sinalPositivo ? 1 : -1))
             : Array(parcelas).fill(valorAssinado);   // repete o mesmo valor digitado em cada linha, sem dividir
 
-    if (cred && (faturaIds.length !== parcelas || faturaIds.some(id => !id))) {
-        el('erroNovo').textContent = 'Escolha uma fatura para cada parcela de crédito.';
+    if ((cred || ehAntecip) && (faturaIds.length !== parcelas || faturaIds.some(id => !id))) {
+        el('erroNovo').textContent = cred
+            ? 'Escolha uma fatura para cada parcela de crédito.'
+            : 'Escolha a fatura que esta antecipação está quitando.';
         el('fFaturasWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         return;
     }
@@ -2953,15 +2985,18 @@ async function submeteNovoLancamento() {
 // regra de classificacao que carregarDados() usa: debito pela propria data, credito pelo
 // vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
 async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds = [] }) {
+    const ehAntecip = ehAntecipacaoFatura(categ || '');
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const payload = {
             data: dataParcela, freq, cred, isa, pago, ativo: true,
             nome,
-            categ, valor: valores[p], fatura_id: cred ? faturaIds[p] : null,
+            // credito usa fatura_id; antecipacao de debito tambem (vinculo explicito com a fatura quitada)
+            categ, valor: valores[p], fatura_id: (cred || ehAntecip) ? faturaIds[p] : null,
         };
         const linhaCriada = await inserirLancamento(payload);
         const periodoIdx = !dataParcela ? null
+            // antecipacao e' debito: periodo determinado pela propria data, nao pelo vencimento da fatura
             : cred ? periodoDaFatura(faturaIds[p]) : periodoDoDebito(dataISO(dataParcela));
         const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null;
         Estado.lancamentos.push({
@@ -3019,6 +3054,7 @@ el('toggleSimulacao').onclick = async () => {
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
 function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds = [] }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
+    const ehAntecip = ehAntecipacaoFatura(categ || '');
 
     const criadas = valores.map((valorAssinado, p) => {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
@@ -3028,7 +3064,7 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, p
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, ativo: true, fatura_id: cred ? faturaIds[p] : null,
+            cred, isa, pago, ativo: true, fatura_id: (cred || ehAntecip) ? faturaIds[p] : null,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
