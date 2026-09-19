@@ -205,33 +205,33 @@ function nomeMesPeriodo(fatStr) {
 
 // Credito nao e' classificado pela data da compra: a fatura foi escolhida manualmente
 // e o vencimento dela determina em qual ciclo de caixa o total aparece.
-function periodoDaFatura(faturaId) {
-    const fatura = Estado.faturas.find(f => String(f.id) === String(faturaId));
-    return fatura ? periodoDoDebito(dataISO(fatura.vencimento)) : null;
+function periodoDaFatura(faturaVenc) {
+    if (!faturaVenc) return null;
+    return periodoDoDebito(dataISO(faturaVenc));
 }
 
 function vencimentoDoCiclo(idx) {
     const faturas = Estado.faturas
-        .filter(f => periodoDaFatura(f.id) === idx)
+        .filter(f => periodoDaFatura(f.vencimento) === idx)
         .sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento));
     return faturas[0] ? dataISO(faturas[0].vencimento) : dataISO(Estado.ciclos[idx]?.fat);
 }
 
 function tituloFaturaDoCiclo(idx) {
     const fatura = Estado.faturas
-        .filter(f => periodoDaFatura(f.id) === idx)
+        .filter(f => periodoDaFatura(f.vencimento) === idx)
         .sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento))[0];
-    return fatura ? nomeFatura(fatura) : '�';
+    return fatura ? nomeFatura(fatura) : '—';
 }
 
 // Distribui as antecipacoes do unico cartao detalhado pelas faturas, da mais antiga pra
 // mais nova. A fatura da Isabella e' um lancamento comum e nao participa deste calculo.
-// Antecipacoes com fatura_id explicito vao direto para a fatura apontada (sem depender de
-// ordenacao cronologica). Antecipacoes antigas sem fatura_id continuam usando o fallback
+// Antecipacoes com fatura_venc explicito vao direto para a fatura apontada (sem depender de
+// ordenacao cronologica). Antecipacoes antigas sem fatura_venc continuam usando o fallback
 // cronologico (ponteiro p na lista de faturas com saldo).
 function alocacaoAntecipacoes(linhas) {
     // saldo devido de cada fatura, na ordem em que aparecem na tela.
-    // faturaId e' o id do banco (para cruzar com r.fatura_id das antecipacoes novas).
+    // vencimento e' a data PK da fatura (para cruzar com r.fatura_venc das antecipacoes novas).
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
         const bruto = linhas
@@ -239,9 +239,9 @@ function alocacaoAntecipacoes(linhas) {
             .reduce((s, r) => s + r.v, 0);
         if (bruto < 0) {
             // descobre qual fatura do banco corresponde a este ciclo (pode ser null se nao houver)
-            const faturasDoCiclo = Estado.faturas.filter(f => periodoDaFatura(f.id) === idx);
-            const faturaId = faturasDoCiclo.length === 1 ? faturasDoCiclo[0].id : null;
-            faturas.push({ idx, saldo: -bruto, faturaId });
+            const faturasDoCiclo = Estado.faturas.filter(f => periodoDaFatura(f.vencimento) === idx);
+            const vencimento = faturasDoCiclo.length === 1 ? dataISO(faturasDoCiclo[0].vencimento) : null;
+            faturas.push({ idx, saldo: -bruto, vencimento });
         }
     });
 
@@ -252,16 +252,17 @@ function alocacaoAntecipacoes(linhas) {
     const abatido = {};
     let p = 0;                                                  // ponteiro no fallback cronologico
     antecipacoes.forEach(r => {
-        if (r.fatura_id) {
-            // vinculo explicito: abate direto na fatura apontada, independente de ordem
-            const f = faturas.find(x => x.faturaId != null && String(x.faturaId) === String(r.fatura_id));
+        const refVenc = r.fatura_venc || r.fatura_id;
+        if (refVenc) {
+            // vinculo explicito: abate direto na fatura apontada pelo vencimento
+            const f = faturas.find(x => x.vencimento != null && String(x.vencimento) === dataISO(refVenc));
             if (f) {
                 const usa = Math.min(-r.v, f.saldo);
                 f.saldo -= usa;
                 abatido[f.idx] = (abatido[f.idx] || 0) + usa;
             }
         } else {
-            // fallback cronologico: comportamento anterior para antecipacoes sem fatura_id
+            // fallback cronologico: comportamento anterior para antecipacoes sem fatura informada
             let resto = -r.v;
             while (resto > 0.005 && p < faturas.length) {
                 const f = faturas[p];
@@ -373,7 +374,7 @@ async function carregarDados() {
         if (!r.data)
             periodoIdx = null;                                      // sem data -> Backlog, sempre
         else if (r.cred)
-            periodoIdx = periodoDaFatura(r.fatura_id);
+            periodoIdx = periodoDaFatura(r.fatura_venc || r.fatura_id);
         else
             periodoIdx = periodoDoDebito(dataISO(r.data));          // debito segue o intervalo do periodo
         return {
@@ -1669,7 +1670,7 @@ el('out').addEventListener('click', e => {
 // quando a data e' apagada / cai fora de todos os periodos cadastrados.
 function reclassificaPeriodo(r) {
     const idx = !r.data ? null
-        : r.cred ? periodoDaFatura(r.fatura_id)
+        : r.cred ? periodoDaFatura(r.fatura_venc || r.fatura_id)
             : periodoDoDebito(dataISO(r.data));
     r.periodoIdx = idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
 }
@@ -2459,7 +2460,7 @@ function nomeFatura(fatura) {
 
 function idsFaturasDoFormulario() {
     return [...document.querySelectorAll('[data-fatura-parcela]')]
-        .map(select => select.value ? +select.value : null);
+        .map(select => select.value ? dataISO(select.value) : null);
 }
 
 // Credito nao tem mais inferencia por fechamento: cada parcela recebe sua fatura
@@ -2483,7 +2484,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     }
 
     const opcoes = Estado.faturas.map(f =>
-        `<option value="${f.id}">${escapeHtml(nomeFatura(f))}</option>`
+        `<option value="${dataISO(f.vencimento)}">${escapeHtml(nomeFatura(f))}</option>`
     ).join('');
     destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
         const selecionada = idsSelecionados[parcela];
@@ -2496,8 +2497,9 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     }).join('');
 
     [...document.querySelectorAll('[data-fatura-parcela]')].forEach((select, parcela) => {
-        if (idsSelecionados[parcela] && Estado.faturas.some(f => +f.id === +idsSelecionados[parcela])) {
-            select.value = String(idsSelecionados[parcela]);
+        const sel = idsSelecionados[parcela];
+        if (sel && Estado.faturas.some(f => dataISO(f.vencimento) === dataISO(sel))) {
+            select.value = dataISO(sel);
         }
     });
 }
@@ -2545,7 +2547,8 @@ function abreModalNovo(prefill) {
         el('fCateg').value = prefill.categ || '';
         el('fData').value = dataISO(prefill.data) || '';
         el('fCred').checked = !!prefill.cred;
-        atualizarFaturasDoFormulario(prefill.fatura_id ? [prefill.fatura_id] : []);
+        const fatRef = prefill.fatura_venc || prefill.fatura_id;
+        atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
@@ -2988,16 +2991,17 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
+        const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         const payload = {
             data: dataParcela, freq, cred, isa, pago, ativo: true,
             nome,
-            // credito usa fatura_id; antecipacao de debito tambem (vinculo explicito com a fatura quitada)
-            categ, valor: valores[p], fatura_id: (cred || ehAntecip) ? faturaIds[p] : null,
+            categ, valor: valores[p],
+            fatura_venc: faturaVenc,
         };
         const linhaCriada = await inserirLancamento(payload);
         const periodoIdx = !dataParcela ? null
             // antecipacao e' debito: periodo determinado pela propria data, nao pelo vencimento da fatura
-            : cred ? periodoDaFatura(faturaIds[p]) : periodoDoDebito(dataISO(dataParcela));
+            : cred ? periodoDaFatura(faturaVenc) : periodoDoDebito(dataISO(dataParcela));
         const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null;
         Estado.lancamentos.push({
             ...linhaCriada,
@@ -3058,13 +3062,15 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, p
 
     const criadas = valores.map((valorAssinado, p) => {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
+        const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         const periodoIdx = !dataParcela ? null
-            : cred ? periodoDaFatura(faturaIds[p]) : periodoDoDebito(dataISO(dataParcela));
+            : cred ? periodoDaFatura(faturaVenc) : periodoDoDebito(dataISO(dataParcela));
         return {
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, ativo: true, fatura_id: (cred || ehAntecip) ? faturaIds[p] : null,
+            cred, isa, pago, ativo: true,
+            fatura_venc: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
