@@ -8,10 +8,10 @@
 - `periodos` não é lida pela aplicação. Ela permanece temporariamente apenas como histórico para auditoria da migração dos créditos e poderá ser removida depois da conferência.
 - Cada lançamento `Faturamento PJ` abre um ciclo de débito. O ciclo vai dessa data até o dia anterior ao próximo `Faturamento PJ`; uma fatura entra no ciclo que contém seu `vencimento`.
 
-- Existe um único cartão detalhado. Todo lançamento com `cred = true` usa `periodos.fecha` e `periodos.venc` para definir a fatura; `isa` não seleciona outro calendário de cartão.
+- Existe um único cartão detalhado. Todo lançamento com `cred = true` aponta para `fatura_id`; `isa` não seleciona outro calendário de cartão.
 - A fatura da Isabella é um lançamento real comum: `cred = false`, `isa = true`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
 - A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações do cartão detalhado.
-- `periodos` não possui mais `fecha_isa` nem `venc_isa`. O campo `isa` continua identificando lançamentos da Isabella para filtros e para a visão restrita.
+- O campo `isa` continua identificando lançamentos da Isabella para filtros e para a visão restrita.
 - Antecipações de fatura abatem somente a única fatura detalhada, da mais antiga para a mais nova.
 
 ## Migrations
