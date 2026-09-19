@@ -2515,31 +2515,16 @@ function idsFaturasDoFormulario() {
 }
 
 function opcoesFaturasDisponiveis() {
-    const mapa = new Map();
-    // 1. Todas as faturas já lançadas
+    // DISTINCT estrito de todas as datas de vencimento que realmente existem nos lancamentos
+    const faturasSet = new Set();
     Estado.lancamentos.forEach(r => {
-        if (r.fatura_venc) {
-            const iso = dataISO(r.fatura_venc);
-            mapa.set(iso, nomeFatura({ vencimento: iso }));
-        }
+        const v = r.fatura_venc || r.fatura_id;
+        if (v) faturasSet.add(dataISO(v));
     });
-    // 2. Faturas sugeridas baseadas nos ciclos
-    Estado.ciclos.forEach(c => {
-        if (c.fat && c.fat !== '9999-12-31') {
-            const iso = dataISO(c.fat);
-            if (!mapa.has(iso)) mapa.set(iso, nomeFatura({ vencimento: iso }));
-        }
-    });
-    // 3. Garante sugestões para o mês atual e próximos 12 meses
-    const base = hojeISO();
-    for (let m = -1; m <= 12; m++) {
-        const iso = somaMeses(base, m);
-        if (!mapa.has(iso)) mapa.set(iso, nomeFatura({ vencimento: iso }));
-    }
 
-    return [...mapa.entries()]
-        .sort((a, b) => timestamp(a[0]) - timestamp(b[0]))
-        .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
+    return [...faturasSet]
+        .sort((a, b) => timestamp(a) - timestamp(b))
+        .map(venc => ({ vencimento: venc, rotulo: nomeFatura({ vencimento: venc }) }));
 }
 
 // Credito nao tem mais inferencia por fechamento: cada parcela recebe seu vencimento
@@ -2555,7 +2540,24 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     if (!cred && !ehAntecip) { destino.innerHTML = ''; return; }
 
     const parcelas = +el('fParcelas').value || 1;
-    const faturas = opcoesFaturasDisponiveis();
+    const faturasMap = new Map();
+
+    // DISTINCT das datas de vencimento existentes
+    opcoesFaturasDisponiveis().forEach(f => {
+        faturasMap.set(dataISO(f.vencimento), f.rotulo);
+    });
+
+    // Se houver fatura pré-selecionada / prefill que ainda não está na lista, inclui
+    idsSelecionados.forEach(sel => {
+        if (sel && !faturasMap.has(dataISO(sel))) {
+            const iso = dataISO(sel);
+            faturasMap.set(iso, nomeFatura({ vencimento: iso }));
+        }
+    });
+
+    const faturas = [...faturasMap.entries()]
+        .sort((a, b) => timestamp(a[0]) - timestamp(b[0]))
+        .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
 
     const opcoes = faturas.map(f =>
         `<option value="${dataISO(f.vencimento)}">${escapeHtml(f.rotulo || nomeFatura(f))}</option>`
