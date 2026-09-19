@@ -121,14 +121,11 @@ const ehAntecipacaoFaturaIsabella = categ => ehAntecipacaoFatura(categ) && semAc
 // O combo de categoria e' um <select> montado a partir das categorias ja usadas (categoriasPorPopularidade), entao uma categoria inedita nunca teria como ser escolhida na primeira vez. Estas entram sempre na lista, mesmo sem nenhum lancamento.
 const CATEGORIAS_FIXAS = ['Antecipação Fatura Isabella'];
 
-// Captura: o emissor so registra a compra no dia seguinte (D+1) na maioria dos casos. Excecao: NuPay captura no mesmo dia — hoje isso e' sempre Uber. Fora dos dias de fronteira o deslocamento nao muda nada, entao a data que voce lanca continua sendo a da compra; o D+1 so importa quando a compra cai no dia do fechamento.
-const ehCapturaMesmoDia = nome => semAcento(nome).includes('uber');
-const dataCaptura = (dataStr, nome) =>
-    ehCapturaMesmoDia(nome) ? dataISO(dataStr) : proximoDia(dataStr);
-
-// Dia de fronteira: a compra caiu no fechamento (ou depois dele, ja na virada), entao o D+1 da captura empurrou ela pra fatura seguinte. E' o unico caso em que a data lancada e a fatura resultante parecem nao bater — por isso a marca na tela.
+// Dia de fronteira: pela regra da visualizacao, uma compra feita no proprio dia do
+// fechamento ja pertence a fatura seguinte. A decisao usa somente a data original do
+// lancamento, sem regra de captura D+0/D+1 e sem excecao por nome.
 function ehFronteira(r) {
-    if (!r.cred || !r.data || ehCapturaMesmoDia(r.nome)) return false;
+    if (!r.cred || !r.data) return false;
     const d = dataISO(r.data);
     return Estado.periodos.some(per => dataISO(r.isa ? per.fecha_isa : per.fecha) === d);
 }
@@ -242,16 +239,17 @@ function periodoQueExibeVencimento(vencimento) {
 // Em qual PERIODO uma compra no CREDITO aparece.
 // Passos:
 //  1) acha a fatura que recebe a compra: primeiro periodo cujo 'fecha' (ou 'fecha_isa')
-//     e maior ou igual a data da compra
+//     e ESTRITAMENTE posterior a data original da compra. Se a compra cair no proprio
+//     fechamento, ela pertence a fatura seguinte.
 //  2) essa fatura vence no 'venc' (ou 'venc_isa') desse mesmo periodo
 //  3) a compra aparece no periodo cujo NOME bate com o mes/ano desse vencimento
 //     (nome do periodo = mes anterior ao seu 'fat', entao fat.mes = venc.mes + 1)
 // Se o vencimento nao estiver preenchido, retorna null (a compra cai no Backlog).
-function periodoDoCredito(dataStr, ehIsabella, nome) {
-    const dataCompra = dataCaptura(dataStr, nome);
+function periodoDoCredito(dataStr, ehIsabella) {
+    const dataCompra = dataISO(dataStr);
     const iFatura = Estado.periodos.findIndex(per => {
         const fechamento = ehIsabella ? per.fecha_isa : per.fecha;
-        return fechamento && dataISO(fechamento) >= dataCompra;
+        return fechamento && dataISO(fechamento) > dataCompra;
     });
 
     if (iFatura < 0) return null;
@@ -524,8 +522,8 @@ function ordenarLinhas(linhas, idTabela) {
     return copia;
 }
 
-// avisa quando a compra cai no dia do fechamento: o D+1 da captura vai jogar ela
-// pra fatura seguinte, entao vale conferir na fatura real antes de salvar
+// avisa quando a compra cai no dia do fechamento e, pela regra da visualizacao, vai
+// diretamente para a fatura seguinte
 function atualizaAvisoFronteira() {
     const data = el('fData').value;
     const simulado = {
@@ -539,7 +537,7 @@ function atualizaAvisoFronteira() {
     const alvo = idx != null && idx >= 0 && Estado.periodos[idx]
         ? nomePeriodo(Estado.periodos[idx].fat) : 'a fatura seguinte';
     el('avisoFr').textContent =
-        `Dia do fechamento: capturada em D+1, vai cair em ${alvo}. Confira na fatura.`;
+        `Dia do fechamento: vai cair em ${alvo}, na fatura seguinte.`;
 }
 
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
@@ -648,7 +646,7 @@ const textoOuTraco = v => ehVazioTextual(v) ? '—' : v;
 const ehLinhaReal = r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._sim;
 // conteudo da celula Data: DD/MM/AAAA (+ a marca de fronteira, quando for o caso) ou '—'
 const textoData = r => r.data
-    ? dataBR(r.data) + (ehFronteira(r) ? '<span class=fr title="Compra no dia do fechamento: capturada em D+1, entrou na fatura seguinte">*</span>' : '')
+    ? dataBR(r.data) + (ehFronteira(r) ? '<span class=fr title="Compra no dia do fechamento: entrou na fatura seguinte">*</span>' : '')
     : '—';
 // mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
 // lancamentos REAIS (id do banco, da' pra dar PATCH) e so' no desktop — no mobile a
@@ -1264,8 +1262,8 @@ function vComp() {
     // Dentro de uma categoria x periodo, agrupa os lancamentos REAIS por nome+valor e
     // avisa quando algum grupo se repete (2+) com datas de MESES DIFERENTES entre si —
     // sintoma de um lancamento recorrente (mesmo nome, mesmo valor) que caiu 2x dentro do
-    // MESMO ciclo porque a janela do periodo atravessou a virada do mes (ver ehFronteira/
-    // proximoDia), e nao uma despesa que realmente comecou/parou de existir. Sem esse
+    // MESMO ciclo porque a janela do periodo atravessou a virada do mes (ver ehFronteira),
+    // e nao uma despesa que realmente comecou/parou de existir. Sem esse
     // aviso, "Somente <mes>" fazia parecer que a categoria sumiu no outro mes quando na
     // verdade ela so' foi contada 2x nesse aqui (e ficou de fora, sem repetir, no outro).
     // Ignora linhas sinteticas (Saldo/Fatura/Investimento) — a checagem e' so' pra

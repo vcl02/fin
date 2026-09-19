@@ -1,5 +1,11 @@
 # Regras dos lançamentos
 
+## Fechamento do cartão
+
+- A visualização usa a data original da compra, sem deslocamento por captura D+0 ou D+1.
+- Compra anterior ao fechamento entra na fatura que fecha naquela data. Compra no próprio dia do fechamento, ou depois dele, entra na fatura seguinte.
+- O cartão principal usa `periodos.fecha`; o cartão da Isabella usa `periodos.fecha_isa`.
+
 ## Volátil
 
 - `lancamentos.volatil` é uma flag booleana manual. `true` é o padrão para registros existentes e novos; desmarcar a flag indica que o lançamento não é volátil.
