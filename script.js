@@ -996,6 +996,11 @@ function celulaSaldoCiclo(idx) {
 
 
 // Visão "Ciclo": mostra um periodo por vez, com os blocos Debito e Credito (ou o Backlog).
+// O Crédito é uma prévia visual: no ciclo N mostra as compras da fatura do ciclo N+1.
+// O cálculo da fatura e do Débito continua usando os créditos do próprio ciclo N.
+function creditosExibidosNoCiclo(linhas, idxCiclo) {
+    return linhas.filter(r => r.cred && r.periodoIdx === idxCiclo + 1);
+}
 function vCiclo() {
     const i = +el('ciclo').value;
 
@@ -1008,18 +1013,20 @@ function vCiclo() {
     if (!periodo) return '<p class=empty>Sem ciclos</p>';
 
     const debitos = filtrarLancamentos().filter(r => r.periodoIdx == i && !r.cred);
-    const creditos = filtrarLancamentos().filter(r => r.periodoIdx == i && r.cred);
-    const totalCredito = creditos.reduce((s, r) => s + r.v, 0);
+    const visiveis = filtrarLancamentos();
+    const creditosDaFatura = visiveis.filter(r => r.periodoIdx == i && r.cred);
+    // Apenas a tabela de Crédito é antecipada uma competência na tela. O Débito não muda.
+    const creditosExibidos = creditosExibidosNoCiclo(visiveis, i);
+    const totalCreditoExibido = creditosExibidos.reduce((s, r) => s + r.v, 0);
 
     // Ha um unico cartao detalhado. A fatura da Isabella e' um lancamento comum no bloco
     // Debito, com valor atualizado manualmente, e nunca vira uma linha sintetica aqui.
     // O vencimento vem da fatura escolhida manualmente em cada credito.
     const vencimentoDaFatura = vencimentoDoCiclo(i);
-    const visiveis = filtrarLancamentos();
     const abatido = alocacaoAntecipacoes(visiveis);
 
     const montaLinhaFatura = () => {
-        const total = creditos.reduce((s, r) => s + r.v, 0);
+        const total = creditosDaFatura.reduce((s, r) => s + r.v, 0);
         if (!total) return null;   // sem compras no cartao, sem linha
         const liquido = total + (abatido[i] || 0);
         // fatura quitada nao aparece: nao ha mais nada pra sair da conta
@@ -1033,10 +1040,6 @@ function vCiclo() {
         };
     };
     const linhasFatura = [montaLinhaFatura()].filter(Boolean);
-
-    // total liquido do credito: o bruto menos o que ja foi antecipado. E' o mesmo numero
-    // que aparece na linha de fatura do bloco Debito — aqui so como referencia no titulo.
-    const totalFaturaLiquido = linhasFatura.reduce((s, r) => s + r.v, 0);
 
     const simples = modoSimples();
     // saldo que veio do ciclo anterior — positivo ou negativo, entra como uma linha
@@ -1138,17 +1141,10 @@ function vCiclo() {
     // Isabella VE o Credito normalmente (so o resto do "modo simples" e' escondido).
     if (Estado.restrito) return blocoDebito;
 
-    // com fatura em aberto, o destaque vai pro que FALTA pagar e o bruto fica de lado,
-    // apagado. Quitada (ou sem antecipacao), mostra so o total normal.
-    const faltaPagar = Math.abs(totalFaturaLiquido);
-    const houveAbatimento = Math.abs(totalFaturaLiquido - totalCredito) > 0.005;
     const blocoCredito = renderBloco(
-        'Crédito', totalCredito,
-        tituloFaturaDoCiclo(i),
-        creditos, 'cr', true,
-        houveAbatimento && faltaPagar > 0.005
-            ? `<b class="${corSoma(totalFaturaLiquido)}">${brl(faltaPagar)}</b><span class=bruto>de ${brl(Math.abs(totalCredito))}</span>`
-            : ''
+        'Crédito', totalCreditoExibido,
+        tituloFaturaDoCiclo(i + 1),
+        creditosExibidos, 'cr', true
     );
 
     return blocoDebito + blocoCredito;
