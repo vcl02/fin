@@ -35,9 +35,11 @@
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
 - A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.
 - A separação do gráfico do ciclo entre gastos essenciais e não essenciais é coberta por `node --test tests/gastos-essenciais.test.js`.
+- O cadastro e a alternância imediata da classificação Essencial são cobertos por `node --test tests/essencial-interacao.test.js`.
 - O deslocamento visual de uma competência na tabela Crédito é coberto por `node --test tests/layout-creditos.test.js`.
 
 ## Essencial
 
-- `lancamentos.essencial` é uma classificação já existente no banco e é somente exibida nas tabelas; o formulário não cria nem altera esse campo.
+- `lancamentos.essencial` é uma classificação existente no banco. O formulário mostra a caixa **Essencial** desmarcada por padrão e novos lançamentos são salvos como `false` até ela ser marcada.
+- Nas tabelas, o badge Essencial é clicável para alternar a classificação do lançamento real; a alteração é salva imediatamente. Em simulações, a alteração existe apenas em memória.
 - O gráfico **Essenciais** usa todos os gastos negativos reais do ciclo (débito e crédito), excluindo transferências de pagamento/antecipação de fatura. A pizza sempre soma o total desses gastos e separa o valor marcado como essencial do restante.

@@ -680,7 +680,7 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
         : tipo == 'e' ? `<td>${r[chave] == null ? '—'
-            : `<span class="${r[chave] ? 'tagEssencial' : 'tagNaoEssencial'}">${r[chave] ? 'Sim' : 'Não'}</span>`}`
+            : `<span class="${r[chave] ? 'tagEssencial' : 'tagNaoEssencial'}${ehLinhaReal(r) || r._sim ? ' togEssencial' : ''}"${ehLinhaReal(r) || r._sim ? ` data-tog-essencial="${escapeHtml(String(r.id))}" title="Clique para alternar Essencial"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
@@ -2326,6 +2326,34 @@ el('fechaGrafico').onclick = () => el('modalGrafico').close();
 el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
 });
+
+// clique no badge "Essencial" alterna a classificação na hora, sem selecionar a linha.
+// Linhas simuladas mudam apenas em memória; linhas reais persistem no Supabase.
+el('out').addEventListener('click', async e => {
+    const badge = e.target.closest('[data-tog-essencial]');
+    if (!badge) return;
+    e.stopImmediatePropagation();
+
+    const id = badge.dataset.togEssencial;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const novoEssencial = !r.essencial;
+    badge.classList.toggle('tagEssencial', novoEssencial);
+    badge.classList.toggle('tagNaoEssencial', !novoEssencial);
+    badge.textContent = novoEssencial ? 'Sim' : 'Não';
+    badge.style.opacity = .5;
+
+    try {
+        if (!r._sim) await atualizarLancamento(r.id, { essencial: novoEssencial });
+        r.essencial = novoEssencial;
+        desenhar();
+    } catch (err) {
+        badge.style.opacity = '';
+        alert('Falhou ao atualizar: ' + err.message);
+        desenhar();
+    }
+});
 el('fechaGraficoEssencial').onclick = () => el('modalGraficoEssencial').close();
 el('modalGraficoEssencial').addEventListener('click', e => {
     if (e.target == el('modalGraficoEssencial')) el('modalGraficoEssencial').close();
@@ -2756,6 +2784,7 @@ function abreModalNovo(prefill) {
         atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
+        el('fEssencial').checked = !!prefill.essencial;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
         // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
@@ -3148,6 +3177,7 @@ async function submeteNovoLancamento() {
     const faturaIds = (cred || ehAntecip) ? idsFaturasDoFormulario() : [];
     const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
     const pago = el('fPago').checked;
+    const essencial = el('fEssencial').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
     // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
@@ -3173,8 +3203,8 @@ async function submeteNovoLancamento() {
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data, mantem nome/categoria/cred/isa
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
@@ -3185,6 +3215,7 @@ async function submeteNovoLancamento() {
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
+        el('fEssencial').checked = false;
         el('fCateg').selectedIndex = 0;   // categoria vinha do nome; sem nome, nao faz sentido manter
         atualizaAvisoFronteira();
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
@@ -3209,13 +3240,13 @@ async function submeteNovoLancamento() {
 // memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
 // regra de classificacao que carregarDados() usa: debito pela propria data, credito pelo
 // vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds = [] }) {
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds = [] }) {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         const payload = {
-            data: dataParcela, freq, cred, isa, pago, ativo: true,
+            data: dataParcela, freq, cred, isa, pago, essencial, ativo: true,
             nome,
             categ, valor: valores[p],
             fatura_venc: faturaVenc,
@@ -3278,7 +3309,7 @@ el('toggleSimulacao').onclick = async () => {
 // derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
 // +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
-function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, parcelas, valores, faturaIds = [] }) {
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds = [] }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
     const ehAntecip = ehAntecipacaoFatura(categ || '');
 
@@ -3291,7 +3322,7 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, p
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, ativo: true,
+            cred, isa, pago, essencial, ativo: true,
             fatura_venc: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),

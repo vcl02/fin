@@ -599,6 +599,16 @@
       background: #47291F;
   }
 
+  .togEssencial {
+      cursor: pointer;
+  }
+
+  .togEssencial:hover {
+      filter: brightness(1.16);
+      outline: 1px dashed currentColor;
+      outline-offset: 2px;
+  }
+
   /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
      #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
      tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. */
