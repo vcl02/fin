@@ -2504,9 +2504,11 @@ function nomeFatura(fatura) {
     return `${MESES[mes - 1]} ${ano} — vence ${dataBR(fatura.vencimento)}`;
 }
 
-function idsFaturasDoFormulario() {
+function idsFaturasDoFormulario(incluirSugestoes = true) {
     return [...document.querySelectorAll('[data-fatura-parcela]')]
-        .map(select => select.value ? dataISO(select.value) : null);
+        .map(select => !incluirSugestoes && select.dataset.faturaSugerida === '1'
+            ? null
+            : (select.value ? dataISO(select.value) : null));
 }
 
 function opcoesFaturasDisponiveis() {
@@ -2520,6 +2522,23 @@ function opcoesFaturasDisponiveis() {
     return [...faturasSet]
         .sort((a, b) => timestamp(a) - timestamp(b))
         .map(venc => ({ vencimento: venc, rotulo: nomeFatura({ vencimento: venc }) }));
+}
+
+// No modo de simulacao, cada prestacao ja nasce apontando para a fatura disponivel
+// mais proxima da sua propria data. E' apenas um palpite: os <select>s continuam
+// independentes para que a pessoa possa trocar qualquer parcela antes de simular.
+function faturasSugeridasParaParcelas(faturas, data, parcelas, freq) {
+    if (!data || !faturas.length) return Array(parcelas).fill(null);
+    const vencimentos = faturas
+        .map(f => dataISO(f.vencimento))
+        .sort((a, b) => timestamp(a) - timestamp(b));
+    return Array.from({ length: parcelas }, (_, p) => {
+        const dataParcela = dataDaOcorrencia(data, p, freq);
+        return vencimentos.find(vencimento => vencimento >= dataParcela)
+            // Se a simulacao ultrapassar a ultima fatura ja conhecida, deixa a
+            // ultima como ponto de partida editavel em vez de abrir um campo vazio.
+            || vencimentos[vencimentos.length - 1];
+    });
 }
 
 // Credito nao tem mais inferencia por fechamento: cada parcela recebe seu vencimento
@@ -2553,25 +2572,29 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     const faturas = [...faturasMap.entries()]
         .sort((a, b) => timestamp(a[0]) - timestamp(b[0]))
         .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
+    const sugestoes = Estado.simulando && cred
+        ? faturasSugeridasParaParcelas(faturas, el('fData').value, parcelas, el('fFreq').value)
+        : [];
 
     const opcoes = faturas.map(f =>
         `<option value="${dataISO(f.vencimento)}">${escapeHtml(f.rotulo || nomeFatura(f))}</option>`
     ).join('');
     destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
-        const selecionada = idsSelecionados[parcela];
+        const selecionada = idsSelecionados[parcela] || sugestoes[parcela];
         const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Fatura';
         return `<label class=fm><span>${titulo} <b class=req>*</b></span>` +
-            `<select data-fatura-parcela="${parcela}" required>` +
+            `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required>` +
             `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a fatura…</option>` +
             opcoes +
             '</select></label>';
     }).join('');
 
     [...document.querySelectorAll('[data-fatura-parcela]')].forEach((select, parcela) => {
-        const sel = idsSelecionados[parcela];
+        const sel = idsSelecionados[parcela] || sugestoes[parcela];
         if (sel) {
             select.value = dataISO(sel);
         }
+        select.addEventListener('change', () => { select.dataset.faturaSugerida = '0'; });
     });
 }
 
@@ -2583,6 +2606,19 @@ el('fCred').addEventListener('change', () => {
 // quando a categoria muda pra "Antecipacao Fatura" (debito), o seletor de fatura
 // deve aparecer igual ao credito — e desaparecer se sair dessa categoria.
 el('fCateg').addEventListener('change', () => atualizarFaturasDoFormulario());
+
+// Uma sugestao ainda automatica acompanha a data da venda; uma fatura escolhida
+// manualmente nunca e' substituida por esse recálculo.
+el('fData').addEventListener('change', () => {
+    if (Estado.simulando && el('fCred').checked) {
+        atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
+    }
+});
+el('fFreq').addEventListener('change', () => {
+    if (Estado.simulando && el('fCred').checked) {
+        atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
+    }
+});
 
 // Frequencia abre em "— Sem recorrencia", que e' o certo pra compra avulsa (1x) — o caso
 // mais comum de longe, e o que mantem a coluna Frequencia significando alguma coisa (se
