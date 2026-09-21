@@ -7,6 +7,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
+    ['essencial', 'Essencial', 'e'],
     ['id', 'ID', 'n'],
 ];
 const COLS_MOBILE = [['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n']];
@@ -530,7 +531,7 @@ function ordenarLinhas(linhas, idTabela) {
     const copia = [...linhas];
     copia.sort((a, b) => {
         const A = a[coluna], B = b[coluna];
-        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
+        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'e' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
             : tipo == 'd' ? (timestamp(A) - timestamp(B))
                 : String(A ?? '').localeCompare(String(B ?? ''), 'pt');
         const ordenado = direcao == 1 ? cmp : -cmp;
@@ -678,6 +679,8 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
+        : tipo == 'e' ? `<td>${r[chave] == null ? '—'
+            : `<span class="${r[chave] ? 'tagEssencial' : 'tagNaoEssencial'}">${r[chave] ? 'Sim' : 'Não'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
@@ -1469,6 +1472,7 @@ function desenhar() {
     // que nao tem periodo pra desenhar a pizza).
     mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
     el('btGrafico').dataset.idx = el('ciclo').value;
+    el('btGraficoEssencial').dataset.idx = el('ciclo').value;
     mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
@@ -1846,6 +1850,7 @@ el('compAte').addEventListener('change', () => {
 });
 
 el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
+el('btGraficoEssencial').onclick = () => abrirGraficoEssencial(+el('btGraficoEssencial').dataset.idx);
 el('btEvolucao').onclick = () => abrirGraficoEvolucao(+el('compDe').value, +el('compAte').value);
 
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
@@ -2094,6 +2099,26 @@ el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRob
 // O usuario pode excluir categorias especificas da pizza via multi-select.
 let graficoChart = null;
 let excluidasDoGrafico = [];
+let graficoEssencialChart = null;
+
+// A classificação é somente informativa. `null` (lançamentos ainda não classificados)
+// entra no lado não essencial, para que a pizza seja sempre o total de todos os gastos.
+function resumoGastosEssenciais(linhas) {
+    return linhas.reduce((resumo, r) => {
+        if (!(r.v < 0) || r._transferencia) return resumo;
+        const chave = r.essencial === true ? 'essencial' : 'naoEssencial';
+        resumo[chave] += -r.v;
+        return resumo;
+    }, { essencial: 0, naoEssencial: 0 });
+}
+
+function dadosDoGraficoEssencialCiclo(idxPeriodo) {
+    const periodo = Estado.ciclos[idxPeriodo];
+    const gastos = Estado.lancamentos
+        .filter(r => r.periodoIdx == idxPeriodo && passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago))
+        .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
+    return { periodo, ...resumoGastosEssenciais(gastos) };
+}
 
 function dadosDoGraficoCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
@@ -2191,6 +2216,14 @@ window.abrirGraficoGastos = idxPeriodo => {
     el('modalGrafico').showModal();
 };
 
+window.abrirGraficoEssencial = idxPeriodo => {
+    const { periodo, essencial, naoEssencial } = dadosDoGraficoEssencialCiclo(idxPeriodo);
+    const total = essencial + naoEssencial;
+    el('graficoEssencialSubtitulo').textContent = `${nomePeriodo(periodo)} · Total de gastos do ciclo: ${brl(total)}`;
+    desenhaGraficoEssencial(idxPeriodo);
+    el('modalGraficoEssencial').showModal();
+};
+
 function montaExcluirCatDrop(categorias) {
     el('excluirCatDrop').innerHTML = categorias.map(c =>
         `<label><input type=checkbox value="${c}" ${excluidasDoGrafico.includes(c) ? '' : 'checked'} onchange="toggleCategoriaGrafico('${c}',this.checked)">${c}</label>`
@@ -2264,9 +2297,42 @@ function desenhaGraficoPizza(idxPeriodo) {
     });
 }
 
+function desenhaGraficoEssencial(idxPeriodo) {
+    const { essencial, naoEssencial } = dadosDoGraficoEssencialCiclo(idxPeriodo);
+    const valores = [essencial, naoEssencial];
+    const total = essencial + naoEssencial;
+    const temGastos = total > 0.005;
+
+    el('graficoEssencialVazio').hidden = temGastos;
+    el('canvasGraficoEssencial').style.display = temGastos ? 'block' : 'none';
+    if (!temGastos) {
+        if (graficoEssencialChart) { graficoEssencialChart.destroy(); graficoEssencialChart = null; }
+        return;
+    }
+    if (graficoEssencialChart) graficoEssencialChart.destroy();
+    graficoEssencialChart = new Chart(el('canvasGraficoEssencial'), {
+        type: 'pie',
+        data: {
+            labels: ['Essenciais', 'Não essenciais'],
+            datasets: [{ data: valores, backgroundColor: ['#35B982', '#E06B3C'], borderColor: '#FFF', borderWidth: 2 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, padding: 14 } },
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${brl(ctx.parsed)} · ${(ctx.parsed / total * 100).toFixed(1)}% dos gastos` } }
+            }
+        }
+    });
+}
+
 el('fechaGrafico').onclick = () => el('modalGrafico').close();
 el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
+});
+el('fechaGraficoEssencial').onclick = () => el('modalGraficoEssencial').close();
+el('modalGraficoEssencial').addEventListener('click', e => {
+    if (e.target == el('modalGraficoEssencial')) el('modalGraficoEssencial').close();
 });
 
 // ===================================================================

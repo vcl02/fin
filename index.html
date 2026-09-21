@@ -101,6 +101,7 @@
         </label>
         <label class=f id=fgraf><span>&nbsp;</span>
           <button type=button id=btGrafico class=btFiltro>Gráfico</button>
+          <button type=button id=btGraficoEssencial class=btFiltro title="Gastos essenciais e não essenciais">Essenciais</button>
         </label>
         <label class=f id=fciclo><span>Ciclo</span>
           <select id=ciclo></select>
@@ -325,6 +326,19 @@
           aria-label="Gráfico de pizza dos gastos por categoria no ciclo"></canvas>
       </div>
       <p class=empty id=graficoVazio hidden>Sem gastos neste ciclo.</p>
+    </dialog>
+
+    <dialog id=modalGraficoEssencial>
+      <div class=modalHead>
+        <h2>Gastos essenciais</h2>
+        <button type=button id=fechaGraficoEssencial aria-label="Fechar">×</button>
+      </div>
+      <p class=meta id=graficoEssencialSubtitulo></p>
+      <div style="position:relative;height:420px;margin-top:1rem">
+        <canvas id=canvasGraficoEssencial role=img
+          aria-label="Gráfico de pizza dos gastos essenciais e não essenciais no ciclo"></canvas>
+      </div>
+      <p class=empty id=graficoEssencialVazio hidden>Sem gastos neste ciclo.</p>
     </dialog>
 
     <dialog id=modalComparativo>

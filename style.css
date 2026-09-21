@@ -573,6 +573,26 @@
       font-weight: 600;
   }
 
+  /* indicador apenas visual: Essencial não altera o lançamento e não é editável na tabela */
+  .tagEssencial,
+  .tagNaoEssencial {
+      display: inline-block;
+      padding: .16rem .42rem;
+      border-radius: 99px;
+      font-size: .72rem;
+      font-weight: 700;
+  }
+
+  .tagEssencial {
+      color: #8BE0B5;
+      background: #173A2A;
+  }
+
+  .tagNaoEssencial {
+      color: #F1BA9F;
+      background: #47291F;
+  }
+
   /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
      #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
      tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. */
@@ -1563,6 +1583,12 @@
       padding: 1.5rem;
   }
 
+  #modalGraficoEssencial {
+      width: min(40rem, 94vw);
+      max-height: 92vh;
+      padding: 1.5rem;
+  }
+
   #modalGrafico .meta {
       margin: .2rem 0 1rem;
   }
@@ -1574,6 +1600,7 @@
   }
 
   #modalGrafico canvas,
+  #modalGraficoEssencial canvas,
   #modalComparativo canvas {
       color: var(--fg);
   }
