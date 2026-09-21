@@ -14,6 +14,12 @@
 - O campo `isa` continua identificando lançamentos da Isabella para filtros e para a visão restrita.
 - Antecipações de fatura abatem somente a única fatura detalhada, da mais antiga para a mais nova.
 
+## Aportes e resgates
+
+- Ao agir sobre um `Aporte sugerido` ou `Resgate necessário`, o aplicativo procura um lançamento real de `Aporte` ou `Resgate`, na categoria `Investimento`, dentro do mesmo ciclo.
+- Sem movimento real no ciclo, a ação materializa uma nova linha aberta. Com movimento real, a ação passa a ser `Consolidar` e faz `UPDATE` nessa linha: valores do mesmo sentido somam e valores opostos se abatem. Se houver inversão de sinal, o nome passa a refletir o movimento que restou.
+- Se o abatimento zerar o valor, a linha existente é mantida com valor zero; a ação não exclui lançamentos automaticamente.
+
 ## Migrations
 
 - `migrations/00-esquema-existente.sql` registra o esquema anterior e não deve ser executado no projeto `fin` existente.
@@ -26,3 +32,4 @@
 ## Testes
 
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
+- A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.

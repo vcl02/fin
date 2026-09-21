@@ -1523,6 +1523,9 @@ function atualizaBarraSelecao() {
     const ehSintetica = c => /^(fat|cp|sal|res|sug|abt):/.test(c);
     const chaveUnica = chaves.length == 1 ? chaves[0] : null;
     const ehAjusteMaterializavel = !!chaveUnica && /^(sug|res):/.test(chaveUnica);
+    const ajusteExistente = ehAjusteMaterializavel
+        ? movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chaveUnica))
+        : null;
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
@@ -1530,7 +1533,9 @@ function atualizaBarraSelecao() {
     // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
     // tela/perfil (mobile e Isabella inclusive) — nao depende mais de modoSimples().
     el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
-    el('seldup').textContent = ehAjusteMaterializavel ? 'Materializar' : 'Duplicar';
+    el('seldup').textContent = ehAjusteMaterializavel
+        ? (ajusteExistente ? 'Consolidar' : 'Materializar')
+        : 'Duplicar';
     el('seldel').hidden = !chaveUnicaReal;
     el('selacao').hidden = !!chaveUnicaReal || ehAjusteMaterializavel;
 
@@ -1560,6 +1565,37 @@ function linhaDaChaveSelecao(chave) {
     }
     return Estado.lancamentos.find(x => String(x.id) === chave) || null;
 }
+
+const indiceDoAjuste = chave => {
+    const achou = /^(?:sug|res):(\d+)$/.exec(chave || '');
+    return achou ? +achou[1] : null;
+};
+
+// Uma sugestao so' pode consolidar com um movimento real de Aporte/Resgate do MESMO
+// ciclo. Investimentos com outro nome continuam independentes: nunca devem ser alterados
+// pela acao de materializar.
+function movimentoAporteOuResgateDoCiclo(idx) {
+    return Estado.lancamentos
+        .filter(r => ehLinhaReal(r) && !r.cred && r.inv && r.periodoIdx === idx)
+        .filter(r => /^(aporte|resgate)\b/.test(semAcento(String(r.nome || '')).trim()))
+        .sort((a, b) => timestamp(a.data) - timestamp(b.data) || (+a.id - +b.id))[0] || null;
+}
+
+function valorArredondado(valor) {
+    const resultado = Math.round(valor * 100) / 100;
+    return Math.abs(resultado) < 0.005 ? 0 : resultado;
+}
+
+// Soma o ajuste ao movimento que ja existe. Sinais iguais acumulam; sinais opostos
+// se abatem. Se inverter o sinal, o nome tambem acompanha a direcao que restou.
+function consolidarAjusteExistente(existente, valorAjuste) {
+    const valor = valorArredondado((existente?.v || 0) + valorAjuste);
+    return {
+        valor,
+        nome: valor < 0 ? 'Aporte' : valor > 0 ? 'Resgate' : (existente?.nome || 'Aporte'),
+    };
+}
+
 // valor de uma linha a partir da sua chave de selecao (linha real ou fatura sintetica)
 function valorDaChave(chave) {
     // Fatura sintetica
@@ -2921,8 +2957,8 @@ modalNovo.addEventListener('close', () => {
 
 // A mesma posicao da barra tem duas acoes mutuamente exclusivas:
 // - lancamento real: Duplicar abre o modal pre-preenchido;
-// - Aporte sugerido/Resgate necessario: Materializar grava imediatamente o ajuste real,
-//   em debito e aberto, preservando data, valor e categoria.
+// - Aporte sugerido/Resgate necessario: cria o ajuste real quando ainda nao existe um
+//   Aporte/Resgate no ciclo; caso exista, consolida nele por UPDATE.
 el('seldup').onclick = async () => {
     const chave = [...Estado.selecionados.keys()][0];
     if (chave && /^(sug|res):/.test(chave)) {
@@ -2930,35 +2966,52 @@ el('seldup').onclick = async () => {
         if (!ajuste || (ajuste._sug == null && !ajuste._res) || el('seldup').disabled) return;
 
         el('seldup').disabled = true;
-        el('seldup').textContent = 'Materializando…';
+        el('seldup').textContent = 'Salvando…';
         try {
             const ehAporte = chave.startsWith('sug:');
             const data = dataISO(ajuste.data) || null;
-            const linhaCriada = await inserirLancamento({
-                data,
-                freq: null,
-                cred: false,
-                isa: Estado.restrito,
-                pago: false,
-                ativo: true,
-                nome: ehAporte ? 'Aporte' : 'Resgate',
-                categ: ajuste.categ,
-                valor: ajuste._sug != null ? ajuste._sug : ajuste.v,
-            });
-            const periodoIdx = data ? periodoDoDebito(data) : null;
-            Estado.lancamentos.push({
-                ...linhaCriada,
-                v: +linhaCriada.valor || 0,
-                inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
-                periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
-            });
+            const valorAjuste = ajuste._sug != null ? ajuste._sug : ajuste.v;
+            const existente = movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
+            if (existente) {
+                const consolidado = consolidarAjusteExistente(existente, valorAjuste);
+                const linhaAtualizada = await atualizarLancamento(existente.id, {
+                    nome: consolidado.nome,
+                    valor: consolidado.valor,
+                });
+                Object.assign(existente, linhaAtualizada, {
+                    v: +linhaAtualizada.valor || 0,
+                    inv: /^investimento$/i.test(String(linhaAtualizada.categ || '').trim()),
+                });
+            } else {
+                const linhaCriada = await inserirLancamento({
+                    data,
+                    freq: null,
+                    cred: false,
+                    isa: Estado.restrito,
+                    pago: false,
+                    ativo: true,
+                    nome: ehAporte ? 'Aporte' : 'Resgate',
+                    categ: ajuste.categ,
+                    valor: valorAjuste,
+                });
+                const periodoIdx = data ? periodoDoDebito(data) : null;
+                Estado.lancamentos.push({
+                    ...linhaCriada,
+                    v: +linhaCriada.valor || 0,
+                    inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
+                    periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+                });
+            }
             Estado.selecionados.clear();
             desenhar();
         } catch (err) {
             alert('Falhou ao materializar o ajuste: ' + err.message);
         } finally {
             el('seldup').disabled = false;
-            el('seldup').textContent = /^(sug|res):/.test(chave) ? 'Materializar' : 'Duplicar';
+            const existente = /^(sug|res):/.test(chave) && movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
+            el('seldup').textContent = /^(sug|res):/.test(chave)
+                ? (existente ? 'Consolidar' : 'Materializar')
+                : 'Duplicar';
         }
         return;
     }
