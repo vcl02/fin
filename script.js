@@ -1815,6 +1815,8 @@ el('out').addEventListener('click', e => {
 });
 
 el('out').addEventListener('click', e => {
+    // badges interativos têm seus próprios handlers; nunca podem também selecionar a linha.
+    if (e.target.closest('[data-tog-essencial]')) return;
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
     if (e.shiftKey) { const s = getSelection(); if (s) s.removeAllRanges(); }   // limpa a selecao de texto nativa do shift-click

@@ -20,4 +20,5 @@ test('o cadastro envia Essencial e o próximo lançamento volta para falso', () 
 test('o badge Essencial alterna e persiste somente a própria linha', () => {
     assert.match(script, /data-tog-essencial=/);
     assert.match(script, /atualizarLancamento\(r\.id, \{ essencial: novoEssencial \}\)/);
+    assert.match(script, /if \(e\.target\.closest\('\[data-tog-essencial\]'\)\) return;/);
 });
