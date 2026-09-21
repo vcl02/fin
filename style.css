@@ -252,6 +252,12 @@
       gap: .55rem;
   }
 
+  /* os dois gráficos pertencem ao mesmo filtro e ficam lado a lado */
+  .graficosBotoes {
+      display: flex;
+      gap: .55rem;
+  }
+
   select {
       font: inherit;
       color: var(--fg);
