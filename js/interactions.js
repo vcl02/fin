@@ -519,14 +519,14 @@ el('cicloAnterior').onclick = () => navegaCiclo(-1);
 el('cicloProximo').onclick = () => navegaCiclo(1);
 
 // qualquer select/checkbox da barra de ferramentas redesenha a tela ao mudar
-// O erro de redesenho acontece fora do try de load(); abre o mesmo modal de diagnóstico
-// para não ficar invisível quando um filtro revelar uma inconsistência.
+// O erro de redesenho acontece fora do try de load(); é um problema operacional passageiro,
+// então vai para toast, enquanto inconsistências recebidas do banco ficam no modal.
 // compDe/compAte moraram em .tool ate virarem parte do slot #navComparar (em .head,
 // pra nao dar "tremor" de layout ao trocar Ciclo/Comparar) — por isso entram na
 // selecao aqui tambem, senao o "onchange" generico da toolbar nunca os alcança.
 document.querySelectorAll('.tool select,.tool input,#navComparar select').forEach(e => e.onchange = () => {
     try { desenhar(); } catch (err) {
-        mostrarDiagnostico('Não foi possível atualizar a visão', 'O filtro não foi aplicado.', [err.message]);
+        mostrarToast('Não foi possível atualizar a visão', err.message);
     }
 });
 

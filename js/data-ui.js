@@ -58,6 +58,29 @@ function mostrarDiagnostico(titulo, texto, itens) {
     if (!el('modalDiagnostico').open) el('modalDiagnostico').showModal();
 }
 
+const LIMIAR_CARGA_LENTA_MS = 1000;
+
+// Toast é reservado a estado operacional passageiro; não mistura uma falha de rede com
+// inconsistências persistentes dos registros, que precisam ser lidas no modal.
+function mostrarToast(titulo, texto) {
+    const toast = document.createElement('article');
+    const tituloToast = document.createElement('strong');
+    const descricao = document.createElement('p');
+    const fechar = document.createElement('button');
+    tituloToast.textContent = titulo;
+    descricao.textContent = texto;
+    fechar.type = 'button';
+    fechar.textContent = '×';
+    fechar.title = 'Fechar';
+    fechar.setAttribute('aria-label', 'Fechar');
+    const remover = () => toast.remove();
+    fechar.onclick = remover;
+    toast.className = 'toast';
+    toast.append(tituloToast, fechar, descricao);
+    el('toasts').append(toast);
+    setTimeout(remover, 7000);
+}
+
 async function load() {
     if (API.includes('SEUPROJETO')) return el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>';
     const inicioCarga = performance.now();
@@ -69,7 +92,9 @@ async function load() {
 
         desenhar();
         const aposRender = performance.now();
-        console.info(`[diag] carga ${Math.round(aposDados - inicioCarga)}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
+        const cargaMs = Math.round(aposRender - inicioCarga);
+        console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
+        if (cargaMs >= LIMIAR_CARGA_LENTA_MS) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
         if (avisosDeDados.length) mostrarDiagnostico(
             'Dados para revisar',
             'Nada foi alterado. Revise estes lançamentos no banco:',
@@ -78,7 +103,7 @@ async function load() {
     } catch (e) {
         el('st').textContent = '';
         el('out').innerHTML = '<p class=empty>Falhou: ' + e.message + '</p>';
-        mostrarDiagnostico('Não foi possível carregar', 'A tela não recebeu os dados necessários.', [e.message]);
+        mostrarToast('Não foi possível carregar', e.message);
     }
 }
 

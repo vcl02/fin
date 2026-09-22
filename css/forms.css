@@ -428,6 +428,53 @@
       margin-top: .4rem;
   }
 
+  /* Toasts são alertas breves de operação; inconsistências de dados usam o modal. */
+  #toasts {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: .55rem;
+      pointer-events: none;
+  }
+
+  .toast {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .25rem .8rem;
+      width: min(22rem, calc(100vw - 2rem));
+      padding: .75rem .85rem;
+      border: 1px solid var(--ln);
+      border-left: 3px solid var(--vm);
+      border-radius: 10px;
+      background: var(--pa);
+      box-shadow: 0 10px 30px var(--shadow);
+      pointer-events: auto;
+  }
+
+  .toast strong { font-size: .88rem; }
+
+  .toast p {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: var(--mu);
+      font-size: .82rem;
+  }
+
+  .toast button {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--mu);
+      font: 1.1rem/1 inherit;
+      cursor: pointer;
+  }
+
+  .toast button:hover { color: var(--fg); }
+
   /* =========================================================
        MODAL — CALCULADORA
        ========================================================= */
