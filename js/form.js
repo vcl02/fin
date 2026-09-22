@@ -390,8 +390,14 @@ function calcAvalia(expr) {
     // e virgula decimal — a avaliacao interna usa os operadores JS (* /) e ponto decimal.
     // ORDEM IMPORTA: primeiro tira os pontos de MILHAR (senao "1.234,56" viraria
     // "1.234.56" depois de trocar a virgula por ponto), so' depois troca ',' por '.'.
-    const tokens = calcTokeniza(expr.replace(/(\d)\.(?=\d{3}(\D|$))/g, '$1').replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/'));
+    const normalizada = expr.replace(/(\d)\.(?=\d{3}(\D|$))/g, '$1').replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/');
+    // O teclado da calculadora só insere estes símbolos, mas validar aqui também protege
+    // colagem e chamadas indiretas: texto desconhecido nunca pode ser parcialmente aceito.
+    if (/[^\d.\s+\-*/%()]/.test(normalizada)) return null;
+    const tokens = calcTokeniza(normalizada);
     if (!tokens.length) return null;
+
+    try {
 
     const precedencia = { '+': 1, '-': 1, '*': 2, '/': 2 };
     const saida = [], operadores = [];
@@ -425,9 +431,14 @@ function calcAvalia(expr) {
             operadores.push(t);
         }
     }
-    while (operadores.length) aplicaTopo();
-    if (saida.length != 1 || !isFinite(saida[0])) return null;
-    return Math.round(saida[0] * 100) / 100;
+        while (operadores.length) aplicaTopo();
+        if (saida.length != 1 || !isFinite(saida[0])) return null;
+        return Math.round(saida[0] * 100) / 100;
+    } catch {
+        // Durante a digitação é normal haver "2+" ou parênteses incompletos. A tela
+        // precisa continuar responsiva e apenas não exibir resultado até completar.
+        return null;
+    }
 }
 
 function calcConfirma() {

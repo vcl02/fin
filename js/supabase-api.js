@@ -45,6 +45,9 @@ const atualizarLancamento = async (id, campos) => {
 };
 
 const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
+    // A classificação é uma preferência por nome: todos os lançamentos reais com o mesmo
+    // texto exato recebem o mesmo valor. encodeURIComponent impede que acentos, espaços e
+    // caracteres de URL alterem o filtro PostgREST.
     const filtro = `nome=eq.${encodeURIComponent(nome)}`;
     const r = await fetch(`${API}/rest/v1/lancamentos?${filtro}&select=id,nome,reserva_emergencia`, {
         method: 'PATCH',
@@ -59,6 +62,8 @@ const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
 
 async function carregarDados() {
     const lancamentosCrus = await buscar('lancamentos');
+    // Faturamento PJ não é uma despesa comum: ele ancora os intervalos de caixa. O último
+    // ciclo fica aberto até uma próxima âncora ser cadastrada.
     const ancoras = lancamentosCrus
         .filter(r => !r.cred && String(r.nome || '').trim() === 'Faturamento PJ' && r.data)
         .sort((a, b) => timestamp(a.data) - timestamp(b.data));

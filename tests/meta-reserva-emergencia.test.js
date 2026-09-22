@@ -46,3 +46,32 @@ test('progresso fica limitado a cem por cento e mostra excedente', () => {
     assert.equal(d.guardadoNaMeta, 900);
     assert.equal(d.excedente, 300);
 });
+
+test('sem gastos marcados a meta e o progresso ficam zerados', () => {
+    const d = calcular([{ periodoIdx: 1, nome: 'Casa', v: -100, reserva_emergencia: false }], 1, 500);
+    assert.equal(d.meta, 0);
+    assert.equal(d.percentual, 0);
+    assert.equal(d.guardadoNaMeta, 0);
+    assert.equal(d.excedente, 500);
+});
+
+test('soma lançamentos do mesmo nome no mesmo ciclo antes de projetar', () => {
+    const d = calcular([
+        { periodoIdx: 3, nome: 'Casa', v: -100, reserva_emergencia: true },
+        { periodoIdx: 3, nome: 'Casa', v: -50, reserva_emergencia: true },
+    ], 3, 0);
+    assert.equal(d.gastoMensal, 150);
+    assert.equal(d.meta, 1350);
+    assert.equal(d.mesesComEstimativa, 8);
+});
+
+test('não inclui entradas, transferências nem classificação textual no cálculo', () => {
+    const d = calcular([
+        { periodoIdx: 7, nome: 'Entrada', v: 500, reserva_emergencia: true },
+        { periodoIdx: 7, nome: 'Transferência', v: -400, reserva_emergencia: true, _transferencia: true },
+        { periodoIdx: 7, nome: 'Texto', v: -300, reserva_emergencia: 'true' },
+        { periodoIdx: 7, nome: 'Válido', v: -200, reserva_emergencia: true },
+    ], 7, -100);
+    assert.equal(d.meta, 1800);
+    assert.equal(d.guardado, 0);
+});

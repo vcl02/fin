@@ -1,5 +1,14 @@
 # Regras dos lançamentos
 
+Este arquivo é a referência de comportamento financeiro da aplicação. `AGENTS.md` explica o processo de manutenção; não substitui estas regras.
+
+## Convenções gerais
+
+- `lancamentos.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original.
+- Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
+- O filtro ativo, pago, origem, titular e sinal define o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
+- Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase e desaparece ao recarregar ou desativar o modo.
+
 ## Faturas
 
 - As faturas existentes são derivadas das datas `fatura_venc` já usadas nos lançamentos; a aplicação não usa uma tabela `faturas`.
@@ -22,6 +31,18 @@
 - Sem movimento real no ciclo, a ação materializa uma nova linha aberta. Com movimento real, a ação passa a ser `Consolidar` e faz `UPDATE` nessa linha: valores do mesmo sentido somam e valores opostos se abatem. Se houver inversão de sinal, o nome passa a refletir o movimento que restou.
 - Se o abatimento zerar o valor, a linha existente é mantida com valor zero; a ação não exclui lançamentos automaticamente.
 
+## Ciclos, saldo e gráficos
+
+- Cada ciclo começa em um `Faturamento PJ` e termina no dia anterior ao próximo. Lançamentos sem data ou sem ciclo válido ficam no Backlog.
+- O saldo de um ciclo carrega o saldo anterior, os débitos e a fatura líquida. A antecipação de fatura é transferência: reduz o saldo devido da fatura, mas não cria uma segunda despesa nas análises de gasto.
+- Se houver déficit, o `Resgate necessário` é limitado ao patrimônio disponível. Se houver excedente, o `Aporte sugerido` absorve o excedente. Ambos são linhas sintéticas até serem materializados/consolidados pelo usuário.
+- A pizza de gastos usa o ciclo inteiro e mostra despesas por categoria, incluindo a fatura bruta. Antecipar fatura não reduz a fatia, porque só altera a forma de pagamento.
+
+## Visualizações de acompanhamento
+
+- A visão Roberta considera somente lançamentos ativos e pagos da categoria: entradas positivas formam o crédito e saídas negativas o consomem. O percentual para em 100%, mas o saldo ainda informa eventual pagamento excedente.
+- As visualizações de pagamento por categoria ou nome consideram lançamentos ativos, pagos e abertos; usam valor absoluto para comparar pago, pendente e total. A visão Iphone limita-se a saídas negativas.
+
 ## Migrations
 
 - `migrations/00-esquema-existente.sql` registra o esquema anterior e não deve ser executado no projeto `fin` existente.
@@ -40,6 +61,11 @@
 - A meta de reserva emergência, calculada para os nove ciclos seguintes com valores previstos e estimados, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
 - O cadastro e a alternância imediata da classificação Reserva emergência são cobertos por `node --test tests/reserva-emergencia-interacao.test.js`.
 - O deslocamento visual de uma competência na tabela Crédito é coberto por `node --test tests/layout-creditos.test.js`.
+- Datas, recorrências, normalização de texto e alocação de antecipações são cobertas por `node --test tests/shared-regras.test.js`.
+- Aporte/resgate, saldo-base e total de Crédito são cobertos por `node --test tests/finance-regras.test.js`.
+- Máscara monetária, calculadora e divisão exata de parcelas são cobertas por `node --test tests/form-regras.test.js`.
+- A combinação dos filtros de tabelas é coberta por `node --test tests/tabelas-filtros.test.js`.
+- A suíte inteira deve rodar com `node --test tests/*.test.js`. Ela é local e não cria lançamentos de teste nem valida uma sessão real do Supabase.
 
 ## Reserva emergência
 
