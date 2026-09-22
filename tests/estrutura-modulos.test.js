@@ -15,7 +15,6 @@ const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
-const exportacao = fs.readFileSync('js/export.js', 'utf8');
 const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
 
 test('carrega estado, Supabase e interface na ordem necessária', () => {
@@ -30,9 +29,9 @@ test('carrega estado, Supabase e interface na ordem necessária', () => {
     const interacoesIdx = html.indexOf('./js/interactions.js');
     const graficosIdx = html.indexOf('./js/charts.js');
     const formularioIdx = html.indexOf('./js/form.js');
-    const exportacaoIdx = html.indexOf('./js/export.js');
     const bootstrapIdx = html.indexOf('./js/bootstrap.js');
-    assert.ok(estadoIdx >= 0 && estadoIdx < dominioIdx && dominioIdx < compartilhadoIdx && compartilhadoIdx < apiIdx && apiIdx < financeiroIdx && financeiroIdx < dadosUiIdx && dadosUiIdx < tabelasIdx && tabelasIdx < visoesIdx && visoesIdx < interacoesIdx && interacoesIdx < graficosIdx && graficosIdx < formularioIdx && formularioIdx < exportacaoIdx && exportacaoIdx < bootstrapIdx);
+    assert.ok(estadoIdx >= 0 && estadoIdx < dominioIdx && dominioIdx < compartilhadoIdx && compartilhadoIdx < apiIdx && apiIdx < financeiroIdx && financeiroIdx < dadosUiIdx && dadosUiIdx < tabelasIdx && tabelasIdx < visoesIdx && visoesIdx < interacoesIdx && interacoesIdx < graficosIdx && graficosIdx < formularioIdx && formularioIdx < bootstrapIdx);
+    assert.doesNotMatch(html, /\.\/js\/export\.js/);
 });
 
 test('separa estado e acesso ao banco da camada de interface', () => {
@@ -53,6 +52,5 @@ test('separa estado e acesso ao banco da camada de interface', () => {
     assert.match(interacoes, /function desenhar/);
     assert.match(graficos, /function desenhaGraficoPizza/);
     assert.match(formulario, /function submeteNovoLancamento/);
-    assert.match(exportacao, /function exportarLancamentos/);
     assert.match(bootstrap, /async function boot/);
 });

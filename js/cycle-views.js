@@ -139,9 +139,9 @@ function vCiclo() {
         linhasDebito, 'db', true, extraDebito
     );
 
-    // so a Isabella (perfil restrito) nao ve o bloco Credito. No mobile, quem nao e' a
-    // Isabella VE o Credito normalmente (so o resto do "modo simples" e' escondido).
-    if (Estado.restrito) return blocoDebito;
+    // O modo restrito (Isabella e mobile) não mostra o bloco Crédito. A fatura líquida
+    // continua incorporada no Débito, então esconder a prévia não perde o impacto no saldo.
+    if (modoSimples()) return blocoDebito;
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,

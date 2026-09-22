@@ -22,13 +22,6 @@ const CATEGORIA_INVESTIMENTO = 'Investimento';
 const TOLERANCIA_FINANCEIRA = 0.005;
 const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;
 
-// Campos deliberadamente estáveis no backup. Propriedades internas (_sim, periodoIdx,
-// caches) são derivadas na tela e por isso não devem virar contrato de restauração.
-const CAMPOS_EXPORTACAO_LANCAMENTO = [
-    'id', 'data', 'valor', 'nome', 'categ', 'freq', 'cred', 'isa', 'pago', 'ativo',
-    'fatura', 'reserva',
-];
-
 const ehDataIso = valor => !valor || /^\d{4}-\d{2}-\d{2}$/.test(String(valor).slice(0, 10));
 const ehBooleanoOuNulo = valor => valor == null || typeof valor === 'boolean';
 

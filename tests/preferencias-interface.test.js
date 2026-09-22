@@ -7,10 +7,11 @@ const agentes = fs.readFileSync('AGENTS.md', 'utf8');
 const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const base = fs.readFileSync('css/base.css', 'utf8');
-const mobile = fs.readFileSync('css/mobile.css', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
+const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
+const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 
 test('registra o tema grafite, ações por ícone e minimalismo como preferências', () => {
     assert.match(agentes, /dark mode definitivo, porém em tons de cinza escuro legíveis/);
@@ -21,9 +22,11 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
     assert.match(base, /--pa: #24272B;/);
 });
 
-test('mobile não monta ações de atualização nas tabelas', () => {
+test('mobile replica a navegação restrita sem montar ações nem bloco Crédito', () => {
     assert.match(regras, /No mobile, as tabelas são somente leitura/);
-    assert.match(mobile, /#exportarCsv,\s+#backupJson/);
+    assert.match(regras, /não exibe o bloco Crédito/);
+    assert.match(dadosUi, /const modoRestrito = Estado\.restrito \|\| isMobile\(\);/);
+    assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
     assert.match(tabelas, /const podeSelecionar = selecionavel && !isMobile\(\);/);
     assert.match(interacoes, /if \(isMobile\(\)\) \{\s+Estado\.selecionados\.clear\(\);/);
     assert.match(graficos, /if \(isMobile\(\)\) return;\s+e\.stopImmediatePropagation\(\);/);

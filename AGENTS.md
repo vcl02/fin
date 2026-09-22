@@ -10,7 +10,7 @@
 
 - `index.html` é o único documento da aplicação. Mantenha-o assim enquanto o deploy for estático no GitHub Pages; não introduza fragmentos HTML ou um framework sem uma decisão explícita.
 - Os estilos são carregados nesta ordem: `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css`, `css/mobile.css`. `mobile.css` precisa ser o último, pois contém os overrides responsivos.
-- Os scripts clássicos são carregados nesta ordem: `app-state`, `domain`, `shared`, `supabase-api`, `finance`, `data-ui`, `tables`, `cycle-views`, `interactions`, `charts`, `form`, `export`, `bootstrap`. Respeite as dependências globais entre eles.
+- Os scripts clássicos são carregados nesta ordem: `app-state`, `domain`, `shared`, `supabase-api`, `finance`, `data-ui`, `tables`, `cycle-views`, `interactions`, `charts`, `form`, `bootstrap`. Respeite as dependências globais entre eles.
 - Preserve a responsabilidade de cada módulo: estado/configuração, utilitários, API, cálculos, carga, tabelas, visões, interações, gráficos, formulário e inicialização.
 - Todo arquivo `.js`, `.css`, `.sql` e `.test.js` deve começar com um cabeçalho curto de responsabilidade; no HTML, comente as regiões que são preenchidas ou controladas pelo JavaScript. O teste `documentacao-estrutura.test.js` protege esse padrão.
 
@@ -43,4 +43,4 @@
 - Mantenha dark mode definitivo, porém em tons de cinza escuro legíveis; evite preto quase puro dominando toda a interface.
 - Prefira ícones a textos nos botões de ação. Todo ícone precisa de `title` e `aria-label`; texto visível só entra quando for indispensável para entendimento.
 - Busque minimalismo: informação útil, textos curtos e formulários somente com campos necessários ao cadastro.
-- No mobile, as tabelas são somente leitura. O único fluxo de alteração permitido é cadastrar um novo lançamento; nunca exponha edição inline, seleção, duplicação, exclusão ou atualização por toque.
+- No mobile, as tabelas são somente leitura e seguem a navegação restrita da Isabella, sem o bloco Crédito. O único fluxo de alteração permitido é cadastrar um novo lançamento; nunca exponha edição inline, seleção, duplicação, exclusão ou atualização por toque.

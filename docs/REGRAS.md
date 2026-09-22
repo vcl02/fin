@@ -10,11 +10,6 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase e desaparece ao recarregar ou desativar o modo.
 - A carga valida o formato dos lançamentos de forma somente diagnóstica. Inconsistências são avisadas no console, mas nunca são corrigidas, descartadas ou gravadas automaticamente.
 
-## Backup e exportação
-
-- Os ícones **CSV** e **Backup** exportam somente os lançamentos do recorte atual de filtros. O CSV usa `;` e UTF-8 para abrir corretamente em planilhas brasileiras; o Backup JSON inclui os filtros e o momento da exportação.
-- Exportação é local no navegador: não chama o Supabase. Simulações são marcadas como `simulado: true` no arquivo para não serem confundidas com lançamentos persistidos.
-
 ## Faturas
 
 - As faturas existentes são derivadas das datas `fatura` já usadas nos lançamentos; a aplicação não usa uma tabela `faturas`.
@@ -52,6 +47,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Mobile
 
 - No mobile, as tabelas são somente leitura. Não há seleção de linhas, edição inline, alternância de status, duplicação, exclusão ou atualização por toque.
+- O mobile reaproveita a navegação restrita da Isabella: limita-se aos ciclos anterior, atual e próximo, não tem Backlog e não exibe o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
 - O cadastro de novo lançamento permanece disponível; a tela compacta mantém apenas navegação, consulta e esse cadastro como fluxos de trabalho.
 
 ## Migrations
@@ -68,7 +64,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Testes
 
 - Os estilos são carregados em camadas por `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css` e `css/mobile.css`; o responsivo permanece por último para preservar a cascata. A estrutura é coberta por `node --test tests/estrutura-estilos.test.js`.
-- A estrutura em arquivos clássicos carrega `js/app-state.js`, `js/shared.js`, `js/supabase-api.js`, `js/finance.js`, `js/data-ui.js`, `js/tables.js`, `js/cycle-views.js`, `js/interactions.js`, `js/charts.js`, `js/form.js` e `js/bootstrap.js` nessa ordem. Estado/configuração, utilitários, Supabase, cálculos financeiros, carregamento, tabelas, visões, comandos, gráficos, formulário e inicialização ficam em módulos próprios. A separação é coberta por `node --test tests/estrutura-modulos.test.js`.
+- A estrutura em arquivos clássicos carrega `js/app-state.js`, `js/domain.js`, `js/shared.js`, `js/supabase-api.js`, `js/finance.js`, `js/data-ui.js`, `js/tables.js`, `js/cycle-views.js`, `js/interactions.js`, `js/charts.js`, `js/form.js` e `js/bootstrap.js` nessa ordem. Estado/configuração, validação de domínio, utilitários, Supabase, cálculos financeiros, carregamento, tabelas, visões, comandos, gráficos, formulário e inicialização ficam em módulos próprios. A separação é coberta por `node --test tests/estrutura-modulos.test.js`.
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
 - A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.
 - A meta de reserva emergência, calculada para os nove ciclos seguintes com valores previstos e estimados, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
@@ -79,7 +75,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Máscara monetária, calculadora e divisão exata de parcelas são cobertas por `node --test tests/form-regras.test.js`.
 - A combinação dos filtros de tabelas é coberta por `node --test tests/tabelas-filtros.test.js`.
 - O padrão de cabeçalhos explicativos em código, estilos, migrations, testes e regiões dinâmicas do HTML é coberto por `node --test tests/documentacao-estrutura.test.js`.
-- O vocabulário financeiro, a validação não destrutiva da carga e os contratos de exportação são cobertos por `node --test tests/domain-validacao.test.js` e `node --test tests/exportacao.test.js`.
+- O vocabulário financeiro e a validação não destrutiva da carga são cobertos por `node --test tests/domain-validacao.test.js`.
 - `.editorconfig` padroniza edição futura, e `node scripts/check.mjs` bloqueia tabs, espaços finais e arquivos sem newline final; o contrato é coberto por `node --test tests/estilo-editorconfig.test.js`.
 - A suíte inteira deve rodar com `node --test tests/*.test.js`. Ela é local e não cria lançamentos de teste nem valida uma sessão real do Supabase.
 

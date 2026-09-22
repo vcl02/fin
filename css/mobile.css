@@ -20,9 +20,7 @@
       #navCompararAte,
       #fate,
       #cicloHoje,
-      #toggleSimulacao,
-      #exportarCsv,
-      #backupJson {
+      #toggleSimulacao {
           display: none;
       }
 
