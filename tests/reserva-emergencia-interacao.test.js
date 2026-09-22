@@ -1,3 +1,4 @@
+// Contrato de cadastro e toggle da classificação Reserva emergência, sem PATCH real.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

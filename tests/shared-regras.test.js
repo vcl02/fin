@@ -1,3 +1,4 @@
+// Utilitários financeiros compartilhados: datas, texto e distribuição de antecipações.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

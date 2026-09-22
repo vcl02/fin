@@ -1,3 +1,4 @@
+// Meta de reserva: projeção de nove ciclos com valores observados e estimados por nome.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

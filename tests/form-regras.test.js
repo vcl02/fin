@@ -1,3 +1,4 @@
+// Contratos do formulário que não dependem de modal: dinheiro, calculadora e parcelas.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

@@ -1,3 +1,5 @@
+  /* Base global: tokens de cor, tipografia, elementos nativos e comportamentos comuns.
+     Os demais módulos consomem estas variáveis; não redefinir a identidade visual fora daqui. */
   :root {
       --bg: #111315;
       --pa: #1A1D20;

@@ -1,3 +1,4 @@
+// Regressão de consolidação: ajustes sintéticos alteram uma linha real, nunca duplicam dinheiro.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

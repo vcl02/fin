@@ -17,12 +17,14 @@
 
 <body>
 
+  <!-- Casca de autenticação: o bootstrap alterna login/app conforme a sessão Supabase. -->
   <div id=login>
     <input id=email type=email autocomplete=username>
     <input id=senha type=password autocomplete=current-password>
     <div class=err id=lerr></div>
   </div>
 
+  <!-- Painel único estático: os módulos JS montam apenas o conteúdo dinâmico em #out. -->
   <div id=app>
     <div class=head>
       <div class=f id=fciclNav>
@@ -178,6 +180,7 @@
       <button id=selacao>Limpar</button>
     </div>
 
+    <!-- Cadastro único para lançamento real e simulado; o JS decide se persiste no Supabase. -->
     <dialog id=modalNovo>
       <form id=formNovo method=dialog>
         <div class=modalHead>

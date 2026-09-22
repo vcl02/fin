@@ -1,4 +1,5 @@
 -- Executar somente depois de todos os creditos existentes receberem fatura_id.
+-- A constraint impede dois estados inválidos: crédito sem fatura e débito apontando fatura.
 do $$
 begin
   if not exists (

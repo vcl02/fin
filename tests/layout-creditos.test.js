@@ -1,3 +1,4 @@
+// Contrato visual-financeiro: a tabela Crédito é prévia; o saldo continua no ciclo próprio.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

@@ -1,3 +1,4 @@
+// Regressão da sugestão de faturas por parcela, isolada do DOM e do Supabase.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

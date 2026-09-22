@@ -1,3 +1,4 @@
+// Regras puras de saldo, aporte/resgate e prévia de Crédito executadas sem banco.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

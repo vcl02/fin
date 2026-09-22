@@ -1,3 +1,4 @@
+// Contrato de arquitetura: scripts clássicos dependem da ordem declarada no HTML.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');

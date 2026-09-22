@@ -65,6 +65,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Aporte/resgate, saldo-base e total de Crédito são cobertos por `node --test tests/finance-regras.test.js`.
 - Máscara monetária, calculadora e divisão exata de parcelas são cobertas por `node --test tests/form-regras.test.js`.
 - A combinação dos filtros de tabelas é coberta por `node --test tests/tabelas-filtros.test.js`.
+- O padrão de cabeçalhos explicativos em código, estilos, migrations, testes e regiões dinâmicas do HTML é coberto por `node --test tests/documentacao-estrutura.test.js`.
 - A suíte inteira deve rodar com `node --test tests/*.test.js`. Ela é local e não cria lançamentos de teste nem valida uma sessão real do Supabase.
 
 ## Reserva emergência

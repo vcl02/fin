@@ -8,6 +8,7 @@ const tokenAtual = async (forcar) => {
 };
 
 const buscar = async (tabela, retry) => {
+    // Reconsulta uma única vez após 401 porque a sessão pode ter sido renovada em paralelo.
     const r = await fetch(`${API}/rest/v1/${tabela}?select=*&limit=100000`, { headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(retry) } });
     if (r.status === 401 && !retry) return buscar(tabela, true);
     if (!r.ok) throw Error(`${tabela}: ${r.status} ${await r.text()}`);
@@ -15,6 +16,7 @@ const buscar = async (tabela, retry) => {
 };
 
 const inserirLancamento = async payload => {
+    // Retorna a representação persistida para a tela usar o id e os defaults reais do banco.
     const r = await fetch(`${API}/rest/v1/lancamentos`, {
         method: 'POST',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -25,6 +27,7 @@ const inserirLancamento = async payload => {
 };
 
 const excluirLancamento = async id => {
+    // Prefer retorna a linha removida: resposta vazia denuncia policy/RLS sem fingir sucesso.
     const r = await fetch(`${API}/rest/v1/lancamentos?id=eq.${encodeURIComponent(id)}`, {
         method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), Prefer: 'return=representation' },
     });

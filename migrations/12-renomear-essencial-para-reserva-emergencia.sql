@@ -1,4 +1,5 @@
 -- Preserva todos os valores existentes ao trocar o nome da classificação.
+-- É idempotente: só renomeia quando a origem existe e o destino ainda não foi criado.
 do $$
 begin
   if exists (
