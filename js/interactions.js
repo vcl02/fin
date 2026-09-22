@@ -279,7 +279,7 @@ el('out').addEventListener('click', async e => {
         desenhar();
     } catch (err) {
         badge.style.opacity = '';
-        alert('Falhou ao atualizar: ' + err.message);
+        mostrarToast('Falhou ao atualizar', err.message);
         desenhar();   // redesenha pra garantir que o badge volta a refletir o estado real
     }
 });
@@ -336,7 +336,7 @@ el('out').addEventListener('click', e => {
             r.v = novoValor;
             desenhar();
         } catch (err) {
-            alert('Falhou ao atualizar: ' + err.message);
+            mostrarToast('Falhou ao atualizar', err.message);
             desenhar();
         }
     }
@@ -396,7 +396,7 @@ el('out').addEventListener('click', e => {
             reclassificaPeriodo(r);
             desenhar();
         } catch (err) {
-            alert('Falhou ao atualizar: ' + err.message);
+            mostrarToast('Falhou ao atualizar', err.message);
             desenhar();
         }
     }

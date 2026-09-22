@@ -10,6 +10,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase e desaparece ao recarregar ou desativar o modo.
 - A carga valida o formato dos lançamentos de forma somente diagnóstica. O botão de diagnóstico fica neutro sem inconsistências e vermelho com ponto quando a última carga encontrar registros a revisar; ele abre o modal detalhado. Lentidão e falhas operacionais aparecem em toast no canto inferior direito. Nada é corrigido, descartado ou gravado automaticamente. O Console mantém apenas uma linha resumida de métricas por carga.
 - As regras de consistência ficam centralizadas em `validarLancamentosCarregados()` em `js/domain.js`. Para criar uma regra personalizada, acrescente ali a condição e uma mensagem em `avisos`; o botão e o modal passam a refletir o resultado sem mudar o banco.
+- Erros operacionais usam toast, sem interromper a tela com `alert()`. A única caixa nativa permitida é a confirmação antes de excluir um lançamento real ou simulado, porque essa ação não pode ser desfeita.
 
 ## Faturas
 

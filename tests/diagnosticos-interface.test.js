@@ -1,6 +1,7 @@
 // Contrato de diagnóstico: métricas resumidas no Console e problemas visíveis em modal.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 
 const html = fs.readFileSync('index.html', 'utf8');
@@ -9,7 +10,11 @@ const estilos = fs.readFileSync('css/forms.css', 'utf8');
 const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
+const formulario = fs.readFileSync('js/form.js', 'utf8');
+const fontesJs = fs.readdirSync('js')
+    .filter(arquivo => arquivo.endsWith('.js'))
+    .map(arquivo => fs.readFileSync(path.join('js', arquivo), 'utf8'))
+    .join('\n');
 
 test('inconsistências usam modal e problemas operacionais usam toast', () => {
     assert.match(html, /<dialog id=modalDiagnostico>/);
@@ -29,9 +34,11 @@ test('inconsistências usam modal e problemas operacionais usam toast', () => {
     assert.match(interacoes, /mostrarToast\('Não foi possível atualizar a visão'/);
 });
 
-test('mantém um controle temporário para validar visualmente o toast de erro', () => {
-    assert.match(html, /id=btTesteToast/);
-    assert.match(bootstrap, /btTesteToast.*mostrarToast\('Erro de teste'/);
+test('erros operacionais usam toast e só exclusão pede confirmação nativa', () => {
+    assert.doesNotMatch(fontesJs, /\balert\(/);
+    assert.equal((fontesJs.match(/\bconfirm\(/g) || []).length, 1);
+    assert.match(formulario, /if \(!confirm\(`Excluir/);
+    assert.match(interacoes, /mostrarToast\('Falhou ao atualizar'/);
 });
 
 test('Console recebe uma única linha de métricas e toast avisa carga lenta', () => {

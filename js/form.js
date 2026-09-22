@@ -587,7 +587,7 @@ el('seldup').onclick = async () => {
             Estado.selecionados.clear();
             desenhar();
         } catch (err) {
-            alert('Falhou ao materializar o ajuste: ' + err.message);
+            mostrarToast('Falhou ao materializar o ajuste', err.message);
         } finally {
             el('seldup').disabled = false;
             const existente = /^(sug|res):/.test(chave) && movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
@@ -623,7 +623,7 @@ el('seldel').onclick = async () => {
         Estado.selecionados.clear();
         desenhar();
     } catch (err) {
-        alert('Falhou ao excluir: ' + err.message);
+        mostrarToast('Falhou ao excluir', err.message);
     } finally {
         el('seldel').disabled = false;
         el('seldel').textContent = 'Excluir';

@@ -477,7 +477,7 @@ el('out').addEventListener('click', async e => {
         desenhar();
     } catch (err) {
         badge.style.opacity = '';
-        alert('Falhou ao atualizar: ' + err.message);
+        mostrarToast('Falhou ao atualizar', err.message);
         desenhar();
     }
 });
