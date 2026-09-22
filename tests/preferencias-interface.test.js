@@ -35,6 +35,12 @@ test('mantém tooltips e descrições auxiliares curtos', () => {
     assert.match(visoes, /Possível recorrência duplicada/);
 });
 
+test('empréstimo não mantém atalho próprio de acompanhamento', () => {
+    assert.doesNotMatch(pagina, /id=btEmprestimo/);
+    assert.doesNotMatch(graficos, /VIS_CATEGORIAS\.Emprestimo|btEmprestimo/);
+    assert.match(regras, /Empréstimo continua sendo uma categoria livre/);
+});
+
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {
     assert.match(regras, /No mobile, as tabelas são somente leitura/);
     assert.match(regras, /ele não muda a interface conforme o e-mail da sessão/);

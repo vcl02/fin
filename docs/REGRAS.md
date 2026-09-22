@@ -46,6 +46,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - A visão Roberta considera somente lançamentos ativos e pagos da categoria: entradas positivas formam o crédito e saídas negativas o consomem. O percentual para em 100%, mas o saldo ainda informa eventual pagamento excedente.
 - As visualizações de pagamento por categoria ou nome consideram lançamentos ativos, pagos e abertos; usam valor absoluto para comparar pago, pendente e total. A visão Iphone limita-se a saídas negativas.
+- Empréstimo continua sendo uma categoria livre para filtros e relatórios, mas não possui botão próprio de acompanhamento.
 
 ## Mobile
 

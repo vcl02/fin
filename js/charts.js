@@ -121,9 +121,6 @@ const VIS_CATEGORIAS = {
     RenegociacaoPj: {
         categoria: 'Renegociação PJ', titulo: 'Renegociação PJ',
     },
-    Emprestimo: {
-        categoria: 'Empréstimo', titulo: 'Empréstimo',
-    },
     Pos: {
         campo: 'nome', valor: 'Pós', titulo: 'Pós',
     },
@@ -146,7 +143,6 @@ el('btEntradaEcon').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.En
 el('btEvolucaoObra').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EvolucaoObra);
 el('btDividaEstudantil').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.DividaEstudantil);
 el('btRenegociacaoPj').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoPj);
-el('btEmprestimo').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Emprestimo);
 el('btPos').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Pos);
 el('btRenegociacaoNu').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoNu);
 el('btIphone').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Iphone);
