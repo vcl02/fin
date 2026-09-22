@@ -112,6 +112,47 @@
       animation: girar 0.8s linear infinite;
   }
 
+  /* Diagnóstico é discreto quando a última carga está íntegra; o ponto chama atenção
+     sem poluir o cabeçalho quando há registros que precisam ser revisados. */
+  #btDiagnostico {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--mu);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #btDiagnostico:hover {
+      color: var(--fg);
+      border-color: var(--line-strong);
+      background: var(--field-hover);
+  }
+
+  #btDiagnostico.temInconsistencia {
+      color: var(--vm);
+      border-color: var(--vm);
+      background: var(--red-soft);
+  }
+
+  #btDiagnostico.temInconsistencia::after {
+      content: '';
+      position: absolute;
+      top: -.2rem;
+      right: -.2rem;
+      width: .5rem;
+      height: .5rem;
+      border: 1px solid var(--bg);
+      border-radius: 50%;
+      background: var(--vm);
+  }
+
   #toggleSimulacao {
       display: flex;
       align-items: center;

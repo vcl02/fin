@@ -8,7 +8,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
 - O filtro ativo, pago, origem, titular e sinal define o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase e desaparece ao recarregar ou desativar o modo.
-- A carga valida o formato dos lançamentos de forma somente diagnóstica. Inconsistências dos registros aparecem em modal; lentidão e falhas operacionais aparecem em toast no canto inferior direito. Nada é corrigido, descartado ou gravado automaticamente. O Console mantém apenas uma linha resumida de métricas por carga.
+- A carga valida o formato dos lançamentos de forma somente diagnóstica. O botão de diagnóstico fica neutro sem inconsistências e vermelho com ponto quando a última carga encontrar registros a revisar; ele abre o modal detalhado. Lentidão e falhas operacionais aparecem em toast no canto inferior direito. Nada é corrigido, descartado ou gravado automaticamente. O Console mantém apenas uma linha resumida de métricas por carga.
 
 ## Faturas
 

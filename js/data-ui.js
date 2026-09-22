@@ -58,6 +58,30 @@ function mostrarDiagnostico(titulo, texto, itens) {
     if (!el('modalDiagnostico').open) el('modalDiagnostico').showModal();
 }
 
+let avisosDeDadosAtuais = [];
+
+// A última carga decide o estado do ícone. O modal só abre por escolha do usuário para
+// não interromper a consulta, mas o vermelho deixa claro que há algo a revisar.
+function atualizarBotaoDiagnostico(avisos) {
+    avisosDeDadosAtuais = avisos;
+    const temInconsistencia = avisos.length > 0;
+    const botao = el('btDiagnostico');
+    botao.classList.toggle('temInconsistencia', temInconsistencia);
+    const descricao = temInconsistencia
+        ? `${avisos.length} inconsistência${avisos.length === 1 ? '' : 's'} na última carga`
+        : 'Sem inconsistências na última carga';
+    botao.setAttribute('aria-label', descricao);
+    botao.title = descricao;
+}
+
+function abrirDiagnosticoDeDados() {
+    if (!avisosDeDadosAtuais.length) {
+        mostrarDiagnostico('Dados verificados', 'Nenhuma inconsistência foi identificada na última carga.', []);
+        return;
+    }
+    mostrarDiagnostico('Dados para revisar', 'Nada foi alterado. Revise estes lançamentos no banco:', avisosDeDadosAtuais);
+}
+
 const LIMIAR_CARGA_LENTA_MS = 1000;
 
 // Toast é reservado a estado operacional passageiro; não mistura uma falha de rede com
@@ -95,11 +119,7 @@ async function load() {
         const cargaMs = Math.round(aposRender - inicioCarga);
         console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
         if (cargaMs >= LIMIAR_CARGA_LENTA_MS) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
-        if (avisosDeDados.length) mostrarDiagnostico(
-            'Dados para revisar',
-            'Nada foi alterado. Revise estes lançamentos no banco:',
-            avisosDeDados,
-        );
+        atualizarBotaoDiagnostico(avisosDeDados);
     } catch (e) {
         el('st').textContent = '';
         el('out').innerHTML = '<p class=empty>Falhou: ' + e.message + '</p>';

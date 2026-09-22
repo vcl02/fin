@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 
 const html = fs.readFileSync('index.html', 'utf8');
+const base = fs.readFileSync('css/base.css', 'utf8');
 const estilos = fs.readFileSync('css/forms.css', 'utf8');
 const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
@@ -12,10 +13,15 @@ const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 test('inconsistências usam modal e problemas operacionais usam toast', () => {
     assert.match(html, /<dialog id=modalDiagnostico>/);
     assert.match(html, /id=fechaDiagnostico/);
+    assert.match(html, /id=btDiagnostico/);
     assert.match(html, /id=toasts/);
     assert.match(estilos, /dialog#modalDiagnostico/);
     assert.match(estilos, /#toasts/);
+    assert.match(base, /#btDiagnostico\.temInconsistencia::after/);
     assert.match(dadosUi, /function mostrarDiagnostico/);
+    assert.match(dadosUi, /function atualizarBotaoDiagnostico/);
+    assert.match(dadosUi, /function abrirDiagnosticoDeDados/);
+    assert.match(dadosUi, /atualizarBotaoDiagnostico\(avisosDeDados\)/);
     assert.match(dadosUi, /function mostrarToast/);
     assert.match(dadosUi, /Dados para revisar/);
     assert.match(dadosUi, /mostrarToast\('Não foi possível carregar'/);
