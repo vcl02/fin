@@ -68,6 +68,33 @@
        BOTÕES DO CABEÇALHO
        ========================================================= */
 
+  /* Exportações locais usam ícones como as demais ações rápidas do cabeçalho;
+     title e aria-label preservam a explicação completa de CSV e backup JSON. */
+  .btIconeCabecalho {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--mu);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  .btIconeCabecalho:hover {
+      color: var(--fg);
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  .btIconeCabecalho:focus-visible {
+      outline: 2px solid var(--fg);
+      outline-offset: 2px;
+  }
+
   #sair {
       display: flex;
       align-items: center;

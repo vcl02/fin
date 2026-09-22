@@ -12,7 +12,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Backup e exportação
 
-- **CSV** e **Backup** exportam somente os lançamentos do recorte atual de filtros. O CSV usa `;` e UTF-8 para abrir corretamente em planilhas brasileiras; o JSON inclui os filtros e o momento da exportação.
+- Os ícones **CSV** e **Backup** exportam somente os lançamentos do recorte atual de filtros. O CSV usa `;` e UTF-8 para abrir corretamente em planilhas brasileiras; o Backup JSON inclui os filtros e o momento da exportação.
 - Exportação é local no navegador: não chama o Supabase. Simulações são marcadas como `simulado: true` no arquivo para não serem confundidas com lançamentos persistidos.
 
 ## Faturas
