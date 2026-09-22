@@ -375,6 +375,16 @@
       <p class=meta id=subDetalheCel></p>
       <div class=wrap id=corpoDetalheCel></div>
     </dialog>
+    <!-- Diagnósticos de carga e interface: problemas vão para este modal, nunca corrigem dados automaticamente. -->
+    <dialog id=modalDiagnostico>
+      <div class=modalHead>
+        <h2 id=tituloDiagnostico>Problema identificado</h2>
+        <button type=button id=fechaDiagnostico title="Fechar" aria-label="Fechar">×</button>
+      </div>
+      <p class=meta id=textoDiagnostico></p>
+      <ul class=listaDiagnostico id=listaDiagnostico></ul>
+    </dialog>
+
     <script src="./js/app-state.js" defer></script>
     <script src="./js/domain.js" defer></script>
     <script src="./js/shared.js" defer></script>

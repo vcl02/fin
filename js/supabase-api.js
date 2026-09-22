@@ -66,7 +66,6 @@ const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);
     const avisosDeDados = validarLancamentosCarregados(lancamentosCrus);
-    if (avisosDeDados.length) console.warn('[diagnóstico] dados recebidos com inconsistências:', avisosDeDados);
     // Faturamento PJ não é uma despesa comum: ele ancora os intervalos de caixa. O último
     // ciclo fica aberto até uma próxima âncora ser cadastrada.
     const ancoras = lancamentosCrus

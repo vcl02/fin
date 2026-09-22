@@ -45,25 +45,40 @@ function atualizarCombos(lancamentosCrus) {
 
 // Fluxo completo de carga: busca dados, atualiza os combos, mostra o contador e desenha a tela.
 // E a unica funcao chamada de fora (pelo botao de recarregar e pelo login).
+// Problemas precisam ficar visíveis para quem usa a tela, mas sem modificar dados nem
+// despejar métricas no console. O mesmo modal serve para aviso de dados e falhas reais.
+function mostrarDiagnostico(titulo, texto, itens) {
+    el('tituloDiagnostico').textContent = titulo;
+    el('textoDiagnostico').textContent = texto;
+    el('listaDiagnostico').replaceChildren(...itens.map(item => {
+        const linha = document.createElement('li');
+        linha.textContent = item;
+        return linha;
+    }));
+    if (!el('modalDiagnostico').open) el('modalDiagnostico').showModal();
+}
+
 async function load() {
     if (API.includes('SEUPROJETO')) return el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>';
-    console.log('[diag] load() iniciou');
+    const inicioCarga = performance.now();
     try {
-        console.time('[diag] carregarDados');
-        const { lancamentosCrus } = await carregarDados();
-        console.timeEnd('[diag] carregarDados');
-        console.log('[diag] carregado — ciclos PJ:', Estado.ciclos.length, 'lancamentos:', Estado.lancamentos.length);
-
-        console.time('[diag] atualizarCombos');
+        const { lancamentosCrus, avisosDeDados } = await carregarDados();
+        const aposDados = performance.now();
         atualizarCombos(lancamentosCrus);
-        console.timeEnd('[diag] atualizarCombos');
+        const aposCombos = performance.now();
 
         desenhar();
-        console.log('[diag] load() terminou com sucesso');
+        const aposRender = performance.now();
+        console.info(`[diag] carga ${Math.round(aposDados - inicioCarga)}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
+        if (avisosDeDados.length) mostrarDiagnostico(
+            'Dados para revisar',
+            'Nada foi alterado. Revise estes lançamentos no banco:',
+            avisosDeDados,
+        );
     } catch (e) {
-        console.error('[diag] load() falhou:', e);
         el('st').textContent = '';
         el('out').innerHTML = '<p class=empty>Falhou: ' + e.message + '</p>';
+        mostrarDiagnostico('Não foi possível carregar', 'A tela não recebeu os dados necessários.', [e.message]);
     }
 }
 
