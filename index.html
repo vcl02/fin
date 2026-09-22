@@ -102,7 +102,7 @@
         <label class=f id=fgraf><span>&nbsp;</span>
           <div class=graficosBotoes>
             <button type=button id=btGrafico class=btFiltro>Gráfico</button>
-            <button type=button id=btGraficoReservaEmergencia class=btFiltro title="Gastos com e sem reserva emergência">Reserva</button>
+            <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de reserva de emergência de nove meses">Reserva emergência</button>
           </div>
         </label>
         <label class=f id=fciclo><span>Ciclo</span>
@@ -332,17 +332,20 @@
       <p class=empty id=graficoVazio hidden>Sem gastos neste ciclo.</p>
     </dialog>
 
-    <dialog id=modalGraficoReservaEmergencia>
+    <dialog id=modalMetaReservaEmergencia>
       <div class=modalHead>
-        <h2>Gastos com reserva emergência</h2>
-        <button type=button id=fechaGraficoReservaEmergencia aria-label="Fechar">×</button>
+        <h2>Reserva de emergência</h2>
+        <button type=button id=fechaMetaReservaEmergencia aria-label="Fechar">×</button>
       </div>
-      <p class=meta id=graficoReservaEmergenciaSubtitulo></p>
-      <div style="position:relative;height:420px;margin-top:1rem">
-        <canvas id=canvasGraficoReservaEmergencia role=img
-          aria-label="Gráfico de pizza dos gastos com e sem reserva emergência no ciclo"></canvas>
+      <p class=meta id=metaReservaEmergenciaSubtitulo></p>
+      <div class=metaReservaLayout>
+        <div class=metaReservaGrafico>
+          <canvas id=canvasMetaReservaEmergencia role=img
+            aria-label="Gráfico de progresso da reserva de emergência"></canvas>
+        </div>
+        <div id=metaReservaEmergenciaResumo></div>
       </div>
-      <p class=empty id=graficoReservaEmergenciaVazio hidden>Sem gastos neste ciclo.</p>
+      <p class=empty id=metaReservaEmergenciaVazio hidden>Nenhum gasto marcado para reserva emergência neste ciclo.</p>
     </dialog>
 
     <dialog id=modalComparativo>

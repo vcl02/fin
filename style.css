@@ -1605,6 +1605,35 @@
       padding: 1.5rem;
   }
 
+  #modalMetaReservaEmergencia {
+      width: min(42rem, 94vw);
+      max-height: 92vh;
+      padding: 1.5rem;
+  }
+
+  .metaReservaLayout {
+      display: grid;
+      grid-template-columns: minmax(13rem, 1fr) minmax(15rem, 1fr);
+      align-items: center;
+      gap: 1.2rem;
+  }
+
+  .metaReservaGrafico {
+      position: relative;
+      height: 260px;
+  }
+
+  .metaReservaPct {
+      font-size: 2.1rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: .3rem;
+  }
+
+  .metaReservaResumo table {
+      width: 100%;
+  }
+
   #modalGrafico .meta {
       margin: .2rem 0 1rem;
   }
@@ -1617,6 +1646,7 @@
 
   #modalGrafico canvas,
   #modalGraficoReservaEmergencia canvas,
+  #modalMetaReservaEmergencia canvas,
   #modalComparativo canvas {
       color: var(--fg);
   }
