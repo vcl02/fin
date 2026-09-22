@@ -18,7 +18,7 @@ test('centraliza nomes e tolerância usados pelas regras financeiras', () => {
 test('aceita lançamento persistido completo sem avisos', () => {
     const avisos = dominio.validarLancamentosCarregados([{
         id: 10, data: '2026-09-21', valor: '-42.50', nome: 'Mercado', categ: 'Casa',
-        cred: false, isa: false, pago: true, ativo: true, reserva_emergencia: false,
+        cred: false, isa: false, pago: true, ativo: true, reserva: false,
     }]);
     assert.deepEqual(Array.from(avisos), []);
 });

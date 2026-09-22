@@ -119,7 +119,7 @@ function opcoesFaturasDisponiveis() {
     // DISTINCT estrito de todas as datas de vencimento que realmente existem nos lancamentos
     const faturasSet = new Set();
     Estado.lancamentos.forEach(r => {
-        const v = r.fatura_venc || r.fatura_id;
+        const v = r.fatura || r.fatura_id;
         if (v) faturasSet.add(dataISO(v));
     });
 
@@ -260,11 +260,11 @@ function abreModalNovo(prefill) {
         el('fCateg').value = prefill.categ || '';
         el('fData').value = dataISO(prefill.data) || '';
         el('fCred').checked = !!prefill.cred;
-        const fatRef = prefill.fatura_venc || prefill.fatura_id;
+        const fatRef = prefill.fatura || prefill.fatura_id;
         atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
-        el('fReservaEmergencia').checked = !!prefill.reserva_emergencia;
+        el('fReservaEmergencia').checked = !!prefill.reserva;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
         // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
@@ -737,10 +737,10 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         const payload = {
-            data: dataParcela, freq, cred, isa, pago, reserva_emergencia: reservaEmergencia, ativo: true,
+            data: dataParcela, freq, cred, isa, pago, reserva: reservaEmergencia, ativo: true,
             nome,
             categ, valor: valores[p],
-            fatura_venc: faturaVenc,
+            fatura: faturaVenc,
         };
         const linhaCriada = await inserirLancamento(payload);
         const periodoIdx = !dataParcela ? null
@@ -813,8 +813,8 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, r
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, reserva_emergencia: reservaEmergencia, ativo: true,
-            fatura_venc: faturaVenc,
+            cred, isa, pago, reserva: reservaEmergencia, ativo: true,
+            fatura: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,

@@ -7,7 +7,7 @@ const { extrairTrecho } = require('./helpers/carregar-funcoes');
 
 const fonte = fs.readFileSync('js/export.js', 'utf8');
 const dominio = fs.readFileSync('js/domain.js', 'utf8');
-const contexto = { CAMPOS_EXPORTACAO_LANCAMENTO: ['id', 'data', 'valor', 'nome', 'categ', 'freq', 'cred', 'isa', 'pago', 'ativo', 'fatura_venc', 'reserva_emergencia'] };
+const contexto = { CAMPOS_EXPORTACAO_LANCAMENTO: ['id', 'data', 'valor', 'nome', 'categ', 'freq', 'cred', 'isa', 'pago', 'ativo', 'fatura', 'reserva'] };
 vm.createContext(contexto);
 vm.runInContext(`${extrairTrecho(fonte, 'const escaparCsv', "\nel('exportarCsv')")}\nglobalThis.funcoes = { escaparCsv, dadosExportaveis, montarCsvLancamentos, nomeArquivoExportacao };`, contexto);
 const funcoes = contexto.funcoes;

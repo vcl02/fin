@@ -14,7 +14,7 @@ O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newli
 
 ## Fatura e Crédito
 
-Há um cartão detalhado. A fatura é derivada de `fin.fatura_venc`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte.
+Há um cartão detalhado. A fatura é derivada de `fin.fatura`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte.
 
 ## Reserva de emergência
 

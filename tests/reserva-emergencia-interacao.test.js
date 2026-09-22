@@ -18,7 +18,7 @@ test('o cadastro começa com Reserva emergência desmarcada', () => {
 
 test('o cadastro envia Reserva emergência e o próximo lançamento volta para falso', () => {
     assert.match(formulario, /const reservaEmergencia = el\('fReservaEmergencia'\)\.checked;/);
-    assert.match(formulario, /reserva_emergencia: reservaEmergencia/);
+    assert.match(formulario, /reserva: reservaEmergencia/);
     assert.match(formulario, /el\('fReservaEmergencia'\)\.checked = false;/);
 });
 

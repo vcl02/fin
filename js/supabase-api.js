@@ -52,10 +52,10 @@ const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
     // texto exato recebem o mesmo valor. encodeURIComponent impede que acentos, espaços e
     // caracteres de URL alterem o filtro PostgREST.
     const filtro = `nome=eq.${encodeURIComponent(nome)}`;
-    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?${filtro}&select=id,nome,reserva_emergencia`, {
+    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?${filtro}&select=id,nome,reserva`, {
         method: 'PATCH',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify({ reserva_emergencia: reservaEmergencia }),
+        body: JSON.stringify({ reserva: reservaEmergencia }),
     });
     if (!r.ok) throw Error(`atualizar reserva emergência: ${r.status} ${await r.text()}`);
     const linhas = await r.json();
@@ -77,16 +77,16 @@ async function carregarDados() {
         fat: ancoras[i + 1] ? somaDias(dataISO(ancoras[i + 1].data), -1) : '9999-12-31',
     }));
     Estado.lancamentos = lancamentosCrus.map(r => {
-        const faturaRef = r.fatura_venc || r.fatura_id;
+        const faturaRef = r.fatura || r.fatura_id;
         const periodoIdx = !r.data && !faturaRef ? null
             : r.cred ? periodoDaFatura(faturaRef) : periodoDoDebito(dataISO(r.data));
         return {
-            ...r, fatura_venc: faturaRef ? dataISO(faturaRef) : null, v: +r.valor || 0,
+            ...r, fatura: faturaRef ? dataISO(faturaRef) : null, v: +r.valor || 0,
             inv: /^investimento$/i.test(String(r.categ || '').trim()),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
         };
     });
-    Estado.faturas = [...new Set(Estado.lancamentos.map(r => r.fatura_venc).filter(Boolean))]
+    Estado.faturas = [...new Set(Estado.lancamentos.map(r => r.fatura).filter(Boolean))]
         .sort((a, b) => timestamp(a) - timestamp(b)).map(vencimento => ({ vencimento }));
     return { lancamentosCrus, avisosDeDados };
 }

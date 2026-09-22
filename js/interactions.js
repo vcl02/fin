@@ -353,7 +353,7 @@ el('out').addEventListener('click', e => {
 // quando a data e' apagada / cai fora de todos os periodos cadastrados.
 function reclassificaPeriodo(r) {
     const idx = !r.data ? null
-        : r.cred ? periodoDaFatura(r.fatura_venc || r.fatura_id)
+        : r.cred ? periodoDaFatura(r.fatura || r.fatura_id)
             : periodoDoDebito(dataISO(r.data));
     r.periodoIdx = idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
 }

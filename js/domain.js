@@ -4,7 +4,7 @@
 /**
  * @typedef {Object} Lancamento
  * @property {number|string} id Identificador real ou temporário.
- * @property {string|null} data Data ISO do débito; créditos usam também fatura_venc.
+ * @property {string|null} data Data ISO do débito; créditos usam também fatura.
  * @property {number|string} valor Valor persistido: entrada positiva, saída negativa.
  * @property {string} nome Nome exato usado para classificações por nome.
  * @property {string|null} categ Categoria livre do lançamento.
@@ -12,7 +12,7 @@
  * @property {boolean} isa Indica titular Isabella, não um segundo cartão.
  * @property {boolean} pago Indica se o movimento já ocorreu.
  * @property {boolean} ativo Indica se entra nos cálculos.
- * @property {string|null} fatura_venc Vencimento escolhido para crédito/antecipação.
+ * @property {string|null} fatura Vencimento escolhido para crédito/antecipação.
  */
 
 /** @typedef {{ ini: string, fat: string, id?: string }} Ciclo */
@@ -26,7 +26,7 @@ const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;
 // caches) são derivadas na tela e por isso não devem virar contrato de restauração.
 const CAMPOS_EXPORTACAO_LANCAMENTO = [
     'id', 'data', 'valor', 'nome', 'categ', 'freq', 'cred', 'isa', 'pago', 'ativo',
-    'fatura_venc', 'reserva_emergencia',
+    'fatura', 'reserva',
 ];
 
 const ehDataIso = valor => !valor || /^\d{4}-\d{2}-\d{2}$/.test(String(valor).slice(0, 10));
@@ -44,11 +44,11 @@ function validarLancamentosCarregados(lancamentos) {
         if (!String(lancamento.nome || '').trim()) avisos.push(`${prefixo}: nome ausente.`);
         if (!Number.isFinite(Number(lancamento.valor))) avisos.push(`${prefixo}: valor não numérico.`);
         if (!ehDataIso(lancamento.data)) avisos.push(`${prefixo}: data fora do formato ISO.`);
-        if (lancamento.fatura_venc && !ehDataIso(lancamento.fatura_venc)) avisos.push(`${prefixo}: vencimento de fatura fora do formato ISO.`);
-        ['cred', 'isa', 'pago', 'ativo', 'reserva_emergencia'].forEach(campo => {
+        if (lancamento.fatura && !ehDataIso(lancamento.fatura)) avisos.push(`${prefixo}: vencimento de fatura fora do formato ISO.`);
+        ['cred', 'isa', 'pago', 'ativo', 'reserva'].forEach(campo => {
             if (!ehBooleanoOuNulo(lancamento[campo])) avisos.push(`${prefixo}: ${campo} precisa ser booleano.`);
         });
-        if (lancamento.cred === true && !(lancamento.fatura_venc || lancamento.fatura_id)) {
+        if (lancamento.cred === true && !(lancamento.fatura || lancamento.fatura_id)) {
             avisos.push(`${prefixo}: crédito sem fatura vinculada.`);
         }
     });

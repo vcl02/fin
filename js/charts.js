@@ -175,7 +175,7 @@ const MESES_META_RESERVA_EMERGENCIA = 9;
 function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
     const porCiclo = new Map();
     linhas.forEach(r => {
-        if (!(r.v < 0) || r._transferencia || r.reserva_emergencia !== true || r.periodoIdx == null) return;
+        if (!(r.v < 0) || r._transferencia || r.reserva !== true || r.periodoIdx == null) return;
         const gastos = porCiclo.get(r.periodoIdx) || new Map();
         const nome = String(r.nome || '').trim();
         gastos.set(nome, (gastos.get(nome) || 0) + -r.v);
@@ -445,7 +445,7 @@ el('out').addEventListener('click', async e => {
     if (!r) return;
 
     const nome = String(r.nome || '');
-    const novaReservaEmergencia = !r.reserva_emergencia;
+    const novaReservaEmergencia = !r.reserva;
     badge.classList.toggle('tagReservaEmergencia', novaReservaEmergencia);
     badge.classList.toggle('tagSemReservaEmergencia', !novaReservaEmergencia);
     badge.textContent = novaReservaEmergencia ? 'Sim' : 'Não';
@@ -455,7 +455,7 @@ el('out').addEventListener('click', async e => {
         if (r._sim) {
             Estado.lancamentos
                 .filter(x => x._sim && x.nome === nome)
-                .forEach(x => { x.reserva_emergencia = novaReservaEmergencia; });
+                .forEach(x => { x.reserva = novaReservaEmergencia; });
         } else {
             const esperados = Estado.lancamentos
                 .filter(x => ehLinhaReal(x) && x.nome === nome)
@@ -470,7 +470,7 @@ el('out').addEventListener('click', async e => {
             const porId = new Map(atualizados.map(x => [String(x.id), x]));
             Estado.lancamentos.forEach(x => {
                 const atualizado = porId.get(String(x.id));
-                if (atualizado) x.reserva_emergencia = !!atualizado.reserva_emergencia;
+                if (atualizado) x.reserva = !!atualizado.reserva;
             });
         }
         desenhar();

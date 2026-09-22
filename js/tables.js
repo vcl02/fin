@@ -157,7 +157,7 @@ const celData = r => ehLinhaReal(r) && !isMobile()
 const celNome = r => {
     const sim = r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '';
     const nome = escapeHtml(textoOuTraco(r.nome));
-    const fatRef = r.fatura_venc || r.fatura_id;
+    const fatRef = r.fatura || r.fatura_id;
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
         ? ` <span class="tagFatura" title="Abatendo da fatura que vence em ${dataBR(fatRef)}">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
         : '';

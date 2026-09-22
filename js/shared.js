@@ -228,12 +228,12 @@ function tituloFaturaDoCiclo(idx) {
 
 // Distribui as antecipacoes do unico cartao detalhado pelas faturas, da mais antiga pra
 // mais nova. A fatura da Isabella e' um lancamento comum e nao participa deste calculo.
-// Antecipacoes com fatura_venc explicito vao direto para a fatura apontada (sem depender de
-// ordenacao cronologica). Antecipacoes antigas sem fatura_venc continuam usando o fallback
+// Antecipacoes com fatura explícita vao direto para a fatura apontada (sem depender de
+// ordenacao cronologica). Antecipacoes antigas sem fatura continuam usando o fallback
 // cronologico (ponteiro p na lista de faturas com saldo).
 function alocacaoAntecipacoes(linhas) {
     // saldo devido de cada fatura, na ordem em que aparecem na tela.
-    // vencimento e' a data PK da fatura (para cruzar com r.fatura_venc das antecipacoes novas).
+    // vencimento e' a data PK da fatura (para cruzar com r.fatura das antecipacoes novas).
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
         const bruto = linhas
@@ -254,7 +254,7 @@ function alocacaoAntecipacoes(linhas) {
     const abatido = {};
     let p = 0;                                                  // ponteiro no fallback cronologico
     antecipacoes.forEach(r => {
-        const refVenc = r.fatura_venc || r.fatura_id;
+        const refVenc = r.fatura || r.fatura_id;
         if (refVenc) {
             // vinculo explicito: abate direto na fatura apontada pelo vencimento
             const f = faturas.find(x => x.vencimento != null && String(x.vencimento) === dataISO(refVenc));

@@ -78,7 +78,7 @@ test('antecipa faturas com vínculo explícito sem consumir faturas anteriores',
     const abatido = r.alocacaoAntecipacoes([
         { cred: true, periodoIdx: 0, v: -100 },
         { cred: true, periodoIdx: 1, v: -200 },
-        { cred: false, categ: 'Antecipação de Fatura', data: '2026-09-05', v: -80, fatura_venc: '2026-10-20' },
+        { cred: false, categ: 'Antecipação de Fatura', data: '2026-09-05', v: -80, fatura: '2026-10-20' },
     ]);
     assert.equal(abatido[0] || 0, 0);
     assert.equal(abatido[1], 80);
