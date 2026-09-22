@@ -7,7 +7,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['essencial', 'Essencial', 'e'],
+    ['reserva_emergencia', 'Reserva emergência', 'r'],
     ['id', 'ID', 'n'],
 ];
 const COLS_MOBILE = [['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n']];
@@ -531,7 +531,7 @@ function ordenarLinhas(linhas, idTabela) {
     const copia = [...linhas];
     copia.sort((a, b) => {
         const A = a[coluna], B = b[coluna];
-        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'e' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
+        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'r' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
             : tipo == 'd' ? (timestamp(A) - timestamp(B))
                 : String(A ?? '').localeCompare(String(B ?? ''), 'pt');
         const ordenado = direcao == 1 ? cmp : -cmp;
@@ -679,8 +679,8 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
-        : tipo == 'e' ? `<td>${r[chave] == null ? '—'
-            : `<span class="${r[chave] ? 'tagEssencial' : 'tagNaoEssencial'}${ehLinhaReal(r) || r._sim ? ' togEssencial' : ''}"${ehLinhaReal(r) || r._sim ? ` data-tog-essencial="${escapeHtml(String(r.id))}" title="Clique para alternar Essencial"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
+        : tipo == 'r' ? `<td>${r[chave] == null ? '—'
+            : `<span class="${r[chave] ? 'tagReservaEmergencia' : 'tagSemReservaEmergencia'}${ehLinhaReal(r) || r._sim ? ' togReservaEmergencia' : ''}"${ehLinhaReal(r) || r._sim ? ` data-tog-reserva-emergencia="${escapeHtml(String(r.id))}" title="Clique para alternar Reserva emergência"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
@@ -1468,7 +1468,7 @@ function desenhar() {
     // que nao tem periodo pra desenhar a pizza).
     mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
     el('btGrafico').dataset.idx = el('ciclo').value;
-    el('btGraficoEssencial').dataset.idx = el('ciclo').value;
+    el('btGraficoReservaEmergencia').dataset.idx = el('ciclo').value;
     mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
@@ -1816,7 +1816,7 @@ el('out').addEventListener('click', e => {
 
 el('out').addEventListener('click', e => {
     // badges interativos têm seus próprios handlers; nunca podem também selecionar a linha.
-    if (e.target.closest('[data-tog-essencial]')) return;
+    if (e.target.closest('[data-tog-reserva-emergencia]')) return;
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
     if (e.shiftKey) { const s = getSelection(); if (s) s.removeAllRanges(); }   // limpa a selecao de texto nativa do shift-click
@@ -1848,7 +1848,7 @@ el('compAte').addEventListener('change', () => {
 });
 
 el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
-el('btGraficoEssencial').onclick = () => abrirGraficoEssencial(+el('btGraficoEssencial').dataset.idx);
+el('btGraficoReservaEmergencia').onclick = () => abrirGraficoReservaEmergencia(+el('btGraficoReservaEmergencia').dataset.idx);
 el('btEvolucao').onclick = () => abrirGraficoEvolucao(+el('compDe').value, +el('compAte').value);
 
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
@@ -2097,25 +2097,25 @@ el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRob
 // O usuario pode excluir categorias especificas da pizza via multi-select.
 let graficoChart = null;
 let excluidasDoGrafico = [];
-let graficoEssencialChart = null;
+let graficoReservaEmergenciaChart = null;
 
-// A classificação é somente informativa. `null` (lançamentos ainda não classificados)
-// entra no lado não essencial, para que a pizza seja sempre o total de todos os gastos.
-function resumoGastosEssenciais(linhas) {
+// `null` (lançamentos ainda não classificados) entra no lado sem reserva, para que a
+// pizza seja sempre o total de todos os gastos.
+function resumoGastosReservaEmergencia(linhas) {
     return linhas.reduce((resumo, r) => {
         if (!(r.v < 0) || r._transferencia) return resumo;
-        const chave = r.essencial === true ? 'essencial' : 'naoEssencial';
+        const chave = r.reserva_emergencia === true ? 'reservaEmergencia' : 'semReservaEmergencia';
         resumo[chave] += -r.v;
         return resumo;
-    }, { essencial: 0, naoEssencial: 0 });
+    }, { reservaEmergencia: 0, semReservaEmergencia: 0 });
 }
 
-function dadosDoGraficoEssencialCiclo(idxPeriodo) {
+function dadosDoGraficoReservaEmergenciaCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
     const gastos = Estado.lancamentos
         .filter(r => r.periodoIdx == idxPeriodo && passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago))
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
-    return { periodo, ...resumoGastosEssenciais(gastos) };
+    return { periodo, ...resumoGastosReservaEmergencia(gastos) };
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
@@ -2214,12 +2214,12 @@ window.abrirGraficoGastos = idxPeriodo => {
     el('modalGrafico').showModal();
 };
 
-window.abrirGraficoEssencial = idxPeriodo => {
-    const { periodo, essencial, naoEssencial } = dadosDoGraficoEssencialCiclo(idxPeriodo);
-    const total = essencial + naoEssencial;
-    el('graficoEssencialSubtitulo').textContent = `${nomePeriodo(periodo)} · Total de gastos do ciclo: ${brl(total)}`;
-    desenhaGraficoEssencial(idxPeriodo);
-    el('modalGraficoEssencial').showModal();
+window.abrirGraficoReservaEmergencia = idxPeriodo => {
+    const { periodo, reservaEmergencia, semReservaEmergencia } = dadosDoGraficoReservaEmergenciaCiclo(idxPeriodo);
+    const total = reservaEmergencia + semReservaEmergencia;
+    el('graficoReservaEmergenciaSubtitulo').textContent = `${nomePeriodo(periodo)} · Total de gastos do ciclo: ${brl(total)}`;
+    desenhaGraficoReservaEmergencia(idxPeriodo);
+    el('modalGraficoReservaEmergencia').showModal();
 };
 
 function montaExcluirCatDrop(categorias) {
@@ -2295,23 +2295,23 @@ function desenhaGraficoPizza(idxPeriodo) {
     });
 }
 
-function desenhaGraficoEssencial(idxPeriodo) {
-    const { essencial, naoEssencial } = dadosDoGraficoEssencialCiclo(idxPeriodo);
-    const valores = [essencial, naoEssencial];
-    const total = essencial + naoEssencial;
+function desenhaGraficoReservaEmergencia(idxPeriodo) {
+    const { reservaEmergencia, semReservaEmergencia } = dadosDoGraficoReservaEmergenciaCiclo(idxPeriodo);
+    const valores = [reservaEmergencia, semReservaEmergencia];
+    const total = reservaEmergencia + semReservaEmergencia;
     const temGastos = total > 0.005;
 
-    el('graficoEssencialVazio').hidden = temGastos;
-    el('canvasGraficoEssencial').style.display = temGastos ? 'block' : 'none';
+    el('graficoReservaEmergenciaVazio').hidden = temGastos;
+    el('canvasGraficoReservaEmergencia').style.display = temGastos ? 'block' : 'none';
     if (!temGastos) {
-        if (graficoEssencialChart) { graficoEssencialChart.destroy(); graficoEssencialChart = null; }
+        if (graficoReservaEmergenciaChart) { graficoReservaEmergenciaChart.destroy(); graficoReservaEmergenciaChart = null; }
         return;
     }
-    if (graficoEssencialChart) graficoEssencialChart.destroy();
-    graficoEssencialChart = new Chart(el('canvasGraficoEssencial'), {
+    if (graficoReservaEmergenciaChart) graficoReservaEmergenciaChart.destroy();
+    graficoReservaEmergenciaChart = new Chart(el('canvasGraficoReservaEmergencia'), {
         type: 'pie',
         data: {
-            labels: ['Essenciais', 'Não essenciais'],
+            labels: ['Reserva emergência', 'Sem reserva emergência'],
             datasets: [{ data: valores, backgroundColor: ['#35B982', '#E06B3C'], borderColor: '#FFF', borderWidth: 2 }]
         },
         options: {
@@ -2329,26 +2329,26 @@ el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
 });
 
-// clique no badge "Essencial" alterna a classificação na hora, sem selecionar a linha.
+// clique no badge "Reserva emergência" alterna a classificação na hora, sem selecionar a linha.
 // Linhas simuladas mudam apenas em memória; linhas reais persistem no Supabase.
 el('out').addEventListener('click', async e => {
-    const badge = e.target.closest('[data-tog-essencial]');
+    const badge = e.target.closest('[data-tog-reserva-emergencia]');
     if (!badge) return;
     e.stopImmediatePropagation();
 
-    const id = badge.dataset.togEssencial;
+    const id = badge.dataset.togReservaEmergencia;
     const r = Estado.lancamentos.find(x => String(x.id) == id);
     if (!r) return;
 
-    const novoEssencial = !r.essencial;
-    badge.classList.toggle('tagEssencial', novoEssencial);
-    badge.classList.toggle('tagNaoEssencial', !novoEssencial);
-    badge.textContent = novoEssencial ? 'Sim' : 'Não';
+    const novaReservaEmergencia = !r.reserva_emergencia;
+    badge.classList.toggle('tagReservaEmergencia', novaReservaEmergencia);
+    badge.classList.toggle('tagSemReservaEmergencia', !novaReservaEmergencia);
+    badge.textContent = novaReservaEmergencia ? 'Sim' : 'Não';
     badge.style.opacity = .5;
 
     try {
-        if (!r._sim) await atualizarLancamento(r.id, { essencial: novoEssencial });
-        r.essencial = novoEssencial;
+        if (!r._sim) await atualizarLancamento(r.id, { reserva_emergencia: novaReservaEmergencia });
+        r.reserva_emergencia = novaReservaEmergencia;
         desenhar();
     } catch (err) {
         badge.style.opacity = '';
@@ -2356,9 +2356,9 @@ el('out').addEventListener('click', async e => {
         desenhar();
     }
 });
-el('fechaGraficoEssencial').onclick = () => el('modalGraficoEssencial').close();
-el('modalGraficoEssencial').addEventListener('click', e => {
-    if (e.target == el('modalGraficoEssencial')) el('modalGraficoEssencial').close();
+el('fechaGraficoReservaEmergencia').onclick = () => el('modalGraficoReservaEmergencia').close();
+el('modalGraficoReservaEmergencia').addEventListener('click', e => {
+    if (e.target == el('modalGraficoReservaEmergencia')) el('modalGraficoReservaEmergencia').close();
 });
 
 // ===================================================================
@@ -2788,7 +2788,7 @@ function abreModalNovo(prefill) {
         atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
         el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
-        el('fEssencial').checked = !!prefill.essencial;
+        el('fReservaEmergencia').checked = !!prefill.reserva_emergencia;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
         // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
@@ -3181,7 +3181,7 @@ async function submeteNovoLancamento() {
     const faturaIds = (cred || ehAntecip) ? idsFaturasDoFormulario() : [];
     const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
     const pago = el('fPago').checked;
-    const essencial = el('fEssencial').checked;
+    const reservaEmergencia = el('fReservaEmergencia').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
     // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
@@ -3207,8 +3207,8 @@ async function submeteNovoLancamento() {
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data, mantem nome/categoria/cred/isa
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
@@ -3219,7 +3219,7 @@ async function submeteNovoLancamento() {
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
-        el('fEssencial').checked = false;
+        el('fReservaEmergencia').checked = false;
         el('fCateg').selectedIndex = 0;   // categoria vinha do nome; sem nome, nao faz sentido manter
         atualizaAvisoFronteira();
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
@@ -3244,13 +3244,13 @@ async function submeteNovoLancamento() {
 // memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
 // regra de classificacao que carregarDados() usa: debito pela propria data, credito pelo
 // vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds = [] }) {
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds = [] }) {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         const payload = {
-            data: dataParcela, freq, cred, isa, pago, essencial, ativo: true,
+            data: dataParcela, freq, cred, isa, pago, reserva_emergencia: reservaEmergencia, ativo: true,
             nome,
             categ, valor: valores[p],
             fatura_venc: faturaVenc,
@@ -3313,7 +3313,7 @@ el('toggleSimulacao').onclick = async () => {
 // derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
 // +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
-function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, essencial, parcelas, valores, faturaIds = [] }) {
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds = [] }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
     const ehAntecip = ehAntecipacaoFatura(categ || '');
 
@@ -3326,7 +3326,7 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, e
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, essencial, ativo: true,
+            cred, isa, pago, reserva_emergencia: reservaEmergencia, ativo: true,
             fatura_venc: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),

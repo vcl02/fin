@@ -102,7 +102,7 @@
         <label class=f id=fgraf><span>&nbsp;</span>
           <div class=graficosBotoes>
             <button type=button id=btGrafico class=btFiltro>Gráfico</button>
-            <button type=button id=btGraficoEssencial class=btFiltro title="Gastos essenciais e não essenciais">Essenciais</button>
+            <button type=button id=btGraficoReservaEmergencia class=btFiltro title="Gastos com e sem reserva emergência">Reserva</button>
           </div>
         </label>
         <label class=f id=fciclo><span>Ciclo</span>
@@ -190,7 +190,7 @@
           <label class=fmChk>
             <input type=checkbox id=fPago checked><span>Pago</span></label>
           <label class=fmChk>
-            <input type=checkbox id=fEssencial><span>Essencial</span></label>
+            <input type=checkbox id=fReservaEmergencia><span>Reserva emergência</span></label>
         </div>
 
         <label class=fm><span>Nome <b class=req>*</b></span>
@@ -332,17 +332,17 @@
       <p class=empty id=graficoVazio hidden>Sem gastos neste ciclo.</p>
     </dialog>
 
-    <dialog id=modalGraficoEssencial>
+    <dialog id=modalGraficoReservaEmergencia>
       <div class=modalHead>
-        <h2>Gastos essenciais</h2>
-        <button type=button id=fechaGraficoEssencial aria-label="Fechar">×</button>
+        <h2>Gastos com reserva emergência</h2>
+        <button type=button id=fechaGraficoReservaEmergencia aria-label="Fechar">×</button>
       </div>
-      <p class=meta id=graficoEssencialSubtitulo></p>
+      <p class=meta id=graficoReservaEmergenciaSubtitulo></p>
       <div style="position:relative;height:420px;margin-top:1rem">
-        <canvas id=canvasGraficoEssencial role=img
-          aria-label="Gráfico de pizza dos gastos essenciais e não essenciais no ciclo"></canvas>
+        <canvas id=canvasGraficoReservaEmergencia role=img
+          aria-label="Gráfico de pizza dos gastos com e sem reserva emergência no ciclo"></canvas>
       </div>
-      <p class=empty id=graficoEssencialVazio hidden>Sem gastos neste ciclo.</p>
+      <p class=empty id=graficoReservaEmergenciaVazio hidden>Sem gastos neste ciclo.</p>
     </dialog>
 
     <dialog id=modalComparativo>

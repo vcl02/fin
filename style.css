@@ -579,9 +579,9 @@
       font-weight: 600;
   }
 
-  /* indicador apenas visual: Essencial não altera o lançamento e não é editável na tabela */
-  .tagEssencial,
-  .tagNaoEssencial {
+  /* indicador da classificação Reserva emergência */
+  .tagReservaEmergencia,
+  .tagSemReservaEmergencia {
       display: inline-block;
       padding: .16rem .42rem;
       border-radius: 99px;
@@ -589,21 +589,21 @@
       font-weight: 700;
   }
 
-  .tagEssencial {
+  .tagReservaEmergencia {
       color: #8BE0B5;
       background: #173A2A;
   }
 
-  .tagNaoEssencial {
+  .tagSemReservaEmergencia {
       color: #F1BA9F;
       background: #47291F;
   }
 
-  .togEssencial {
+  .togReservaEmergencia {
       cursor: pointer;
   }
 
-  .togEssencial:hover {
+  .togReservaEmergencia:hover {
       filter: brightness(1.16);
       outline: 1px dashed currentColor;
       outline-offset: 2px;
@@ -1599,7 +1599,7 @@
       padding: 1.5rem;
   }
 
-  #modalGraficoEssencial {
+  #modalGraficoReservaEmergencia {
       width: min(40rem, 94vw);
       max-height: 92vh;
       padding: 1.5rem;
@@ -1616,7 +1616,7 @@
   }
 
   #modalGrafico canvas,
-  #modalGraficoEssencial canvas,
+  #modalGraficoReservaEmergencia canvas,
   #modalComparativo canvas {
       color: var(--fg);
   }
