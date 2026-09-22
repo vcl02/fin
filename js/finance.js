@@ -56,9 +56,9 @@ function ajusteInvestimento(totalBase, guardadoDisponivel = Infinity) {
         const deficit = -totalBase;
         const resgate = Math.min(deficit, Math.max(0, guardadoDisponivel));
         if (resgate <= 0.005) return null;   // sem nada guardado pra resgatar — o mes fica negativo, sem linha de ajuste
-        return { tipo: 'resgate', nome: 'Resgate necessário', categ: 'Investimento', v: resgate };
+        return { tipo: 'resgate', nome: 'Resgate necessário', categ: CATEGORIA_INVESTIMENTO, v: resgate };
     }
-    if (totalBase > 0.005) return { tipo: 'aporte', nome: 'Aporte sugerido', categ: 'Investimento', v: -totalBase };
+    if (totalBase > TOLERANCIA_FINANCEIRA) return { tipo: 'aporte', nome: 'Aporte sugerido', categ: CATEGORIA_INVESTIMENTO, v: -totalBase };
     return null;
 }
 

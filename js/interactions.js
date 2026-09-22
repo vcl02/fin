@@ -116,7 +116,7 @@ function atualizaBarraSelecao() {
     // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
     // excluidas. As excecoes de ACAO sao os ajustes "sug:" e "res:": Aporte sugerido
     // e Resgate necessario podem ser materializados como lancamentos reais.
-    const ehSintetica = c => /^(fat|cp|sal|res|sug|abt):/.test(c);
+    const ehSintetica = c => PREFIXO_LINHA_SINTETICA.test(c);
     const chaveUnica = chaves.length == 1 ? chaves[0] : null;
     const ehAjusteMaterializavel = !!chaveUnica && /^(sug|res):/.test(chaveUnica);
     const ajusteExistente = ehAjusteMaterializavel

@@ -65,10 +65,12 @@ const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
 
 async function carregarDados() {
     const lancamentosCrus = await buscar('lancamentos');
+    const avisosDeDados = validarLancamentosCarregados(lancamentosCrus);
+    if (avisosDeDados.length) console.warn('[diagnóstico] dados recebidos com inconsistências:', avisosDeDados);
     // Faturamento PJ não é uma despesa comum: ele ancora os intervalos de caixa. O último
     // ciclo fica aberto até uma próxima âncora ser cadastrada.
     const ancoras = lancamentosCrus
-        .filter(r => !r.cred && String(r.nome || '').trim() === 'Faturamento PJ' && r.data)
+        .filter(r => !r.cred && String(r.nome || '').trim() === NOME_ANCORA_CICLO && r.data)
         .sort((a, b) => timestamp(a.data) - timestamp(b.data));
     Estado.ciclos = ancoras.map((ancora, i) => ({
         id: `pj:${ancora.id}`, ini: dataISO(ancora.data),
@@ -86,5 +88,5 @@ async function carregarDados() {
     });
     Estado.faturas = [...new Set(Estado.lancamentos.map(r => r.fatura_venc).filter(Boolean))]
         .sort((a, b) => timestamp(a) - timestamp(b)).map(vencimento => ({ vencimento }));
-    return { lancamentosCrus };
+    return { lancamentosCrus, avisosDeDados };
 }

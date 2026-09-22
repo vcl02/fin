@@ -73,6 +73,10 @@
         </svg>
       </button>
 
+      <!-- Exportações locais respeitam os filtros ativos e não enviam dados ao Supabase. -->
+      <button id=exportarCsv title="Exportar lançamentos filtrados em CSV" aria-label="Exportar CSV">CSV</button>
+      <button id=backupJson title="Fazer backup dos lançamentos filtrados em JSON" aria-label="Fazer backup JSON">Backup</button>
+
       <button id=sair title="Encerrar" aria-label="Encerrar">
         <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
           stroke-linejoin=round>
@@ -376,6 +380,7 @@
       <div class=wrap id=corpoDetalheCel></div>
     </dialog>
     <script src="./js/app-state.js" defer></script>
+    <script src="./js/domain.js" defer></script>
     <script src="./js/shared.js" defer></script>
     <script src="./js/supabase-api.js" defer></script>
     <script src="./js/finance.js" defer></script>
@@ -385,6 +390,7 @@
     <script src="./js/interactions.js" defer></script>
     <script src="./js/charts.js" defer></script>
     <script src="./js/form.js" defer></script>
+    <script src="./js/export.js" defer></script>
     <script src="./js/bootstrap.js" defer></script>
   </div>
 </body>

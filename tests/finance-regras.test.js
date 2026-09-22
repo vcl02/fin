@@ -13,6 +13,7 @@ if (inicio < 0 || fim < 0) throw Error('Não encontrou as regras centrais de sal
 function regrasFinanceiras(ciclos) {
     const contexto = {
         Estado: { ciclos }, SALDO_DESDE: '2026-01-01',
+        CATEGORIA_INVESTIMENTO: 'Investimento', TOLERANCIA_FINANCEIRA: 0.005,
         dataISO: valor => String(valor).slice(0, 10),
     };
     vm.createContext(contexto);

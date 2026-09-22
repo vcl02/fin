@@ -8,6 +8,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
 - O filtro ativo, pago, origem, titular e sinal define o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase e desaparece ao recarregar ou desativar o modo.
+- A carga valida o formato dos lançamentos de forma somente diagnóstica. Inconsistências são avisadas no console, mas nunca são corrigidas, descartadas ou gravadas automaticamente.
+
+## Backup e exportação
+
+- **CSV** e **Backup** exportam somente os lançamentos do recorte atual de filtros. O CSV usa `;` e UTF-8 para abrir corretamente em planilhas brasileiras; o JSON inclui os filtros e o momento da exportação.
+- Exportação é local no navegador: não chama o Supabase. Simulações são marcadas como `simulado: true` no arquivo para não serem confundidas com lançamentos persistidos.
 
 ## Faturas
 
@@ -66,6 +72,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Máscara monetária, calculadora e divisão exata de parcelas são cobertas por `node --test tests/form-regras.test.js`.
 - A combinação dos filtros de tabelas é coberta por `node --test tests/tabelas-filtros.test.js`.
 - O padrão de cabeçalhos explicativos em código, estilos, migrations, testes e regiões dinâmicas do HTML é coberto por `node --test tests/documentacao-estrutura.test.js`.
+- O vocabulário financeiro, a validação não destrutiva da carga e os contratos de exportação são cobertos por `node --test tests/domain-validacao.test.js` e `node --test tests/exportacao.test.js`.
 - A suíte inteira deve rodar com `node --test tests/*.test.js`. Ela é local e não cria lançamentos de teste nem valida uma sessão real do Supabase.
 
 ## Reserva emergência
