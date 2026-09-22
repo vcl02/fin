@@ -35,7 +35,7 @@
 
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
 - A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.
-- A meta de reserva emergência, calculada a partir dos gastos marcados do ciclo, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
+- A meta de reserva emergência, calculada para os nove ciclos seguintes com valores previstos e estimados, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
 - O cadastro e a alternância imediata da classificação Reserva emergência são cobertos por `node --test tests/reserva-emergencia-interacao.test.js`.
 - O deslocamento visual de uma competência na tabela Crédito é coberto por `node --test tests/layout-creditos.test.js`.
 
@@ -44,5 +44,5 @@
 - `lancamentos.reserva_emergencia` é a classificação existente no banco. A migration `migrations/12-renomear-essencial-para-reserva-emergencia.sql` renomeia a coluna e preserva seus valores.
 - O formulário mostra a caixa **Reserva emergência** desmarcada por padrão e novos lançamentos são salvos como `false` até ela ser marcada.
 - Nas tabelas, o badge Reserva emergência é clicável para alternar a classificação de todos os lançamentos reais com o mesmo `nome` exato, em qualquer ciclo; a alteração é salva imediatamente. Em simulações, apenas as linhas simuladas com esse mesmo nome mudam em memória.
-- O botão **Reserva emergência**, ao lado de **Gráfico**, mostra uma pizza de progresso. A meta é nove vezes a soma dos gastos negativos do ciclo marcados como reserva emergência, respeitando os filtros ativos e excluindo transferências de pagamento/antecipação de fatura.
+- O botão **Reserva emergência**, ao lado de **Gráfico**, mostra uma pizza de progresso. A meta soma os gastos negativos marcados como reserva emergência nos nove ciclos a partir do selecionado, respeitando os filtros ativos e excluindo transferências de pagamento/antecipação de fatura. Para cada nome, o valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa. O modal informa quantos ciclos contêm estimativas.
 - O valor guardado da pizza usa `guardadoAte(ciclo)`, a mesma base exibida no título Débito; por isso ele soma tudo que já foi guardado até aquele ciclo.

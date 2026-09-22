@@ -2126,16 +2126,33 @@ let excluidasDoGrafico = [];
 let metaReservaEmergenciaChart = null;
 const MESES_META_RESERVA_EMERGENCIA = 9;
 
-// `null` (lançamentos ainda não classificados) entra no lado sem reserva, para que a
-// pizza seja sempre o total de todos os gastos.
-function dadosMetaReservaEmergencia(linhas, guardado) {
-    const gastoMensal = linhas
-        .filter(r => r.v < 0 && !r._transferencia && r.reserva_emergencia === true)
-        .reduce((s, r) => s + -r.v, 0);
-    const meta = gastoMensal * MESES_META_RESERVA_EMERGENCIA;
+// Projeta cada nome marcado nos nove ciclos a partir do selecionado. Uma ocorrência
+// cadastrada no ciclo substitui a estimativa daquele nome; sem ocorrência, continua
+// valendo o último valor conhecido. Assim uma previsão crescente entra mês a mês.
+function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
+    const porCiclo = new Map();
+    linhas.forEach(r => {
+        if (!(r.v < 0) || r._transferencia || r.reserva_emergencia !== true || r.periodoIdx == null) return;
+        const gastos = porCiclo.get(r.periodoIdx) || new Map();
+        const nome = String(r.nome || '').trim();
+        gastos.set(nome, (gastos.get(nome) || 0) + -r.v);
+        porCiclo.set(r.periodoIdx, gastos);
+    });
+
+    const ultimoValorPorNome = new Map();
+    const totaisPorCiclo = [];
+    let mesesComEstimativa = 0;
+    for (let i = idxPeriodo; i < idxPeriodo + MESES_META_RESERVA_EMERGENCIA; i++) {
+        const cadastrados = porCiclo.get(i) || new Map();
+        cadastrados.forEach((valor, nome) => ultimoValorPorNome.set(nome, valor));
+        if ([...ultimoValorPorNome.keys()].some(nome => !cadastrados.has(nome))) mesesComEstimativa++;
+        totaisPorCiclo.push([...ultimoValorPorNome.values()].reduce((s, v) => s + v, 0));
+    }
+    const gastoMensal = totaisPorCiclo[0];
+    const meta = totaisPorCiclo.reduce((s, v) => s + v, 0);
     const totalGuardado = Math.max(0, guardado || 0);
     return {
-        gastoMensal, meta, guardado: totalGuardado,
+        gastoMensal, meta, guardado: totalGuardado, mesesComEstimativa, totaisPorCiclo,
         guardadoNaMeta: Math.min(meta, totalGuardado),
         restante: Math.max(0, meta - totalGuardado),
         excedente: Math.max(0, totalGuardado - meta),
@@ -2146,9 +2163,9 @@ function dadosMetaReservaEmergencia(linhas, guardado) {
 function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
     const gastos = filtrarLancamentos()
-        .filter(r => r.periodoIdx == idxPeriodo)
+        .filter(r => r.periodoIdx != null && r.periodoIdx >= idxPeriodo && r.periodoIdx < idxPeriodo + MESES_META_RESERVA_EMERGENCIA)
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
-    return { periodo, ...dadosMetaReservaEmergencia(gastos, guardadoAte(idxPeriodo)) };
+    return { periodo, ...dadosMetaReservaEmergencia(gastos, idxPeriodo, guardadoAte(idxPeriodo)) };
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
@@ -2251,7 +2268,7 @@ window.abrirMetaReservaEmergencia = idxPeriodo => {
     if (!Estado.ciclos[idxPeriodo]) return;
     const d = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     el('metaReservaEmergenciaSubtitulo').textContent =
-        `${nomePeriodo(d.periodo)} · meta equivalente a ${MESES_META_RESERVA_EMERGENCIA} meses`;
+        `${nomePeriodo(d.periodo)} · despesas previstas para ${MESES_META_RESERVA_EMERGENCIA} ciclos`;
     desenhaMetaReservaEmergencia(idxPeriodo);
     el('modalMetaReservaEmergencia').showModal();
 };
@@ -2339,11 +2356,12 @@ function desenhaMetaReservaEmergencia(idxPeriodo) {
           <div class="metaReservaPct ${d.percentual >= 100 ? 'vd' : 'vm'}">${pct1(d.percentual)}</div>
           <p class=meta>da meta já guardada</p>
           <table><tbody>
-            <tr><td>Gasto mensal marcado<td class=n>${brl(d.gastoMensal)}
-            <tr><td>Meta de ${MESES_META_RESERVA_EMERGENCIA} meses<td class=n>${brl(d.meta)}
+            <tr><td>Gasto neste ciclo<td class=n>${brl(d.gastoMensal)}
+            <tr><td>Meta dos próximos ${MESES_META_RESERVA_EMERGENCIA} ciclos<td class=n>${brl(d.meta)}
             <tr><td>Guardado até este ciclo<td class="n vd">${brl(d.guardado)}
             <tr class=tot><td>${d.excedente ? 'Acima da meta' : 'Falta guardar'}<td class="n ${d.excedente ? 'vd' : 'vm'}">${brl(d.excedente || d.restante)}
           </tbody></table>
+          ${d.mesesComEstimativa ? `<p class=meta>${d.mesesComEstimativa} de ${MESES_META_RESERVA_EMERGENCIA} ciclos incluem valores estimados pelo último lançamento de cada gasto.</p>` : ''}
         </div>`;
     if (!temMeta) {
         if (metaReservaEmergenciaChart) { metaReservaEmergenciaChart.destroy(); metaReservaEmergenciaChart = null; }
