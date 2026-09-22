@@ -5,6 +5,8 @@
 const API = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
 const EMAIL_ISABELLA = 'isabella.251200@gmail.com';
+// Nome técnico da tabela financeira no banco. O domínio continua chamando cada registro de lançamento.
+const TABELA_FIN = 'fin';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 // Marco histórico: ciclos anteriores não entram na cascata do saldo, para não misturar

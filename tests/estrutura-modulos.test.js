@@ -37,10 +37,13 @@ test('carrega estado, Supabase e interface na ordem necessária', () => {
 
 test('separa estado e acesso ao banco da camada de interface', () => {
     assert.match(estado, /const Estado =/);
+    assert.match(estado, /const TABELA_FIN = 'fin';/);
     assert.match(dominio, /function validarLancamentosCarregados/);
     assert.match(compartilhado, /function dataDaOcorrencia/);
     assert.match(compartilhado, /const el =/);
     assert.match(api, /const sb = supabase\.createClient/);
+    assert.match(api, /buscar\(TABELA_FIN\)/);
+    assert.doesNotMatch(api, /rest\/v1\/lancamentos/);
     assert.match(api, /async function carregarDados/);
     assert.match(financeiro, /function saldoDoCiclo/);
     assert.match(financeiro, /function creditosExibidosNoCiclo/);

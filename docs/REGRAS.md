@@ -4,7 +4,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Convenções gerais
 
-- `lancamentos.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original.
+- `fin.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original.
 - Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
 - O filtro ativo, pago, origem, titular e sinal define o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase e desaparece ao recarregar ou desativar o modo.
@@ -18,7 +18,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Faturas
 
 - As faturas existentes são derivadas das datas `fatura_venc` já usadas nos lançamentos; a aplicação não usa uma tabela `faturas`.
-- Todo lançamento novo com `cred = true` deverá receber `fatura_venc` escolhido manualmente. O total da fatura nunca é gravado: é a soma dos `lancamentos.valor` ligados a ela.
+- Todo lançamento novo com `cred = true` deverá receber `fatura_venc` escolhido manualmente. O total da fatura nunca é gravado: é a soma dos `fin.valor` ligados a ela.
 - Ao cadastrar ou simular uma venda no crédito, cada prestação mostra como sugestão a fatura disponível mais próxima da data daquela prestação (ou a última conhecida se a data a ultrapassar). A sugestão não é regra: cada seletor continua editável e uma escolha manual nunca é substituída.
 - `periodos` não é lida pela aplicação. Ela permanece temporariamente apenas como histórico para auditoria da migração dos créditos e poderá ser removida depois da conferência.
 - Cada lançamento `Faturamento PJ` abre um ciclo de débito. O ciclo vai dessa data até o dia anterior ao próximo `Faturamento PJ`; uma fatura entra no ciclo que contém seu `vencimento`.
@@ -54,9 +54,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/00-esquema-existente.sql` registra o esquema anterior e não deve ser executado no projeto `fin` existente.
 - `migrations/01-nao-volatil-lancamentos.sql` e `migrations/02-volatil-lancamentos.sql` permanecem somente como histórico das alterações já aplicadas.
 - `migrations/03-remover-fatura-isabella-periodos.sql` registra a remoção de `periodos.fecha_isa` e `periodos.venc_isa`. Ela é idempotente porque essas colunas podem já ter sido removidas diretamente no banco.
-- `migrations/04-remover-volatil-lancamentos.sql` remove definitivamente `lancamentos.volatil`. O aplicativo não exibe, filtra, grava nem atualiza essa flag.
-- `migrations/05-faturas-db-first.sql` registra o modelo anterior de `faturas`; as migrations 10 e 11 o substituem por `lancamentos.fatura_venc`, sem tabela de faturas. Nenhum valor de fatura é calculado ou armazenado no banco.
+- `migrations/04-remover-volatil-lancamentos.sql` remove definitivamente a flag `volatil`, ausente da tabela atual `fin`. O aplicativo não exibe, filtra, grava nem atualiza essa flag.
+- `migrations/05-faturas-db-first.sql` registra o modelo anterior de `faturas`; as migrations 10 e 11 o substituem por `fin.fatura_venc`, sem tabela de faturas. Nenhum valor de fatura é calculado ou armazenado no banco.
 - `migrations/06-exigir-fatura-no-credito.sql` registra a validação que mantém crédito e débito coerentes com a fatura escolhida.
+- `migrations/13-renomear-lancamentos-para-fin.sql` renomeia a tabela técnica `public.lancamentos` para `public.fin` sem copiar ou alterar registros; nomes antigos permanecem apenas no histórico das migrations e no vocabulário financeiro.
 
 ## Testes
 
@@ -78,7 +79,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Reserva emergência
 
-- `lancamentos.reserva_emergencia` é a classificação existente no banco. A migration `migrations/12-renomear-essencial-para-reserva-emergencia.sql` renomeia a coluna e preserva seus valores.
+- `fin.reserva_emergencia` é a classificação existente no banco. A migration `migrations/12-renomear-essencial-para-reserva-emergencia.sql` renomeia a coluna e preserva seus valores.
 - O formulário mostra a caixa **Reserva emergência** desmarcada por padrão e novos lançamentos são salvos como `false` até ela ser marcada.
 - Nas tabelas, o badge Reserva emergência é clicável para alternar a classificação de todos os lançamentos reais com o mesmo `nome` exato, em qualquer ciclo; a alteração é salva imediatamente. Em simulações, apenas as linhas simuladas com esse mesmo nome mudam em memória.
 - O botão **Reserva emergência**, ao lado de **Gráfico**, mostra uma pizza de progresso. A meta soma os gastos negativos marcados como reserva emergência nos nove ciclos a partir do selecionado, respeitando os filtros ativos e excluindo transferências de pagamento/antecipação de fatura. Para cada nome, o valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa. O modal informa quantos ciclos contêm estimativas.

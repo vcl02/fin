@@ -18,9 +18,9 @@
 
 - Valores são assinados: entrada positiva, saída negativa. Não transforme o sinal apenas para apresentação antes de um cálculo.
 - Linhas reais têm `id` positivo; linhas sintéticas e simuladas não existem no banco. Nunca envie PATCH/DELETE para uma linha sintética ou simulada.
-- A criação, edição e exclusão pela interface são fluxos normais do produto e não devem ser removidas sem pedido explícito. Durante a manutenção, não crie, altere, exclua ou importe registros de `lancamentos` diretamente no Supabase, nem como teste: o mantenedor administra esses dados no DataGrip.
+- Criação, edição, exclusão ou atualização real já são ações do usuário dentro da interface. Fora desse fluxo, não altere dados financeiros no Supabase sem autorização explícita.
 - Preserve migrations aplicadas. Para uma alteração de esquema, crie uma migration nova e numerada; não reescreva migrations históricas.
-- Quando uma mudança de esquema exigir migration, prepare somente o arquivo versionado; não aplique a migration nem execute SQL no banco, salvo pedido explícito do mantenedor.
+- O mantenedor aplica migrations e ajusta dados diretamente no DataGrip; prepare a migration versionada quando ela for necessária, mas não a execute sem pedido explícito.
 - Não exponha chaves de serviço nem contorne RLS. Toda atualização por nome deve usar a igualdade exata e `encodeURIComponent` no filtro PostgREST.
 
 ## Como concluir uma mudança

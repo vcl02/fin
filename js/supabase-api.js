@@ -17,7 +17,7 @@ const buscar = async (tabela, retry) => {
 
 const inserirLancamento = async payload => {
     // Retorna a representação persistida para a tela usar o id e os defaults reais do banco.
-    const r = await fetch(`${API}/rest/v1/lancamentos`, {
+    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}`, {
         method: 'POST',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify(payload),
@@ -28,7 +28,7 @@ const inserirLancamento = async payload => {
 
 const excluirLancamento = async id => {
     // Prefer retorna a linha removida: resposta vazia denuncia policy/RLS sem fingir sucesso.
-    const r = await fetch(`${API}/rest/v1/lancamentos?id=eq.${encodeURIComponent(id)}`, {
+    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?id=eq.${encodeURIComponent(id)}`, {
         method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), Prefer: 'return=representation' },
     });
     if (!r.ok) throw Error(`excluir: ${r.status} ${await r.text()}`);
@@ -36,7 +36,7 @@ const excluirLancamento = async id => {
 };
 
 const atualizarLancamento = async (id, campos) => {
-    const r = await fetch(`${API}/rest/v1/lancamentos?id=eq.${encodeURIComponent(id)}`, {
+    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify(campos),
@@ -52,7 +52,7 @@ const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
     // texto exato recebem o mesmo valor. encodeURIComponent impede que acentos, espaços e
     // caracteres de URL alterem o filtro PostgREST.
     const filtro = `nome=eq.${encodeURIComponent(nome)}`;
-    const r = await fetch(`${API}/rest/v1/lancamentos?${filtro}&select=id,nome,reserva_emergencia`, {
+    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?${filtro}&select=id,nome,reserva_emergencia`, {
         method: 'PATCH',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify({ reserva_emergencia: reservaEmergencia }),
@@ -64,7 +64,7 @@ const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
 };
 
 async function carregarDados() {
-    const lancamentosCrus = await buscar('lancamentos');
+    const lancamentosCrus = await buscar(TABELA_FIN);
     const avisosDeDados = validarLancamentosCarregados(lancamentosCrus);
     if (avisosDeDados.length) console.warn('[diagnóstico] dados recebidos com inconsistências:', avisosDeDados);
     // Faturamento PJ não é uma despesa comum: ele ancora os intervalos de caixa. O último

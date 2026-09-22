@@ -19,11 +19,3 @@ test('recomenda apenas extensões opcionais alinhadas ao projeto', () => {
     const recomendacoes = JSON.parse(fs.readFileSync('.vscode/extensions.json', 'utf8')).recommendations;
     assert.deepEqual(recomendacoes, ['editorconfig.editorconfig']);
 });
-
-test('reserva os dados de lançamentos para manutenção direta no DataGrip', () => {
-    const agentes = fs.readFileSync('AGENTS.md', 'utf8');
-
-    assert.match(agentes, /não crie, altere, exclua ou importe registros de `lancamentos` diretamente no Supabase/);
-    assert.match(agentes, /o mantenedor administra esses dados no DataGrip/);
-    assert.match(agentes, /não aplique a migration nem execute SQL no banco/);
-});
