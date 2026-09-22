@@ -1,4 +1,4 @@
-// Acesso ao Supabase. Regras de interface ficam em script.js.
+// Acesso ao Supabase. Regras de interface ficam nos demais módulos de js/.
 const sb = supabase.createClient(API, KEY);
 
 const tokenAtual = async (forcar) => {

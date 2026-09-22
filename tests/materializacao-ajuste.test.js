@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const script = fs.readFileSync('script.js', 'utf8');
+const script = fs.readFileSync('js/interactions.js', 'utf8');
 const inicio = script.indexOf('function valorArredondado(');
 const fim = script.indexOf('\n// valor de uma linha a partir da sua chave de selecao', inicio);
 

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const script = fs.readFileSync('script.js', 'utf8');
+const script = fs.readFileSync('js/charts.js', 'utf8');
 const inicio = script.indexOf('const MESES_META_RESERVA_EMERGENCIA = 9;');
 const fim = script.indexOf('\nfunction dadosMetaReservaEmergenciaCiclo(', inicio);
 if (inicio < 0 || fim < 0) throw Error('Não encontrou o cálculo da meta de reserva emergência.');

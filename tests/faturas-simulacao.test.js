@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const script = fs.readFileSync('script.js', 'utf8');
+const script = fs.readFileSync('js/form.js', 'utf8');
 const inicio = script.indexOf('function faturasSugeridasParaParcelas(');
 const fim = script.indexOf('\n// Credito nao tem mais inferencia por fechamento', inicio);
 
