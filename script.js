@@ -1494,7 +1494,7 @@ function desenhar() {
     // que nao tem periodo pra desenhar a pizza).
     mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
     el('btGrafico').dataset.idx = el('ciclo').value;
-    el('btGraficoReservaEmergencia').dataset.idx = el('ciclo').value;
+    el('btMetaReservaEmergencia').dataset.idx = el('ciclo').value;
     mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
@@ -1874,7 +1874,7 @@ el('compAte').addEventListener('change', () => {
 });
 
 el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
-el('btGraficoReservaEmergencia').onclick = () => abrirGraficoReservaEmergencia(+el('btGraficoReservaEmergencia').dataset.idx);
+el('btMetaReservaEmergencia').onclick = () => abrirMetaReservaEmergencia(+el('btMetaReservaEmergencia').dataset.idx);
 el('btEvolucao').onclick = () => abrirGraficoEvolucao(+el('compDe').value, +el('compAte').value);
 
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
@@ -2123,25 +2123,32 @@ el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRob
 // O usuario pode excluir categorias especificas da pizza via multi-select.
 let graficoChart = null;
 let excluidasDoGrafico = [];
-let graficoReservaEmergenciaChart = null;
+let metaReservaEmergenciaChart = null;
+const MESES_META_RESERVA_EMERGENCIA = 9;
 
 // `null` (lançamentos ainda não classificados) entra no lado sem reserva, para que a
 // pizza seja sempre o total de todos os gastos.
-function resumoGastosReservaEmergencia(linhas) {
-    return linhas.reduce((resumo, r) => {
-        if (!(r.v < 0) || r._transferencia) return resumo;
-        const chave = r.reserva_emergencia === true ? 'reservaEmergencia' : 'semReservaEmergencia';
-        resumo[chave] += -r.v;
-        return resumo;
-    }, { reservaEmergencia: 0, semReservaEmergencia: 0 });
+function dadosMetaReservaEmergencia(linhas, guardado) {
+    const gastoMensal = linhas
+        .filter(r => r.v < 0 && !r._transferencia && r.reserva_emergencia === true)
+        .reduce((s, r) => s + -r.v, 0);
+    const meta = gastoMensal * MESES_META_RESERVA_EMERGENCIA;
+    const totalGuardado = Math.max(0, guardado || 0);
+    return {
+        gastoMensal, meta, guardado: totalGuardado,
+        guardadoNaMeta: Math.min(meta, totalGuardado),
+        restante: Math.max(0, meta - totalGuardado),
+        excedente: Math.max(0, totalGuardado - meta),
+        percentual: meta ? Math.min(100, totalGuardado / meta * 100) : 0,
+    };
 }
 
-function dadosDoGraficoReservaEmergenciaCiclo(idxPeriodo) {
+function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
-    const gastos = Estado.lancamentos
-        .filter(r => r.periodoIdx == idxPeriodo && passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago))
+    const gastos = filtrarLancamentos()
+        .filter(r => r.periodoIdx == idxPeriodo)
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
-    return { periodo, ...resumoGastosReservaEmergencia(gastos) };
+    return { periodo, ...dadosMetaReservaEmergencia(gastos, guardadoAte(idxPeriodo)) };
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
@@ -2240,12 +2247,13 @@ window.abrirGraficoGastos = idxPeriodo => {
     el('modalGrafico').showModal();
 };
 
-window.abrirGraficoReservaEmergencia = idxPeriodo => {
-    const { periodo, reservaEmergencia, semReservaEmergencia } = dadosDoGraficoReservaEmergenciaCiclo(idxPeriodo);
-    const total = reservaEmergencia + semReservaEmergencia;
-    el('graficoReservaEmergenciaSubtitulo').textContent = `${nomePeriodo(periodo)} · Total de gastos do ciclo: ${brl(total)}`;
-    desenhaGraficoReservaEmergencia(idxPeriodo);
-    el('modalGraficoReservaEmergencia').showModal();
+window.abrirMetaReservaEmergencia = idxPeriodo => {
+    if (!Estado.ciclos[idxPeriodo]) return;
+    const d = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
+    el('metaReservaEmergenciaSubtitulo').textContent =
+        `${nomePeriodo(d.periodo)} · meta equivalente a ${MESES_META_RESERVA_EMERGENCIA} meses`;
+    desenhaMetaReservaEmergencia(idxPeriodo);
+    el('modalMetaReservaEmergencia').showModal();
 };
 
 function montaExcluirCatDrop(categorias) {
@@ -2321,30 +2329,38 @@ function desenhaGraficoPizza(idxPeriodo) {
     });
 }
 
-function desenhaGraficoReservaEmergencia(idxPeriodo) {
-    const { reservaEmergencia, semReservaEmergencia } = dadosDoGraficoReservaEmergenciaCiclo(idxPeriodo);
-    const valores = [reservaEmergencia, semReservaEmergencia];
-    const total = reservaEmergencia + semReservaEmergencia;
-    const temGastos = total > 0.005;
-
-    el('graficoReservaEmergenciaVazio').hidden = temGastos;
-    el('canvasGraficoReservaEmergencia').style.display = temGastos ? 'block' : 'none';
-    if (!temGastos) {
-        if (graficoReservaEmergenciaChart) { graficoReservaEmergenciaChart.destroy(); graficoReservaEmergenciaChart = null; }
+function desenhaMetaReservaEmergencia(idxPeriodo) {
+    const d = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
+    const temMeta = d.meta > 0.005;
+    el('metaReservaEmergenciaVazio').hidden = temMeta;
+    el('canvasMetaReservaEmergencia').style.display = temMeta ? 'block' : 'none';
+    el('metaReservaEmergenciaResumo').innerHTML = !temMeta ? '' :
+        `<div class="metaReservaResumo">
+          <div class="metaReservaPct ${d.percentual >= 100 ? 'vd' : 'vm'}">${pct1(d.percentual)}</div>
+          <p class=meta>da meta já guardada</p>
+          <table><tbody>
+            <tr><td>Gasto mensal marcado<td class=n>${brl(d.gastoMensal)}
+            <tr><td>Meta de ${MESES_META_RESERVA_EMERGENCIA} meses<td class=n>${brl(d.meta)}
+            <tr><td>Guardado até este ciclo<td class="n vd">${brl(d.guardado)}
+            <tr class=tot><td>${d.excedente ? 'Acima da meta' : 'Falta guardar'}<td class="n ${d.excedente ? 'vd' : 'vm'}">${brl(d.excedente || d.restante)}
+          </tbody></table>
+        </div>`;
+    if (!temMeta) {
+        if (metaReservaEmergenciaChart) { metaReservaEmergenciaChart.destroy(); metaReservaEmergenciaChart = null; }
         return;
     }
-    if (graficoReservaEmergenciaChart) graficoReservaEmergenciaChart.destroy();
-    graficoReservaEmergenciaChart = new Chart(el('canvasGraficoReservaEmergencia'), {
-        type: 'pie',
+    if (metaReservaEmergenciaChart) metaReservaEmergenciaChart.destroy();
+    metaReservaEmergenciaChart = new Chart(el('canvasMetaReservaEmergencia'), {
+        type: 'doughnut',
         data: {
-            labels: ['Reserva emergência', 'Sem reserva emergência'],
-            datasets: [{ data: valores, backgroundColor: ['#35B982', '#E06B3C'], borderColor: '#FFF', borderWidth: 2 }]
+            labels: ['Guardado', 'Falta guardar'],
+            datasets: [{ data: [d.guardadoNaMeta, d.restante], backgroundColor: ['#35B982', '#363C42'], borderColor: '#FFF', borderWidth: 2 }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false, cutout: '68%',
             plugins: {
-                legend: { position: 'right', labels: { boxWidth: 12, padding: 14 } },
-                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${brl(ctx.parsed)} · ${(ctx.parsed / total * 100).toFixed(1)}% dos gastos` } }
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${brl(ctx.parsed)}` } }
             }
         }
     });
@@ -2403,9 +2419,9 @@ el('out').addEventListener('click', async e => {
         desenhar();
     }
 });
-el('fechaGraficoReservaEmergencia').onclick = () => el('modalGraficoReservaEmergencia').close();
-el('modalGraficoReservaEmergencia').addEventListener('click', e => {
-    if (e.target == el('modalGraficoReservaEmergencia')) el('modalGraficoReservaEmergencia').close();
+el('fechaMetaReservaEmergencia').onclick = () => el('modalMetaReservaEmergencia').close();
+el('modalMetaReservaEmergencia').addEventListener('click', e => {
+    if (e.target == el('modalMetaReservaEmergencia')) el('modalMetaReservaEmergencia').close();
 });
 
 // ===================================================================

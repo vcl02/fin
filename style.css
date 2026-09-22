@@ -1599,12 +1599,6 @@
       padding: 1.5rem;
   }
 
-  #modalGraficoReservaEmergencia {
-      width: min(40rem, 94vw);
-      max-height: 92vh;
-      padding: 1.5rem;
-  }
-
   #modalMetaReservaEmergencia {
       width: min(42rem, 94vw);
       max-height: 92vh;
@@ -1645,7 +1639,6 @@
   }
 
   #modalGrafico canvas,
-  #modalGraficoReservaEmergencia canvas,
   #modalMetaReservaEmergencia canvas,
   #modalComparativo canvas {
       color: var(--fg);
@@ -1785,6 +1778,7 @@
       }
 
       dialog#modalGrafico,
+      dialog#modalMetaReservaEmergencia,
       dialog#modalComparativo {
           width: 100vw;
           max-width: 100vw;
@@ -1801,6 +1795,14 @@
       #modalGrafico>div[style*=height],
       #modalComparativo>div[style*=height] {
           height: 320px !important;
+      }
+
+      .metaReservaLayout {
+          grid-template-columns: 1fr;
+      }
+
+      .metaReservaGrafico {
+          height: 230px;
       }
 
       .multiSelBtn {
