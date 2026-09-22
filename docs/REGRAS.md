@@ -49,6 +49,11 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - A visão Roberta considera somente lançamentos ativos e pagos da categoria: entradas positivas formam o crédito e saídas negativas o consomem. O percentual para em 100%, mas o saldo ainda informa eventual pagamento excedente.
 - As visualizações de pagamento por categoria ou nome consideram lançamentos ativos, pagos e abertos; usam valor absoluto para comparar pago, pendente e total. A visão Iphone limita-se a saídas negativas.
 
+## Mobile
+
+- No mobile, as tabelas são somente leitura. Não há seleção de linhas, edição inline, alternância de status, duplicação, exclusão ou atualização por toque.
+- O cadastro de novo lançamento permanece disponível; a tela compacta mantém apenas navegação, consulta e esse cadastro como fluxos de trabalho.
+
 ## Migrations
 
 - `migrations/00-esquema-existente.sql` registra o esquema anterior e não deve ser executado no projeto `fin` existente.

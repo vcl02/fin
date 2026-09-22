@@ -40,3 +40,7 @@
 - Não crie páginas HTML adicionais, testes em Python ou dados fictícios no banco apenas para testar.
 - Para cada nova feature ou correção, regras e testes são parte obrigatória da entrega.
 - Ao relatar a entrega, diferencie teste local, validação de navegador e validação integrada com Supabase.
+- Mantenha dark mode definitivo, porém em tons de cinza escuro legíveis; evite preto quase puro dominando toda a interface.
+- Prefira ícones a textos nos botões de ação. Todo ícone precisa de `title` e `aria-label`; texto visível só entra quando for indispensável para entendimento.
+- Busque minimalismo: informação útil, textos curtos e formulários somente com campos necessários ao cadastro.
+- No mobile, as tabelas são somente leitura. O único fluxo de alteração permitido é cadastrar um novo lançamento; nunca exponha edição inline, seleção, duplicação, exclusão ou atualização por toque.

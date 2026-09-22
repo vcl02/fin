@@ -1,27 +1,27 @@
   /* Base global: tokens de cor, tipografia, elementos nativos e comportamentos comuns.
      Os demais módulos consomem estas variáveis; não redefinir a identidade visual fora daqui. */
   :root {
-      --bg: #111315;
-      --pa: #1A1D20;
-      --fg: #F1F3F4;
-      --mu: #9CA3AA;
-      --ln: #30353A;
+      --bg: #1B1E21;
+      --pa: #24272B;
+      --fg: #E9ECEF;
+      --mu: #AAB1B8;
+      --ln: #3B4147;
 
       --vd: #4CCB78;
       --vm: #F06A61;
 
-      --bg-soft: #16191C;
-      --field: #202428;
-      --field-hover: #262B30;
-      --line-strong: #3A4046;
+      --bg-soft: #202428;
+      --field: #2A2E33;
+      --field-hover: #34393F;
+      --line-strong: #4A5158;
 
-      --green-soft: #183023;
-      --green-hover: #1D3929;
+      --green-soft: #1E392A;
+      --green-hover: #254634;
 
-      --red-soft: #351E1D;
-      --red-hover: #412321;
+      --red-soft: #402624;
+      --red-hover: #4D2D2A;
 
-      --orange-soft: #33291F;
+      --orange-soft: #403326;
 
       --shadow: rgba(0, 0, 0, .42);
   }

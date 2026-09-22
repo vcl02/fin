@@ -438,6 +438,7 @@ el('modalGrafico').addEventListener('click', e => {
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-reserva-emergencia]');
     if (!badge) return;
+    if (isMobile()) return;
     e.stopImmediatePropagation();
 
     const id = badge.dataset.togReservaEmergencia;

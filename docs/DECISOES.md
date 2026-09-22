@@ -12,6 +12,10 @@ Os arquivos em `js/` são scripts clássicos carregados em ordem explícita. Iss
 
 O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newline final. ESLint e Prettier ficam fora por enquanto: em scripts clássicos globais eles exigiriam configuração extra e causariam um reformat amplo sem melhorar diretamente as regras financeiras.
 
+## Linguagem visual
+
+O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. No mobile, a interface é de consulta e cadastro: as tabelas não oferecem edição, seleção, duplicação, exclusão nem atualização.
+
 ## Fatura e Crédito
 
 Há um cartão detalhado. A fatura é derivada de `fin.fatura`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte.

@@ -110,6 +110,12 @@ function desenhar() {
 // SELEÇÃO DE LINHAS (barra flutuante de soma)
 // ===================================================================
 function atualizaBarraSelecao() {
+    // No mobile a visão é estritamente de consulta: descarta eventual seleção herdada do desktop.
+    if (isMobile()) {
+        Estado.selecionados.clear();
+        el('selbar').style.display = 'none';
+        return;
+    }
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
 
     const chaves = [...Estado.selecionados.keys()];
@@ -254,6 +260,7 @@ window.alternarBloco = idTabela => {
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-pago]');
     if (!badge) return;
+    if (isMobile()) return;
     // stopPropagation NAO basta aqui: os dois listeners estao no MESMO elemento (#out),
     // entao ambos disparam na mesma fase de bubbling nao importa o que este pare de
     // propagar — precisa de stopImmediatePropagation pra impedir o listener de selecao
@@ -288,6 +295,7 @@ el('out').addEventListener('click', async e => {
 el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-valor]');
     if (!span) return;
+    if (isMobile()) return;
     // ja esta em edicao (input aberto): so' impede o clique de vazar pra selecao de
     // linha por baixo — o proprio <input> cuida do cursor/foco nativamente.
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
@@ -366,6 +374,7 @@ function reclassificaPeriodo(r) {
 el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-data]');
     if (!span) return;
+    if (isMobile()) return;
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
     e.stopImmediatePropagation();
 
@@ -415,6 +424,7 @@ el('out').addEventListener('click', e => {
     if (e.target.closest('[data-tog-reserva-emergencia]')) return;
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
+    if (isMobile()) return;
     if (e.shiftKey) { const s = getSelection(); if (s) s.removeAllRanges(); }   // limpa a selecao de texto nativa do shift-click
     if (e.shiftKey && !isMobile() && Estado.ultimaClicada) {
         const idTabela = Object.keys(Estado.linhasVisiveis)

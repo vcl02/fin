@@ -171,9 +171,10 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
         : (isMobile() ? celValorMobile(r) : (ehLinhaReal(r) ? celValorEditavel(r) : celValor(r.v)))).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
-        : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`}`
-        : tipo == 'r' ? `<td>${r[chave] == null ? '—'
-            : `<span class="${r[chave] ? 'tagReservaEmergencia' : 'tagSemReservaEmergencia'}${ehLinhaReal(r) || r._sim ? ' togReservaEmergencia' : ''}"${ehLinhaReal(r) || r._sim ? ` data-tog-reserva-emergencia="${escapeHtml(String(r.id))}" title="Clique para alternar Reserva emergência"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
+        : (isMobile() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
+            : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
+    : tipo == 'r' ? `<td>${r[chave] == null ? '—'
+            : `<span class="${r[chave] ? 'tagReservaEmergencia' : 'tagSemReservaEmergencia'}${!isMobile() && (ehLinhaReal(r) || r._sim) ? ' togReservaEmergencia' : ''}"${!isMobile() && (ehLinhaReal(r) || r._sim) ? ` data-tog-reserva-emergencia="${escapeHtml(String(r.id))}" title="Clique para alternar Reserva emergência"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
@@ -203,10 +204,12 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
         });
     }
 
+    // Mobile é consulta: não monta chaves selecionáveis nem a barra de ações que delas depende.
+    const podeSelecionar = selecionavel && !isMobile();
     return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
-            const chave = chaveSelecao(r), marcada = selecionavel && chave && Estado.selecionados.has(chave);
-            return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._sim ? 'sim ' : ''}${marcada ? 'on' : ''}${selecionavel && chave ? ' pick' : ''}" data-sid="${selecionavel ? chave : ''}">` + celulasDaLinha(r);
+            const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);
+            return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._sim ? 'sim ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r);
         }).join('') + '</tbody></table></div>';
 };
 

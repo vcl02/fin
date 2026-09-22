@@ -20,7 +20,9 @@
       #navCompararAte,
       #fate,
       #cicloHoje,
-      #toggleSimulacao {
+      #toggleSimulacao,
+      #exportarCsv,
+      #backupJson {
           display: none;
       }
 
@@ -33,20 +35,14 @@
           display: none;
       }
 
+      /* Não há seleção nem ações em lote no mobile: a tabela é estritamente de consulta. */
+      #selbar {
+          display: none !important;
+      }
+
       /* tabela com scroll horizontal */
       .wrap {
           overflow-x: auto;
-      }
-
-      #selbar {
-          left: .8rem;
-          right: .8rem;
-          bottom: .8rem;
-          padding: .7rem 1rem;
-      }
-
-      #selbar .val {
-          font-size: 1.2rem;
       }
 
       #abreNovo {
