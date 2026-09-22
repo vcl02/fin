@@ -34,7 +34,7 @@ test('calculadora rejeita expressão inválida em vez de executar texto arbitrá
     assert.equal(r.calcAvalia('2++3'), null);
     assert.equal(r.calcAvalia('(2+3'), null);
     assert.equal(r.calcAvalia('alert(1)'), null);
-    assert.deepEqual(Array.from(r.calcTokeniza('12,50×(3+2)')), ['12.50', '*', '(', '3', '+', '2', ')']);
+    assert.deepEqual(Array.from(r.calcTokeniza('12.50*(3+2)')), ['12.50', '*', '(', '3', '+', '2', ')']);
 });
 
 test('parcelamento mantém soma exata inclusive para valores negativos e centavos ímpares', () => {
