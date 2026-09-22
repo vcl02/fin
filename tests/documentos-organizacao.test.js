@@ -19,3 +19,15 @@ test('recomenda apenas extensões opcionais alinhadas ao projeto', () => {
     const recomendacoes = JSON.parse(fs.readFileSync('.vscode/extensions.json', 'utf8')).recommendations;
     assert.deepEqual(recomendacoes, ['editorconfig.editorconfig']);
 });
+
+test('limita o MCP do Supabase ao projeto fin e a consultas', () => {
+    const configuracao = JSON.parse(fs.readFileSync('.mcp.json', 'utf8'));
+    const servidor = configuracao.mcpServers.supabase;
+    const url = new URL(servidor.url);
+
+    assert.equal(servidor.type, 'http');
+    assert.equal(url.hostname, 'mcp.supabase.com');
+    assert.equal(url.searchParams.get('project_ref'), 'yzmyncxoskvqzdczaill');
+    assert.equal(url.searchParams.get('read_only'), 'true');
+    assert.equal(url.searchParams.get('features'), 'database,docs');
+});
