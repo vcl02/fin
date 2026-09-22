@@ -1,6 +1,6 @@
 # Checklist de publicação manual
 
-1. Rode `node scripts/check.mjs` e corrija qualquer falha.
+1. Rode `node scripts/check.mjs` e corrija qualquer falha. O GitHub Actions executa esse mesmo comando em cada `push` e `pull_request`, mas não substitui as conferências manuais abaixo.
 2. Confira `git status` para não incluir alterações de outro trabalho.
 3. Se houver migration nova, revise o SQL, aplique-a conscientemente no Supabase/DataGrip e valide RLS antes de publicar. Não aplique migrations apenas para testar a interface.
 4. No navegador, valide login, carga, um lançamento de débito, um lançamento de crédito com fatura, filtros, Reserva de emergência e exportação CSV/JSON.

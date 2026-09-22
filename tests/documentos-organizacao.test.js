@@ -17,5 +17,5 @@ test('mantém regras em docs e remove referências ao diretório legado', () => 
 
 test('recomenda apenas extensões opcionais alinhadas ao projeto', () => {
     const recomendacoes = JSON.parse(fs.readFileSync('.vscode/extensions.json', 'utf8')).recommendations;
-    assert.deepEqual(recomendacoes, ['editorconfig.editorconfig', 'eamodio.gitlens']);
+    assert.deepEqual(recomendacoes, ['editorconfig.editorconfig']);
 });
