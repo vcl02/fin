@@ -26,3 +26,10 @@ test('mostra no ciclo atual somente os créditos que pertencem ao ciclo seguinte
 test('não desloca créditos quando não existe uma competência seguinte', () => {
     assert.deepEqual(exibir([{ id: 1, cred: true, periodoIdx: 4 }], 4), []);
 });
+
+test('o título do Crédito mostra o saldo após antecipações da mesma fatura', () => {
+    assert.equal(
+        contexto.totalCreditoExibidoAposAntecipacoes([{ v: -2922.26 }], 500),
+        -2422.26
+    );
+});

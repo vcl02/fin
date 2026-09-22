@@ -1001,6 +1001,10 @@ function celulaSaldoCiclo(idx) {
 function creditosExibidosNoCiclo(linhas, idxCiclo) {
     return linhas.filter(r => r.cred && r.periodoIdx === idxCiclo + 1);
 }
+// Mesmo saldo líquido da linha dinâmica de fatura: compras brutas menos as antecipações.
+function totalCreditoExibidoAposAntecipacoes(creditos, valorAntecipado = 0) {
+    return creditos.reduce((soma, r) => soma + r.v, 0) + valorAntecipado;
+}
 function vCiclo() {
     const i = +el('ciclo').value;
 
@@ -1017,13 +1021,16 @@ function vCiclo() {
     const creditosDaFatura = visiveis.filter(r => r.periodoIdx == i && r.cred);
     // Apenas a tabela de Crédito é antecipada uma competência na tela. O Débito não muda.
     const creditosExibidos = creditosExibidosNoCiclo(visiveis, i);
-    const totalCreditoExibido = creditosExibidos.reduce((s, r) => s + r.v, 0);
+    const idxCreditoExibido = i + 1;
 
     // Ha um unico cartao detalhado. A fatura da Isabella e' um lancamento comum no bloco
     // Debito, com valor atualizado manualmente, e nunca vira uma linha sintetica aqui.
     // O vencimento vem da fatura escolhida manualmente em cada credito.
     const vencimentoDaFatura = vencimentoDoCiclo(i);
     const abatido = alocacaoAntecipacoes(visiveis);
+    const totalCreditoExibido = totalCreditoExibidoAposAntecipacoes(
+        creditosExibidos, abatido[idxCreditoExibido] || 0
+    );
 
     const montaLinhaFatura = () => {
         const total = creditosDaFatura.reduce((s, r) => s + r.v, 0);
@@ -1143,7 +1150,7 @@ function vCiclo() {
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,
-        tituloFaturaDoCiclo(i + 1),
+        tituloFaturaDoCiclo(idxCreditoExibido),
         creditosExibidos, 'cr', true
     );
 

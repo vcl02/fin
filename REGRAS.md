@@ -8,6 +8,7 @@
 - `periodos` não é lida pela aplicação. Ela permanece temporariamente apenas como histórico para auditoria da migração dos créditos e poderá ser removida depois da conferência.
 - Cada lançamento `Faturamento PJ` abre um ciclo de débito. O ciclo vai dessa data até o dia anterior ao próximo `Faturamento PJ`; uma fatura entra no ciclo que contém seu `vencimento`.
 - No modo Ciclo, o bloco Débito e seus cálculos continuam na competência atual. Somente a tabela Crédito é uma prévia visual: no ciclo N ela mostra os créditos da competência N+1.
+- O total no título dessa prévia de Crédito usa os mesmos filtros e abatimentos por antecipação da linha dinâmica da fatura; a tabela abaixo continua detalhando as compras brutas.
 
 - Existe um único cartão detalhado. Todo lançamento com `cred = true` aponta para `fatura_venc`; `isa` não seleciona outro calendário de cartão.
 - A fatura da Isabella é um lançamento real comum: `cred = false`, `isa = true`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
