@@ -280,7 +280,7 @@ function vComp() {
     // HTML do asterisco de aviso, colado no "✓" de difOk/difNovo, so' quando o lado que
     // TEM o lancamento (chave, periodoIdx) apresenta essa duplicata de mes diferente.
     const avisoRecorrenciaDuplicada = (chave, periodoIdx) => temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx)
-        ? `<span class=avisoDup title="Mesmo nome e valor apareceram 2x dentro deste ciclo, em meses diferentes — pode ser recorrência caindo 2x no mesmo ciclo, não uma mudança real">*</span>`
+        ? '<span class=avisoDup title="Possível recorrência duplicada">*</span>'
         : '';
 
     // Filtro "Linhas": Todas (N) mostra tudo; Diferentes (S) so' as que sumiram/surgiram
@@ -317,8 +317,8 @@ function vComp() {
 
     const cabecalho = `<tr><th class=c1 onclick="sortComp('chave')">${nomeColuna(coluna)}${seta('chave')}` +
         (comparacao2Periodos
-            ? `<th class="n colDif" title="Tinha em ${nomeMes1}, não tem mais em ${nomeMes2}" onclick="sortComp('dif1')">Somente ${nomeMes1}${seta('dif1')}</th>` +
-            `<th class="n colDif" title="Não tinha em ${nomeMes1}, passou a ter em ${nomeMes2}" onclick="sortComp('dif2')">Somente ${nomeMes2}${seta('dif2')}</th>`
+            ? `<th class="n colDif" title="Saiu em ${nomeMes2}" onclick="sortComp('dif1')">Somente ${nomeMes1}${seta('dif1')}</th>` +
+            `<th class="n colDif" title="Entrou em ${nomeMes2}" onclick="sortComp('dif2')">Somente ${nomeMes2}${seta('dif2')}</th>`
             : '') +
         periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i])}${seta(String(i))}`).join('') +
         (mostraColTotal ? `<th class=n onclick="sortComp('total')">Total${seta('total')}` : '') +

@@ -152,14 +152,14 @@ const textoData = r => r.data ? dataBR(r.data) : '—';
 // lancamentos REAIS (id do banco, da' pra dar PATCH) e so' no desktop — no mobile a
 // celula continua sendo so' texto, igual o Valor.
 const celData = r => ehLinhaReal(r) && !isMobile()
-    ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Clique pra editar a data">${textoData(r)}</span>`
+    ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Editar data">${textoData(r)}</span>`
     : textoData(r);
 const celNome = r => {
-    const sim = r._sim ? '<span class=simIco title="Simulado — não foi salvo">✦</span> ' : '';
+    const sim = r._sim ? '<span class=simIco title="Simulado">✦</span> ' : '';
     const nome = escapeHtml(textoOuTraco(r.nome));
     const fatRef = r.fatura || r.fatura_id;
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
-        ? ` <span class="tagFatura" title="Abatendo da fatura que vence em ${dataBR(fatRef)}">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
+        ? ` <span class="tagFatura" title="Abate fatura">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
         : '';
     return `${sim}${nome}${badgeFatura}`;
 };
@@ -172,9 +172,9 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (isMobile() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
-            : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Clique pra alternar Pago/Aberto">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
+            : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
     : tipo == 'r' ? `<td>${r[chave] == null ? '—'
-            : `<span class="${r[chave] ? 'tagReservaEmergencia' : 'tagSemReservaEmergencia'}${!isMobile() && (ehLinhaReal(r) || r._sim) ? ' togReservaEmergencia' : ''}"${!isMobile() && (ehLinhaReal(r) || r._sim) ? ` data-tog-reserva-emergencia="${escapeHtml(String(r.id))}" title="Clique para alternar Reserva emergência"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
+            : `<span class="${r[chave] ? 'tagReservaEmergencia' : 'tagSemReservaEmergencia'}${!isMobile() && (ehLinhaReal(r) || r._sim) ? ' togReservaEmergencia' : ''}"${!isMobile() && (ehLinhaReal(r) || r._sim) ? ` data-tog-reserva-emergencia="${escapeHtml(String(r.id))}" title="Alternar reserva"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
         : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`

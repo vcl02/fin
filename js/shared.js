@@ -45,7 +45,7 @@ const celValor = v => `<td class="n ${corValor(v)}">${brl(v)}`;                 
 // mesma celValor, mas clicavel pra edicao inline — so' pra lancamentos REAIS (id numerico
 // vindo do banco; linhas sinteticas tem id negativo fixo -1..-6, e simuladas tem id tipo
 // "sim-N-P", nenhum dos dois casos existe na tabela lancamentos pra dar PATCH).
-const celValorEditavel = r => `<td class="n ${corValor(r.v)}"><span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Clique pra editar o valor">${brl(r.v)}</span>`;
+const celValorEditavel = r => `<td class="n ${corValor(r.v)}"><span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span>`;
 
 // Zona morta pra SOMAS/TOTAIS (nunca pra valor de lancamento individual): entre -R$50 e +R$50 (inclusive) fica cinza,
 // porque uma diferenca tao pequena nao muda decisao nenhuma — so pinta vermelho/verde quando o total realmente sai desse intervalo.

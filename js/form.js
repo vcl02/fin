@@ -774,8 +774,8 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
 function atualizaBotaoSimulacao() {
     el('toggleSimulacao').classList.toggle('ativo', Estado.simulando);
     el('toggleSimulacao').title = Estado.simulando
-        ? 'Modo simulação ATIVO — clique pra desligar (apaga os lançamentos simulados)'
-        : 'Modo simulação: injeta lançamentos hipotéticos só na memória (nunca salva) — recarregar ou desligar apaga tudo';
+        ? 'Simulação ativa'
+        : 'Simular (não salva)';
     document.body.classList.toggle('simulando', Estado.simulando);
 }
 

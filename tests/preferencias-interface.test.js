@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 
+const pagina = fs.readFileSync('index.html', 'utf8');
 const agentes = fs.readFileSync('AGENTS.md', 'utf8');
 const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -23,6 +24,15 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
     assert.match(decisoes, /tema é sempre escuro, mas em cinza grafite legível/);
     assert.match(base, /--bg: #1B1E21;/);
     assert.match(base, /--pa: #24272B;/);
+});
+
+test('mantém tooltips e descrições auxiliares curtos', () => {
+    assert.match(regras, /Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos/);
+    assert.match(pagina, /title="Simular \(não salva\)"/);
+    assert.match(pagina, /title="Ignora filtros"/);
+    assert.doesNotMatch(pagina, /injeta lançamentos hipotéticos|ignora os filtros acima/);
+    assert.match(tabelas, /title="Editar data"/);
+    assert.match(visoes, /Possível recorrência duplicada/);
 });
 
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {

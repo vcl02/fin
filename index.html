@@ -46,7 +46,7 @@
       </div>
 
       <button id=toggleSimulacao
-        title="Modo simulação: injeta lançamentos hipotéticos só na memória (nunca salva) — recarregar ou desligar apaga tudo"
+        title="Simular (não salva)"
         aria-label="Ativar modo simulação">
         <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
           stroke-linejoin=round>
@@ -118,7 +118,7 @@
         <label class=f id=fgraf><span>&nbsp;</span>
           <div class=graficosBotoes>
             <button type=button id=btGrafico class=btFiltro>Gráfico</button>
-            <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de reserva de emergência de nove meses">Reserva emergência</button>
+            <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de 9 meses">Reserva emergência</button>
           </div>
         </label>
         <label class=f id=fciclo><span>Ciclo</span>
@@ -149,7 +149,7 @@
           <button type=button id=btEvolucao class=btFiltro>Gráfico</button>
         </label>
         <label class=f id=flimpar><span>&nbsp;</span>
-          <button type=button id=btLimparFiltros class=btFiltro title="Volta todos os filtros pro padrão inicial">Limpar
+          <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar
             filtros</button>
         </label>
       </div>
@@ -157,27 +157,27 @@
         <div class=f id=fvisRoberta><span>Visualizações</span>
           <div class=visBotoes>
             <button type=button id=btRoberta class=btFiltro
-              title="Acerto de contas com a Roberta — ignora os filtros acima">Roberta</button>
+              title="Ignora filtros">Roberta</button>
             <button type=button id=btEntradaEcon class=btFiltro
-              title="Acompanhamento da categoria Entrada Econ — ignora os filtros acima">Entrada Econ</button>
+              title="Ignora filtros">Entrada Econ</button>
             <button type=button id=btEvolucaoObra class=btFiltro
-              title="Acompanhamento da categoria Evolução Obra — ignora os filtros acima">Evolução Obra</button>
+              title="Ignora filtros">Evolução Obra</button>
             <button type=button id=btDividaEstudantil class=btFiltro
-              title="Acompanhamento da categoria Dívida Estudantil — ignora os filtros acima">Dívida Estudantil</button>
+              title="Ignora filtros">Dívida Estudantil</button>
             <button type=button id=btRenegociacaoPj class=btFiltro
-              title="Acompanhamento da categoria Renegociação PJ — ignora os filtros acima">Renegociação PJ</button>
+              title="Ignora filtros">Renegociação PJ</button>
             <button type=button id=btEmprestimo class=btFiltro
-              title="Acompanhamento da categoria Empréstimo — ignora os filtros acima">Empréstimo</button>
+              title="Ignora filtros">Empréstimo</button>
             <button type=button id=btPos class=btFiltro
-              title="Acompanhamento dos lançamentos com o nome Pós — ignora os filtros acima">Pós</button>
+              title="Ignora filtros">Pós</button>
             <button type=button id=btRenegociacaoNu class=btFiltro
-              title="Acompanhamento dos lançamentos com o nome Renegociação Nu — ignora os filtros acima">Renegociação Nu</button>
+              title="Ignora filtros">Renegociação Nu</button>
             <button type=button id=btIphone class=btFiltro
-              title="Acompanhamento dos lançamentos negativos com o nome Iphone — ignora os filtros acima">Iphone</button>
+              title="Somente saídas">Iphone</button>
             <button type=button id=btSeguroResidencial class=btFiltro
-              title="Acompanhamento dos lançamentos com o nome Seguro Residencial — ignora os filtros acima">Seguro Residencial</button>
+              title="Ignora filtros">Seguro Residencial</button>
             <button type=button id=btSenac class=btFiltro
-              title="Acompanhamento dos lançamentos com o nome Senac — ignora os filtros acima">Senac</button>
+              title="Ignora filtros">Senac</button>
           </div>
         </div>
       </div>
@@ -197,7 +197,7 @@
           <button type=button id=fechaNovo aria-label="Fechar">×</button>
         </div>
 
-        <p class=avisoFr id=avisoSimulando hidden>Isso não salva nada — some ao recarregar ou desligar a simulação.</p>
+        <p class=avisoFr id=avisoSimulando hidden>Simulação: não salva.</p>
 
         <div class=fmChecks>
           <label class=fmChk>
@@ -259,17 +259,16 @@
           </select>
         </label>
         <label class=fmChk id=fDivideWrap>
-          <input type=checkbox id=fDivide checked><span>Dividir valor entre as vezes (senão repete em cada
-            uma)</span></label>
+          <input type=checkbox id=fDivide checked><span>Dividir entre parcelas</span></label>
 
         <label class=fm><span>Frequência</span>
           <select id=fFreq>
             <option value="">— Sem recorrência
-            <option value=Mensal>Mensal — mesmo dia, muda o mês
-            <option value=Semanal>Semanal — mesmo dia da semana
-            <option value=Quinzenal>Quinzenal — a cada 2 semanas
-            <option value=Semestral>Semestral — mesmo dia, a cada 6 meses
-            <option value=Anual>Anual — mesmo dia, muda o ano
+            <option value=Mensal>Mensal
+            <option value=Semanal>Semanal
+            <option value=Quinzenal>Quinzenal
+            <option value=Semestral>Semestral
+            <option value=Anual>Anual
           </select>
         </label>
 
@@ -344,7 +343,7 @@
       </div>
       <div style="position:relative;height:480px;margin-top:1rem">
         <canvas id=canvasGraficoGastos role=img
-          aria-label="Gráfico de pizza dos gastos por categoria no ciclo"></canvas>
+          aria-label="Gastos por categoria"></canvas>
       </div>
       <p class=empty id=graficoVazio hidden>Sem gastos neste ciclo.</p>
     </dialog>
@@ -358,11 +357,11 @@
       <div class=metaReservaLayout>
         <div class=metaReservaGrafico>
           <canvas id=canvasMetaReservaEmergencia role=img
-            aria-label="Gráfico de progresso da reserva de emergência"></canvas>
+            aria-label="Progresso da reserva"></canvas>
         </div>
         <div id=metaReservaEmergenciaResumo></div>
       </div>
-      <p class=empty id=metaReservaEmergenciaVazio hidden>Nenhum gasto marcado para reserva emergência nos próximos nove ciclos.</p>
+      <p class=empty id=metaReservaEmergenciaVazio hidden>Sem gastos marcados nos próximos 9 ciclos.</p>
     </dialog>
 
     <dialog id=modalComparativo>
@@ -372,7 +371,7 @@
       </div>
       <div style="position:relative;height:420px;margin-top:.6rem">
         <canvas id=canvasEvolucao role=img
-          aria-label="Gráfico de barras comparando ganho, gasto e aportado mês a mês"></canvas>
+          aria-label="Evolução mensal"></canvas>
       </div>
     </dialog>
 
