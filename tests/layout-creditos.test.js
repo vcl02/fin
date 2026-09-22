@@ -3,11 +3,11 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const script = fs.readFileSync('script.js', 'utf8');
+const script = fs.readFileSync('js/finance.js', 'utf8');
 const inicio = script.indexOf('function creditosExibidosNoCiclo(');
-const fim = script.indexOf('\nfunction vCiclo()', inicio);
+const fim = script.length;
 
-if (inicio < 0 || fim < 0) throw Error('Não encontrou a regra de layout do Crédito no script.');
+if (inicio < 0 || fim < 0) throw Error('Não encontrou a regra de layout do Crédito no módulo financeiro.');
 
 const contexto = {};
 vm.createContext(contexto);

@@ -33,6 +33,7 @@
 
 ## Testes
 
+- A estrutura em arquivos clássicos carrega `js/app-state.js`, `js/supabase-api.js`, `js/finance.js` e `script.js` nessa ordem. Estado/configuração ficam no primeiro; autenticação, leitura e gravação no Supabase ficam no segundo; saldo, faturas, antecipações, aportes e resgates ficam no terceiro; a interface fica no último. A separação é coberta por `node --test tests/estrutura-modulos.test.js`.
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
 - A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.
 - A meta de reserva emergência, calculada para os nove ciclos seguintes com valores previstos e estimados, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
