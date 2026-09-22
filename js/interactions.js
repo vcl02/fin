@@ -5,7 +5,6 @@
 // redesenha a tela conforme o modo ativo (blocos Debito/Credito vs matriz de comparacao),
 // escondendo/mostrando os filtros que fazem sentido em cada um
 function desenhar() {
-    console.time('[diag] desenhar');
     Object.keys(_cacheSaldo).forEach(k => delete _cacheSaldo[k]);
     Object.keys(_cacheAjuste).forEach(k => delete _cacheAjuste[k]);
     Object.keys(_cacheSaldoUnico).forEach(k => delete _cacheSaldoUnico[k]);
@@ -101,7 +100,6 @@ function desenhar() {
     if (typeof atualizaBarraSelecao == 'function') atualizaBarraSelecao();
     if (typeof atualizaBtCicloHoje == 'function') atualizaBtCicloHoje();
     if (typeof atualizaBtsNavCiclo == 'function') atualizaBtsNavCiclo();
-    console.timeEnd('[diag] desenhar');
 }
 
 // ===================================================================
