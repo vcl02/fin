@@ -14,19 +14,12 @@ function vCiclo() {
     const debitos = filtrarLancamentos().filter(r => r.periodoIdx == i && !r.cred);
     const visiveis = filtrarLancamentos();
     const creditosDaFatura = visiveis.filter(r => r.periodoIdx == i && r.cred);
-    // Apenas a tabela de Crédito é antecipada uma competência na tela. O Débito não muda.
-    const creditosExibidos = creditosExibidosNoCiclo(visiveis, i);
-    const idxCreditoExibido = i + 1;
 
     // Ha um unico cartao detalhado. A fatura da Isabella e' um lancamento comum no bloco
     // Debito, com valor atualizado manualmente, e nunca vira uma linha sintetica aqui.
     // O vencimento vem da fatura escolhida manualmente em cada credito.
     const vencimentoDaFatura = vencimentoDoCiclo(i);
     const abatido = alocacaoAntecipacoes(visiveis);
-    const totalCreditoExibido = totalCreditoExibidoAposAntecipacoes(
-        creditosExibidos, abatido[idxCreditoExibido] || 0
-    );
-
     const montaLinhaFatura = () => {
         const total = creditosDaFatura.reduce((s, r) => s + r.v, 0);
         if (!total) return null;   // sem compras no cartao, sem linha
@@ -142,6 +135,13 @@ function vCiclo() {
     // O modo restrito (Isabella e mobile) não mostra o bloco Crédito. A fatura líquida
     // continua incorporada no Débito, então esconder a prévia não perde o impacto no saldo.
     if (modoSimples()) return blocoDebito;
+
+    // Só o desktop completo monta a prévia de Crédito do ciclo seguinte e seu total líquido.
+    const idxCreditoExibido = i + 1;
+    const creditosExibidos = creditosExibidosNoCiclo(visiveis, i);
+    const totalCreditoExibido = totalCreditoExibidoAposAntecipacoes(
+        creditosExibidos, abatido[idxCreditoExibido] || 0
+    );
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,

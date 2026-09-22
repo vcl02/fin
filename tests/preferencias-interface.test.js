@@ -22,11 +22,13 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
     assert.match(base, /--pa: #24272B;/);
 });
 
-test('mobile replica a navegação restrita sem montar ações nem bloco Crédito', () => {
+test('Isabella e mobile compartilham modo simples sem ações nem bloco Crédito', () => {
     assert.match(regras, /No mobile, as tabelas são somente leitura/);
-    assert.match(regras, /não exibe o bloco Crédito/);
-    assert.match(dadosUi, /const modoRestrito = Estado\.restrito \|\| isMobile\(\);/);
+    assert.match(regras, /Isabella e mobile compartilham o mesmo `modoSimples`/);
+    assert.doesNotMatch(dadosUi, /modoRestrito/);
+    assert.match(dadosUi, /const usadosNaveg = usados;/);
     assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
+    assert.ok(visoes.indexOf('if (modoSimples()) return blocoDebito;') < visoes.indexOf('const creditosExibidos = creditosExibidosNoCiclo'));
     assert.match(tabelas, /const podeSelecionar = selecionavel && !isMobile\(\);/);
     assert.match(interacoes, /if \(isMobile\(\)\) \{\s+Estado\.selecionados\.clear\(\);/);
     assert.match(graficos, /if \(isMobile\(\)\) return;\s+e\.stopImmediatePropagation\(\);/);

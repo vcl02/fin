@@ -47,7 +47,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Mobile
 
 - No mobile, as tabelas são somente leitura. Não há seleção de linhas, edição inline, alternância de status, duplicação, exclusão ou atualização por toque.
-- O mobile reaproveita a navegação restrita da Isabella: limita-se aos ciclos anterior, atual e próximo, não tem Backlog e não exibe o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
+- Isabella e mobile compartilham o mesmo `modoSimples`: ambos mostram um ciclo por vez e não exibem o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
 - O cadastro de novo lançamento permanece disponível; a tela compacta mantém apenas navegação, consulta e esse cadastro como fluxos de trabalho.
 
 ## Migrations

@@ -28,24 +28,18 @@ function atualizarCombos(lancamentosCrus) {
     // Categoria do formulario e' populada por popularCategoriasNoForm() (ordenada por uso
     // recente), chamada toda vez que o modal abre — nao precisa duplicar aqui.
 
-    // Combos De/Até: o modo restrito (Isabella e mobile) fica preso aos três ciclos em volta
-    // de hoje (anterior, atual, próximo — mesma janela do navegador ‹›Atual), sem
-    // Backlog; o resto ve todos os periodos usados. "Todos" (value vazio) e' a opcao
-    // padrao — a matriz so recorta quando o usuario escolhe explicitamente um De ou Ate,
-    // nunca vem pre-preenchida sozinha. Backlog so' existe no De (nao faz sentido comparar
-    // Backlog com outro periodo) — escolher Backlog desabilita e ignora o Ate (ver desenhar()).
-    const modoRestrito = Estado.restrito || isMobile();
-    const usadosNaveg = modoRestrito
-        ? usados.filter(i => Math.abs(i - idxAtual) <= 1)
-        : usados;
+    // Os combos conservam todos os ciclos usados para qualquer perfil. Mobile e Isabella
+    // são simplificados juntos por modoSimples() no desenho, sem uma regra paralela de
+    // janela de navegação que os faça divergir. "Todos" (value vazio) é a opção padrão.
+    // Backlog só existe no De, pois não faz sentido compará-lo com outro período.
+    const usadosNaveg = usados;
     const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
-    const opcoesPeriodoDe = modoRestrito ? opcoesPeriodo
-        : '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
+    const opcoesPeriodoDe = '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
     const deAnterior = el('compDe').value, ateAnterior = el('compAte').value;
 
     el('compDe').innerHTML = opcoesPeriodoDe;
     el('compAte').innerHTML = opcoesPeriodo;
-    el('compDe').value = (deAnterior == '-1' && !modoRestrito) || usadosNaveg.includes(+deAnterior) ? deAnterior : '';
+    el('compDe').value = deAnterior == '-1' || usadosNaveg.includes(+deAnterior) ? deAnterior : '';
     el('compAte').value = usadosNaveg.includes(+ateAnterior) ? ateAnterior : '';
 }
 
