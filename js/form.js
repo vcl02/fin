@@ -51,6 +51,35 @@ function popularCategoriasNoForm(idSelect = 'fCateg') {
     if (atual) select.value = atual;
 }
 
+// O nome continua livre: esta lista apenas reaproveita o nome distinto e a categoria mais
+// recente já cadastrada. Assim nomes com categorias antigas conflitantes não aparecem duas
+// vezes, e a escolha mantém a mesma sugestão de categoria usada ao digitar manualmente.
+function sugestoesDeNome(lancamentos = Estado.lancamentos) {
+    const porNome = new Map();
+    lancamentos.forEach(r => {
+        const nome = String(r.nome || '').trim();
+        const categ = String(r.categ || '').trim();
+        const chave = semAcento(nome);
+        if (!chave || !valorValido(categ)) return;
+        const candidata = { nome, categ, data: dataISO(r.data) || '' };
+        const atual = porNome.get(chave);
+        if (!atual || candidata.data > atual.data) porNome.set(chave, candidata);
+    });
+    return [...porNome.values()].sort((a, b) =>
+        a.nome.localeCompare(b.nome, 'pt') || a.categ.localeCompare(b.categ, 'pt'));
+}
+
+function popularNomesNoForm() {
+    const opcoes = sugestoesDeNome();
+    el('nomesExistentes').replaceChildren(...opcoes.map(({ nome, categ }) => {
+        const opcao = document.createElement('option');
+        opcao.value = nome;
+        opcao.label = categ;
+        opcao.textContent = `${nome} — ${categ}`;
+        return opcao;
+    }));
+}
+
 // ---- busca de categoria por nome parecido ----
 // ao digitar o Nome, procura nos lancamentos existentes um nome IGUAL (case/acento
 // insensitivo) ou que COMECE igual, pega o mais recente com esse nome, e usa a
@@ -240,6 +269,7 @@ el('fParcelas').addEventListener('change', () => {
 function abreModalNovo(prefill) {
     el('formNovo').reset();
     popularCategoriasNoForm();
+    popularNomesNoForm();
     el('fCateg').selectedIndex = 0;
     sinalPositivo = false;
     el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
@@ -730,6 +760,7 @@ async function submeteNovoLancamento() {
         el('fCateg').selectedIndex = 0;   // categoria vinha do nome; sem nome, nao faz sentido manter
         atualizaAvisoFronteira();
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
+        popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
         desenhar();
         el('fNome').focus();
     } catch (err) {

@@ -209,7 +209,9 @@
         </div>
 
         <label class=fm><span>Nome <b class=req>*</b></span>
-          <input type=text id=fNome required placeholder="Ex: Mercado, Aluguel…" autocomplete=off>
+          <input type=text id=fNome list=nomesExistentes required placeholder="Ex: Mercado, Aluguel…" autocomplete=off>
+          <!-- Sugestões dinâmicas: o JavaScript lista nomes distintos e sua categoria mais recente. -->
+          <datalist id=nomesExistentes></datalist>
         </label>
 
         <label class=fm><span>Data</span>
