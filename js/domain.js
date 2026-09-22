@@ -24,6 +24,10 @@ const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;
 
 const ehDataIso = valor => !valor || /^\d{4}-\d{2}-\d{2}$/.test(String(valor).slice(0, 10));
 const ehBooleanoOuNulo = valor => valor == null || typeof valor === 'boolean';
+// A categoria é texto livre; para o diagnóstico, diferenças só de espaço, caixa ou acento
+// não devem criar falsos positivos como se fossem categorias distintas.
+const chaveCategoria = valor => String(valor ?? '').trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Diagnóstico conservador da resposta do Supabase. Ele não altera nem exclui linhas:
 // dados históricos continuam visíveis. Toda nova regra personalizada entra aqui e retorna
@@ -31,6 +35,7 @@ const ehBooleanoOuNulo = valor => valor == null || typeof valor === 'boolean';
 function validarLancamentosCarregados(lancamentos) {
     const avisos = [];
     if (!Array.isArray(lancamentos)) return ['Supabase não retornou uma lista de lançamentos.'];
+    const categorias = new Map();
 
     lancamentos.forEach((lancamento, indice) => {
         const prefixo = `Lançamento ${indice + 1}${lancamento?.id != null ? ` (id ${lancamento.id})` : ''}`;
@@ -44,6 +49,21 @@ function validarLancamentosCarregados(lancamentos) {
         });
         if (lancamento.cred === true && !(lancamento.fatura || lancamento.fatura_id)) {
             avisos.push(`${prefixo}: crédito sem fatura vinculada.`);
+        }
+
+        const categoria = String(lancamento.categ ?? '').trim();
+        const chave = chaveCategoria(categoria);
+        // Categoria vazia já é exibida como tal na tabela; a suspeita de ocorrência única
+        // vale apenas para uma categoria efetivamente escolhida pelo usuário.
+        if (chave) {
+            const grupo = categorias.get(chave) || { nome: categoria, ids: [] };
+            grupo.ids.push(lancamento.id ?? indice + 1);
+            categorias.set(chave, grupo);
+        }
+    });
+    categorias.forEach(({ nome, ids }) => {
+        if (ids.length === 1) {
+            avisos.push(`Categoria "${nome}" aparece em apenas um lançamento (id ${ids[0]}).`);
         }
     });
     return avisos;
