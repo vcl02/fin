@@ -1,0 +1,213 @@
+  :root {
+      --bg: #111315;
+      --pa: #1A1D20;
+      --fg: #F1F3F4;
+      --mu: #9CA3AA;
+      --ln: #30353A;
+
+      --vd: #4CCB78;
+      --vm: #F06A61;
+
+      --bg-soft: #16191C;
+      --field: #202428;
+      --field-hover: #262B30;
+      --line-strong: #3A4046;
+
+      --green-soft: #183023;
+      --green-hover: #1D3929;
+
+      --red-soft: #351E1D;
+      --red-hover: #412321;
+
+      --orange-soft: #33291F;
+
+      --shadow: rgba(0, 0, 0, .42);
+  }
+
+  * {
+      box-sizing: border-box;
+  }
+
+  [hidden] {
+      display: none !important;
+  }
+
+  html {
+      color-scheme: dark;
+  }
+
+  body {
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      padding: 2rem 1.4rem 7rem;
+      font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  /* =========================================================
+       CABEÇALHO
+       ========================================================= */
+
+  .head {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      margin: 0 0 1.8rem;
+  }
+
+  .sub {
+      font-size: .85rem;
+      color: var(--mu);
+      font-style: italic;
+      margin: 0 0 1.8rem;
+  }
+
+  /* =========================================================
+       BOTÕES DO CABEÇALHO
+       ========================================================= */
+
+  #sair {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid var(--vm);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #sair:hover {
+      color: #fff;
+      border-color: var(--vm);
+      background: var(--vm);
+  }
+
+  #recarregar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--vd);
+      background: var(--green-soft);
+      border: 1px solid var(--vd);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #recarregar:hover {
+      color: #10231A;
+      border-color: var(--vd);
+      background: var(--vd);
+  }
+
+  #recarregar.carregando svg {
+      animation: girar 0.8s linear infinite;
+  }
+
+  #toggleSimulacao {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--mu);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #toggleSimulacao:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  #toggleSimulacao.ativo {
+      color: #F0A83A;
+      background: var(--orange-soft);
+      border-color: #F0A83A;
+  }
+
+  #toggleSimulacao.ativo:hover {
+      color: #10231A;
+      background: #F0A83A;
+  }
+
+  @keyframes girar {
+      from {
+          transform: rotate(0deg);
+      }
+
+      to {
+          transform: rotate(360deg);
+      }
+  }
+
+  /* disfarca a troca de estrutura de #out ao mudar de visao (tabelas Debito/Credito <->
+     matriz Comparar) e o aparecer/sumir dos filtros exclusivos de cada visao (Origem,
+     Agrupar por, Grafico, Ver evolucao) com o MESMO fade suave, em vez de uma troca
+     abrupta — os dois usam a mesma duracao/curva pra sentirem parte do mesmo gesto. */
+  #out.fadeIn,
+  .f.fadeIn {
+      animation: fadeSuave .32s cubic-bezier(.25, .1, .25, 1);
+  }
+
+  .f.fadeOut {
+      animation: fadeSuave .18s cubic-bezier(.4, 0, 1, 1) reverse;
+  }
+
+  @keyframes fadeSuave {
+      from {
+          opacity: 0;
+      }
+
+      to {
+          opacity: 1;
+      }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+
+      #out.fadeIn,
+      .f.fadeIn,
+      .f.fadeOut {
+          animation: none;
+      }
+  }
+
+
+  #abreNovo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      margin-left: auto;
+      color: #111315;
+      background: var(--fg);
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #abreNovo:hover {
+      background: #FFFFFF;
+      opacity: 1;
+  }
+
+  /* =========================================================
+       FOCO
+       ========================================================= */
+
+  :focus-visible {
+      outline: 2px solid #7BCF99;
+      outline-offset: 2px;
+  }

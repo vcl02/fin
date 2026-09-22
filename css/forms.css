@@ -1,0 +1,527 @@
+  /* =========================================================
+       MODAL — NOVO LANÇAMENTO
+       ========================================================= */
+
+  dialog#modalNovo,
+  dialog#modalCalc,
+  dialog#modalGrafico,
+  dialog#modalComparativo,
+  dialog#modalDetalheCel {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+  }
+
+  dialog#modalNovo {
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      padding: 0;
+      width: min(30rem, 92vw);
+      max-height: 88vh;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+  }
+
+  dialog#modalCalc {
+      border-radius: 16px;
+      padding: 1.1rem;
+      width: min(20rem, 92vw);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+  }
+
+  /* Roberta: ela adiantou um valor (o positivo da categoria) e a divida vai sendo quitada
+     com o que sai pra ela. Por isso o trilho e' VERMELHO (a divida inteira) e o
+     preenchimento VERDE (o que ja foi devolvido) — o verde cresce ate' cobrir tudo. */
+  dialog#modalRoberta {
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      padding: 1.3rem;
+      width: min(30rem, 92vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  .robPct {
+      font-size: 2.6rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 1.4rem;   /* .modalHead nao tem margem propria */
+  }
+
+  .robPctSub {
+      color: var(--mu);
+      font-size: .9rem;
+      margin: .3rem 0 1.2rem;
+  }
+
+  .robBarra {
+      height: 1.7rem;
+      border-radius: 999px;
+      background: var(--vm);
+      border: 1px solid var(--ln);
+      overflow: hidden;
+  }
+
+  .robFill {
+      height: 100%;
+      background: var(--vd);
+      transition: width .45s ease;
+  }
+
+  .robLegenda {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: .5rem;
+      font-size: .85rem;
+      color: var(--mu);
+  }
+
+  .robTab {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: separate;
+      border-spacing: 0 .45rem;
+      background: transparent;
+  }
+
+  .robTab td {
+      padding: .7rem .8rem;
+      background: var(--field);
+      border: 0;
+  }
+
+  .robTab td:first-child {
+      border-radius: 9px 0 0 9px;
+  }
+
+  .robTab td:last-child {
+      border-radius: 0 9px 9px 0;
+  }
+
+  .robTab td.n {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .robTab tr.tot td {
+      background: var(--field-hover);
+      font-weight: 700;
+      font-size: 1.05rem;
+  }
+
+  dialog#modalRoberta::backdrop,
+  dialog#modalNovo::backdrop,
+  dialog#modalCalc::backdrop,
+  dialog#modalGrafico::backdrop,
+  dialog#modalComparativo::backdrop,
+  dialog#modalDetalheCel::backdrop {
+      background: rgba(0, 0, 0, .68);
+  }
+
+  #formNovo {
+      display: flex;
+      flex-direction: column;
+      padding: 1.3rem;
+      gap: 1rem;
+      overflow-y: auto;
+      max-height: 88vh;
+  }
+
+  .modalHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  }
+
+  .modalHead h2 {
+      font: 700 1.1rem/1 inherit;
+      margin: 0;
+      color: var(--fg);
+  }
+
+  #fechaNovo,
+  #fechaGrafico,
+  #fechaComparativo {
+      font-size: 1.5rem;
+      line-height: 1;
+
+      background: transparent;
+      border: 0;
+      color: var(--mu);
+
+      cursor: pointer;
+      padding: .2rem .4rem;
+  }
+
+  #fechaNovo:hover,
+  #fechaGrafico:hover,
+  #fechaComparativo:hover {
+      color: var(--fg);
+  }
+
+  /* =========================================================
+       FORMULÁRIO
+       ========================================================= */
+
+  .fm {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+  }
+
+  .fm>span {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--mu);
+  }
+
+  .fm .req {
+      color: var(--vm);
+      font-weight: 700;
+  }
+
+  .fm input[type=text],
+  .fm input[type=date],
+  .fm select {
+      font: 16px inherit;
+      color: var(--fg);
+
+      padding: .65rem .8rem;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: var(--field);
+      width: 100%;
+  }
+
+  .fm input[type=text]::placeholder {
+      color: #747C83;
+  }
+
+  .fm input[type=text]:focus,
+  .fm input[type=date]:focus,
+  .fm select:focus {
+      border-color: #68727A;
+      background: #24292E;
+      outline: none;
+  }
+
+  .fm select {
+      appearance: none;
+      cursor: pointer;
+
+      background-color: var(--field);
+      background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+      background-repeat: no-repeat;
+      background-position: right .8rem center;
+
+      padding-right: 2rem;
+  }
+
+  .dataWrap {
+      display: flex;
+      gap: .4rem;
+      align-items: stretch;
+  }
+
+  .dataWrap input[type=date] {
+      flex: 1;
+  }
+
+  .btHojeMini {
+      flex: none;
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--mu);
+
+      padding: 0 .7rem;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: var(--field);
+      cursor: pointer;
+  }
+
+  .btHojeMini:hover {
+      background: var(--field-hover);
+      color: var(--fg);
+      border-color: var(--line-strong);
+  }
+
+  .fmChecks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .6rem;
+  }
+
+  .fmChk {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+
+      padding: .6rem .7rem;
+
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      cursor: pointer;
+      font-size: .92rem;
+      user-select: none;
+  }
+
+  .fmChk:hover {
+      background: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .fmChk input {
+      width: 1.15rem;
+      height: 1.15rem;
+      accent-color: #6FCB8F;
+  }
+
+  /* =========================================================
+       DINHEIRO
+       ========================================================= */
+
+  .moneyWrap {
+      display: flex;
+      align-items: stretch;
+
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      overflow: hidden;
+      background: var(--field);
+  }
+
+  .sinalBt {
+      width: 2.4rem;
+
+      border: 0;
+      border-right: 1px solid var(--ln);
+
+      background: #191C1F;
+      color: var(--vm);
+
+      font-size: 1.15rem;
+      font-weight: 700;
+
+      cursor: pointer;
+  }
+
+  .sinalBt:hover:not(:disabled) {
+      background: var(--red-soft);
+  }
+
+  .sinalBt.pos {
+      color: var(--vd);
+  }
+
+  .sinalBt.pos:hover:not(:disabled) {
+      background: var(--green-soft);
+  }
+
+  .sinalBt.neutro {
+      color: var(--mu);
+      cursor: default;
+  }
+
+  .sinalBt:disabled {
+      opacity: .6;
+  }
+
+  .moneyPrefix {
+      display: flex;
+      align-items: center;
+
+      padding: 0 .5rem;
+
+      background: #191C1F;
+      color: var(--mu);
+
+      font-weight: 600;
+      font-size: .9rem;
+  }
+
+  .moneyWrap input {
+      border: 0;
+      border-radius: 0;
+
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+
+      flex: 1;
+      min-width: 0;
+
+      color: var(--fg);
+      background: var(--field);
+  }
+
+  .moneyWrap input:focus {
+      outline: none;
+  }
+
+  .calcBt {
+      flex: none;
+      width: 2.4rem;
+
+      border: 0;
+      border-left: 1px solid var(--ln);
+
+      background: #191C1F;
+      color: var(--mu);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      cursor: pointer;
+  }
+
+  .calcBt:hover {
+      background: var(--field-hover);
+      color: var(--fg);
+  }
+
+  /* =========================================================
+       MENSAGEM DO MODAL
+       ========================================================= */
+
+  .erroNovo {
+      color: var(--vm);
+      font-size: .85rem;
+      margin: 0;
+      min-height: 1.1rem;
+  }
+
+  /* =========================================================
+       MODAL — CALCULADORA
+       ========================================================= */
+
+  .calcVisor {
+      margin-top: .9rem;
+
+      padding: .6rem .9rem .7rem;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      background: var(--field);
+  }
+
+  .calcExpr {
+      display: block;
+      width: 100%;
+
+      border: 0;
+      background: transparent;
+      padding: 0;
+
+      text-align: right;
+      font: 600 1.5rem/1.2 inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+
+      overflow-x: auto;
+      white-space: nowrap;
+  }
+
+  .calcExpr:focus {
+      outline: none;
+  }
+
+  .calcResultado {
+      text-align: right;
+      font: 500 .95rem/1.3 inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--mu);
+
+      overflow-x: auto;
+      white-space: nowrap;
+  }
+
+  .calcGrid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem;
+      margin-top: .8rem;
+  }
+
+  .calcTecla {
+      padding: .8rem 0;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: var(--field);
+      color: var(--fg);
+
+      font: 600 1.05rem/1 inherit;
+      cursor: pointer;
+  }
+
+  .calcTecla:hover {
+      background: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .calcTecla.calcOp {
+      color: var(--mu);
+  }
+
+  .calcTecla.calcIgual {
+      background: #6FCB8F;
+      border-color: #6FCB8F;
+      color: #10231A;
+      font-size: 1.1rem;
+  }
+
+  .calcTecla.calcIgual:hover {
+      filter: brightness(1.08);
+  }
+
+  .erroNovo.okNovo.ok {
+      color: var(--vd);
+  }
+
+  #fIsaWrap[hidden] {
+      display: none;
+  }
+
+  /* =========================================================
+       BOTÕES DO MODAL
+       ========================================================= */
+
+  .btPri {
+      flex: 1;
+      padding: .75rem;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      border: 0;
+      background: var(--fg);
+      color: #111315;
+      width: 100%;
+      margin-top: .3rem;
+  }
+
+  .btPri:hover {
+      background: #FFFFFF;
+  }
+
+  .btPri:disabled {
+      opacity: .5;
+      cursor: default;
+  }
+
+  .sd {
+      display: block;
+      font-size: .68rem;
+      font-weight: 400;
+      color: var(--mu);
+      margin-top: .1rem;
+  }

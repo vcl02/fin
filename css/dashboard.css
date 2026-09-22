@@ -1,0 +1,848 @@
+  /* =========================================================
+       FILTROS / TOOLBAR
+       ========================================================= */
+
+  .tool {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--ln);
+  }
+
+  .row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+  }
+
+  .f {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+  }
+
+  .f>span {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--mu);
+  }
+
+  .visBotoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+  }
+
+  /* os dois gráficos pertencem ao mesmo filtro e ficam lado a lado */
+  .graficosBotoes {
+      display: flex;
+      gap: .55rem;
+  }
+
+  select {
+      font: inherit;
+      color: var(--fg);
+      background-color: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      padding: .42rem 1.9rem .42rem .7rem;
+      cursor: pointer;
+      appearance: none;
+
+      background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+      background-repeat: no-repeat;
+      background-position: right .7rem center;
+  }
+
+  select:hover {
+      background-color: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  select option {
+      background: var(--field);
+      color: var(--fg);
+  }
+
+  .multiSel {
+      position: relative;
+  }
+
+  .multiSelBtn {
+      font: inherit;
+      color: var(--fg);
+      background-color: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      padding: .42rem 1.9rem .42rem .7rem;
+      cursor: pointer;
+      text-align: left;
+      min-width: 11rem;
+      max-width: 16rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      appearance: none;
+
+      background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+      background-repeat: no-repeat;
+      background-position: right .7rem center;
+  }
+
+  .multiSelBtn:hover {
+      background-color: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .multiSelDrop {
+      display: none;
+      position: absolute;
+      top: calc(100% + .3rem);
+      left: 0;
+      z-index: 25;
+
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      box-shadow: 0 12px 35px var(--shadow);
+
+      padding: .4rem;
+      min-width: 14rem;
+      max-height: 16rem;
+      overflow-y: auto;
+  }
+
+  .multiSelDrop.open {
+      display: block;
+  }
+
+  .multiSelDrop label {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .35rem .5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .9rem;
+  }
+
+  .multiSelDrop label:hover {
+      background: var(--bg-soft);
+  }
+
+  .multiSelDrop input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #6FCB8F;
+  }
+
+  /* =========================================================
+       BLOCOS
+       ========================================================= */
+
+  .blk {
+      margin: 0 0 1.8rem;
+  }
+
+  .blk h3 {
+      font: 700 1.05rem/1.3 inherit;
+      margin: 0;
+      color: var(--fg);
+  }
+
+  .blk h3 b {
+      font-weight: 700;
+  }
+
+  .blk .meta,
+  .meta {
+      font-size: .85rem;
+      color: var(--mu);
+      font-style: italic;
+      margin: .1rem 0 .6rem;
+  }
+
+  .empty {
+      color: var(--mu);
+      font-style: italic;
+      font-size: .9rem;
+      padding: .8rem;
+  }
+
+  /* =========================================================
+       TABELAS
+       ========================================================= */
+
+  .wrap {
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
+  }
+
+  .wx {
+      overflow: auto;
+      max-height: 78vh;
+  }
+
+  table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      background: var(--pa);
+  }
+
+  /* evita a selecao de texto azul do navegador ao usar shift-click pra marcar um
+     intervalo de linhas — o shift-click nativo seleciona texto, o que fica feio
+     junto com o destaque das linhas marcadas. Inputs de filtro continuam selecionaveis. */
+  tbody tr.pick {
+      user-select: none;
+  }
+
+  th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+
+      background: #1D2024;
+      color: var(--mu);
+
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      text-align: left;
+
+      padding: .55rem .7rem;
+      border-bottom: 1px solid var(--ln);
+
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+  }
+
+  th:hover {
+      color: var(--fg);
+      background: #22262A;
+  }
+
+  thead tr.filtros th {
+      position: sticky;
+      top: 1.9rem;
+      z-index: 1;
+      background: #1A1D20;
+      padding: .25rem .5rem .45rem;
+      border-bottom: 1px solid var(--ln);
+      cursor: default;
+  }
+
+  thead tr.filtros input {
+      width: 100%;
+      font: 12px/1.3 inherit;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+
+      color: var(--fg);
+      background: var(--field);
+
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+      padding: .2rem .4rem;
+  }
+
+  /* busca da coluna Valor: numero alinhado a direita, igual as celulas dessa coluna */
+  thead tr.filtros th.n input {
+      text-align: right;
+  }
+
+  thead tr.filtros input:focus {
+      border-color: #68727A;
+      background: #24292E;
+      outline: none;
+  }
+
+  thead tr.filtros input::placeholder {
+      color: #737B82;
+  }
+
+  th .ar {
+      color: var(--fg);
+      font-style: normal;
+  }
+
+  td {
+      padding: .5rem .7rem;
+      border-bottom: 1px solid var(--ln);
+      color: var(--fg);
+  }
+
+  tbody tr:last-child td {
+      border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+      background: #202428;
+  }
+
+  .wrap {
+      -webkit-overflow-scrolling: touch;
+  }
+
+  .n {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+  }
+
+  /* colunas "Somente <mês>" da comparacao 1-a-1 (visao Comparar, exatamente 2 periodos):
+     bem mais estreitas que as colunas numericas normais, ja que so' levam um check. */
+  .colDif {
+      width: 2.2rem;
+      min-width: 2.2rem;
+      text-align: center;
+      padding-left: .3rem;
+      padding-right: .3rem;
+  }
+
+  .difOk,
+  .difNovo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 50%;
+      font-size: .75rem;
+      font-weight: 700;
+      line-height: 1;
+  }
+
+  /* esquerda ("Somente <1º mês>", sumiu do 1º pro 2º) = verde */
+  .difOk {
+      color: #10231A;
+      background: var(--vd);
+  }
+
+  /* direita ("Somente <2º mês>", surgiu no 2º) = vermelho */
+  .difNovo {
+      color: #2B1211;
+      background: var(--vm);
+  }
+
+  /* asterisco de aviso colado no ✓ de difOk/difNovo: mesmo nome+valor apareceu 2x dentro
+     do MESMO ciclo, em meses diferentes — pode ser recorrencia caindo 2x no mesmo ciclo
+     (janela do periodo atravessando a virada do mes), nao uma mudanca real. So' um alerta
+     visual discreto, sem quebrar o layout do check redondo ao lado. */
+  .avisoDup {
+      margin-left: .15rem;
+      color: #F0A83A;
+      font-weight: 700;
+      cursor: help;
+  }
+
+  /* =========================================================
+       CORES DE VALORES
+       ========================================================= */
+
+  .vd {
+      color: var(--vd);
+      font-weight: 600;
+  }
+
+  .vm {
+      color: var(--vm);
+      font-weight: 600;
+  }
+
+  /* indicador da classificação Reserva emergência */
+  .tagReservaEmergencia,
+  .tagSemReservaEmergencia {
+      display: inline-block;
+      padding: .16rem .42rem;
+      border-radius: 99px;
+      font-size: .72rem;
+      font-weight: 700;
+  }
+
+  .tagReservaEmergencia {
+      color: #8BE0B5;
+      background: #173A2A;
+  }
+
+  .tagSemReservaEmergencia {
+      color: #F1BA9F;
+      background: #47291F;
+  }
+
+  .togReservaEmergencia {
+      cursor: pointer;
+  }
+
+  .togReservaEmergencia:hover {
+      filter: brightness(1.16);
+      outline: 1px dashed currentColor;
+      outline-offset: 2px;
+  }
+
+  /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
+     #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
+     tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. */
+  .togPago {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togPago:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  /* Valor clicavel na tabela: mesma ideia do badge Pago, edicao inline (ver listener
+     em #out no script.js). */
+  .togValor {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togValor:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  /* Data clicavel na tabela: mesma ideia do Valor, edicao inline com <input type=date>
+     (ver listener em #out no script.js). */
+  .togData {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togData:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  .inpData {
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: .15rem .4rem;
+  }
+
+  .inpData:focus {
+      outline: 2px solid var(--fg);
+      outline-offset: -1px;
+  }
+
+  /* o icone nativo do calendario e' preto por padrao e some no tema escuro */
+  .inpData::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: .6;
+      cursor: pointer;
+  }
+
+  .inpValorSinal {
+      display: inline-block;
+      width: 1.1em;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--mu);
+  }
+
+  .inpValorSinal:hover {
+      color: var(--fg);
+  }
+
+  .inpValor {
+      width: 6.5rem;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: .15rem .4rem;
+  }
+
+  .inpValor:focus {
+      outline: 2px solid var(--fg);
+      outline-offset: -1px;
+  }
+
+  /* =========================================================
+       LINHA DE FATURA
+       ========================================================= */
+
+  tbody tr.fat td {
+      background: var(--red-soft);
+  }
+
+  tbody tr.fat:hover td {
+      background: var(--red-hover);
+  }
+
+  /* =========================================================
+       TOTAL
+       ========================================================= */
+
+  .tot td {
+      font-weight: 700;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 0;
+      background: #202428;
+  }
+
+  .tot td:first-child {
+      border-radius: 0 0 0 10px;
+  }
+
+  .tot td:last-child {
+      border-radius: 0 0 10px 0;
+  }
+
+  /* =========================================================
+       SELEÇÃO DE LINHAS
+       ========================================================= */
+
+  tbody tr.pick {
+      cursor: pointer;
+  }
+
+  tbody tr.on td {
+      background: var(--green-soft);
+  }
+
+  tbody tr.on:hover td {
+      background: var(--green-hover);
+  }
+
+  /* =========================================================
+       PRIMEIRA COLUNA FIXA
+       ========================================================= */
+
+  .wx td.c1,
+  .wx th.c1 {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: var(--pa);
+  }
+
+  .wx th.c1 {
+      background: #1D2024;
+  }
+
+  .wx thead th.c1 {
+      z-index: 3;
+  }
+
+  .wx tbody tr:hover td.c1 {
+      background: #202428;
+  }
+
+  .wx tbody tr.on td.c1 {
+      background: var(--green-soft);
+  }
+
+  .wx tbody tr.on:hover td.c1 {
+      background: var(--green-hover);
+  }
+
+  .wx tr.tot td.c1 {
+      background: #202428;
+  }
+
+  .wx td.c1 {
+      border-right: 1px solid var(--ln);
+  }
+
+  /* =========================================================
+       LOGIN
+       ========================================================= */
+
+  #login {
+      max-width: 19rem;
+      margin: 16vh auto 0;
+      display: none;
+      flex-direction: column;
+      gap: .7rem;
+  }
+
+  #login input {
+      font: inherit;
+      color: var(--fg);
+      padding: .55rem .7rem;
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      background: var(--field);
+  }
+
+  #login input::placeholder {
+      color: #747C83;
+  }
+
+  #login input:focus {
+      border-color: #68727A;
+      background: #24292E;
+      outline: none;
+  }
+
+  #login button {
+      font: inherit;
+      color: #111315;
+      background: var(--fg);
+      border: 0;
+      border-radius: 9px;
+      padding: .6rem;
+      cursor: pointer;
+  }
+
+  #login button:hover {
+      background: #FFFFFF;
+  }
+
+  #login .err {
+      color: var(--vm);
+      font-size: .85rem;
+      min-height: 1.1rem;
+  }
+
+  #app {
+      display: none;
+  }
+
+  /* modo simulacao ativo: uma vinheta fixa cobre as BORDAS da tela (centro limpo, sem
+     blur nenhum no conteudo/texto) — o efeito de "quadro de sonho/flashback" dos
+     quadrinhos, com um leve tom laranja (a mesma cor do toggle ligado) esfumacando os
+     cantos. E' so' um overlay visual (pointer-events:none, position:fixed acima do
+     #app): nao broca clique nem entra na "top layer" dos <dialog>, que continuam
+     abrindo por cima normalmente. */
+  body.simulando::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center,
+              transparent 58%,
+              rgba(20, 15, 10, .32) 84%,
+              rgba(16, 12, 8, .7) 100%);
+      backdrop-filter: blur(1.8px);
+      -webkit-backdrop-filter: blur(1.8px);
+      mask-image: radial-gradient(ellipse at center, transparent 56%, #000 88%);
+      -webkit-mask-image: radial-gradient(ellipse at center, transparent 56%, #000 88%);
+      opacity: 0;
+      animation: vinhetaSonho .3s ease forwards;
+  }
+
+  @keyframes vinhetaSonho {
+      to {
+          opacity: 1;
+      }
+  }
+
+  /* =========================================================
+       BARRA DE SELEÇÃO
+       ========================================================= */
+
+  #selbar {
+      position: fixed;
+      right: 1.6rem;
+      bottom: 1.6rem;
+
+      display: none;
+      align-items: center;
+      gap: 1.4rem;
+
+      background: rgba(32, 36, 40, .45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--fg);
+
+      padding: .9rem 1.3rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+
+      box-shadow: 0 12px 35px rgba(0, 0, 0, .45);
+      z-index: 20;
+  }
+
+  #selbar .info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+  }
+
+  #selbar .cnt {
+      font-size: .78rem;
+      color: var(--mu);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+  }
+
+  #selbar .val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+  }
+
+  #selbar button {
+      font: inherit;
+      color: #111315;
+      background: var(--fg);
+      border: 0;
+      border-radius: 9px;
+      padding: .5rem .9rem;
+      cursor: pointer;
+  }
+
+  #selbar button:hover {
+      background: #FFFFFF;
+  }
+
+  #selbar #seldup {
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+  }
+
+  #selbar #seldup:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  #selbar #seldup:disabled {
+      opacity: .6;
+      cursor: default;
+  }
+
+  /* Excluir: mesma forma discreta do Duplicar, so' que em vermelho — a acao e'
+     irreversivel, entao nao deve parecer o botao primario (branco) da barra. */
+  #selbar #seldel {
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid var(--vm);
+  }
+
+  #selbar #seldel:hover {
+      color: #111315;
+      background: var(--vm);
+  }
+
+  #selbar #seldel:disabled {
+      opacity: .6;
+      cursor: default;
+  }
+
+  /* =========================================================
+       NAVEGAÇÃO DE CICLOS
+       ========================================================= */
+
+  /* #fciclNav e' o slot fixo em .head que mostra os seletores De/Ate (#navComparar) —
+     sempre visiveis, nunca escondidos (Backlog e' so' mais uma opcao do De). */
+  #fciclNav {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: .3rem 0;
+  }
+
+  #navComparar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: .8rem;
+  }
+
+  #navComparar .btHoje {
+      height: 2.2rem;
+      padding: 0 .8rem;
+      font-size: .85rem;
+
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #navComparar .btHoje:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  .btNavCiclo {
+      width: 2.2rem;
+      height: 2.2rem;
+      font-size: 1.2rem;
+      line-height: 1;
+
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  .btNavCiclo:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  .btNavCiclo:disabled {
+      opacity: .3;
+      cursor: default;
+  }
+
+  /* visualmente escondido mas ainda lido por leitor de tela — usado no "De"/"Até", que
+     dispensa rotulo visivel (so' o select) pra ficar compacto no cabecalho */
+  .srOnly {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+  }
+
+  .fInline {
+      display: flex;
+  }
+
+  .fInline select {
+      height: 2.2rem;
+      padding-top: 0;
+      padding-bottom: 0;
+  }
+
+  /* Até desabilitado quando De=Backlog (nao da' pra comparar Backlog com outro periodo) */
+  .fInline select:disabled {
+      opacity: .4;
+      cursor: default;
+  }
+
+  .navCompararAte {
+      font-size: .8rem;
+      color: var(--mu);
+  }
