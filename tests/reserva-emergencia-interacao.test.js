@@ -17,8 +17,10 @@ test('o cadastro envia Reserva emergência e o próximo lançamento volta para f
     assert.match(script, /el\('fReservaEmergencia'\)\.checked = false;/);
 });
 
-test('o badge Reserva emergência alterna e persiste somente a própria linha', () => {
+test('o badge Reserva emergência alterna todas as linhas de mesmo nome exato', () => {
     assert.match(script, /data-tog-reserva-emergencia=/);
-    assert.match(script, /atualizarLancamento\(r\.id, \{ reserva_emergencia: novaReservaEmergencia \}\)/);
+    assert.match(script, /nome=eq\.\$\{encodeURIComponent\(nome\)\}/);
+    assert.match(script, /atualizarReservaEmergenciaPorNome\(nome, novaReservaEmergencia\)/);
+    assert.match(script, /filter\(x => ehLinhaReal\(x\) && x\.nome === nome\)/);
     assert.match(script, /if \(e\.target\.closest\('\[data-tog-reserva-emergencia\]'\)\) return;/);
 });

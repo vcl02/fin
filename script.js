@@ -385,6 +385,25 @@ const atualizarLancamento = async (id, campos) => {
     return linhas[0];
 };
 
+// Reserva emergência é uma regra por nome: alternar uma linha real deve alcançar todas
+// as ocorrências de `nome` exatamente igual, em todos os ciclos. encodeURIComponent é
+// indispensável aqui para nomes com espaço, acento, vírgula, aspas ou &.
+const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
+    const filtro = `nome=eq.${encodeURIComponent(nome)}`;
+    const r = await fetch(`${API}/rest/v1/lancamentos?${filtro}&select=id,nome,reserva_emergencia`, {
+        method: 'PATCH',
+        headers: {
+            apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(),
+            'Content-Type': 'application/json', Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ reserva_emergencia: reservaEmergencia }),
+    });
+    if (!r.ok) throw Error(`atualizar reserva emergência: ${r.status} ${await r.text()}`);
+    const linhas = await r.json();
+    if (!linhas.length) throw Error('nenhuma linha atualizada (RLS/policy do Supabase pode estar bloqueando UPDATE)');
+    return linhas;
+};
+
 // Busca lancamentos. As faturas e ciclos sao derivados dinamicamente: faturas via DISTINCT
 // de fatura_venc dos lancamentos e ciclos derivados das datas reais de "Faturamento PJ".
 async function carregarDados() {
@@ -2336,8 +2355,9 @@ el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
 });
 
-// clique no badge "Reserva emergência" alterna a classificação na hora, sem selecionar a linha.
-// Linhas simuladas mudam apenas em memória; linhas reais persistem no Supabase.
+// clique no badge "Reserva emergência" alterna a classificação sem selecionar a linha.
+// Em linhas reais, a mudança vale para todas as ocorrências com o mesmo nome exato.
+// Linhas simuladas continuam exclusivamente em memória.
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-reserva-emergencia]');
     if (!badge) return;
@@ -2347,6 +2367,7 @@ el('out').addEventListener('click', async e => {
     const r = Estado.lancamentos.find(x => String(x.id) == id);
     if (!r) return;
 
+    const nome = String(r.nome || '');
     const novaReservaEmergencia = !r.reserva_emergencia;
     badge.classList.toggle('tagReservaEmergencia', novaReservaEmergencia);
     badge.classList.toggle('tagSemReservaEmergencia', !novaReservaEmergencia);
@@ -2354,8 +2375,27 @@ el('out').addEventListener('click', async e => {
     badge.style.opacity = .5;
 
     try {
-        if (!r._sim) await atualizarLancamento(r.id, { reserva_emergencia: novaReservaEmergencia });
-        r.reserva_emergencia = novaReservaEmergencia;
+        if (r._sim) {
+            Estado.lancamentos
+                .filter(x => x._sim && x.nome === nome)
+                .forEach(x => { x.reserva_emergencia = novaReservaEmergencia; });
+        } else {
+            const esperados = Estado.lancamentos
+                .filter(x => ehLinhaReal(x) && x.nome === nome)
+                .map(x => String(x.id));
+            const atualizados = await atualizarReservaEmergenciaPorNome(nome, novaReservaEmergencia);
+            const idsAtualizados = new Set(atualizados.map(x => String(x.id)));
+            const faltantes = esperados.filter(idEsperado => !idsAtualizados.has(idEsperado));
+            if (faltantes.length) {
+                await load();
+                throw Error(`atualização parcial: ${faltantes.length} lançamento(s) com o nome "${nome}" não retornaram do banco`);
+            }
+            const porId = new Map(atualizados.map(x => [String(x.id), x]));
+            Estado.lancamentos.forEach(x => {
+                const atualizado = porId.get(String(x.id));
+                if (atualizado) x.reserva_emergencia = !!atualizado.reserva_emergencia;
+            });
+        }
         desenhar();
     } catch (err) {
         badge.style.opacity = '';
