@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const extensoes = new Set(['.js', '.mjs', '.css', '.html', '.sql', '.md']);
 const raizes = ['css', 'docs', 'js', 'migrations', 'scripts', 'tests'];
-const arquivos = ['.editorconfig', 'AGENTS.md', 'REGRAS.md', 'index.html'];
+const arquivos = ['.editorconfig', 'AGENTS.md', 'docs/REGRAS.md', 'index.html'];
 
 function coletar(pasta) {
   readdirSync(pasta, { withFileTypes: true }).forEach(entrada => {

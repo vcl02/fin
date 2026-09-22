@@ -3,7 +3,7 @@
 ## Propósito e fontes de verdade
 
 - Esta é uma aplicação estática, em HTML/CSS/JavaScript clássico, para acompanhamento financeiro pessoal. Ela usa o Supabase somente pelo cliente do navegador.
-- `REGRAS.md` é a fonte de verdade das regras financeiras e de comportamento visível. Não duplique regras de negócio aqui: atualize aquele arquivo quando uma regra mudar.
+- `docs/REGRAS.md` é a fonte de verdade das regras financeiras e de comportamento visível. Não duplique regras de negócio aqui: atualize aquele arquivo quando uma regra mudar.
 - Este arquivo define como trabalhar no repositório. Em caso de conflito, uma solicitação explícita do usuário vence este guia.
 
 ## Arquitetura
@@ -24,12 +24,12 @@
 
 ## Como concluir uma mudança
 
-1. Mapeie a regra afetada em `REGRAS.md` e atualize-a na mesma alteração.
+1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.
 2. Acrescente ou ajuste testes de regressão para o comportamento alterado. Prefira `node:test`, determinístico e sem criar lançamentos de teste no banco.
 3. Documente no código a intenção de regras financeiras, arredondamentos, filtros e efeitos de linhas sintéticas. Comentários devem explicar o porquê, não reescrever a sintaxe.
 4. Rode `node --test tests/*.test.js`, `git diff --check` e verificações de sintaxe aplicáveis. Informe precisamente o que foi validado; não alegue validação visual ou Supabase se ela não ocorreu.
    O atalho oficial é `node scripts/check.mjs`, que executa a validação local completa sem dependências adicionais, inclusive higiene textual definida no `.editorconfig`.
-5. Depois de os testes passarem, faça commit e push para `origin/main` por padrão, salvo pedido contrário do usuário. Nunca inclua `.claude/` ou alterações alheias no commit.
+5. Depois de os testes passarem, faça commit e push para `origin/main` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
 
 ## Preferências do mantenedor
 

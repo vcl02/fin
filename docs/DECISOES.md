@@ -23,3 +23,7 @@ A meta usa nove ciclos futuros e somente despesas marcadas. Para cada nome, um v
 ## Dados e banco
 
 Supabase é a fonte de dados. O frontend não executa migrations nem cria dados fictícios para testar. Migrations históricas são preservadas, e mudanças de esquema exigem uma nova migration numerada.
+
+## Documentação de produto
+
+As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checklist de publicação. O `AGENTS.md` na raiz continua curto e operacional, para orientar manutenção e automação.
