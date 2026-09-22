@@ -556,33 +556,49 @@ el('seldup').onclick = async () => {
             const existente = movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
             if (existente) {
                 const consolidado = consolidarAjusteExistente(existente, valorAjuste);
-                const linhaAtualizada = await atualizarLancamento(existente.id, {
-                    nome: consolidado.nome,
-                    valor: consolidado.valor,
-                });
-                Object.assign(existente, linhaAtualizada, {
-                    v: +linhaAtualizada.valor || 0,
-                    inv: /^investimento$/i.test(String(linhaAtualizada.categ || '').trim()),
-                });
+                if (Estado.simulando) {
+                    Object.assign(existente, {
+                        nome: consolidado.nome,
+                        valor: consolidado.valor,
+                        v: consolidado.valor,
+                    });
+                } else {
+                    const linhaAtualizada = await atualizarLancamento(existente.id, {
+                        nome: consolidado.nome,
+                        valor: consolidado.valor,
+                    });
+                    Object.assign(existente, linhaAtualizada, {
+                        v: +linhaAtualizada.valor || 0,
+                        inv: /^investimento$/i.test(String(linhaAtualizada.categ || '').trim()),
+                    });
+                }
             } else {
-                const linhaCriada = await inserirLancamento({
-                    data,
-                    freq: null,
-                    cred: false,
-                    isa: false,
-                    pago: false,
-                    ativo: true,
-                    nome: ehAporte ? 'Aporte' : 'Resgate',
-                    categ: ajuste.categ,
-                    valor: valorAjuste,
-                });
-                const periodoIdx = data ? periodoDoDebito(data) : null;
-                Estado.lancamentos.push({
-                    ...linhaCriada,
-                    v: +linhaCriada.valor || 0,
-                    inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
-                    periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
-                });
+                if (Estado.simulando) {
+                    simulaLancamentoParcelado({
+                        nome: ehAporte ? 'Aporte' : 'Resgate', categ: ajuste.categ, freq: null, data,
+                        cred: false, isa: false, pago: false, reservaEmergencia: false,
+                        parcelas: 1, valores: [valorAjuste],
+                    });
+                } else {
+                    const linhaCriada = await inserirLancamento({
+                        data,
+                        freq: null,
+                        cred: false,
+                        isa: false,
+                        pago: false,
+                        ativo: true,
+                        nome: ehAporte ? 'Aporte' : 'Resgate',
+                        categ: ajuste.categ,
+                        valor: valorAjuste,
+                    });
+                    const periodoIdx = data ? periodoDoDebito(data) : null;
+                    Estado.lancamentos.push({
+                        ...linhaCriada,
+                        v: +linhaCriada.valor || 0,
+                        inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
+                        periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+                    });
+                }
             }
             Estado.selecionados.clear();
             desenhar();
@@ -592,7 +608,7 @@ el('seldup').onclick = async () => {
             el('seldup').disabled = false;
             const existente = /^(sug|res):/.test(chave) && movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
             el('seldup').textContent = /^(sug|res):/.test(chave)
-                ? (existente ? 'Consolidar' : 'Materializar')
+                ? (Estado.simulando ? 'Simular' : (existente ? 'Consolidar' : 'Materializar'))
                 : 'Duplicar';
         }
         return;
@@ -602,23 +618,27 @@ el('seldup').onclick = async () => {
     if (r) { modalNovo.dataset.viaDuplicar = '1'; abreModalNovo(r); }
 };
 
-// excluir a linha selecionada, uma por vez. So' aparece com UMA linha real marcada (ver
-// chaveUnicaReal em atualizaBarraSelecao) — linha sintetica (fatura, saldo, resgate) nao
-// existe no banco e nao tem o que apagar. Pede confirmacao porque nao da' pra desfazer.
-// Lancamento simulado (_sim) nunca foi salvo: sai so' do array em memoria, sem DELETE.
+// A confirmação explica se a remoção é real ou somente parte da simulação atual.
+// Simulação altera somente Estado.lancamentos: nunca chama DELETE para uma linha real.
+const exclusaoEhSimulada = r => Estado.simulando || r._sim;
+
 el('seldel').onclick = async () => {
     const chave = [...Estado.selecionados.keys()][0];
     const i = Estado.lancamentos.findIndex(x => String(x.id) == chave);
     if (i < 0) return;
 
     const r = Estado.lancamentos[i];
-    if (!confirm(`Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`)) return;
+    const simulada = exclusaoEhSimulada(r);
+    const pergunta = simulada
+        ? `Ocultar "${r.nome ?? ''}" só nesta simulação?\n\nVolta ao recarregar ou sair da simulação.`
+        : `Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`;
+    if (!confirm(pergunta)) return;
 
     if (el('seldel').disabled) return;   // trava clique duplo enquanto o DELETE esta no ar
     el('seldel').disabled = true;
-    el('seldel').textContent = 'Excluindo…';
+    el('seldel').textContent = simulada ? 'Ocultando…' : 'Excluindo…';
     try {
-        if (!r._sim) await excluirLancamento(r.id);
+        if (!simulada) await excluirLancamento(r.id);
         Estado.lancamentos.splice(i, 1);
         Estado.selecionados.clear();
         desenhar();
@@ -626,7 +646,7 @@ el('seldel').onclick = async () => {
         mostrarToast('Falhou ao excluir', err.message);
     } finally {
         el('seldel').disabled = false;
-        el('seldel').textContent = 'Excluir';
+        el('seldel').textContent = Estado.simulando ? 'Ocultar' : 'Excluir';
     }
 };
 
@@ -758,11 +778,9 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
 
 
 // ===================================================================
-// MODO SIMULAÇÃO — lancamentos hipoteticos injetados DIRETO em Estado.lancamentos,
-// marcados com _sim=true. Nunca tocam o banco (nao passam por inserirLancamento):
-// desligar o modo ou recarregar dados (load() reconstroi Estado.lancamentos do zero a
-// partir do Supabase) apaga tudo sozinho, de graca — nao precisa filtrar nada em lugar
-// nenhum do resto do app pra "esconder" a simulacao, ela simplesmente deixa de existir.
+// MODO SIMULAÇÃO — lançamentos hipotéticos entram direto em Estado.lancamentos, marcados
+// com _sim=true. Atualizações e ocultações de linhas já carregadas também ficam somente
+// nesse array; recarregar ou desligar reconstrói tudo a partir do Supabase.
 // Enquanto ativo, os simulados entram em TODAS as metricas (saldo, matriz Comparar,
 // graficos) exatamente como um lancamento real entraria, porque sao um.
 //

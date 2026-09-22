@@ -132,9 +132,10 @@ function atualizaBarraSelecao() {
     // tela desktop — a seleção nunca aparece no mobile e não depende do modo simples.
     el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
     el('seldup').textContent = ehAjusteMaterializavel
-        ? (ajusteExistente ? 'Consolidar' : 'Materializar')
+        ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
         : 'Duplicar';
     el('seldel').hidden = !chaveUnicaReal;
+    el('seldel').textContent = Estado.simulando && chaveUnicaReal ? 'Ocultar' : 'Excluir';
     el('selacao').hidden = !!chaveUnicaReal || ehAjusteMaterializavel;
 
     if (chaveUnica) {
@@ -274,7 +275,7 @@ el('out').addEventListener('click', async e => {
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
 
     try {
-        if (!r._sim) await atualizarLancamento(r.id, { pago: novoPago });
+        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { pago: novoPago });
         r.pago = novoPago;
         desenhar();
     } catch (err) {
@@ -331,7 +332,7 @@ el('out').addEventListener('click', e => {
         if (novoValor == r.v) { desenhar(); return; }   // nada mudou, so' redesenha (sai do modo edicao)
         input.disabled = true;
         try {
-            if (!r._sim) await atualizarLancamento(r.id, { valor: novoValor });
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { valor: novoValor });
             r.valor = novoValor;
             r.v = novoValor;
             desenhar();
@@ -391,7 +392,7 @@ el('out').addEventListener('click', e => {
         if ((nova || '') === original) { desenhar(); return; }   // nada mudou, so' sai do modo edicao
         input.disabled = true;
         try {
-            if (!r._sim) await atualizarLancamento(r.id, { data: nova });
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { data: nova });
             r.data = nova;
             reclassificaPeriodo(r);
             desenhar();

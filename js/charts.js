@@ -453,9 +453,9 @@ el('out').addEventListener('click', async e => {
     badge.style.opacity = .5;
 
     try {
-        if (r._sim) {
+        if (Estado.simulando || r._sim) {
             Estado.lancamentos
-                .filter(x => x._sim && x.nome === nome)
+                .filter(x => x.nome === nome)
                 .forEach(x => { x.reserva = novaReservaEmergencia; });
         } else {
             const esperados = Estado.lancamentos

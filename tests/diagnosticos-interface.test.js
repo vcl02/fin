@@ -40,7 +40,7 @@ test('inconsistências usam modal e problemas operacionais usam toast', () => {
 test('erros operacionais usam toast e só exclusão pede confirmação nativa', () => {
     assert.doesNotMatch(fontesJs, /\balert\(/);
     assert.equal((fontesJs.match(/\bconfirm\(/g) || []).length, 1);
-    assert.match(formulario, /if \(!confirm\(`Excluir/);
+    assert.match(formulario, /if \(!confirm\(pergunta\)\) return;/);
     assert.match(interacoes, /mostrarToast\('Falhou ao atualizar'/);
 });
 
