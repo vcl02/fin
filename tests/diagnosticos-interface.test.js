@@ -16,18 +16,26 @@ const fontesJs = fs.readdirSync('js')
     .map(arquivo => fs.readFileSync(path.join('js', arquivo), 'utf8'))
     .join('\n');
 
-test('inconsistências usam modal e problemas operacionais usam toast', () => {
+test('modal separa inconsistências de avisos e problemas operacionais usam toast', () => {
     assert.match(html, /<dialog id=modalDiagnostico>/);
     assert.match(html, /id=fechaDiagnostico/);
     assert.match(html, /id=btDiagnostico/);
+    assert.match(html, /id=secaoInconsistencias/);
+    assert.match(html, /id=listaInconsistencias/);
+    assert.match(html, /id=secaoAvisos/);
+    assert.match(html, /id=listaAvisos/);
     assert.match(html, /id=toasts/);
     assert.match(estilos, /dialog#modalDiagnostico/);
     assert.match(estilos, /#toasts/);
     assert.match(base, /#btDiagnostico\.temInconsistencia::after/);
+    assert.match(estilos, /#secaoAvisos \.listaDiagnostico/);
     assert.match(dadosUi, /function mostrarDiagnostico/);
     assert.match(dadosUi, /function atualizarBotaoDiagnostico/);
     assert.match(dadosUi, /function abrirDiagnosticoDeDados/);
-    assert.match(dadosUi, /atualizarBotaoDiagnostico\(avisosDeDados\)/);
+    assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\)/);
+    assert.match(dadosUi, /const inconsistencias = diagnostico\.inconsistencias \|\| \[\];/);
+    assert.match(dadosUi, /const avisos = diagnostico\.avisos \|\| \[\];/);
+    assert.match(dadosUi, /temInconsistencia = inconsistencias\.length > 0/);
     assert.match(dadosUi, /function mostrarToast/);
     assert.match(dadosUi, /function tocarSomToast/);
     assert.match(dadosUi, /void tocarSomToast\(\)/);

@@ -30,25 +30,26 @@ const chaveCategoria = valor => String(valor ?? '').trim()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // Diagnóstico conservador da resposta do Supabase. Ele não altera nem exclui linhas:
-// dados históricos continuam visíveis. Toda nova regra personalizada entra aqui e retorna
-// uma mensagem em avisos, que a interface mostra no modal de inconsistências.
+// inconsistências apontam contrato de dados inválido; avisos são apenas sinais para revisão.
+// Toda nova regra personalizada entra aqui na lista adequada e aparece no mesmo modal.
 function validarLancamentosCarregados(lancamentos) {
+    const inconsistencias = [];
     const avisos = [];
-    if (!Array.isArray(lancamentos)) return ['Supabase não retornou uma lista de lançamentos.'];
+    if (!Array.isArray(lancamentos)) return { inconsistencias: ['Supabase não retornou uma lista de lançamentos.'], avisos };
     const categorias = new Map();
 
     lancamentos.forEach((lancamento, indice) => {
         const prefixo = `Lançamento ${indice + 1}${lancamento?.id != null ? ` (id ${lancamento.id})` : ''}`;
-        if (!lancamento || typeof lancamento !== 'object') { avisos.push(`${prefixo}: registro inválido.`); return; }
-        if (!String(lancamento.nome || '').trim()) avisos.push(`${prefixo}: nome ausente.`);
-        if (!Number.isFinite(Number(lancamento.valor))) avisos.push(`${prefixo}: valor não numérico.`);
-        if (!ehDataIso(lancamento.data)) avisos.push(`${prefixo}: data fora do formato ISO.`);
-        if (lancamento.fatura && !ehDataIso(lancamento.fatura)) avisos.push(`${prefixo}: vencimento de fatura fora do formato ISO.`);
+        if (!lancamento || typeof lancamento !== 'object') { inconsistencias.push(`${prefixo}: registro inválido.`); return; }
+        if (!String(lancamento.nome || '').trim()) inconsistencias.push(`${prefixo}: nome ausente.`);
+        if (!Number.isFinite(Number(lancamento.valor))) inconsistencias.push(`${prefixo}: valor não numérico.`);
+        if (!ehDataIso(lancamento.data)) inconsistencias.push(`${prefixo}: data fora do formato ISO.`);
+        if (lancamento.fatura && !ehDataIso(lancamento.fatura)) inconsistencias.push(`${prefixo}: vencimento de fatura fora do formato ISO.`);
         ['cred', 'isa', 'pago', 'ativo', 'reserva'].forEach(campo => {
-            if (!ehBooleanoOuNulo(lancamento[campo])) avisos.push(`${prefixo}: ${campo} precisa ser booleano.`);
+            if (!ehBooleanoOuNulo(lancamento[campo])) inconsistencias.push(`${prefixo}: ${campo} precisa ser booleano.`);
         });
         if (lancamento.cred === true && !(lancamento.fatura || lancamento.fatura_id)) {
-            avisos.push(`${prefixo}: crédito sem fatura vinculada.`);
+            inconsistencias.push(`${prefixo}: crédito sem fatura vinculada.`);
         }
 
         const categoria = String(lancamento.categ ?? '').trim();
@@ -66,5 +67,5 @@ function validarLancamentosCarregados(lancamentos) {
             avisos.push(`Categoria "${nome}" aparece em apenas um lançamento (id ${ids[0]}).`);
         }
     });
-    return avisos;
+    return { inconsistencias, avisos };
 }

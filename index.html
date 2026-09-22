@@ -383,14 +383,21 @@
       <p class=meta id=subDetalheCel></p>
       <div class=wrap id=corpoDetalheCel></div>
     </dialog>
-    <!-- Diagnósticos de carga e interface: problemas vão para este modal, nunca corrigem dados automaticamente. -->
+    <!-- Diagnósticos de carga: inconsistências e avisos de revisão nunca corrigem dados automaticamente. -->
     <dialog id=modalDiagnostico>
       <div class=modalHead>
         <h2 id=tituloDiagnostico>Problema identificado</h2>
         <button type=button id=fechaDiagnostico title="Fechar" aria-label="Fechar">×</button>
       </div>
       <p class=meta id=textoDiagnostico></p>
-      <ul class=listaDiagnostico id=listaDiagnostico></ul>
+      <section class=secaoDiagnostico id=secaoInconsistencias>
+        <h3>Inconsistências</h3>
+        <ul class=listaDiagnostico id=listaInconsistencias></ul>
+      </section>
+      <section class=secaoDiagnostico id=secaoAvisos>
+        <h3>Avisos</h3>
+        <ul class=listaDiagnostico id=listaAvisos></ul>
+      </section>
     </dialog>
 
     <!-- Avisos operacionais efêmeros: o JavaScript empilha toasts no canto inferior direito. -->

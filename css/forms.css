@@ -428,6 +428,15 @@
       margin-top: .4rem;
   }
 
+  .secaoDiagnostico h3 {
+      margin: .9rem 0 -.35rem;
+      font-size: .9rem;
+  }
+
+  #secaoAvisos .listaDiagnostico {
+      color: var(--mu);
+  }
+
   /* Toasts são alertas breves de operação; inconsistências de dados usam o modal. */
   #toasts {
       position: fixed;
