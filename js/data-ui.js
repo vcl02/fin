@@ -83,10 +83,35 @@ function abrirDiagnosticoDeDados() {
 }
 
 const LIMIAR_CARGA_LENTA_MS = 1000;
+let contextoAudioToast;
+
+// Um tom curto dá presença ao toast sem exigir arquivo externo. Navegadores podem bloquear
+// áudio antes da primeira interação; nesse caso o aviso visual continua sendo suficiente.
+async function tocarSomToast() {
+    try {
+        const ContextoAudio = window.AudioContext || window.webkitAudioContext;
+        if (!ContextoAudio) return;
+        contextoAudioToast ??= new ContextoAudio();
+        if (contextoAudioToast.state === 'suspended') await contextoAudioToast.resume();
+        const oscilador = contextoAudioToast.createOscillator();
+        const ganho = contextoAudioToast.createGain();
+        oscilador.type = 'sine';
+        oscilador.frequency.value = 660;
+        ganho.gain.setValueAtTime(.0001, contextoAudioToast.currentTime);
+        ganho.gain.exponentialRampToValueAtTime(.012, contextoAudioToast.currentTime + .01);
+        ganho.gain.exponentialRampToValueAtTime(.0001, contextoAudioToast.currentTime + .09);
+        oscilador.connect(ganho).connect(contextoAudioToast.destination);
+        oscilador.start();
+        oscilador.stop(contextoAudioToast.currentTime + .1);
+    } catch {
+        // Falha de permissão/autoplay não deve impedir nem registrar ruído para um toast.
+    }
+}
 
 // Toast é reservado a estado operacional passageiro; não mistura uma falha de rede com
 // inconsistências persistentes dos registros, que precisam ser lidas no modal.
 function mostrarToast(titulo, texto) {
+    void tocarSomToast();
     const toast = document.createElement('article');
     const tituloToast = document.createElement('strong');
     const descricao = document.createElement('p');

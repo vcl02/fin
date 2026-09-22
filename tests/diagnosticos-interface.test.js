@@ -29,6 +29,9 @@ test('inconsistências usam modal e problemas operacionais usam toast', () => {
     assert.match(dadosUi, /function abrirDiagnosticoDeDados/);
     assert.match(dadosUi, /atualizarBotaoDiagnostico\(avisosDeDados\)/);
     assert.match(dadosUi, /function mostrarToast/);
+    assert.match(dadosUi, /function tocarSomToast/);
+    assert.match(dadosUi, /void tocarSomToast\(\)/);
+    assert.match(dadosUi, /oscilador\.frequency\.value = 660/);
     assert.match(dadosUi, /Dados para revisar/);
     assert.match(dadosUi, /mostrarToast\('Não foi possível carregar'/);
     assert.match(interacoes, /mostrarToast\('Não foi possível atualizar a visão'/);
