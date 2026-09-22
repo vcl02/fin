@@ -69,15 +69,45 @@ function sugestoesDeNome(lancamentos = Estado.lancamentos) {
         a.nome.localeCompare(b.nome, 'pt') || a.categ.localeCompare(b.categ, 'pt'));
 }
 
-function popularNomesNoForm() {
-    const opcoes = sugestoesDeNome();
-    el('nomesExistentes').replaceChildren(...opcoes.map(({ nome, categ }) => {
-        const opcao = document.createElement('option');
-        opcao.value = nome;
-        opcao.label = categ;
-        opcao.textContent = `${nome} — ${categ}`;
+let sugestoesDeNomeAtuais = [];
+
+function renderizarSugestoesDeNome(termo = el('fNome').value) {
+    const filtro = semAcento(termo).trim();
+    const lista = el('nomesExistentes');
+    const opcoes = filtro
+        ? sugestoesDeNomeAtuais.filter(({ nome }) => semAcento(nome).includes(filtro))
+        : [];
+
+    lista.replaceChildren(...opcoes.map(({ nome, categ }) => {
+        const opcao = document.createElement('button');
+        opcao.type = 'button';
+        opcao.className = 'nomeExistente';
+        opcao.setAttribute('role', 'option');
+        const titulo = document.createElement('span');
+        const categoria = document.createElement('small');
+        titulo.textContent = nome;
+        categoria.textContent = categ;
+        opcao.append(titulo, categoria);
+        // Mantém o foco no input durante o clique; assim o blur não fecha o combo antes
+        // de aplicar nome e categoria escolhidos.
+        opcao.onmousedown = evento => evento.preventDefault();
+        opcao.onclick = () => {
+            el('fNome').value = nome;
+            el('fCateg').value = categ;
+            atualizarFaturasDoFormulario();
+            lista.hidden = true;
+            el('fNome').setAttribute('aria-expanded', 'false');
+            el('fNome').focus();
+        };
         return opcao;
     }));
+    lista.hidden = !opcoes.length;
+    el('fNome').setAttribute('aria-expanded', String(opcoes.length > 0));
+}
+
+function popularNomesNoForm() {
+    sugestoesDeNomeAtuais = sugestoesDeNome();
+    renderizarSugestoesDeNome();
 }
 
 // ---- busca de categoria por nome parecido ----
@@ -98,11 +128,24 @@ function buscaCategoriaPorNome(nomeDigitado) {
 // nome antes e pre-seleciona no combo (voce ainda pode trocar manualmente).
 el('fNome').addEventListener('input', () => {
     const categ = buscaCategoriaPorNome(el('fNome').value);
-    if (categ && categoriasPorPopularidade().includes(categ)) el('fCateg').value = categ;
+    if (categ && categoriasPorPopularidade().includes(categ)) {
+        el('fCateg').value = categ;
+        atualizarFaturasDoFormulario();
+    }
+    renderizarSugestoesDeNome();
 });
+el('fNome').addEventListener('blur', () => setTimeout(() => {
+    el('nomesExistentes').hidden = true;
+    el('fNome').setAttribute('aria-expanded', 'false');
+}, 100));
 
 // atalhos de Enter nos dois campos de texto: Nome -> foca Valor; Valor -> salva
 el('fNome').addEventListener('keydown', e => {
+    if (e.key == 'Escape') {
+        el('nomesExistentes').hidden = true;
+        el('fNome').setAttribute('aria-expanded', 'false');
+        return;
+    }
     if (e.key == 'Enter') { e.preventDefault(); el('fValor').focus(); }
 });
 el('fValor').addEventListener('keydown', e => {

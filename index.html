@@ -209,9 +209,10 @@
         </div>
 
         <label class=fm><span>Nome <b class=req>*</b></span>
-          <input type=text id=fNome list=nomesExistentes required placeholder="Ex: Mercado, Aluguel…" autocomplete=off>
-          <!-- Sugestões dinâmicas: o JavaScript lista nomes distintos e sua categoria mais recente. -->
-          <datalist id=nomesExistentes></datalist>
+          <input type=text id=fNome required placeholder="Ex: Mercado, Aluguel…" autocomplete=off
+            aria-controls=nomesExistentes aria-expanded=false>
+          <!-- Combo dinâmico: o JavaScript filtra nomes distintos e sua categoria mais recente. -->
+          <div class=nomesExistentes id=nomesExistentes role=listbox aria-label="Nomes existentes" hidden></div>
         </label>
 
         <label class=fm><span>Data</span>

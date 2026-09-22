@@ -18,10 +18,12 @@ const contexto = {
 vm.createContext(contexto);
 vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.sugestoesDeNome = sugestoesDeNome;`, contexto);
 
-test('nome aceita texto livre e oferece datalist preenchida dinamicamente', () => {
-    assert.match(html, /<input type=text id=fNome list=nomesExistentes/);
-    assert.match(html, /<datalist id=nomesExistentes>/);
-    assert.match(fonte, /opcao\.label = categ;/);
+test('nome aceita texto livre e oferece combo próprio filtrado', () => {
+    assert.match(html, /<input type=text id=fNome required/);
+    assert.match(html, /<div class=nomesExistentes id=nomesExistentes role=listbox/);
+    assert.match(fonte, /semAcento\(nome\)\.includes\(filtro\)/);
+    assert.match(fonte, /categoria\.textContent = categ;/);
+    assert.match(fonte, /atualizarFaturasDoFormulario\(\);/);
 });
 
 test('lista nomes distintos e conserva a categoria da ocorrência mais recente', () => {
