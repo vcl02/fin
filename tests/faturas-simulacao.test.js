@@ -46,3 +46,8 @@ test('não sugere fatura quando ainda não há nenhuma disponível', () => {
         [null, null]
     );
 });
+
+test('usa a sugestão também no cadastro real, sem depender da simulação', () => {
+    assert.match(script, /const sugestoes = cred\s*\?/);
+    assert.doesNotMatch(script, /Estado\.simulando && cred/);
+});

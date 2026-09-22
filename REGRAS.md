@@ -4,7 +4,7 @@
 
 - As faturas existentes são derivadas das datas `fatura_venc` já usadas nos lançamentos; a aplicação não usa uma tabela `faturas`.
 - Todo lançamento novo com `cred = true` deverá receber `fatura_venc` escolhido manualmente. O total da fatura nunca é gravado: é a soma dos `lancamentos.valor` ligados a ela.
-- Ao simular uma venda no crédito, cada prestação mostra como sugestão a fatura disponível mais próxima da data daquela prestação (ou a última conhecida se a data a ultrapassar). A sugestão não é regra: cada seletor continua editável e deve ser conferido antes de simular.
+- Ao cadastrar ou simular uma venda no crédito, cada prestação mostra como sugestão a fatura disponível mais próxima da data daquela prestação (ou a última conhecida se a data a ultrapassar). A sugestão não é regra: cada seletor continua editável e uma escolha manual nunca é substituída.
 - `periodos` não é lida pela aplicação. Ela permanece temporariamente apenas como histórico para auditoria da migração dos créditos e poderá ser removida depois da conferência.
 - Cada lançamento `Faturamento PJ` abre um ciclo de débito. O ciclo vai dessa data até o dia anterior ao próximo `Faturamento PJ`; uma fatura entra no ciclo que contém seu `vencimento`.
 - No modo Ciclo, o bloco Débito e seus cálculos continuam na competência atual. Somente a tabela Crédito é uma prévia visual: no ciclo N ela mostra os créditos da competência N+1.

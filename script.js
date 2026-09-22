@@ -2700,7 +2700,9 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     const faturas = [...faturasMap.entries()]
         .sort((a, b) => timestamp(a[0]) - timestamp(b[0]))
         .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
-    const sugestoes = Estado.simulando && cred
+    // O mesmo preenchimento inicial vale no cadastro real e na simulação. A sugestão
+    // nunca substitui uma fatura que a pessoa já escolheu manualmente.
+    const sugestoes = cred
         ? faturasSugeridasParaParcelas(faturas, el('fData').value, parcelas, el('fFreq').value)
         : [];
 
@@ -2738,12 +2740,12 @@ el('fCateg').addEventListener('change', () => atualizarFaturasDoFormulario());
 // Uma sugestao ainda automatica acompanha a data da venda; uma fatura escolhida
 // manualmente nunca e' substituida por esse recálculo.
 el('fData').addEventListener('change', () => {
-    if (Estado.simulando && el('fCred').checked) {
+    if (el('fCred').checked) {
         atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
     }
 });
 el('fFreq').addEventListener('change', () => {
-    if (Estado.simulando && el('fCred').checked) {
+    if (el('fCred').checked) {
         atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
     }
 });
