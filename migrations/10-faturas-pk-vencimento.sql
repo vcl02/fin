@@ -20,7 +20,7 @@ begin
     set fatura_venc = f.vencimento
     from public.faturas f
     where l.fatura_id = f.id and l.fatura_venc is null;
-    
+
     alter table public.lancamentos drop column fatura_id;
   end if;
 end $$;

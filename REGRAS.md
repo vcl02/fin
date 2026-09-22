@@ -73,6 +73,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - A combinação dos filtros de tabelas é coberta por `node --test tests/tabelas-filtros.test.js`.
 - O padrão de cabeçalhos explicativos em código, estilos, migrations, testes e regiões dinâmicas do HTML é coberto por `node --test tests/documentacao-estrutura.test.js`.
 - O vocabulário financeiro, a validação não destrutiva da carga e os contratos de exportação são cobertos por `node --test tests/domain-validacao.test.js` e `node --test tests/exportacao.test.js`.
+- `.editorconfig` padroniza edição futura, e `node scripts/check.mjs` bloqueia tabs, espaços finais e arquivos sem newline final; o contrato é coberto por `node --test tests/estilo-editorconfig.test.js`.
 - A suíte inteira deve rodar com `node --test tests/*.test.js`. Ela é local e não cria lançamentos de teste nem valida uma sessão real do Supabase.
 
 ## Reserva emergência

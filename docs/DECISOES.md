@@ -8,6 +8,10 @@ O projeto permanece em um único `index.html` porque é publicado como site est�
 
 Os arquivos em `js/` são scripts clássicos carregados em ordem explícita. Isso mantém a aplicação simples para editar, depurar no navegador e hospedar sem bundler. A ordem é um contrato testado.
 
+## Estilo sem formatter pesado
+
+O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newline final. ESLint e Prettier ficam fora por enquanto: em scripts clássicos globais eles exigiriam configuração extra e causariam um reformat amplo sem melhorar diretamente as regras financeiras.
+
 ## Fatura e Crédito
 
 Há um cartão detalhado. A fatura é derivada de `lancamentos.fatura_venc`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte.
