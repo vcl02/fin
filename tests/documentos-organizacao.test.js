@@ -31,3 +31,14 @@ test('limita o MCP do Supabase ao projeto fin e a consultas', () => {
     assert.equal(url.searchParams.get('read_only'), 'true');
     assert.equal(url.searchParams.get('features'), 'database,docs');
 });
+
+test('exige confirmação antes de ações remotas que não sejam de leitura', () => {
+    const agentes = fs.readFileSync('AGENTS.md', 'utf8');
+    const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
+    const checklist = fs.readFileSync('docs/CHECKLIST-PUBLICACAO.md', 'utf8');
+
+    assert.match(agentes, /Consultas somente de leitura ao Supabase, como `SELECT`/);
+    assert.match(agentes, /Antes de qualquer operação remota que possa mudar estado/);
+    assert.match(decisoes, /qualquer ação remota que altere estado exige confirmação explícita prévia/);
+    assert.match(checklist, /obtenha confirmação explícita antes de aplicá-la/);
+});

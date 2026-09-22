@@ -18,9 +18,11 @@
 
 - Valores são assinados: entrada positiva, saída negativa. Não transforme o sinal apenas para apresentação antes de um cálculo.
 - Linhas reais têm `id` positivo; linhas sintéticas e simuladas não existem no banco. Nunca envie PATCH/DELETE para uma linha sintética ou simulada.
+- Consultas somente de leitura ao Supabase, como `SELECT`, inspeção de schema, migrations e advisors, podem ser feitas para diagnóstico. A disponibilidade de uma ferramenta de escrita no MCP não é autorização para usá-la.
+- Antes de qualquer operação remota que possa mudar estado — `INSERT`, `UPDATE`, `DELETE`, `UPSERT`, RPC com efeito, `CREATE`/`ALTER`/`DROP`, grants, RLS, Auth, Storage, configuração ou execução de migration — peça confirmação explícita do mantenedor nesta conversa, com alvo e efeito informados. Não crie dados de teste no banco.
 - Criação, edição, exclusão ou atualização real já são ações do usuário dentro da interface. Fora desse fluxo, não altere dados financeiros no Supabase sem autorização explícita.
 - Preserve migrations aplicadas. Para uma alteração de esquema, crie uma migration nova e numerada; não reescreva migrations históricas.
-- O mantenedor aplica migrations e ajusta dados diretamente no DataGrip; prepare a migration versionada quando ela for necessária, mas não a execute sem pedido explícito.
+- O mantenedor aplica migrations e ajusta dados diretamente no DataGrip; prepare a migration versionada quando ela for necessária, mas não a execute sem a confirmação explícita definida acima.
 - Não exponha chaves de serviço nem contorne RLS. Toda atualização por nome deve usar a igualdade exata e `encodeURIComponent` no filtro PostgREST.
 
 ## Como concluir uma mudança
