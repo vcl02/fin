@@ -26,7 +26,8 @@ const ehDataIso = valor => !valor || /^\d{4}-\d{2}-\d{2}$/.test(String(valor).sl
 const ehBooleanoOuNulo = valor => valor == null || typeof valor === 'boolean';
 
 // Diagnóstico conservador da resposta do Supabase. Ele não altera nem exclui linhas:
-// dados históricos continuam visíveis, mas uma inconsistência fica explícita no console.
+// dados históricos continuam visíveis. Toda nova regra personalizada entra aqui e retorna
+// uma mensagem em avisos, que a interface mostra no modal de inconsistências.
 function validarLancamentosCarregados(lancamentos) {
     const avisos = [];
     if (!Array.isArray(lancamentos)) return ['Supabase não retornou uma lista de lançamentos.'];

@@ -9,6 +9,7 @@ const estilos = fs.readFileSync('css/forms.css', 'utf8');
 const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
+const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
 
 test('inconsistências usam modal e problemas operacionais usam toast', () => {
     assert.match(html, /<dialog id=modalDiagnostico>/);
@@ -26,6 +27,11 @@ test('inconsistências usam modal e problemas operacionais usam toast', () => {
     assert.match(dadosUi, /Dados para revisar/);
     assert.match(dadosUi, /mostrarToast\('Não foi possível carregar'/);
     assert.match(interacoes, /mostrarToast\('Não foi possível atualizar a visão'/);
+});
+
+test('mantém um controle temporário para validar visualmente o toast de erro', () => {
+    assert.match(html, /id=btTesteToast/);
+    assert.match(bootstrap, /btTesteToast.*mostrarToast\('Erro de teste'/);
 });
 
 test('Console recebe uma única linha de métricas e toast avisa carga lenta', () => {
