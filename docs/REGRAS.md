@@ -23,7 +23,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Existe um único cartão detalhado. Todo lançamento com `cred = true` aponta para `fatura`; `isa` não seleciona outro calendário de cartão.
 - A fatura da Isabella é um lançamento real comum: `cred = false`, `isa = true`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
 - A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações do cartão detalhado.
-- O campo `isa` continua identificando lançamentos da Isabella para filtros e para a visão restrita.
+- O campo `isa` identifica lançamentos da Isabella para filtros e é escolhido explicitamente no formulário; ele não muda a interface conforme o e-mail da sessão.
 - Antecipações de fatura abatem somente a única fatura detalhada, da mais antiga para a mais nova.
 
 ## Aportes e resgates
@@ -47,7 +47,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Mobile
 
 - No mobile, as tabelas são somente leitura. Não há seleção de linhas, edição inline, alternância de status, duplicação, exclusão ou atualização por toque.
-- Isabella e mobile compartilham o mesmo `modoSimples`: ambos mostram um ciclo por vez e não exibem o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
+- No mobile, `modoSimples` mostra um ciclo por vez e não exibe o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
 - O cadastro de novo lançamento permanece disponível; a tela compacta mantém apenas navegação, consulta e esse cadastro como fluxos de trabalho.
 
 ## Migrations

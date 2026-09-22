@@ -12,6 +12,9 @@ const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
+const estado = fs.readFileSync('js/app-state.js', 'utf8');
+const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
+const formulario = fs.readFileSync('js/form.js', 'utf8');
 
 test('registra o tema grafite, ações por ícone e minimalismo como preferências', () => {
     assert.match(agentes, /dark mode definitivo, porém em tons de cinza escuro legíveis/);
@@ -22,9 +25,13 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
     assert.match(base, /--pa: #24272B;/);
 });
 
-test('Isabella e mobile compartilham modo simples sem ações nem bloco Crédito', () => {
+test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {
     assert.match(regras, /No mobile, as tabelas são somente leitura/);
-    assert.match(regras, /Isabella e mobile compartilham o mesmo `modoSimples`/);
+    assert.match(regras, /ele não muda a interface conforme o e-mail da sessão/);
+    assert.match(estado, /const modoSimples = \(\) => matchMedia/);
+    assert.doesNotMatch(estado, /restrito|EMAIL_ISABELLA/);
+    assert.doesNotMatch(bootstrap, /restrito|EMAIL_ISABELLA|aplicaPerfil/);
+    assert.match(formulario, /const isa = el\('fIsa'\)\.checked;/);
     assert.doesNotMatch(dadosUi, /modoRestrito/);
     assert.match(dadosUi, /const usadosNaveg = usados;/);
     assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);

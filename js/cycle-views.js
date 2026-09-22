@@ -132,7 +132,7 @@ function vCiclo() {
         linhasDebito, 'db', true, extraDebito
     );
 
-    // O modo restrito (Isabella e mobile) não mostra o bloco Crédito. A fatura líquida
+    // O modo simples no mobile não mostra o bloco Crédito. A fatura líquida
     // continua incorporada no Débito, então esconder a prévia não perde o impacto no saldo.
     if (modoSimples()) return blocoDebito;
 
@@ -399,12 +399,3 @@ function vComp() {
     return blocoCasca(tituloPeriodo, subtitulo, nRegistros, 'cp',
         () => `<div class="wrap wx"><table><thead>${cabecalho}<tbody>${corpo}${linhaTotal}</tbody></table></div>`);
 }
-
-
-
-// ===================================================================
-// PERFIL RESTRITO (Isabella) e DESENHO GERAL DA TELA
-// ===================================================================
-// perfil restrito (Isabella): desenhar() ja forca sozinho o "modo blocos" (De==Ate) e
-// esconde os demais filtros quando modoSimples() e' true — nao ha mais nada especifico
-// pra aplicar aqui no login, a funcao fica so' documentando esse ponto de entrada.

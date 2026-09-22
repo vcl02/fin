@@ -9,8 +9,7 @@ const mostraTela = logado => {
 async function boot() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
-        Estado.restrito = (session.user.email || '').toLowerCase() == EMAIL_ISABELLA.toLowerCase();
-        aplicaPerfil(); mostraTela(1); load();
+        mostraTela(1); load();
     } else {
         mostraTela(0);
     }
@@ -28,11 +27,6 @@ async function entrar() {
         return;
     }
 
-    Estado.restrito =
-        (data.session.user.email || '').toLowerCase() ==
-        EMAIL_ISABELLA.toLowerCase();
-
-    aplicaPerfil();
     mostraTela(1);
     load();
 }

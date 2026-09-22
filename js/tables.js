@@ -50,7 +50,7 @@ function cabecalhoTabela(idTabela) {
         return `<th class="${tipo == 'n' ? 'n' : ''}" onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
     }).join('');
     // 2a linha do header: campo de busca por coluna, so nas colunas de texto (tipo 't').
-    // Modo simples (Isabella / mobile) nao tem busca nenhuma — so ordenar pelo header.
+    // Modo simples no mobile não tem busca — só ordenar pelo cabeçalho.
     if (modoSimples()) return linhaTitulos;
     const filtroAtual = estadoFiltroTexto(idTabela);
     // colunas de texto + Valor tem campo de busca. Valor compara numero (ver

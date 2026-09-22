@@ -14,7 +14,7 @@ O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newli
 
 ## Linguagem visual
 
-O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. Isabella e mobile compartilham o mesmo `modoSimples`, que não exibe o bloco Crédito. No mobile, a interface é de consulta e cadastro e as tabelas não oferecem edição, seleção, duplicação, exclusão nem atualização.
+O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. Não existe modo especial por e-mail ou titular: `isa` é uma classificação do lançamento escolhida no formulário. No mobile, `modoSimples` não exibe o bloco Crédito, a interface é de consulta e cadastro e as tabelas não oferecem edição, seleção, duplicação, exclusão nem atualização.
 
 ## Fatura e Crédito
 

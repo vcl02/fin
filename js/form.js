@@ -243,7 +243,7 @@ function abreModalNovo(prefill) {
     el('fCateg').selectedIndex = 0;
     sinalPositivo = false;
     el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
-    el('fIsaWrap').hidden = Estado.restrito;   // Isabella nao lanca "pra" Isabella, ja e' o padrao dela
+    el('fIsaWrap').hidden = false;
 
     // titulo e aviso mudam conforme o modo simulacao global (Estado.simulando): o MESMO
     // formulario serve pra lancamento real (vai pro banco) e simulado (so' memoria) —
@@ -569,7 +569,7 @@ el('seldup').onclick = async () => {
                     data,
                     freq: null,
                     cred: false,
-                    isa: Estado.restrito,
+                    isa: false,
                     pago: false,
                     ativo: true,
                     nome: ehAporte ? 'Aporte' : 'Resgate',
@@ -666,7 +666,7 @@ async function submeteNovoLancamento() {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     // credito sempre exige fatura; antecipacao de debito tambem (agora com vinculo explicito)
     const faturaIds = (cred || ehAntecip) ? idsFaturasDoFormulario() : [];
-    const isa = el('fIsaWrap').hidden ? Estado.restrito : el('fIsa').checked;
+    const isa = el('fIsa').checked;
     const pago = el('fPago').checked;
     const reservaEmergencia = el('fReservaEmergencia').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco

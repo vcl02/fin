@@ -2,8 +2,6 @@
 
 // Controlador da interface: comandos, modais, gráficos, formulário e boot.
 
-function aplicaPerfil() { }
-
 // redesenha a tela conforme o modo ativo (blocos Debito/Credito vs matriz de comparacao),
 // escondendo/mostrando os filtros que fazem sentido em cada um
 function desenhar() {
@@ -133,7 +131,7 @@ function atualizaBarraSelecao() {
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
     // pra somar e selecionar/limpar. Nunca os dois juntos — pra desmarcar uma linha unica,
     // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
-    // tela/perfil (mobile e Isabella inclusive) — nao depende mais de modoSimples().
+    // tela desktop — a seleção nunca aparece no mobile e não depende do modo simples.
     el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
     el('seldup').textContent = ehAjusteMaterializavel
         ? (ajusteExistente ? 'Consolidar' : 'Materializar')
@@ -470,7 +468,7 @@ el('cicloHoje').onclick = () => {
 };
 
 // ‹ / › navegam pro periodo anterior/seguinte. Anda pelas OPCOES reais do combo #compDe
-// (ja filtradas certo pra Isabella/perfil restrito e com Backlog como 1a opcao), nao por
+// (com Backlog como primeira opção), não por
 // indice aritmetico — assim respeita os mesmos limites de navegacao sem duplicar a logica.
 // Com De==Ate (1 ciclo so', "modo blocos") sempre foi assim: anda 1 a 1, igualando os
 // dois (entra direto no modo blocos daquele ciclo). Comparando um INTERVALO (De != Ate,

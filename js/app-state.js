@@ -4,7 +4,6 @@
 // substitui as policies do banco; qualquer autorização continua sendo responsabilidade do RLS.
 const API = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
-const EMAIL_ISABELLA = 'isabella.251200@gmail.com';
 // Nome técnico da tabela financeira no banco. O domínio continua chamando cada registro de lançamento.
 const TABELA_FIN = 'fin';
 
@@ -27,10 +26,10 @@ const colunasAtivas = () => isMobile() ? COLS_MOBILE : COLS;
 const Estado = {
     ciclos: [], faturas: [], lancamentos: [], valorFaturaPorCiclo: {},
     selecionados: new Map(), ordenacaoPorTabela: {}, filtroTexto: {}, linhasVisiveis: {},
-    fechados: {}, restrito: false, ordComp: { k: 'total', d: 2 }, simulando: false,
+    fechados: {}, ordComp: { k: 'total', d: 2 }, simulando: false,
     _proxIdSimulado: 0,
 };
 
-const modoSimples = () => Estado.restrito || matchMedia('(max-width: 640px)').matches;
+const modoSimples = () => matchMedia('(max-width: 640px)').matches;
 const estadoOrdenacao = id => Estado.ordenacaoPorTabela[id] || (Estado.ordenacaoPorTabela[id] = { k: 'data', d: 1 });
 const estadoFiltroTexto = id => Estado.filtroTexto[id] || (Estado.filtroTexto[id] = {});

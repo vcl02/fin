@@ -28,9 +28,9 @@ function atualizarCombos(lancamentosCrus) {
     // Categoria do formulario e' populada por popularCategoriasNoForm() (ordenada por uso
     // recente), chamada toda vez que o modal abre — nao precisa duplicar aqui.
 
-    // Os combos conservam todos os ciclos usados para qualquer perfil. Mobile e Isabella
-    // são simplificados juntos por modoSimples() no desenho, sem uma regra paralela de
-    // janela de navegação que os faça divergir. "Todos" (value vazio) é a opção padrão.
+    // Os combos conservam todos os ciclos usados. No mobile, modoSimples() limita apenas
+    // a visualização a um ciclo por vez, sem uma regra paralela de navegação. "Todos"
+    // (value vazio) é a opção padrão.
     // Backlog só existe no De, pois não faz sentido compará-lo com outro período.
     const usadosNaveg = usados;
     const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
