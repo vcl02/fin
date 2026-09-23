@@ -27,7 +27,8 @@ el('btLimparFiltros').onclick = limparFiltros;
 // o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
 // (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
 // saiu, e contar agendado inflaria o progresso do acerto.
-const ehCategoria = (categ, procurada) => semAcento(categ).trim() === semAcento(procurada).trim();
+const ehCategoria = (categ, procurada) =>
+    categoriasSeparadas(categ).some(categoria => semAcento(categoria) === semAcento(procurada).trim());
 
 function dadosCategoria(categoria) {
     const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoria(r.categ, categoria));
