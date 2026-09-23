@@ -54,6 +54,7 @@ test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => 
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btMetaReservaEmergencia'));
     assert.ok(acoes.indexOf('id=btMetaReservaEmergencia') < acoes.indexOf('id=flimpar'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
+    assert.match(pagina, /id=rowVis[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<div id=out>/);
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
     assert.match(estilosPainel, /#rowVis\s*\{[\s\S]*display:\s*flex/);
