@@ -58,6 +58,8 @@ test('cabeçalho do cadastro concentra ícones e separa a calculadora', () => {
     assert.match(estilosForm, /\.moneyLinha/);
     assert.match(pagina, /id=fechaNovo title="Fechar" aria-label="Fechar">\s*<svg/);
     assert.match(estilosForm, /#formNovo \.modalHead\s*\{[\s\S]*justify-content:\s*flex-start/);
+    assert.match(estilosForm, /#formNovo \.modalTituloAcoes\s*\{[\s\S]*flex:\s*1/);
+    assert.match(estilosForm, /#formNovo \.modalTituloAcoes \.fmChecks\s*\{[\s\S]*margin-left:\s*auto/);
     assert.match(estilosForm, /#fechaNovo\s*\{[\s\S]*background:\s*var\(--red-soft\)/);
 });
 

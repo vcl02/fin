@@ -182,6 +182,14 @@
       gap: 1.15rem;
   }
 
+  #formNovo .modalTituloAcoes {
+      flex: 1;
+  }
+
+  #formNovo .modalTituloAcoes .fmChecks {
+      margin-left: auto;
+  }
+
   #fechaNovo,
   #fechaVisualizacoes,
   #fechaVisualizacao,
