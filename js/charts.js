@@ -1,6 +1,6 @@
 // Filtros visuais e gráficos do painel.
 
-const FILTROS_PADRAO = { titular: 'T', fpago: 'B', origem: 'A', somenteDif: 'N', fvalor: 'T' };
+const FILTROS_PADRAO = { fpago: 'B', origem: 'A', somenteDif: 'N' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });

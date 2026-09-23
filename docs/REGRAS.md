@@ -6,7 +6,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - `fin.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original.
 - Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
-- Os filtros pago, origem, titular e sinal definem o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
+- Os filtros pago e origem definem o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
 - Não existe flag nem filtro Ativo. Lançamentos com data entram no ciclo correspondente; lançamentos sem data ficam no Backlog.
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase. Além de criar compras hipotéticas, permite editar ou ocultar qualquer lançamento selecionado apenas no array do navegador; os cálculos refletem isso até recarregar ou desativar o modo, quando a carga do banco restaura tudo.
 - No cadastro, Nome é texto livre. Enquanto digita, um combo alinhado sob o campo filtra nomes distintos já usados e exibe a categoria da ocorrência mais recente; ao escolher ou digitar um nome conhecido, a categoria é apenas sugerida e continua editável. Nome sem correspondência é aceito normalmente.

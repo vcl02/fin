@@ -18,8 +18,7 @@ test('front-end não mantém campos nem payloads das flags removidas', () => {
     assert.doesNotMatch(tabelas, /data-tog-reserva-emergencia|r\.isa|r\.ativo|r\.reserva/);
 });
 
-test('Isabella e Reserva são lidas como categorias', () => {
-    assert.match(tabelas, /ehCategoria\(r\.categ, 'Isabella'\)/);
+test('Reserva é lida como categoria pela meta', () => {
     assert.match(graficos, /ehCategoria\(r\.categ, 'Reserva'\)/);
 });
 

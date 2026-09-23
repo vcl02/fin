@@ -4,14 +4,10 @@ const passaFiltroTriEstado = (idSelect, valor) => {
     const v = el(idSelect).value;
     return v == 'B' || (v == 'S') == !!valor;
 };
-// aplica os filtros de situação, origem, titular e valor sobre a lista de lançamentos.
-// Valor: P/N pegam so' o que e' de fato positivo/negativo — lancamento sem valor (v = 0) nao e'
-// nem um nem outro, entao fica de fora dos dois recortes.
+// Aplica os filtros de situação e origem sobre a lista de lançamentos.
 const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
     passaFiltroTriEstado('fpago', r.pago) &&
-    ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value] &&
-    ({ T: 1, E: !ehCategoria(r.categ, 'Isabella'), I: ehCategoria(r.categ, 'Isabella') })[el('titular').value] &&
-    ({ T: 1, P: r.v > 0, N: r.v < 0 })[el('fvalor').value]
+    ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value]
 );
 
 // ===================================================================

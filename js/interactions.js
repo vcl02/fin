@@ -45,9 +45,6 @@ function desenhar() {
     // em vez de corte seco.
     mostraComFade('forigem', !modoBlocos && !simples);
     if (modoBlocos) el('origem').value = 'A';
-    el('ftit').hidden = simples;
-    el('fvalWrap').hidden = simples;
-    if (simples) el('fvalor').value = 'T';
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
     if (simples) {
         el('fsit').hidden = true;
