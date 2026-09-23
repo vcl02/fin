@@ -19,13 +19,13 @@ const calcular = (linhas, idx, guardado) => ({ ...contexto.dadosMetaReservaEmerg
 
 test('soma nove ciclos previstos e acompanha o aumento da Evolução Obra', () => {
     const d = calcular([
-        { periodoIdx: 4, nome: 'Condomínio', v: -100, categ: 'Casa, Reserva emergência' },
-        { periodoIdx: 4, nome: 'Evolução Obra', v: -200, categ: 'Reserva emergência' },
-        { periodoIdx: 5, nome: 'Evolução Obra', v: -300, categ: 'Reserva emergência' },
-        { periodoIdx: 6, nome: 'Evolução Obra', v: -400, categ: 'Reserva emergência' },
+        { periodoIdx: 4, nome: 'Condomínio', v: -100, categ: 'Casa, Reserva' },
+        { periodoIdx: 4, nome: 'Evolução Obra', v: -200, categ: 'Reserva' },
+        { periodoIdx: 5, nome: 'Evolução Obra', v: -300, categ: 'Reserva' },
+        { periodoIdx: 6, nome: 'Evolução Obra', v: -400, categ: 'Reserva' },
         { periodoIdx: 5, nome: 'Outros', v: -700, categ: 'Casa' },
-        { periodoIdx: 5, nome: 'Antecipação', v: -800, categ: 'Reserva emergência', _transferencia: true },
-        { periodoIdx: 5, nome: 'Estorno', v: 50, categ: 'Reserva emergência' },
+        { periodoIdx: 5, nome: 'Antecipação', v: -800, categ: 'Reserva', _transferencia: true },
+        { periodoIdx: 5, nome: 'Estorno', v: 50, categ: 'Reserva' },
     ], 4, 450);
     assert.equal(d.gastoMensal, 300);
     assert.equal(d.meta, 4200); // 300 + 400 + sete ciclos de 500
@@ -36,15 +36,15 @@ test('soma nove ciclos previstos e acompanha o aumento da Evolução Obra', () =
 
 test('gasto que começa no futuro entra na meta e valor sem ocorrência é mantido', () => {
     const d = calcular([
-        { periodoIdx: 2, nome: 'Casa', v: -100, categ: 'Reserva emergência' },
-        { periodoIdx: 3, nome: 'Seguro', v: -50, categ: 'Reserva emergência' },
+        { periodoIdx: 2, nome: 'Casa', v: -100, categ: 'Reserva' },
+        { periodoIdx: 3, nome: 'Seguro', v: -50, categ: 'Reserva' },
     ], 2, 0);
     assert.equal(d.meta, 100 + 8 * 150);
     assert.equal(d.mesesComEstimativa, 8);
 });
 
 test('progresso fica limitado a cem por cento e mostra excedente', () => {
-    const d = calcular([{ periodoIdx: 1, nome: 'Casa', v: -100, categ: 'Reserva emergência' }], 1, 1200);
+    const d = calcular([{ periodoIdx: 1, nome: 'Casa', v: -100, categ: 'Reserva' }], 1, 1200);
     assert.equal(d.meta, 900);
     assert.equal(d.percentual, 100);
     assert.equal(d.guardadoNaMeta, 900);
@@ -61,8 +61,8 @@ test('sem gastos marcados a meta e o progresso ficam zerados', () => {
 
 test('soma lançamentos do mesmo nome no mesmo ciclo antes de projetar', () => {
     const d = calcular([
-        { periodoIdx: 3, nome: 'Casa', v: -100, categ: 'Reserva emergência' },
-        { periodoIdx: 3, nome: 'Casa', v: -50, categ: 'Reserva emergência' },
+        { periodoIdx: 3, nome: 'Casa', v: -100, categ: 'Reserva' },
+        { periodoIdx: 3, nome: 'Casa', v: -50, categ: 'Reserva' },
     ], 3, 0);
     assert.equal(d.gastoMensal, 150);
     assert.equal(d.meta, 1350);
@@ -71,10 +71,10 @@ test('soma lançamentos do mesmo nome no mesmo ciclo antes de projetar', () => {
 
 test('não inclui entradas, transferências nem outras categorias no cálculo', () => {
     const d = calcular([
-        { periodoIdx: 7, nome: 'Entrada', v: 500, categ: 'Reserva emergência' },
-        { periodoIdx: 7, nome: 'Transferência', v: -400, categ: 'Reserva emergência', _transferencia: true },
+        { periodoIdx: 7, nome: 'Entrada', v: 500, categ: 'Reserva' },
+        { periodoIdx: 7, nome: 'Transferência', v: -400, categ: 'Reserva', _transferencia: true },
         { periodoIdx: 7, nome: 'Outra', v: -300, categ: 'Casa' },
-        { periodoIdx: 7, nome: 'Válido', v: -200, categ: 'Reserva emergência' },
+        { periodoIdx: 7, nome: 'Válido', v: -200, categ: 'Reserva' },
     ], 7, -100);
     assert.equal(d.meta, 1800);
     assert.equal(d.guardado, 0);

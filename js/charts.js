@@ -169,7 +169,7 @@ const MESES_META_RESERVA_EMERGENCIA = 9;
 function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
     const porCiclo = new Map();
     linhas.forEach(r => {
-        if (!(r.v < 0) || r._transferencia || !ehCategoria(r.categ, 'Reserva emergência') || r.periodoIdx == null) return;
+        if (!(r.v < 0) || r._transferencia || !ehCategoria(r.categ, 'Reserva') || r.periodoIdx == null) return;
         const gastos = porCiclo.get(r.periodoIdx) || new Map();
         const nome = String(r.nome || '').trim();
         gastos.set(nome, (gastos.get(nome) || 0) + -r.v);

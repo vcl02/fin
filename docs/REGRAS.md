@@ -69,6 +69,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/14-renomear-colunas-fin.sql` renomeia `fin.fatura_venc` para `fin.fatura` e `fin.reserva_emergencia` para `fin.reserva`, preservando todos os valores e recarregando o cache de schema da API.
 - `migrations/15-recorrencia.sql` adiciona `fin.recorrencia_id` e a sequência usada para identificadores de recorrência.
 - `migrations/16-classificacoes-em-categorias.sql` preserva valores `isa` e `reserva` verdadeiros nas categorias `Isabella` e `Reserva emergência`, remove essas flags e também remove `ativo`.
+- `migrations/17-normalizar-categoria-reserva.sql` normaliza a categoria criada pela migration 16 para o nome já adotado no banco: `Reserva`.
 
 ## Testes
 
@@ -91,6 +92,6 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Reserva emergência
 
-- `Reserva emergência` é uma categoria comum e pode coexistir com outras categorias no mesmo lançamento.
+- `Reserva` é a categoria comum usada pela meta e pode coexistir com outras categorias no mesmo lançamento.
 - O botão **Reserva emergência**, ao lado de **Gráfico**, mostra uma pizza de progresso. A meta soma os gastos negativos dessa categoria nos nove ciclos a partir do selecionado, respeitando os demais filtros e excluindo transferências de pagamento/antecipação de fatura. Para cada nome, o valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa. O modal informa quantos ciclos contêm estimativas.
 - O valor guardado da pizza usa `guardadoAte(ciclo)`, a mesma base exibida no título Débito; por isso ele soma tudo que já foi guardado até aquele ciclo.

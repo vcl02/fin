@@ -22,7 +22,7 @@ Há um cartão detalhado. A fatura é derivada de `fin.fatura`; o título e os c
 
 ## Reserva de emergência
 
-A meta usa nove ciclos futuros e somente despesas da categoria `Reserva emergência`. Para cada nome, um valor cadastrado no ciclo substitui a estimativa anterior; sem ocorrência, o último valor conhecido é projetado. Isso acomoda aumentos graduais, como Evolução Obra.
+A meta usa nove ciclos futuros e somente despesas da categoria `Reserva`. Para cada nome, um valor cadastrado no ciclo substitui a estimativa anterior; sem ocorrência, o último valor conhecido é projetado. Isso acomoda aumentos graduais, como Evolução Obra.
 
 ## Dados e banco
 
