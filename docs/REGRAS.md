@@ -52,7 +52,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Mobile
 
-- No mobile, as tabelas são somente leitura. Não há seleção de linhas, edição inline, alternância de status, duplicação, exclusão ou atualização por toque.
+- No mobile, as tabelas são somente leitura. Tocar uma linha seleciona ou desmarca para somar valores na barra flutuante; edição inline, alternância de status, duplicação, exclusão e atualização por toque continuam indisponíveis.
 - No mobile, `modoSimples` mostra um ciclo por vez e não exibe o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
 - O cadastro de novo lançamento permanece disponível; a tela compacta mantém apenas navegação, consulta e esse cadastro como fluxos de trabalho.
 

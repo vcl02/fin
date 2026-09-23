@@ -104,14 +104,9 @@ function desenhar() {
 // SELEÇÃO DE LINHAS (barra flutuante de soma)
 // ===================================================================
 function atualizaBarraSelecao() {
-    // No mobile a visão é estritamente de consulta: descarta eventual seleção herdada do desktop.
-    if (isMobile()) {
-        Estado.selecionados.clear();
-        el('selbar').style.display = 'none';
-        return;
-    }
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
 
+    const mobile = isMobile();
     const chaves = [...Estado.selecionados.keys()];
     // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
     // excluidas. As excecoes de ACAO sao os ajustes "sug:" e "res:": Aporte sugerido
@@ -125,18 +120,17 @@ function atualizaBarraSelecao() {
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
-    // pra somar e selecionar/limpar. Nunca os dois juntos — pra desmarcar uma linha unica,
-    // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
-    // tela desktop — a seleção nunca aparece no mobile e não depende do modo simples.
-    el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
+    // pra somar e selecionar/limpar. No mobile, a barra nunca oferece ações que alteram
+    // dados: fica somente a soma e o botão Limpar.
+    el('seldup').hidden = mobile || (!chaveUnicaReal && !ehAjusteMaterializavel);
     el('seldup').textContent = ehAjusteMaterializavel
         ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
         : 'Duplicar';
-    el('seldel').hidden = !chaveUnicaReal;
+    el('seldel').hidden = mobile || !chaveUnicaReal;
     el('seldel').textContent = Estado.simulando && chaveUnicaReal ? 'Ocultar' : 'Excluir';
-    el('selacao').hidden = !!chaveUnicaReal || ehAjusteMaterializavel;
+    el('selacao').hidden = !mobile && (!!chaveUnicaReal || ehAjusteMaterializavel);
 
-    if (chaveUnica) {
+    if (chaveUnica && !mobile) {
         const r = linhaDaChaveSelecao(chaveUnica);
         el('selinfo').innerHTML =
             `<span class=cnt>Selecionado</span>` +
@@ -417,7 +411,6 @@ el('out').addEventListener('click', e => {
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
-    if (isMobile()) return;
     if (e.shiftKey) { const s = getSelection(); if (s) s.removeAllRanges(); }   // limpa a selecao de texto nativa do shift-click
     if (e.shiftKey && !isMobile() && Estado.ultimaClicada) {
         const idTabela = Object.keys(Estado.linhasVisiveis)

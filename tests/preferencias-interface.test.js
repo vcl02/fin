@@ -76,7 +76,10 @@ test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco
     assert.match(dadosUi, /const usadosNaveg = usados;/);
     assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
     assert.ok(visoes.indexOf('if (modoSimples()) return blocoDebito;') < visoes.indexOf('const creditosExibidos = creditosExibidosNoCiclo'));
-    assert.match(tabelas, /const podeSelecionar = selecionavel && !isMobile\(\);/);
-    assert.match(interacoes, /if \(isMobile\(\)\) \{\s+Estado\.selecionados\.clear\(\);/);
+    assert.match(tabelas, /const podeSelecionar = selecionavel;/);
+    assert.doesNotMatch(interacoes, /const linha = e\.target\.closest\('tr\[data-sid\]'\);[\s\S]*?if \(isMobile\(\)\) return;/);
+    assert.match(interacoes, /el\('seldup'\)\.hidden = mobile/);
+    assert.match(interacoes, /el\('seldel'\)\.hidden = mobile/);
+    assert.match(regras, /Tocar uma linha seleciona ou desmarca para somar valores/);
     assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
 });

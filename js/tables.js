@@ -197,8 +197,9 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
         });
     }
 
-    // Mobile é consulta: não monta chaves selecionáveis nem a barra de ações que delas depende.
-    const podeSelecionar = selecionavel && !isMobile();
+    // Tanto no desktop quanto no mobile, o toque/clique na linha serve para somar valores.
+    // No mobile a barra mostra apenas a soma e Limpar; ações que mudam dados ficam ocultas.
+    const podeSelecionar = selecionavel;
     return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
             const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);

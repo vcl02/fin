@@ -43,4 +43,4 @@
 - Mantenha dark mode definitivo, porém em tons de cinza escuro legíveis; evite preto quase puro dominando toda a interface.
 - Prefira ícones a textos nos botões de ação. Todo ícone precisa de `title` e `aria-label`; texto visível só entra quando for indispensável para entendimento.
 - Busque minimalismo: informação útil, textos curtos e formulários somente com campos necessários ao cadastro.
-- Isabella e mobile usam o mesmo `modoSimples`, sem o bloco Crédito. No mobile, as tabelas são somente leitura e o único fluxo de alteração permitido é cadastrar um novo lançamento; nunca exponha edição inline, seleção, duplicação, exclusão ou atualização por toque.
+- Isabella e mobile usam o mesmo `modoSimples`, sem o bloco Crédito. No mobile, as tabelas são somente leitura e o único fluxo de alteração permitido é cadastrar um novo lançamento. O toque na linha pode somente selecioná-la para somar valores; nunca exponha edição inline, duplicação, exclusão ou atualização por toque.

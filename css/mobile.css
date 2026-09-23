@@ -33,8 +33,17 @@
           display: none;
       }
 
-      /* Não há seleção nem ações em lote no mobile: a tabela é estritamente de consulta. */
+      /* No mobile, a barra serve exclusivamente para mostrar a soma e limpar a seleção. */
       #selbar {
+          right: .9rem;
+          bottom: .9rem;
+          max-width: calc(100vw - 1.8rem);
+          gap: .8rem;
+          padding: .75rem .9rem;
+      }
+
+      #selbar #seldup,
+      #selbar #seldel {
           display: none !important;
       }
 
