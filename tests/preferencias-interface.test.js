@@ -52,8 +52,11 @@ test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => 
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
     assert.ok(acoes.indexOf('id=btVisualizacoes') < acoes.indexOf('id=fgraf'));
     assert.ok(acoes.indexOf('id=fgraf') < acoes.indexOf('id=fevol'));
-    assert.ok(acoes.indexOf('id=fevol') < acoes.indexOf('id=flimpar'));
+    assert.ok(acoes.indexOf('id=fevol') < acoes.indexOf('id=fReserva'));
+    assert.ok(acoes.indexOf('id=fReserva') < acoes.indexOf('id=flimpar'));
     assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /#rowVis\s*\{[\s\S]*flex-wrap:\s*nowrap/);
+    assert.match(interacoes, /mostraComFade\('fReserva', !simples && !noBacklog && !!el\('compAte'\)\.value\)/);
+    assert.match(interacoes, /btMetaReservaEmergencia'\)\.dataset\.idx = el\('compAte'\)\.value/);
 });
 
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {

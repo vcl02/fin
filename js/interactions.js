@@ -57,8 +57,11 @@ function desenhar() {
     // que nao tem periodo pra desenhar a pizza).
     mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
     el('btGrafico').dataset.idx = el('ciclo').value;
-    el('btMetaReservaEmergencia').dataset.idx = el('ciclo').value;
     mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
+    // A Reserva pode acompanhar tanto um ciclo quanto uma comparação; na comparação,
+    // usa sempre o último ciclo escolhido (Até). Backlog não tem ciclo final válido.
+    mostraComFade('fReserva', !simples && !noBacklog && !!el('compAte').value);
+    el('btMetaReservaEmergencia').dataset.idx = el('compAte').value;
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
     // (ex: digitar num filtro de texto), senao a tela piscaria a cada tecla

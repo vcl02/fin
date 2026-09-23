@@ -32,12 +32,6 @@
       color: var(--mu);
   }
 
-  /* Ações de acompanhamento ficam juntas na mesma linha da barra. */
-  .acoesBotoes {
-      display: flex;
-      gap: .55rem;
-  }
-
   /* Os comandos variam conforme a visão, mas permanecem numa única faixa horizontal. */
   #rowVis {
       flex-wrap: nowrap;
