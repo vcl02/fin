@@ -246,6 +246,11 @@
       font-weight: 700;
   }
 
+  .ajudaCategoria {
+      color: var(--mu);
+      font-size: .78rem;
+  }
+
   .fm input[type=text],
   .fm input[type=date],
   .fm select {
