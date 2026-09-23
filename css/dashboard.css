@@ -32,8 +32,8 @@
       color: var(--mu);
   }
 
-  /* os dois gráficos pertencem ao mesmo filtro e ficam lado a lado */
-  .graficosBotoes {
+  /* Ações de acompanhamento ficam juntas na mesma linha da barra. */
+  .acoesBotoes {
       display: flex;
       gap: .55rem;
   }
