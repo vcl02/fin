@@ -73,6 +73,22 @@ const valorValido = v => {
     return !['null', 'undefined', 'nan', 'none', 'n/a'].includes(limpo);
 };
 
+// O banco mantém a categoria como texto; uma célula pode trazer mais de uma, separadas
+// por vírgula. Esta regra é a fronteira única para leitura, exibição e persistência.
+const categoriasSeparadas = valor => {
+    const vistas = new Set();
+    return String(valor ?? '').split(',')
+        .map(categoria => categoria.trim())
+        .filter(valorValido)
+        .filter(categoria => {
+            const chave = semAcento(categoria);
+            if (vistas.has(chave)) return false;
+            vistas.add(chave);
+            return true;
+        });
+};
+const normalizaCategorias = valor => categoriasSeparadas(valor).join(', ');
+
 // categoria dedicada pra antecipacao de fatura: um debito nessa categoria abate o quanto ainda falta sair da conta na linha dinamica "Fatura do cartao" (nao duplica o lancamento — ele continua aparecendo normal na tabela de Debito).
 const ehAntecipacaoFatura = categ => {
     const c = semAcento(categ).trim();
