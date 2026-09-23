@@ -3,10 +3,23 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { carregarFuncoes } = require('./helpers/carregar-funcoes');
 
+const categoriasSeparadas = valor => {
+    const vistas = new Set();
+    return String(valor ?? '').split(',')
+        .map(categoria => categoria.trim())
+        .filter(Boolean)
+        .filter(categoria => {
+            const chave = categoria.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            if (vistas.has(chave)) return false;
+            vistas.add(chave);
+            return true;
+        });
+};
+
 const dominio = carregarFuncoes('js/domain.js', [
     'validarLancamentosCarregados', 'NOME_ANCORA_CICLO', 'CATEGORIA_INVESTIMENTO',
     'TOLERANCIA_FINANCEIRA', 'PREFIXO_LINHA_SINTETICA',
-]);
+], { categoriasSeparadas });
 
 test('centraliza nomes e tolerância usados pelas regras financeiras', () => {
     assert.equal(dominio.NOME_ANCORA_CICLO, 'Faturamento PJ');
@@ -33,6 +46,16 @@ test('avisa categoria com uma única ocorrência sem confundir caixa ou acento',
     assert.deepEqual(Array.from(diagnostico.inconsistencias), []);
     assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Viagem" aparece em apenas um lançamento (id 20).')));
     assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa"')));
+});
+
+test('valida cada categoria separada por vírgula', () => {
+    const diagnostico = dominio.validarLancamentosCarregados([
+        { id: 30, data: '2026-09-21', valor: -10, nome: 'Mercado A', categ: 'Casa, Mercado', cred: false, isa: false, pago: true, ativo: true, reserva: false },
+        { id: 31, data: '2026-09-22', valor: -20, nome: 'Mercado B', categ: 'Mercado, Saúde', cred: false, isa: false, pago: true, ativo: true, reserva: false },
+    ]);
+    assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Mercado"')));
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa" aparece em apenas um lançamento (id 30).')));
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Saúde" aparece em apenas um lançamento (id 31).')));
 });
 
 test('avisa sobre contrato inválido sem alterar os dados recebidos', () => {
