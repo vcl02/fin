@@ -50,11 +50,10 @@ function desenhar() {
     if (simples) el('fvalor').value = 'T';
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
     if (simples) {
-        el('fsit').hidden = el('fativoWrap').hidden = true;
-        el('fpago').value = 'B'; el('fativo').value = 'S';   // ve tudo (pago+aberto), so os ativos
+        el('fsit').hidden = true;
+        el('fpago').value = 'B';
     }
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
-    if (!simples) el('fativo').value = noBacklog ? 'B' : 'S';
     if (!modoBlocos) el('origem').value = 'A';
 
     // "Ver gráfico" so faz sentido com um ciclo de verdade selecionado (fora do Backlog,
@@ -417,8 +416,6 @@ el('out').addEventListener('click', e => {
 });
 
 el('out').addEventListener('click', e => {
-    // badges interativos têm seus próprios handlers; nunca podem também selecionar a linha.
-    if (e.target.closest('[data-tog-reserva-emergencia]')) return;
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
     if (isMobile()) return;
@@ -534,5 +531,5 @@ document.querySelectorAll('.tool select,.tool input,#navComparar select').forEac
 // ===================================================================
 // Valor padrao de cada select da toolbar: e' a 1a <option> de cada um no index.html, que e'
 // tambem o que o navegador seleciona sozinho na 1a carga. desenhar() ainda pode sobrescrever
-// alguns deles conforme o modo (ex: Ativo vira "Ambos" no Backlog, Origem volta pra "Tudo"
+// alguns deles conforme o modo (ex: Origem volta pra "Tudo"
 // no modo blocos) — o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.

@@ -30,8 +30,8 @@ test('centraliza nomes e tolerância usados pelas regras financeiras', () => {
 
 test('aceita lançamento persistido completo sem avisos', () => {
     const diagnostico = dominio.validarLancamentosCarregados([
-        { id: 10, data: '2026-09-21', valor: '-42.50', nome: 'Mercado', categ: 'Casa', cred: false, isa: false, pago: true, ativo: true, reserva: false },
-        { id: 13, data: '2026-09-22', valor: '-30.00', nome: 'Luz', categ: 'Casa', cred: false, isa: false, pago: false, ativo: true, reserva: false },
+        { id: 10, data: '2026-09-21', valor: '-42.50', nome: 'Mercado', categ: 'Casa', cred: false, pago: true },
+        { id: 13, data: '2026-09-22', valor: '-30.00', nome: 'Luz', categ: 'Casa', cred: false, pago: false },
     ]);
     assert.deepEqual(Array.from(diagnostico.inconsistencias), []);
     assert.deepEqual(Array.from(diagnostico.avisos), []);
@@ -39,9 +39,9 @@ test('aceita lançamento persistido completo sem avisos', () => {
 
 test('avisa categoria com uma única ocorrência sem confundir caixa ou acento', () => {
     const diagnostico = dominio.validarLancamentosCarregados([
-        { id: 20, data: '2026-09-21', valor: -10, nome: 'Único', categ: 'Viagem', cred: false, isa: false, pago: false, ativo: true, reserva: false },
-        { id: 21, data: '2026-09-21', valor: -10, nome: 'Casa A', categ: 'Casa', cred: false, isa: false, pago: false, ativo: true, reserva: false },
-        { id: 22, data: '2026-09-21', valor: -10, nome: 'Casa B', categ: 'cása ', cred: false, isa: false, pago: false, ativo: true, reserva: false },
+        { id: 20, data: '2026-09-21', valor: -10, nome: 'Único', categ: 'Viagem', cred: false, pago: false },
+        { id: 21, data: '2026-09-21', valor: -10, nome: 'Casa A', categ: 'Casa', cred: false, pago: false },
+        { id: 22, data: '2026-09-21', valor: -10, nome: 'Casa B', categ: 'cása ', cred: false, pago: false },
     ]);
     assert.deepEqual(Array.from(diagnostico.inconsistencias), []);
     assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Viagem" aparece em apenas um lançamento (id 20).')));
@@ -50,8 +50,8 @@ test('avisa categoria com uma única ocorrência sem confundir caixa ou acento',
 
 test('valida cada categoria separada por vírgula', () => {
     const diagnostico = dominio.validarLancamentosCarregados([
-        { id: 30, data: '2026-09-21', valor: -10, nome: 'Mercado A', categ: 'Casa, Mercado', cred: false, isa: false, pago: true, ativo: true, reserva: false },
-        { id: 31, data: '2026-09-22', valor: -20, nome: 'Mercado B', categ: 'Mercado, Saúde', cred: false, isa: false, pago: true, ativo: true, reserva: false },
+        { id: 30, data: '2026-09-21', valor: -10, nome: 'Mercado A', categ: 'Casa, Mercado', cred: false, pago: true },
+        { id: 31, data: '2026-09-22', valor: -20, nome: 'Mercado B', categ: 'Mercado, Saúde', cred: false, pago: true },
     ]);
     assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Mercado"')));
     assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa" aparece em apenas um lançamento (id 30).')));
@@ -72,7 +72,7 @@ test('avisa sobre contrato inválido sem alterar os dados recebidos', () => {
 test('aceita referência legada por fatura_id sem tratar id numérico como data', () => {
     const diagnostico = dominio.validarLancamentosCarregados([{
         id: 12, data: '2026-09-21', valor: -10, nome: 'Compra antiga', categ: 'Casa',
-        cred: true, isa: false, pago: false, ativo: true, fatura_id: 8,
+        cred: true, pago: false, fatura_id: 8,
     }]);
     assert.ok(!diagnostico.inconsistencias.some(aviso => aviso.includes('crédito sem fatura vinculada')));
 });

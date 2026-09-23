@@ -1,6 +1,6 @@
 // Filtros visuais e gráficos do painel.
 
-const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', origem: 'A', somenteDif: 'N', fvalor: 'T' };
+const FILTROS_PADRAO = { titular: 'T', fpago: 'B', origem: 'A', somenteDif: 'N', fvalor: 'T' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
@@ -24,14 +24,11 @@ el('btLimparFiltros').onclick = limparFiltros;
 // Ela adiantou um valor de uma vez (entra POSITIVO na categoria) e a divida vai sendo
 // quitada aos poucos com o que sai pra ela (negativo — credito ou debito, tanto faz).
 // De proposito olha TODOS os lancamentos da categoria e IGNORA os filtros/ciclo da barra:
-// o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
-// (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
+// o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que esta 'pago' —
+// enquanto o pagamento nao aconteceu o dinheiro nao
 // saiu, e contar agendado inflaria o progresso do acerto.
-const ehCategoria = (categ, procurada) =>
-    categoriasSeparadas(categ).some(categoria => semAcento(categoria) === semAcento(procurada).trim());
-
 function dadosCategoria(categoria) {
-    const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoria(r.categ, categoria));
+    const linhas = Estado.lancamentos.filter(r => r.pago && ehCategoria(r.categ, categoria));
     const entradas = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
     const saidas = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
     // O percentual visual para em 100%, mas o saldo continua mostrando excesso de saída.
@@ -40,13 +37,13 @@ function dadosCategoria(categoria) {
 }
 
 // Entrada Econ, Evolução Obra e Dívida Estudantil medem execução financeira: o universo é tudo que
-// está ativo no recorte (pago + não pago), e a barra compara o valor pago com esse total.
+// está no recorte (pago + não pago), e a barra compara o valor pago com esse total.
 // Usa valor absoluto porque despesas são armazenadas com sinal negativo.
 function dadosPagamentoCategoria(op) {
     const campo = op.campo || 'categ';
     const valor = op.valor || op.categoria;
     const linhas = Estado.lancamentos.filter(r =>
-        r.ativo && ehCategoria(r[campo], valor) && (!op.somenteNegativos || r.v < 0)
+        ehCategoria(r[campo], valor) && (!op.somenteNegativos || r.v < 0)
     );
     const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
     const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
@@ -87,7 +84,7 @@ function abrirVisPagamentoCategoria(op) {
     const rotuloFiltro = op.campo == 'nome' ? 'nome' : 'categoria';
     el('tituloVisCategoria').textContent = op.titulo;
     el('robertaCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento ativo com ${rotuloFiltro} “${escapeHtml(valorFiltro)}” ainda.</p>`
+        ? `<p class=meta>Nenhum lançamento com ${rotuloFiltro} “${escapeHtml(valorFiltro)}” ainda.</p>`
         : `<div class="robPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
            <p class=robPctSub>do valor total está pago</p>
            <div class=robBarra><div class=robFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
@@ -172,7 +169,7 @@ const MESES_META_RESERVA_EMERGENCIA = 9;
 function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
     const porCiclo = new Map();
     linhas.forEach(r => {
-        if (!(r.v < 0) || r._transferencia || r.reserva !== true || r.periodoIdx == null) return;
+        if (!(r.v < 0) || r._transferencia || !ehCategoria(r.categ, 'Reserva emergência') || r.periodoIdx == null) return;
         const gastos = porCiclo.get(r.periodoIdx) || new Map();
         const nome = String(r.nome || '').trim();
         gastos.set(nome, (gastos.get(nome) || 0) + -r.v);
@@ -210,9 +207,7 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
 
 function dadosDoGraficoCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
-    const visiveis = Estado.lancamentos.filter(r =>
-        passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago)
-    );
+    const visiveis = Estado.lancamentos.filter(r => passaFiltroTriEstado('fpago', r.pago));
     const doPeriodo = visiveis.filter(r =>
         r.periodoIdx == idxPeriodo && !r.cred && !ehTransferenciaFatura(r));
 
@@ -429,55 +424,6 @@ el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
 });
 
-// clique no badge "Reserva emergência" alterna a classificação sem selecionar a linha.
-// Em linhas reais, a mudança vale para todas as ocorrências com o mesmo nome exato.
-// Linhas simuladas continuam exclusivamente em memória.
-el('out').addEventListener('click', async e => {
-    const badge = e.target.closest('[data-tog-reserva-emergencia]');
-    if (!badge) return;
-    if (isMobile()) return;
-    e.stopImmediatePropagation();
-
-    const id = badge.dataset.togReservaEmergencia;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const nome = String(r.nome || '');
-    const novaReservaEmergencia = !r.reserva;
-    badge.classList.toggle('tagReservaEmergencia', novaReservaEmergencia);
-    badge.classList.toggle('tagSemReservaEmergencia', !novaReservaEmergencia);
-    badge.textContent = novaReservaEmergencia ? 'Sim' : 'Não';
-    badge.style.opacity = .5;
-
-    try {
-        if (Estado.simulando || r._sim) {
-            Estado.lancamentos
-                .filter(x => x.nome === nome)
-                .forEach(x => { x.reserva = novaReservaEmergencia; });
-        } else {
-            const esperados = Estado.lancamentos
-                .filter(x => ehLinhaReal(x) && x.nome === nome)
-                .map(x => String(x.id));
-            const atualizados = await atualizarReservaEmergenciaPorNome(nome, novaReservaEmergencia);
-            const idsAtualizados = new Set(atualizados.map(x => String(x.id)));
-            const faltantes = esperados.filter(idEsperado => !idsAtualizados.has(idEsperado));
-            if (faltantes.length) {
-                await load();
-                throw Error(`atualização parcial: ${faltantes.length} lançamento(s) com o nome "${nome}" não retornaram do banco`);
-            }
-            const porId = new Map(atualizados.map(x => [String(x.id), x]));
-            Estado.lancamentos.forEach(x => {
-                const atualizado = porId.get(String(x.id));
-                if (atualizado) x.reserva = !!atualizado.reserva;
-            });
-        }
-        desenhar();
-    } catch (err) {
-        badge.style.opacity = '';
-        mostrarToast('Falhou ao atualizar', err.message);
-        desenhar();
-    }
-});
 el('fechaMetaReservaEmergencia').onclick = () => el('modalMetaReservaEmergencia').close();
 el('modalMetaReservaEmergencia').addEventListener('click', e => {
     if (e.target == el('modalMetaReservaEmergencia')) el('modalMetaReservaEmergencia').close();

@@ -88,6 +88,8 @@ const categoriasSeparadas = valor => {
         });
 };
 const normalizaCategorias = valor => categoriasSeparadas(valor).join(', ');
+const ehCategoria = (categ, procurada) =>
+    categoriasSeparadas(categ).some(categoria => semAcento(categoria) === semAcento(procurada).trim());
 
 // categoria dedicada pra antecipacao de fatura: um debito nessa categoria abate o quanto ainda falta sair da conta na linha dinamica "Fatura do cartao" (nao duplica o lancamento — ele continua aparecendo normal na tabela de Debito).
 const ehAntecipacaoFatura = categ => {

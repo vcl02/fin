@@ -43,16 +43,17 @@ test('empréstimo não mantém atalho próprio de acompanhamento', () => {
 
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {
     assert.match(regras, /No mobile, as tabelas são somente leitura/);
-    assert.match(regras, /ele não muda a interface conforme o e-mail da sessão/);
+    assert.match(regras, /ela não muda a interface conforme o e-mail da sessão/);
     assert.match(estado, /const modoSimples = \(\) => matchMedia/);
     assert.doesNotMatch(estado, /restrito|EMAIL_ISABELLA/);
     assert.doesNotMatch(bootstrap, /restrito|EMAIL_ISABELLA|aplicaPerfil/);
-    assert.match(formulario, /const isa = el\('fIsa'\)\.checked;/);
+    assert.doesNotMatch(pagina, /id=fIsa|id=fReservaEmergencia/);
+    assert.doesNotMatch(formulario, /\bisa\b|\breserva\b/);
     assert.doesNotMatch(dadosUi, /modoRestrito/);
     assert.match(dadosUi, /const usadosNaveg = usados;/);
     assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
     assert.ok(visoes.indexOf('if (modoSimples()) return blocoDebito;') < visoes.indexOf('const creditosExibidos = creditosExibidosNoCiclo'));
     assert.match(tabelas, /const podeSelecionar = selecionavel && !isMobile\(\);/);
     assert.match(interacoes, /if \(isMobile\(\)\) \{\s+Estado\.selecionados\.clear\(\);/);
-    assert.match(graficos, /if \(isMobile\(\)\) return;\s+e\.stopImmediatePropagation\(\);/);
+    assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
 });

@@ -51,22 +51,6 @@ const atualizarLancamento = async (id, campos) => {
     return linhas[0];
 };
 
-const atualizarReservaEmergenciaPorNome = async (nome, reservaEmergencia) => {
-    // A classificação é uma preferência por nome: todos os lançamentos reais com o mesmo
-    // texto exato recebem o mesmo valor. encodeURIComponent impede que acentos, espaços e
-    // caracteres de URL alterem o filtro PostgREST.
-    const filtro = `nome=eq.${encodeURIComponent(nome)}`;
-    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?${filtro}&select=id,nome,reserva`, {
-        method: 'PATCH',
-        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify({ reserva: reservaEmergencia }),
-    });
-    if (!r.ok) throw Error(`atualizar reserva emergência: ${r.status} ${await r.text()}`);
-    const linhas = await r.json();
-    if (!linhas.length) throw Error('nenhuma linha atualizada (RLS/policy do Supabase pode estar bloqueando UPDATE)');
-    return linhas;
-};
-
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);
     const diagnosticoDeDados = validarLancamentosCarregados(lancamentosCrus);

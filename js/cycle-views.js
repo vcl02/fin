@@ -31,7 +31,7 @@ function vCiclo() {
         Estado.valorFaturaPorCiclo[sid] = liquido;
         return {
             data: venc || periodo.fat, nome: 'Fatura do cartão', categ: 'Fatura',
-            freq: '', id: -3, v: liquido, valor: liquido, isa: false, _fat: 1, _sid: sid,
+            freq: '', id: -3, v: liquido, valor: liquido, _fat: 1, _sid: sid,
         };
     };
     const linhasFatura = [montaLinhaFatura()].filter(Boolean);
@@ -200,7 +200,7 @@ function vComp() {
         if (Math.abs(anterior) > 0.005 && Estado.ciclos[idx - 1] && dataISO(Estado.ciclos[idx - 1].fat) >= SALDO_DESDE) {
             sinteticas.push({
                 nome: 'Saldo do mês anterior', categ: 'Saldo', freq: '', pago: null,
-                id: -1, _sid: `sal:${idx}`, data: per.ini, isa: null, cred: false, ativo: true,
+                id: -1, _sid: `sal:${idx}`, data: per.ini, cred: false,
                 v: anterior, valor: anterior, periodoIdx: idx,
             });
         }
@@ -211,7 +211,7 @@ function vComp() {
         if (valorAbatido) {
             sinteticas.push({
                 nome: 'Abatimento de fatura', categ: 'Abatimento de fatura', freq: '', pago: null,
-                id: -6, _sid: `abt:${idx}`, data: dataISO(per.fat), isa: false, cred: false, ativo: true,
+                id: -6, _sid: `abt:${idx}`, data: dataISO(per.fat), cred: false,
                 v: valorAbatido, valor: valorAbatido, periodoIdx: idx,
             });
         }
@@ -221,8 +221,7 @@ function vComp() {
             nome: ajuste.nome, categ: ajuste.categ, freq: '', pago: null,
             id: ajuste.tipo == 'resgate' ? -2 : -5,
             _sid: `${ajuste.tipo == 'resgate' ? 'res' : 'sug'}:${idx}`,
-            data: dataISO(per.fat), isa: null,
-            cred: false, ativo: true, v: ajuste.v, valor: ajuste.v, periodoIdx: idx,
+            data: dataISO(per.fat), cred: false, v: ajuste.v, valor: ajuste.v, periodoIdx: idx,
         });
     });
 

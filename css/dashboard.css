@@ -365,36 +365,6 @@
       font-weight: 600;
   }
 
-  /* indicador da classificação Reserva emergência */
-  .tagReservaEmergencia,
-  .tagSemReservaEmergencia {
-      display: inline-block;
-      padding: .16rem .42rem;
-      border-radius: 99px;
-      font-size: .72rem;
-      font-weight: 700;
-  }
-
-  .tagReservaEmergencia {
-      color: #8BE0B5;
-      background: #173A2A;
-  }
-
-  .tagSemReservaEmergencia {
-      color: #F1BA9F;
-      background: #47291F;
-  }
-
-  .togReservaEmergencia {
-      cursor: pointer;
-  }
-
-  .togReservaEmergencia:hover {
-      filter: brightness(1.16);
-      outline: 1px dashed currentColor;
-      outline-offset: 2px;
-  }
-
   /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
      #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
      tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. */

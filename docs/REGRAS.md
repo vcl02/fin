@@ -6,7 +6,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - `fin.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original.
 - Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
-- O filtro ativo, pago, origem, titular e sinal define o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
+- Os filtros pago, origem, titular e sinal definem o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
+- Não existe flag nem filtro Ativo. Lançamentos com data entram no ciclo correspondente; lançamentos sem data ficam no Backlog.
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase. Além de criar compras hipotéticas, permite editar ou ocultar qualquer lançamento selecionado apenas no array do navegador; os cálculos refletem isso até recarregar ou desativar o modo, quando a carga do banco restaura tudo.
 - No cadastro, Nome é texto livre. Enquanto digita, um combo alinhado sob o campo filtra nomes distintos já usados e exibe a categoria da ocorrência mais recente; ao escolher ou digitar um nome conhecido, a categoria é apenas sugerida e continua editável. Nome sem correspondência é aceito normalmente.
 - Categorias são texto livre e podem ser múltiplas no mesmo lançamento, separadas por vírgula. O formulário sugere cada categoria individual; ao salvar, remove espaços extras e duplicatas sem diferenciar caixa ou acento. Relatórios financeiros mantêm o lançamento como uma única movimentação para não duplicar seu valor.
@@ -25,10 +26,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - No modo Ciclo, o bloco Débito e seus cálculos continuam na competência atual. Somente a tabela Crédito é uma prévia visual: no ciclo N ela mostra os créditos da competência N+1.
 - O total no título dessa prévia de Crédito usa os mesmos filtros e abatimentos por antecipação da linha dinâmica da fatura; a tabela abaixo continua detalhando as compras brutas.
 
-- Existe um único cartão detalhado. Todo lançamento com `cred = true` aponta para `fatura`; `isa` não seleciona outro calendário de cartão.
-- A fatura da Isabella é um lançamento real comum: `cred = false`, `isa = true`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
+- Existe um único cartão detalhado. Todo lançamento com `cred = true` aponta para `fatura`; a categoria `Isabella` não seleciona outro calendário de cartão.
+- A fatura da Isabella é um lançamento real comum: `cred = false`, categoria `Isabella`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
 - A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações do cartão detalhado.
-- O campo `isa` identifica lançamentos da Isabella para filtros e é escolhido explicitamente no formulário; ele não muda a interface conforme o e-mail da sessão.
+- A categoria `Isabella` identifica esses lançamentos no filtro Titular; ela não muda a interface conforme o e-mail da sessão.
 - Antecipações de fatura abatem somente a única fatura detalhada, da mais antiga para a mais nova.
 
 ## Aportes e resgates
@@ -46,8 +47,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Visualizações de acompanhamento
 
-- A visão Roberta considera somente lançamentos ativos e pagos da categoria: entradas positivas formam o crédito e saídas negativas o consomem. O percentual para em 100%, mas o saldo ainda informa eventual pagamento excedente.
-- As visualizações de pagamento por categoria ou nome consideram lançamentos ativos, pagos e abertos; usam valor absoluto para comparar pago, pendente e total. A visão Iphone limita-se a saídas negativas.
+- A visão Roberta considera somente lançamentos pagos da categoria: entradas positivas formam o crédito e saídas negativas o consomem. O percentual para em 100%, mas o saldo ainda informa eventual pagamento excedente.
+- As visualizações de pagamento por categoria ou nome consideram lançamentos pagos e abertos; usam valor absoluto para comparar pago, pendente e total. A visão Iphone limita-se a saídas negativas.
 - Empréstimo continua sendo uma categoria livre para filtros e relatórios, mas não possui botão próprio de acompanhamento.
 
 ## Mobile
@@ -67,6 +68,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/13-renomear-lancamentos-para-fin.sql` renomeia a tabela técnica `public.lancamentos` para `public.fin` sem copiar ou alterar registros; nomes antigos permanecem apenas no histórico das migrations e no vocabulário financeiro.
 - `migrations/14-renomear-colunas-fin.sql` renomeia `fin.fatura_venc` para `fin.fatura` e `fin.reserva_emergencia` para `fin.reserva`, preservando todos os valores e recarregando o cache de schema da API.
 - `migrations/15-recorrencia.sql` adiciona `fin.recorrencia_id` e a sequência usada para identificadores de recorrência.
+- `migrations/16-classificacoes-em-categorias.sql` preserva valores `isa` e `reserva` verdadeiros nas categorias `Isabella` e `Reserva emergência`, remove essas flags e também remove `ativo`.
 
 ## Testes
 
@@ -75,7 +77,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
 - A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.
 - A meta de reserva emergência, calculada para os nove ciclos seguintes com valores previstos e estimados, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
-- O cadastro e a alternância imediata da classificação Reserva emergência são cobertos por `node --test tests/reserva-emergencia-interacao.test.js`.
+- A substituição das flags por categorias é coberta por `node --test tests/reserva-emergencia-interacao.test.js`.
 - O deslocamento visual de uma competência na tabela Crédito é coberto por `node --test tests/layout-creditos.test.js`.
 - Datas, recorrências, normalização de texto e alocação de antecipações são cobertas por `node --test tests/shared-regras.test.js`.
 - Aporte/resgate, saldo-base e total de Crédito são cobertos por `node --test tests/finance-regras.test.js`.
@@ -89,8 +91,6 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Reserva emergência
 
-- `fin.reserva` é a classificação existente no banco. A migration `migrations/12-renomear-essencial-para-reserva-emergencia.sql` registra o nome histórico anterior; a migration 14 usa o nome curto atual e preserva seus valores.
-- O formulário mostra a caixa **Reserva emergência** desmarcada por padrão e novos lançamentos são salvos como `false` até ela ser marcada.
-- Nas tabelas, o badge Reserva emergência é clicável para alternar a classificação de todos os lançamentos reais com o mesmo `nome` exato, em qualquer ciclo; a alteração é salva imediatamente. Em simulações, apenas as linhas simuladas com esse mesmo nome mudam em memória.
-- O botão **Reserva emergência**, ao lado de **Gráfico**, mostra uma pizza de progresso. A meta soma os gastos negativos marcados como reserva emergência nos nove ciclos a partir do selecionado, respeitando os filtros ativos e excluindo transferências de pagamento/antecipação de fatura. Para cada nome, o valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa. O modal informa quantos ciclos contêm estimativas.
+- `Reserva emergência` é uma categoria comum e pode coexistir com outras categorias no mesmo lançamento.
+- O botão **Reserva emergência**, ao lado de **Gráfico**, mostra uma pizza de progresso. A meta soma os gastos negativos dessa categoria nos nove ciclos a partir do selecionado, respeitando os demais filtros e excluindo transferências de pagamento/antecipação de fatura. Para cada nome, o valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa. O modal informa quantos ciclos contêm estimativas.
 - O valor guardado da pizza usa `guardadoAte(ciclo)`, a mesma base exibida no título Débito; por isso ele soma tudo que já foi guardado até aquele ciclo.
