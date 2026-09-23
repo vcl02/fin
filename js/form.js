@@ -261,7 +261,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     ).join('');
     destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
         const selecionada = idsSelecionados[parcela] || sugestoes[parcela];
-        const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Fatura';
+        const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Parcela única';
         return `<label class=fm><span>${titulo} <b class=req>*</b></span>` +
             `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required>` +
             `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a fatura…</option>` +

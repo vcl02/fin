@@ -49,6 +49,11 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.match(estilosForm, /\.parcelasLinha/);
 });
 
+test('fatura à vista não repete o rótulo nem o asterisco', () => {
+    assert.match(pagina, /id=fFaturasWrap hidden>\s*<span>Fatura<\/span>/);
+    assert.match(formulario, /: 'Parcela única';/);
+});
+
 test('visualizações usam um seletor único de categoria ou nome', () => {
     assert.match(pagina, /id=btVisualizacoes/);
     assert.match(pagina, /id=visTipo/);
