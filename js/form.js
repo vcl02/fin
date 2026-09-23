@@ -46,12 +46,11 @@ function categoriasPorPopularidade() {
     return [...new Set(todas)].sort((a, b) =>
         (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
 }
-function popularCategoriasNoForm(idSelect = 'fCateg') {
-    const select = el(idSelect);
-    const atual = select.value;
-    select.innerHTML = '<option value="" disabled selected>Selecione…</option>' +
-        categoriasPorPopularidade().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if (atual) select.value = atual;
+function popularCategoriasNoForm() {
+    // O campo é livre para comportar mais de uma categoria; o datalist só sugere
+    // categorias já usadas, inclusive as que vierem na mesma célula separadas por vírgula.
+    el('fCategList').innerHTML = categoriasPorPopularidade()
+        .map(categoria => `<option value="${escapeHtml(categoria)}"></option>`).join('');
 }
 
 // O nome continua livre: esta lista apenas reaproveita o nome distinto e a categoria mais
@@ -286,7 +285,7 @@ el('fCred').addEventListener('change', () => {
 
 // quando a categoria muda pra "Antecipacao Fatura" (debito), o seletor de fatura
 // deve aparecer igual ao credito — e desaparecer se sair dessa categoria.
-el('fCateg').addEventListener('change', () => atualizarFaturasDoFormulario());
+el('fCateg').addEventListener('input', () => atualizarFaturasDoFormulario());
 
 // Uma sugestao ainda automatica acompanha a data da venda; uma fatura escolhida
 // manualmente nunca e' substituida por esse recálculo.
@@ -316,7 +315,7 @@ function abreModalNovo(prefill) {
     el('formNovo').reset();
     popularCategoriasNoForm();
     popularNomesNoForm();
-    el('fCateg').selectedIndex = 0;
+    el('fCateg').value = '';
     sinalPositivo = false;
     el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
     el('fIsaWrap').hidden = false;
@@ -803,7 +802,7 @@ async function submeteNovoLancamento() {
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
         el('fReservaEmergencia').checked = false;
-        el('fCateg').selectedIndex = 0;   // categoria vinha do nome; sem nome, nao faz sentido manter
+        el('fCateg').value = '';   // categoria vinha do nome; sem nome, nao faz sentido manter
         atualizaAvisoFronteira();
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
