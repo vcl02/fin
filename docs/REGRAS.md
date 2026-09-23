@@ -47,9 +47,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Visualizações de acompanhamento
 
-- A visão Roberta considera somente lançamentos pagos da categoria: entradas positivas formam o crédito e saídas negativas o consomem. O percentual para em 100%, mas o saldo ainda informa eventual pagamento excedente.
-- As visualizações de pagamento por categoria ou nome consideram lançamentos pagos e abertos; usam valor absoluto para comparar pago, pendente e total. A visão Iphone limita-se a saídas negativas.
-- Empréstimo continua sendo uma categoria livre para filtros e relatórios, mas não possui botão próprio de acompanhamento.
+- O botão **Visualizações** permite escolher qualquer categoria ou nome já existente nos lançamentos. A lista é preenchida a cada abertura e não cria classificações novas.
+- Toda visualização usa a mesma regra: considera lançamentos pagos e abertos, usa valor absoluto e compara pago, pendente e total. Ela ignora os filtros e o ciclo da barra para acompanhar a relação inteira escolhida.
 
 ## Mobile
 

@@ -29,16 +29,23 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
 test('mantém tooltips e descrições auxiliares curtos', () => {
     assert.match(regras, /Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos/);
     assert.match(pagina, /title="Simular \(não salva\)"/);
-    assert.match(pagina, /title="Ignora filtros"/);
+    assert.match(pagina, /title="Limpar filtros"/);
     assert.doesNotMatch(pagina, /injeta lançamentos hipotéticos|ignora os filtros acima/);
     assert.match(tabelas, /title="Editar data"/);
     assert.match(visoes, /Possível recorrência duplicada/);
 });
 
-test('empréstimo não mantém atalho próprio de acompanhamento', () => {
-    assert.doesNotMatch(pagina, /id=btEmprestimo/);
-    assert.doesNotMatch(graficos, /VIS_CATEGORIAS\.Emprestimo|btEmprestimo/);
-    assert.match(regras, /Empréstimo continua sendo uma categoria livre/);
+test('visualizações usam um seletor único de categoria ou nome', () => {
+    assert.match(pagina, /id=btVisualizacoes/);
+    assert.match(pagina, /id=visTipo/);
+    assert.match(pagina, /id=visAlvo/);
+    assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
+    assert.doesNotMatch(graficos, /VIS_CATEGORIAS|dadosCategoria|somenteNegativos|\bop\./);
+    assert.match(graficos, /function valoresDaVisualizacao\(campo\)/);
+    assert.match(graficos, /Estado\.lancamentos\.flatMap\(r => categoriasSeparadas\(r\.categ\)\)/);
+    assert.match(graficos, /Estado\.lancamentos\.map\(r => String\(r\.nome \|\| ''\)\.trim\(\)\)/);
+    assert.match(regras, /botão \*\*Visualizações\*\*/);
+    assert.match(regras, /Toda visualização usa a mesma regra/);
 });
 
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {

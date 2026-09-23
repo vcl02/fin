@@ -147,30 +147,7 @@
         </label>
       </div>
       <div class=row id=rowVis>
-        <div class=f id=fvisRoberta><span>Visualizações</span>
-          <div class=visBotoes>
-            <button type=button id=btRoberta class=btFiltro
-              title="Ignora filtros">Roberta</button>
-            <button type=button id=btEntradaEcon class=btFiltro
-              title="Ignora filtros">Entrada Econ</button>
-            <button type=button id=btEvolucaoObra class=btFiltro
-              title="Ignora filtros">Evolução Obra</button>
-            <button type=button id=btDividaEstudantil class=btFiltro
-              title="Ignora filtros">Dívida Estudantil</button>
-            <button type=button id=btRenegociacaoPj class=btFiltro
-              title="Ignora filtros">Renegociação PJ</button>
-            <button type=button id=btPos class=btFiltro
-              title="Ignora filtros">Pós</button>
-            <button type=button id=btRenegociacaoNu class=btFiltro
-              title="Ignora filtros">Renegociação Nu</button>
-            <button type=button id=btIphone class=btFiltro
-              title="Somente saídas">Iphone</button>
-            <button type=button id=btSeguroResidencial class=btFiltro
-              title="Ignora filtros">Seguro Residencial</button>
-            <button type=button id=btSenac class=btFiltro
-              title="Ignora filtros">Senac</button>
-          </div>
-        </div>
+        <button type=button id=btVisualizacoes class=btFiltro>Visualizações</button>
       </div>
     </div>
     <div id=out></div>
@@ -313,12 +290,30 @@
       </div>
     </dialog>
 
-    <dialog id=modalRoberta>
+    <!-- Seletor e resultado das visualizações de acompanhamento por categoria ou nome. -->
+    <dialog id=modalVisualizacoes>
       <div class=modalHead>
-        <h2 id=tituloVisCategoria>Roberta</h2>
-        <button type=button id=fechaRoberta aria-label="Fechar">×</button>
+        <h2>Visualizações</h2>
+        <button type=button id=fechaVisualizacoes aria-label="Fechar">×</button>
       </div>
-      <div id=robertaCorpo></div>
+      <label class=fm><span>Tipo</span>
+        <select id=visTipo>
+          <option value=categ>Categoria
+          <option value=nome>Nome
+        </select>
+      </label>
+      <label class=fm><span id=visAlvoRotulo>Categoria</span>
+        <select id=visAlvo></select>
+      </label>
+      <button type=button id=abreVisualizacao class=btPri>Ver visualização</button>
+    </dialog>
+
+    <dialog id=modalVisualizacao>
+      <div class=modalHead>
+        <h2 id=tituloVisualizacao>Visualização</h2>
+        <button type=button id=fechaVisualizacao aria-label="Fechar">×</button>
+      </div>
+      <div id=visualizacaoCorpo></div>
     </dialog>
 
     <dialog id=modalGrafico>

@@ -6,6 +6,8 @@
 
   dialog#modalNovo,
   dialog#modalCalc,
+  dialog#modalVisualizacoes,
+  dialog#modalVisualizacao,
   dialog#modalGrafico,
   dialog#modalComparativo,
   dialog#modalDetalheCel {
@@ -41,10 +43,9 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
   }
 
-  /* Roberta: ela adiantou um valor (o positivo da categoria) e a divida vai sendo quitada
-     com o que sai pra ela. Por isso o trilho e' VERMELHO (a divida inteira) e o
-     preenchimento VERDE (o que ja foi devolvido) — o verde cresce ate' cobrir tudo. */
-  dialog#modalRoberta {
+  /* Visualizações com a mesma leitura de pago/aberto para qualquer categoria ou nome. */
+  dialog#modalVisualizacoes,
+  dialog#modalVisualizacao {
       border: 1px solid var(--ln);
       border-radius: 16px;
       padding: 1.3rem;
@@ -55,20 +56,26 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
-  .robPct {
+  #modalVisualizacoes[open] {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+  }
+
+  .visPct {
       font-size: 2.6rem;
       font-weight: 700;
       line-height: 1;
       margin-top: 1.4rem;   /* .modalHead nao tem margem propria */
   }
 
-  .robPctSub {
+  .visPctSub {
       color: var(--mu);
       font-size: .9rem;
       margin: .3rem 0 1.2rem;
   }
 
-  .robBarra {
+  .visBarra {
       height: 1.7rem;
       border-radius: 999px;
       background: var(--vm);
@@ -76,13 +83,13 @@
       overflow: hidden;
   }
 
-  .robFill {
+  .visFill {
       height: 100%;
       background: var(--vd);
       transition: width .45s ease;
   }
 
-  .robLegenda {
+  .visLegenda {
       display: flex;
       justify-content: space-between;
       gap: 1rem;
@@ -91,7 +98,7 @@
       color: var(--mu);
   }
 
-  .robTab {
+  .visTab {
       width: 100%;
       margin-top: 1rem;
       border-collapse: separate;
@@ -99,32 +106,33 @@
       background: transparent;
   }
 
-  .robTab td {
+  .visTab td {
       padding: .7rem .8rem;
       background: var(--field);
       border: 0;
   }
 
-  .robTab td:first-child {
+  .visTab td:first-child {
       border-radius: 9px 0 0 9px;
   }
 
-  .robTab td:last-child {
+  .visTab td:last-child {
       border-radius: 0 9px 9px 0;
   }
 
-  .robTab td.n {
+  .visTab td.n {
       text-align: right;
       font-variant-numeric: tabular-nums;
   }
 
-  .robTab tr.tot td {
+  .visTab tr.tot td {
       background: var(--field-hover);
       font-weight: 700;
       font-size: 1.05rem;
   }
 
-  dialog#modalRoberta::backdrop,
+  dialog#modalVisualizacoes::backdrop,
+  dialog#modalVisualizacao::backdrop,
   dialog#modalNovo::backdrop,
   dialog#modalCalc::backdrop,
   dialog#modalGrafico::backdrop,
@@ -159,6 +167,8 @@
   }
 
   #fechaNovo,
+  #fechaVisualizacoes,
+  #fechaVisualizacao,
   #fechaGrafico,
   #fechaComparativo {
       font-size: 1.5rem;
@@ -173,6 +183,8 @@
   }
 
   #fechaNovo:hover,
+  #fechaVisualizacoes:hover,
+  #fechaVisualizacao:hover,
   #fechaGrafico:hover,
   #fechaComparativo:hover {
       color: var(--fg);

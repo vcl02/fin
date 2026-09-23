@@ -32,12 +32,6 @@
       color: var(--mu);
   }
 
-  .visBotoes {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .55rem;
-  }
-
   /* os dois gráficos pertencem ao mesmo filtro e ficam lado a lado */
   .graficosBotoes {
       display: flex;
