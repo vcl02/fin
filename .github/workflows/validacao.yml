@@ -1,7 +1,7 @@
 # Executa no GitHub a mesma validação local, sem instalar dependências do projeto.
 name: Validação
 
-'on':
+on:
   push:
   pull_request:
 
