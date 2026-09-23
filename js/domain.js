@@ -52,15 +52,14 @@ function validarLancamentosCarregados(lancamentos) {
             inconsistencias.push(`${prefixo}: crédito sem fatura vinculada.`);
         }
 
-        const categoria = String(lancamento.categ ?? '').trim();
-        const chave = chaveCategoria(categoria);
-        // Categoria vazia já é exibida como tal na tabela; a suspeita de ocorrência única
-        // vale apenas para uma categoria efetivamente escolhida pelo usuário.
-        if (chave) {
+        // Uma célula pode conter várias categorias separadas por vírgula. O diagnóstico
+        // avalia cada item separadamente, como o formulário faz.
+        categoriasSeparadas(lancamento.categ).forEach(categoria => {
+            const chave = chaveCategoria(categoria);
             const grupo = categorias.get(chave) || { nome: categoria, ids: [] };
             grupo.ids.push(lancamento.id ?? indice + 1);
             categorias.set(chave, grupo);
-        }
+        });
     });
     categorias.forEach(({ nome, ids }) => {
         if (ids.length === 1) {
