@@ -50,16 +50,17 @@ test('visualizações usam um seletor único de categoria ou nome', () => {
 
 test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
-    assert.ok(acoes.indexOf('id=btVisualizacoes') < acoes.indexOf('id=fgraf'));
-    assert.ok(acoes.indexOf('id=fgraf') < acoes.indexOf('id=fevol'));
-    assert.ok(acoes.indexOf('id=fevol') < acoes.indexOf('id=fReserva'));
-    assert.ok(acoes.indexOf('id=fReserva') < acoes.indexOf('id=flimpar'));
+    assert.ok(acoes.indexOf('id=btVisualizacoes') < acoes.indexOf('id=btGrafico'));
+    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btMetaReservaEmergencia'));
+    assert.ok(acoes.indexOf('id=btMetaReservaEmergencia') < acoes.indexOf('id=flimpar'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
     assert.match(estilosPainel, /#rowVis\s*\{[\s\S]*display:\s*flex/);
-    assert.match(interacoes, /mostraComFade\('fReserva', !simples && !noBacklog && !!el\('compAte'\)\.value\)/);
     assert.match(interacoes, /btMetaReservaEmergencia'\)\.dataset\.idx = el\('compAte'\)\.value/);
+    assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);
+    assert.match(interacoes, /else abrirGraficoEvolucao/);
+    assert.doesNotMatch(interacoes, /mostraComFade\('(fgraf|fevol|fReserva)'/);
 });
 
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {

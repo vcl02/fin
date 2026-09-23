@@ -53,15 +53,14 @@ function desenhar() {
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
     if (!modoBlocos) el('origem').value = 'A';
 
-    // "Ver gráfico" so faz sentido com um ciclo de verdade selecionado (fora do Backlog,
-    // que nao tem periodo pra desenhar a pizza).
-    mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
+    // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece
+    // no lugar e só fica desabilitado quando não existe período válido (Backlog).
     el('btGrafico').dataset.idx = el('ciclo').value;
-    mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
+    el('btGrafico').disabled = simples || (modoBlocos ? noBacklog : !el('compDe').value || !el('compAte').value);
     // A Reserva pode acompanhar tanto um ciclo quanto uma comparação; na comparação,
     // usa sempre o último ciclo escolhido (Até). Backlog não tem ciclo final válido.
-    mostraComFade('fReserva', !simples && !noBacklog && !!el('compAte').value);
     el('btMetaReservaEmergencia').dataset.idx = el('compAte').value;
+    el('btMetaReservaEmergencia').disabled = simples || noBacklog || !el('compAte').value;
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
     // (ex: digitar num filtro de texto), senao a tela piscaria a cada tecla
@@ -447,9 +446,14 @@ el('compAte').addEventListener('change', () => {
     atualizaBarraSelecao();
 });
 
-el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
+el('btGrafico').onclick = () => {
+    const de = el('compDe').value;
+    const ate = el('compAte').value;
+    const modoBlocos = de == '-1' || (!!de && de == ate);
+    if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
+    else abrirGraficoEvolucao(+de, +ate);
+};
 el('btMetaReservaEmergencia').onclick = () => abrirMetaReservaEmergencia(+el('btMetaReservaEmergencia').dataset.idx);
-el('btEvolucao').onclick = () => abrirGraficoEvolucao(+el('compDe').value, +el('compAte').value);
 
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
 // desabilitado quando hoje nao cai em periodo nenhum.
