@@ -39,7 +39,7 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.match(pagina, /id=fCred checked aria-label="Crédito"/);
     assert.match(pagina, /id=fPago checked aria-label="Pago"/);
     assert.match(pagina, /id=fDivide checked aria-label="Dividir valor entre parcelas"/);
-    assert.match(pagina, /forms\.css\?v=20260923-compact-icons/);
+    assert.match(pagina, /forms\.css\?v=20260923-form-layout/);
     assert.match(pagina, /class=parcelasLinha/);
     assert.match(pagina, /<option value=1>À vista/);
     assert.doesNotMatch(pagina, /À vista \(1x\)|Separe mais de uma categoria por vírgula/);
@@ -47,6 +47,15 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.match(estilosForm, /\.fmChkIco/);
     assert.match(estilosForm, /grid-template-columns: repeat\(2, 2\.9rem\)/);
     assert.match(estilosForm, /\.parcelasLinha/);
+});
+
+test('cabeçalho do cadastro concentra ícones e separa a calculadora', () => {
+    assert.match(pagina, /class=modalTituloAcoes>[\s\S]*id=tituloNovo[\s\S]*id=fCred[\s\S]*id=fPago[\s\S]*id=fechaNovo/);
+    assert.match(pagina, /class=moneyLinha>[\s\S]*class=moneyWrap[\s\S]*id=fValor[\s\S]*<\/div>\s*<button type=button id=abreCalc/);
+    assert.doesNotMatch(pagina, /class=moneyPrefix/);
+    const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
+    assert.match(estilosForm, /\.modalTituloAcoes/);
+    assert.match(estilosForm, /\.moneyLinha/);
 });
 
 test('fatura à vista não repete o rótulo nem o asterisco', () => {

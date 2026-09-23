@@ -166,6 +166,17 @@
       color: var(--fg);
   }
 
+  .modalTituloAcoes {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      min-width: 0;
+  }
+
+  .modalTituloAcoes .fmChecks {
+      margin: 0;
+  }
+
   #fechaNovo,
   #fechaVisualizacoes,
   #fechaVisualizacao,
@@ -410,9 +421,16 @@
        DINHEIRO
        ========================================================= */
 
+  .moneyLinha {
+      display: flex;
+      gap: .6rem;
+      align-items: stretch;
+  }
+
   .moneyWrap {
       display: flex;
       align-items: stretch;
+      flex: 1;
 
       border: 1px solid var(--ln);
       border-radius: 10px;
@@ -457,19 +475,6 @@
       opacity: .6;
   }
 
-  .moneyPrefix {
-      display: flex;
-      align-items: center;
-
-      padding: 0 .5rem;
-
-      background: #191C1F;
-      color: var(--mu);
-
-      font-weight: 600;
-      font-size: .9rem;
-  }
-
   .moneyWrap input {
       border: 0;
       border-radius: 0;
@@ -490,12 +495,12 @@
 
   .calcBt {
       flex: none;
-      width: 2.4rem;
+      width: 2.9rem;
 
-      border: 0;
-      border-left: 1px solid var(--ln);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
 
-      background: #191C1F;
+      background: var(--field);
       color: var(--mu);
 
       display: flex;
