@@ -15,12 +15,16 @@ const buscar = async (tabela, retry) => {
     return r.json();
 };
 
+const normalizarCategoriasNoPayload = payload => Object.hasOwn(payload, 'categ')
+    ? { ...payload, categ: normalizaCategorias(payload.categ) || null }
+    : payload;
+
 const inserirLancamento = async payload => {
     // Retorna a representação persistida para a tela usar o id e os defaults reais do banco.
     const r = await fetch(`${API}/rest/v1/${TABELA_FIN}`, {
         method: 'POST',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizarCategoriasNoPayload(payload)),
     });
     if (!r.ok) throw Error(`inserir: ${r.status} ${await r.text()}`);
     return (await r.json())[0];
@@ -39,7 +43,7 @@ const atualizarLancamento = async (id, campos) => {
     const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(campos),
+        body: JSON.stringify(normalizarCategoriasNoPayload(campos)),
     });
     if (!r.ok) throw Error(`atualizar: ${r.status} ${await r.text()}`);
     const linhas = await r.json();
@@ -79,9 +83,10 @@ async function carregarDados() {
         const faturaRef = r.fatura || r.fatura_id;
         const periodoIdx = !r.data && !faturaRef ? null
             : r.cred ? periodoDaFatura(faturaRef) : periodoDoDebito(dataISO(r.data));
+        const categ = normalizaCategorias(r.categ) || null;
         return {
-            ...r, fatura: faturaRef ? dataISO(faturaRef) : null, v: +r.valor || 0,
-            inv: /^investimento$/i.test(String(r.categ || '').trim()),
+            ...r, categ, fatura: faturaRef ? dataISO(faturaRef) : null, v: +r.valor || 0,
+            inv: categoriasSeparadas(categ).some(categoria => /^investimento$/i.test(categoria)),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
         };
     });
