@@ -56,6 +56,9 @@ test('cabeçalho do cadastro concentra ícones e separa a calculadora', () => {
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(estilosForm, /\.modalTituloAcoes/);
     assert.match(estilosForm, /\.moneyLinha/);
+    assert.match(pagina, /id=fechaNovo title="Fechar" aria-label="Fechar">\s*<svg/);
+    assert.match(estilosForm, /#formNovo \.modalHead\s*\{[\s\S]*justify-content:\s*flex-start/);
+    assert.match(estilosForm, /#fechaNovo\s*\{[\s\S]*background:\s*var\(--red-soft\)/);
 });
 
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
