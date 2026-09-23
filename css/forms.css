@@ -330,7 +330,7 @@
 
   .fmChecks {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, 2.9rem);
       gap: .6rem;
   }
 
@@ -363,7 +363,10 @@
 
   .fmChkIco {
       justify-content: center;
-      min-width: 3rem;
+      width: 2.9rem;
+      height: 2.9rem;
+      min-width: 0;
+      padding: 0;
   }
 
   .fmChkIco input {
@@ -373,8 +376,9 @@
   }
 
   .fmChkIco svg {
-      width: 1.35rem;
-      height: 1.35rem;
+      width: 1.15rem;
+      height: 1.15rem;
+      flex: 0 0 1.15rem;
       fill: none;
       stroke: var(--mu);
       stroke-width: 1.8;

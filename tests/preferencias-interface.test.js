@@ -39,11 +39,13 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.match(pagina, /id=fCred checked aria-label="Crédito"/);
     assert.match(pagina, /id=fPago checked aria-label="Pago"/);
     assert.match(pagina, /id=fDivide checked aria-label="Dividir valor entre parcelas"/);
+    assert.match(pagina, /forms\.css\?v=20260923-compact-icons/);
     assert.match(pagina, /class=parcelasLinha/);
     assert.match(pagina, /<option value=1>À vista/);
     assert.doesNotMatch(pagina, /À vista \(1x\)|Separe mais de uma categoria por vírgula/);
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(estilosForm, /\.fmChkIco/);
+    assert.match(estilosForm, /grid-template-columns: repeat\(2, 2\.9rem\)/);
     assert.match(estilosForm, /\.parcelasLinha/);
 });
 
