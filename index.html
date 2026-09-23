@@ -273,8 +273,11 @@
           </select>
         </label>
 
-        <label class=fm><span>Categoria <b class=req>*</b></span>
-          <select id=fCateg required></select>
+        <label class=fm><span>Categorias <b class=req>*</b></span>
+          <input type=text id=fCateg list=fCategList required autocomplete=off
+            placeholder="Ex.: Casa, Mercado">
+          <datalist id=fCategList></datalist>
+          <small class=ajudaCategoria>Separe mais de uma categoria por vírgula.</small>
         </label>
 
         <p class="erroNovo okNovo" id=erroNovo></p>
