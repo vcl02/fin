@@ -14,7 +14,7 @@ function regrasCompartilhadas(estado = { ciclos: [], faturas: [] }) {
         setTimeout, clearTimeout,
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte}\nglobalThis.regras = { dataISO, dataBR, semAcento, escapeHtml, valorValido, ehAntecipacaoFatura, ehTransferenciaFatura, somaMeses, somaDias, dataDaOcorrencia, alocacaoAntecipacoes };`, contexto);
+    vm.runInContext(`${fonte}\nglobalThis.regras = { dataISO, dataBR, semAcento, escapeHtml, valorValido, categoriasSeparadas, normalizaCategorias, ehAntecipacaoFatura, ehTransferenciaFatura, somaMeses, somaDias, dataDaOcorrencia, alocacaoAntecipacoes };`, contexto);
     return contexto.regras;
 }
 
@@ -31,6 +31,13 @@ test('rejeita valores textuais que representam ausência de categoria', () => {
     [null, undefined, '', ' null ', '<undefined>', 'N/A', 'NaN'].forEach(valor => assert.equal(r.valorValido(valor), false));
     ['Investimento', '0'].forEach(valor => assert.equal(r.valorValido(valor), true));
     assert.equal(r.valorValido(0), false, 'zero não é uma categoria preenchida');
+});
+
+test('separa e normaliza categorias salvas em uma única célula', () => {
+    const r = regrasCompartilhadas();
+    assert.deepEqual(Array.from(r.categoriasSeparadas(' Casa, Mercado , casa, , Saúde ')), ['Casa', 'Mercado', 'Saúde']);
+    assert.equal(r.normalizaCategorias(' Casa, Mercado , casa, , Saúde '), 'Casa, Mercado, Saúde');
+    assert.deepEqual(Array.from(r.categoriasSeparadas('null, undefined, N/A')), []);
 });
 
 test('soma meses preservando o dia e limita ao fim do mês de destino', () => {
