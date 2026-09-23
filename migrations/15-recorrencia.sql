@@ -1,3 +1,4 @@
+-- Adiciona o identificador sequencial de recorrência aos lançamentos existentes.
 ALTER TABLE fin
 ADD COLUMN recorrencia_id integer;
 
