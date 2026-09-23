@@ -54,7 +54,10 @@ test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => 
     assert.ok(acoes.indexOf('id=fgraf') < acoes.indexOf('id=fevol'));
     assert.ok(acoes.indexOf('id=fevol') < acoes.indexOf('id=fReserva'));
     assert.ok(acoes.indexOf('id=fReserva') < acoes.indexOf('id=flimpar'));
-    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /#rowVis\s*\{[\s\S]*flex-wrap:\s*nowrap/);
+    assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
+    const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
+    assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
+    assert.match(estilosPainel, /#rowVis\s*\{[\s\S]*display:\s*flex/);
     assert.match(interacoes, /mostraComFade\('fReserva', !simples && !noBacklog && !!el\('compAte'\)\.value\)/);
     assert.match(interacoes, /btMetaReservaEmergencia'\)\.dataset\.idx = el\('compAte'\)\.value/);
 });
