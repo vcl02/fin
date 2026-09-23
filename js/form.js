@@ -37,11 +37,14 @@ function categoriasPorPopularidade() {
     const limiteIso = limite.toISOString().slice(0, 10);
     const contagem = {};
     Estado.lancamentos.forEach(r => {
-        if (!r.categ || !r.data || dataISO(r.data) < limiteIso) return;
-        contagem[r.categ] = (contagem[r.categ] || 0) + 1;
+        if (!r.data || dataISO(r.data) < limiteIso) return;
+        categoriasSeparadas(r.categ).forEach(categoria => {
+            contagem[categoria] = (contagem[categoria] || 0) + 1;
+        });
     });
-    const todas = [...new Set(Estado.lancamentos.map(r => r.categ).filter(valorValido))];
-    return todas.sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
+    const todas = Estado.lancamentos.flatMap(r => categoriasSeparadas(r.categ));
+    return [...new Set(todas)].sort((a, b) =>
+        (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
 }
 function popularCategoriasNoForm(idSelect = 'fCateg') {
     const select = el(idSelect);
