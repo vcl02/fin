@@ -29,7 +29,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Existe um único cartão detalhado. Todo lançamento com `cred = true` aponta para `fatura`; a categoria `Isabella` não seleciona outro calendário de cartão.
 - A fatura da Isabella é um lançamento real comum: `cred = false`, categoria `Isabella`, valor negativo e `pago` indicando Aberto/Pago. Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
 - A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações do cartão detalhado.
-- A categoria `Isabella` identifica esses lançamentos no filtro Titular; ela não muda a interface conforme o e-mail da sessão.
+- A categoria `Isabella` identifica esses lançamentos; ela não muda a interface conforme o e-mail da sessão.
 - Antecipações de fatura abatem somente a única fatura detalhada, da mais antiga para a mais nova.
 
 ## Aportes e resgates

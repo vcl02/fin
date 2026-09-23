@@ -48,6 +48,14 @@ test('visualizações usam um seletor único de categoria ou nome', () => {
     assert.match(regras, /Toda visualização usa a mesma regra/);
 });
 
+test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => {
+    const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
+    assert.ok(acoes.indexOf('id=btVisualizacoes') < acoes.indexOf('id=fgraf'));
+    assert.ok(acoes.indexOf('id=fgraf') < acoes.indexOf('id=fevol'));
+    assert.ok(acoes.indexOf('id=fevol') < acoes.indexOf('id=flimpar'));
+    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /#rowVis\s*\{[\s\S]*flex-wrap:\s*nowrap/);
+});
+
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {
     assert.match(regras, /No mobile, as tabelas são somente leitura/);
     assert.match(regras, /ela não muda a interface conforme o e-mail da sessão/);

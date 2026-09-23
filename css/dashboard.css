@@ -38,6 +38,15 @@
       gap: .55rem;
   }
 
+  /* Os comandos variam conforme a visão, mas permanecem numa única faixa horizontal. */
+  #rowVis {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: .55rem;
+      overflow-x: auto;
+      padding-bottom: .1rem;
+  }
+
   select {
       font: inherit;
       color: var(--fg);
