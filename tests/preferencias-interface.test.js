@@ -35,6 +35,18 @@ test('mantém tooltips e descrições auxiliares curtos', () => {
     assert.match(visoes, /Possível recorrência duplicada/);
 });
 
+test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
+    assert.match(pagina, /id=fCred checked aria-label="Crédito"/);
+    assert.match(pagina, /id=fPago checked aria-label="Pago"/);
+    assert.match(pagina, /id=fDivide checked aria-label="Dividir valor entre parcelas"/);
+    assert.match(pagina, /class=parcelasLinha/);
+    assert.match(pagina, /<option value=1>À vista/);
+    assert.doesNotMatch(pagina, /À vista \(1x\)|Separe mais de uma categoria por vírgula/);
+    const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
+    assert.match(estilosForm, /\.fmChkIco/);
+    assert.match(estilosForm, /\.parcelasLinha/);
+});
+
 test('visualizações usam um seletor único de categoria ou nome', () => {
     assert.match(pagina, /id=btVisualizacoes/);
     assert.match(pagina, /id=visTipo/);
