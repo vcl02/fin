@@ -67,6 +67,7 @@ test('cabeçalho do cadastro concentra ícones e deixa o sinal ao lado do valor'
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
     assert.match(pagina, /id=fFaturasWrap hidden>\s*<span>Fatura<\/span>/);
     assert.match(formulario, /: 'Parcela única';/);
+    assert.match(formulario, /function nomeFatura\(fatura\) \{\s*return dataBR\(fatura\.vencimento\);/);
 });
 
 test('visualizações usam um seletor único de categoria ou nome', () => {

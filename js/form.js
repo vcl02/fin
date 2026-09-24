@@ -176,10 +176,7 @@ function sugereModoValorParcelas() {
 }
 
 function nomeFatura(fatura) {
-    const venc = dataISO(fatura.vencimento);
-    const ano = venc.slice(0, 4);
-    const mes = +venc.slice(5, 7);
-    return `${MESES[mes - 1]} ${ano} — vence ${dataBR(fatura.vencimento)}`;
+    return dataBR(fatura.vencimento);
 }
 
 function idsFaturasDoFormulario(incluirSugestoes = true) {
