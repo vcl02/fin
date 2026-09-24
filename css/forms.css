@@ -472,10 +472,11 @@
   }
 
   .sinalBt {
-      width: 2.4rem;
+      flex: none;
+      width: 2.9rem;
 
-      border: 0;
-      border-right: 1px solid var(--ln);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
 
       background: #191C1F;
       color: var(--vm);
@@ -509,7 +510,7 @@
 
   .moneyWrap input {
       border: 0;
-      border-radius: 0;
+      border-radius: 10px;
 
       text-align: right;
       font-variant-numeric: tabular-nums;
@@ -523,28 +524,6 @@
 
   .moneyWrap input:focus {
       outline: none;
-  }
-
-  .calcBt {
-      flex: none;
-      width: 2.9rem;
-
-      border: 1px solid var(--ln);
-      border-radius: 10px;
-
-      background: var(--field);
-      color: var(--mu);
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      cursor: pointer;
-  }
-
-  .calcBt:hover {
-      background: var(--field-hover);
-      color: var(--fg);
   }
 
   /* =========================================================

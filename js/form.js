@@ -558,6 +558,7 @@ function calcToque(tecla) {
     calcInput.focus();
 }
 
+if (modalCalc && el('abreCalc')) {
 el('abreCalc').onclick = () => {
     calcInput.value = '';
     calcRenderiza();
@@ -595,6 +596,7 @@ calcInput.addEventListener('keydown', e => {
 });
 calcInput.addEventListener('click', calcRenderiza);
 calcInput.addEventListener('keyup', calcRenderiza);
+}
 
 el('abreNovo').onclick = () => abreModalNovo();
 el('fechaNovo').onclick = () => modalNovo.close();

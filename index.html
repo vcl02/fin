@@ -7,7 +7,7 @@
   <title>.</title>
   <link rel="stylesheet" href="./css/base.css">
   <link rel="stylesheet" href="./css/dashboard.css">
-  <link rel="stylesheet" href="./css/forms.css?v=20260923-form-layout">
+  <link rel="stylesheet" href="./css/forms.css?v=20260924-valor-sinal">
   <link rel="stylesheet" href="./css/charts.css">
   <link rel="stylesheet" href="./css/utilities.css">
   <link rel="stylesheet" href="./css/mobile.css">
@@ -186,25 +186,9 @@
         <label class=fm><span>Valor</span>
           <div class=moneyLinha>
             <div class=moneyWrap>
-              <button type=button id=fSinal class=sinalBt aria-label="Alternar entre saída e entrada">−</button>
               <input type=text inputmode=numeric id=fValor placeholder="0,00" autocomplete=off>
             </div>
-            <button type=button id=abreCalc class=calcBt title="Calculadora" aria-label="Abrir calculadora">
-              <svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2
-                stroke-linecap=round stroke-linejoin=round>
-                <rect x=4 y=2 width=16 height=20 rx=2 />
-                <line x1=8 y1=6 x2=16 y2=6 />
-                <line x1=8 y1=11 x2=8 y2=11 />
-                <line x1=12 y1=11 x2=12 y2=11 />
-                <line x1=16 y1=11 x2=16 y2=11 />
-                <line x1=8 y1=15 x2=8 y2=15 />
-                <line x1=12 y1=15 x2=12 y2=15 />
-                <line x1=16 y1=15 x2=16 y2=15 />
-                <line x1=8 y1=19 x2=8 y2=19 />
-                <line x1=12 y1=19 x2=12 y2=19 />
-                <line x1=16 y1=19 x2=16 y2=19 />
-              </svg>
-            </button>
+            <button type=button id=fSinal class=sinalBt title="Alternar entre saída e entrada" aria-label="Alternar entre saída e entrada">−</button>
           </div>
         </label>
 
@@ -214,9 +198,9 @@
               <option value=1>À vista
             </select>
           </label>
-          <label class="fmChk fmChkIco" id=fDivideWrap title="Dividir valor entre parcelas">
-            <input type=checkbox id=fDivide checked aria-label="Dividir valor entre parcelas">
-            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><path d="M4 7h16M4 17h16M8 4v6m8 4v6" /><path d="m7 14 2 2-2 2m10-4-2 2 2 2" /></svg>
+          <label class="fmChk fmChkIco" id=fDivideWrap title="Dividir a compra entre parcelas">
+            <input type=checkbox id=fDivide checked aria-label="Dividir a compra entre parcelas">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3M9 12l6 6m0-6-6 6" /></svg>
           </label>
         </div>
 
@@ -241,44 +225,6 @@
 
         <button type=button id=salvaNovo class=btPri>Salvar</button>
       </form>
-    </dialog>
-
-    <dialog id=modalCalc>
-      <div class=modalHead>
-        <h2>Calculadora</h2>
-        <button type=button id=fechaCalc aria-label="Fechar">×</button>
-      </div>
-      <div class=calcVisor>
-        <input class=calcExpr id=calcVisor inputmode=none autocomplete=off placeholder=0>
-        <div class=calcResultado id=calcResultado>&nbsp;</div>
-      </div>
-      <div class=calcGrid>
-        <button type=button class="calcTecla calcOp" data-calc=ac>AC</button>
-        <button type=button class="calcTecla calcOp" data-calc=paren>( )</button>
-        <button type=button class="calcTecla calcOp" data-calc=pct>%</button>
-        <button type=button class="calcTecla calcOp" data-calc=div>÷</button>
-
-        <button type=button class=calcTecla data-calc=7>7</button>
-        <button type=button class=calcTecla data-calc=8>8</button>
-        <button type=button class=calcTecla data-calc=9>9</button>
-        <button type=button class="calcTecla calcOp" data-calc=mul>×</button>
-
-        <button type=button class=calcTecla data-calc=4>4</button>
-        <button type=button class=calcTecla data-calc=5>5</button>
-        <button type=button class=calcTecla data-calc=6>6</button>
-        <button type=button class="calcTecla calcOp" data-calc=sub>−</button>
-
-        <button type=button class=calcTecla data-calc=1>1</button>
-        <button type=button class=calcTecla data-calc=2>2</button>
-        <button type=button class=calcTecla data-calc=3>3</button>
-        <button type=button class="calcTecla calcOp" data-calc=add>+</button>
-
-        <button type=button class=calcTecla data-calc=0>0</button>
-        <button type=button class=calcTecla data-calc=ponto>,</button>
-        <button type=button class="calcTecla calcOp" data-calc=back aria-label="Apagar">⌫</button>
-        <button type=button class="calcTecla calcIgual" data-calc=igual title="Inserir valor"
-          aria-label="Inserir valor">✓</button>
-      </div>
     </dialog>
 
     <!-- Seletor e resultado das visualizações de acompanhamento por categoria ou nome. -->
