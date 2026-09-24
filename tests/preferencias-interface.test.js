@@ -64,6 +64,10 @@ test('cabeçalho do cadastro concentra ícones e deixa o sinal ao lado do valor'
     assert.match(estilosForm, /#fechaNovo\s*\{[\s\S]*background:\s*var\(--red-soft\)/);
 });
 
+test('cadastro abre sem foco automático no mobile', () => {
+    assert.match(formulario, /window\.matchMedia\('\(min-width: 641px\)'\)\.matches/);
+});
+
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
     assert.match(pagina, /id=fFaturasWrap hidden>\s*<span>Fatura<\/span>/);
     assert.match(formulario, /: 'Parcela única';/);
