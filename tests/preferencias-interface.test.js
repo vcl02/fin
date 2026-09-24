@@ -68,6 +68,11 @@ test('cadastro abre sem foco automático no mobile', () => {
     assert.match(formulario, /window\.matchMedia\('\(min-width: 641px\)'\)\.matches/);
 });
 
+test('cadastro mantém margem visível em todos os lados no mobile', () => {
+    const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
+    assert.match(estilosMobile, /dialog#modalNovo\s*\{[\s\S]*width: calc\(100vw - 2rem\);[\s\S]*height: calc\(100dvh - 2rem\);[\s\S]*border-radius: 16px;[\s\S]*margin: 1rem auto;/);
+});
+
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
     assert.match(pagina, /id=fFaturasWrap hidden>\s*<span>Fatura<\/span>/);
     assert.match(formulario, /: 'Parcela única';/);
