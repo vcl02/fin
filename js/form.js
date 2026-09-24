@@ -355,8 +355,11 @@ function abreModalNovo(prefill) {
     sugereModoValorParcelas();
 
     modalNovo.showModal();
-    // duplicando, o foco vai pro Valor (o que mais muda); do zero, vai pro Nome
-    setTimeout(() => el(prefill ? 'fValor' : 'fNome').focus(), 50);
+    // No celular, evitar foco automático impede que o teclado cubra o cadastro ao abrir.
+    // No desktop, duplicando vai para Valor; do zero, vai para Nome.
+    if (window.matchMedia('(min-width: 641px)').matches) {
+        setTimeout(() => el(prefill ? 'fValor' : 'fNome').focus(), 50);
+    }
 }
 el('fDataHoje').onclick = () => {
     el('fData').value = hojeISO();
