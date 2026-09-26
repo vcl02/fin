@@ -61,6 +61,10 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
 test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const debitoHoje = resumoDebitoPagoAte\(Estado\.lancamentos\)/);
     assert.match(visoes, /const pagosAteHoje = lancamentosPagosAte\(Estado\.lancamentos\)/);
+    assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
+    assert.match(visoes, /const cicloCreditoFuturo = dataISO\(Estado\.ciclos\[idxCreditoExibido\]\?\.ini\) > hojeISO\(\)/);
+    assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
+    assert.match(visoes, /const linhaHojeCredito = cicloCreditoFuturo \? ''/);
     assert.match(visoes, /Pago \+ aberto/);
     assert.match(visoes, /Guardado/);
     assert.match(estilos, /\.resumoTitulo/);
