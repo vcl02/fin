@@ -141,13 +141,14 @@ function vCiclo() {
         creditosExibidos, abatido[idxCreditoExibido] || 0
     );
     // A linha "Hoje" considera só compras confirmadas até a data local atual e
-    // antecipações já registradas. Uma fatura de ciclo ainda não iniciado só é futuro.
+    // antecipações já registradas. A prévia de Crédito do ciclo atual continua tendo
+    // "Hoje", ainda que sua fatura vença no ciclo seguinte; só a navegação para um ciclo
+    // futuro remove essa linha, junto com o retrato atual do Débito.
     const pagosAteHoje = lancamentosPagosAte(Estado.lancamentos);
     const abatidoAteHoje = alocacaoAntecipacoes(pagosAteHoje);
     const totalCreditoHoje = totalCreditoExibidoAposAntecipacoes(
         creditosExibidosNoCiclo(pagosAteHoje, i), abatidoAteHoje[idxCreditoExibido] || 0
     );
-    const cicloCreditoFuturo = dataISO(Estado.ciclos[idxCreditoExibido]?.ini) > hojeISO();
     // Limite não segue os filtros da tela: é o retrato do único cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
     // A garantia Nubank usa aportes/resgates REAIS de todos os status. Ela não pode seguir
@@ -162,7 +163,7 @@ function vCiclo() {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
 
-    const linhaHojeCredito = cicloCreditoFuturo ? '' :
+    const linhaHojeCredito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span>` +
         `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
