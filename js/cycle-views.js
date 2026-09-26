@@ -164,20 +164,23 @@ function vCiclo() {
     });
     // Limite é contexto do cartão, não do recorte Hoje/Futuro. Repeti-lo nas duas faixas
     // evita comparar o pago de hoje com uma capacidade que só aparece na projeção.
-    const resumoLimiteCartao = `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+    // O aviso compara o gasto líquido da própria faixa com o teto utilizável, não com o
+    // limite livre: antecipações e garantia já estão incorporadas corretamente no teto.
+    const resumoLimiteCartao = ultrapassaLimite => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
-        `<span class=limiteTotal>Total ${brl(limiteTotal)}</span></span>`;
+        `<span class=limiteTotal>Total ${brl(limiteTotal)}</span>` +
+        `${ultrapassaLimite ? '<span class=alertaLimite title="Acima do limite" aria-label="Gasto acima do limite">⚠</span>' : ''}</span>`;
 
     const linhaHojeCredito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
-        resumoLimiteCartao + `</span></span>`;
+        resumoLimiteCartao(Math.abs(totalCreditoHoje) > limiteTotal) + `</span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
-        resumoLimiteCartao + `</span></span></span>`;
+        resumoLimiteCartao(Math.abs(totalCreditoExibido) > limiteTotal) + `</span></span></span>`;
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,

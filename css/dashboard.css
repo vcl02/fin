@@ -238,6 +238,15 @@
       border-left: 1px solid var(--line-strong);
   }
 
+  /* Ícone aparece apenas quando a faixa Hoje ou Futuro supera o teto utilizável do cartão. */
+  .alertaLimite {
+      margin-left: .35rem;
+      color: var(--vm);
+      font-size: 1.05em;
+      line-height: 1;
+      cursor: help;
+  }
+
   .limiteCartaoBase {
       display: inline-flex;
       align-items: baseline;

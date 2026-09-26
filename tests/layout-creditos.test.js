@@ -51,7 +51,12 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
-    assert.match(visoes, /resumoLimiteCartao \+ `<\/span><\/span>`/);
+    assert.match(visoes, /const resumoLimiteCartao = ultrapassaLimite =>/);
+    assert.match(visoes, /Math\.abs\(totalCreditoHoje\) > limiteTotal/);
+    assert.match(visoes, /Math\.abs\(totalCreditoExibido\) > limiteTotal/);
+    assert.match(visoes, /aria-label="Gasto acima do limite"/);
+    assert.match(visoes, /resumoLimiteCartao\(Math\.abs\(totalCreditoHoje\) > limiteTotal\)/);
+    assert.match(visoes, /resumoLimiteCartao\(Math\.abs\(totalCreditoExibido\) > limiteTotal\)/);
     assert.match(visoes, /Total \$\{brl\(limiteTotal\)\}/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
@@ -60,6 +65,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(interacoes, /input\.select\(\)/);
     assert.match(estilos, /\.limiteTotal/);
     assert.match(estilos, /border-left: 1px solid var\(--line-strong\)/);
+    assert.match(estilos, /\.alertaLimite/);
 });
 
 test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
