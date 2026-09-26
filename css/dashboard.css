@@ -166,6 +166,40 @@
       font-weight: 700;
   }
 
+  /* Os títulos financeiro-resumo distinguem o retrato real de hoje da projeção sem criar
+     outro card ou duplicar a tabela. Cada linha mantém saldo/guardado legíveis no desktop. */
+  .tituloBloco {
+      display: inline-block;
+      vertical-align: top;
+      padding-top: .08rem;
+  }
+
+  .resumoTitulo {
+      display: inline-flex;
+      flex-direction: column;
+      gap: .16rem;
+      margin-left: .65rem;
+      font-size: .88em;
+      font-weight: 500;
+      vertical-align: top;
+  }
+
+  .resumoLinha {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .25rem .7rem;
+  }
+
+  .resumoRotulo {
+      min-width: 3.55rem;
+      color: var(--mu);
+      font-size: .82em;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+  }
+
   /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */
   .limiteCartao {
       color: var(--mu);

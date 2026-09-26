@@ -15,9 +15,10 @@ function regrasFinanceiras(ciclos) {
         Estado: { ciclos }, SALDO_DESDE: '2026-01-01',
         CATEGORIA_INVESTIMENTO: 'Investimento', LIMITE_CARTAO: 3750, TOLERANCIA_FINANCEIRA: 0.005,
         dataISO: valor => String(valor).slice(0, 10),
+        hojeISO: () => '2026-09-26',
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, guardadoGarantidoAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, lancamentosPagosAte, resumoDebitoPagoAte, guardadoGarantidoAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre };`, contexto);
     return contexto.regras;
 }
 
@@ -56,6 +57,19 @@ test('crédito é visualmente deslocado, mas o total respeita antecipação', ()
     assert.deepEqual(Array.from(r.creditosExibidosNoCiclo(linhas, 0)).map(x => x.id), [2]);
     assert.equal(r.totalCreditoExibidoAposAntecipacoes([{ v: -120 }, { v: -30 }], 70), -80);
     assert.equal(r.totalCreditoExibidoAposAntecipacoes([], 0), 0);
+});
+
+test('resumo de hoje ignora abertos e datas futuras, mas separa saldo de guardado', () => {
+    const r = regrasFinanceiras([]);
+    const linhas = [
+        { data: '2026-09-20', pago: true, cred: false, v: 1000 },
+        { data: '2026-09-21', pago: true, cred: false, inv: true, v: -560 },
+        { data: '2026-09-22', pago: false, cred: false, v: -200 },
+        { data: '2026-09-27', pago: true, cred: false, v: -300 },
+        { data: '2026-09-23', pago: true, cred: true, v: -90 },
+    ];
+    assert.deepEqual(Array.from(r.lancamentosPagosAte(linhas, '2026-09-26')).map(linha => linha.v), [1000, -560, -90]);
+    assert.deepEqual({ ...r.resumoDebitoPagoAte(linhas, '2026-09-26') }, { saldo: 440, guardado: 560 });
 });
 
 test('limite considera só crédito confirmado, antecipação e garantia positiva do ciclo', () => {

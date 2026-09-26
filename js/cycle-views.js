@@ -110,26 +110,21 @@ function vCiclo() {
     ];
     const guardado = guardadoAte(i);
     const totalDebito = linhasDebito.reduce((s, r) => s + r.v, 0);
-    // ciclo equalizado (saldo zero): "R$ 0,00" em destaque verde de sucesso. Usa a mesma
-    // tolerancia de ponto flutuante do resto do app (0.005) em vez de igualdade estrita,
-    // senao um resto de arredondamento tipo 0.0000000001 escapava do "== 0" mas ainda
-    // formatava como "R$ 0,00" na tela. Saldo negativo continua normal. Com algo guardado,
-    // o enfoque vira o valor guardado (e' o que importa agora) — o guardado ja fala por si,
-    // sem repetir o "R$ 0,00".
-    const temGuardado = Math.abs(guardado) > 0.005;
-    // guardado pode ser NEGATIVO (resgatou mais do que aportou historicamente) — a cor
-    // tem que seguir o sinal de verdade (corValor), nunca fixa em verde, senao um
-    // patrimonio negativo aparece com destaque de sucesso por engano.
-    const extraDebito = Math.abs(totalDebito) < 0.005
-        ? (temGuardado
-            ? `<b class="${corValor(guardado)}">${brl(guardado)}</b>`
-            : `<b class=vd>${brl(0)}</b>`)
-        : (temGuardado ? `<span class="bruto ${corValor(guardado)}">${brl(guardado)}</span>` : '');
+    // O título passa a dizer o que já ocorreu hoje, separado da previsão do ciclo. O
+    // recorte de hoje não acompanha filtros da tela: ele é um retrato financeiro real.
+    const debitoHoje = resumoDebitoPagoAte(Estado.lancamentos);
+    const resumoDebito = `<span class=resumoTitulo>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span>` +
+        `<span>Saldo <b class="${corValor(debitoHoje.saldo)}">${brl(debitoHoje.saldo)}</b></span>` +
+        `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span>` +
+        `<span>Saldo <b class="${corSoma(totalDebito)}">${brl(totalDebito)}</b></span>` +
+        `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span>`;
 
     const blocoDebito = renderBloco(
         'Débito', totalDebito,
         `${periodo.ini ? dataBR(periodo.ini) : 'inicio'} a ${dataBR(periodo.fat)}`,
-        linhasDebito, 'db', true, extraDebito
+        linhasDebito, 'db', true, '', resumoDebito
     );
 
     // O modo simples no mobile não mostra o bloco Crédito. A fatura líquida
@@ -141,6 +136,13 @@ function vCiclo() {
     const creditosExibidos = creditosExibidosNoCiclo(visiveis, i);
     const totalCreditoExibido = totalCreditoExibidoAposAntecipacoes(
         creditosExibidos, abatido[idxCreditoExibido] || 0
+    );
+    // A linha "Hoje" considera só compras confirmadas até a data local atual e
+    // antecipações já registradas. "Futuro" preserva a previsão (Pago + Aberto).
+    const pagosAteHoje = lancamentosPagosAte(Estado.lancamentos);
+    const abatidoAteHoje = alocacaoAntecipacoes(pagosAteHoje);
+    const totalCreditoHoje = totalCreditoExibidoAposAntecipacoes(
+        creditosExibidosNoCiclo(pagosAteHoje, i), abatidoAteHoje[idxCreditoExibido] || 0
     );
     // Limite não segue os filtros da tela: é o retrato do único cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
@@ -156,15 +158,21 @@ function vCiclo() {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
 
-    const blocoCredito = renderBloco(
-        'Crédito', totalCreditoExibido,
-        tituloFaturaDoCiclo(idxCreditoExibido),
-        creditosExibidos, 'cr', true,
+    const resumoCredito = `<span class=resumoTitulo>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span>` +
+        `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span></span>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span>` +
+        `<span>Pago + aberto <b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b></span>` +
         `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
-        `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span>`
+        `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span></span></span>`;
+
+    const blocoCredito = renderBloco(
+        'Crédito', totalCreditoExibido,
+        tituloFaturaDoCiclo(idxCreditoExibido),
+        creditosExibidos, 'cr', true, '', resumoCredito
     );
 
     return blocoDebito + blocoCredito;

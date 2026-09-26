@@ -251,6 +251,26 @@ function totalCreditoExibidoAposAntecipacoes(creditos, valorAntecipado = 0) {
     return creditos.reduce((soma, r) => soma + r.v, 0) + valorAntecipado;
 }
 
+// "Hoje" é um retrato de caixa, não uma previsão: só movimentos reais já marcados como
+// pagos e cuja data já chegou podem compô-lo. Compras no crédito continuam fora do saldo
+// de caixa, pois ainda não saíram da conta; antecipações reais entram como qualquer débito.
+function lancamentosPagosAte(linhas, dataLimite = hojeISO()) {
+    return linhas.filter(r => r.pago && r.data && dataISO(r.data) <= dataLimite);
+}
+
+// Separa explicitamente o dinheiro disponível do patrimônio guardado no instante atual.
+// Saldo inclui aporte/resgate porque o dinheiro efetivamente sai/volta para a conta;
+// guardado mostra essa parcela separada e nunca conta sugestões sintéticas de futuro.
+function resumoDebitoPagoAte(linhas, dataLimite = hojeISO()) {
+    const pagos = lancamentosPagosAte(linhas, dataLimite).filter(r => !r.cred);
+    return {
+        saldo: pagos.reduce((soma, r) => soma + (+r.v || 0), 0),
+        guardado: pagos
+            .filter(r => r.inv)
+            .reduce((soma, r) => soma - (+r.v || 0), 0),
+    };
+}
+
 // O limite garantido só pode usar dinheiro realmente registrado como investimento: aportes
 // negativos aumentam a garantia e resgates positivos a reduzem. Recebe a lista inteira para
 // não obedecer ao filtro visual Pago (nem contar Aporte sugerido, que é linha sintética).

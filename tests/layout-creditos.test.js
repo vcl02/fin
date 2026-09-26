@@ -58,6 +58,15 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(estilos, /\.limiteTotal/);
 });
 
+test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
+    assert.match(visoes, /const debitoHoje = resumoDebitoPagoAte\(Estado\.lancamentos\)/);
+    assert.match(visoes, /const pagosAteHoje = lancamentosPagosAte\(Estado\.lancamentos\)/);
+    assert.match(visoes, /Pago \+ aberto/);
+    assert.match(visoes, /Guardado/);
+    assert.match(estilos, /\.resumoTitulo/);
+    assert.match(estilos, /\.resumoLinha/);
+});
+
 test('documenta Nubank como cartão único e exige separação explícita antes de outro cartão', () => {
     assert.match(regras, /único cartão atual é o Nubank/);
     assert.match(regras, /identificação explícita de cartão/);
