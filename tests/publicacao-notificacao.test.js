@@ -14,7 +14,12 @@ test('avisa somente o build publicado pelo Pages, identificando o commit e sem e
     assert.match(workflow, /RESEND_TO: \$\{\{ vars\.RESEND_TO \}\}/);
     assert.match(workflow, /https:\/\/api\.resend\.com\/emails/);
     assert.match(workflow, /Idempotency-Key/);
+    assert.doesNotMatch(workflow, /actions\/setup-node/);
     assert.doesNotMatch(workflow, /re_[A-Za-z0-9]/);
     const script = workflow.match(/node <<'NODE'\n([\s\S]*?)\n          NODE/)[1];
     assert.doesNotThrow(() => new Function(script));
+});
+
+test('páginas estáticas não passam pelo processamento Jekyll do Pages', () => {
+    assert.ok(fs.existsSync('.nojekyll'));
 });

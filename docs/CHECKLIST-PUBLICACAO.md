@@ -5,4 +5,4 @@
 3. Se houver migration nova, revise o SQL, obtenha confirmação explícita antes de aplicá-la no Supabase/DataGrip e valide RLS antes de publicar. Não aplique migrations apenas para testar a interface.
 4. No navegador, valide login, carga, um lançamento de débito, um lançamento de crédito com fatura, filtros e Reserva de emergência.
 5. Confirme que simulações não aparecem no banco e que o download exporta somente o recorte filtrado.
-6. Faça commit e envie para `origin/main`. O e-mail do Resend só é enviado quando o build nativo do GitHub Pages retornar `built` para o commit publicado. A configuração fica em `RESEND_API_KEY` (secret), `RESEND_FROM` e `RESEND_TO` (variables do repositório); nenhuma delas pode entrar no Git.
+6. Faça commit e envie para `origin/main`. O e-mail do Resend só é enviado quando o build nativo do GitHub Pages retornar `built` para o commit publicado. O `.nojekyll` mantém a publicação direta dos arquivos estáticos. A configuração fica em `RESEND_API_KEY` (secret), `RESEND_FROM` e `RESEND_TO` (variables do repositório); nenhuma delas pode entrar no Git.
