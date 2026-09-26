@@ -80,6 +80,9 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
 test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura vence depois', () => {
     assert.match(visoes, /A prévia de Crédito do ciclo atual continua tendo/);
     assert.doesNotMatch(visoes, /cicloCreditoFuturo/);
+    const inicioHoje = visoes.indexOf('const linhaHojeCredito');
+    const fimHoje = visoes.indexOf('const resumoCredito');
+    assert.doesNotMatch(visoes.slice(inicioHoje, fimHoje), /Pago <b/);
 });
 
 test('documenta Nubank como cartão único e exige separação explícita antes de outro cartão', () => {

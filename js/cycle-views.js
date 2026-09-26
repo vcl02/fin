@@ -172,7 +172,7 @@ function vCiclo() {
 
     const linhaHojeCredito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
-        `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span>` +
+        `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
         resumoLimiteCartao + `</span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
