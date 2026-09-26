@@ -1,5 +1,12 @@
 // Inicialização da sessão e da aplicação.
 
+// A PWA guarda somente os arquivos estáticos da interface. Dados financeiros continuam
+// vindo do Supabase em rede e nunca são persistidos pelo service worker.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+        .catch(() => { /* Instalação da PWA não pode impedir o uso normal da aplicação. */ }));
+}
+
 const mostraTela = logado => {
     el('login').style.display = logado ? 'none' : 'flex';
     el('app').style.display = logado ? 'block' : 'none';
