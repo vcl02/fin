@@ -18,7 +18,11 @@ O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominant
 
 ## Fatura e Crédito
 
-Há um cartão detalhado. A fatura é derivada de `fin.fatura`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte.
+Hoje há um único cartão detalhado: Nubank. A fatura é derivada de `fin.fatura`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte. `cred = true` pertence a esse cartão por definição temporária, não por nome ou categoria.
+
+O limite contratado Nubank é uma preferência local editável no título, persistida no navegador e nunca no Supabase. O limite livre considera somente compras confirmadas (`pago = true`), desconta antecipações alocadas à respectiva fatura e acrescenta somente o guardado positivo do ciclo atual aplicado como limite garantido. Isso separa projeção de compra real e evita que antecipação libere mais do que a fatura paga.
+
+Não há abstração de múltiplos cartões antes de ser necessária. Quando existir outro cartão, a evolução será uma mudança de modelo deliberada: migration nova para uma identidade explícita de cartão em crédito e antecipação, dados próprios por cartão para limite, garantia e faturas, seleção no cadastro e cálculo/renderização segmentados. Não se deve usar marca, categoria, nome do lançamento ou vencimento como atalho para identificar o cartão.
 
 ## Reserva de emergência
 

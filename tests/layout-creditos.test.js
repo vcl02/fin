@@ -8,6 +8,8 @@ const script = fs.readFileSync('js/finance.js', 'utf8');
 const dominio = fs.readFileSync('js/domain.js', 'utf8');
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const inicio = script.indexOf('function creditosExibidosNoCiclo(');
 const fim = script.length;
 
@@ -45,4 +47,11 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /limiteGarantido/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
+});
+
+test('documenta Nubank como cartão único e exige separação explícita antes de outro cartão', () => {
+    assert.match(regras, /único cartão atual é o Nubank/);
+    assert.match(regras, /identificação explícita de cartão/);
+    assert.match(decisoes, /identidade explícita de cartão em crédito e antecipação/);
+    assert.match(decisoes, /Não se deve usar marca, categoria, nome do lançamento ou vencimento/);
 });
