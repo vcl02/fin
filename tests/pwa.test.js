@@ -9,10 +9,13 @@ const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 
 test('declara manifest instalável e cores coerentes com a interface', () => {
+    assert.match(html, /<title>fin<\/title>/);
     assert.match(html, /<link rel=manifest href="\.\/manifest\.webmanifest">/);
     assert.match(html, /<link rel=icon type="image\/svg\+xml" href="\.\/icons\/fin-192\.svg">/);
     assert.match(html, /<meta name=theme-color content="#1B1E21">/);
     assert.equal(manifest.display, 'standalone');
+    assert.equal(manifest.name, 'fin');
+    assert.equal(manifest.short_name, 'fin');
     assert.equal(manifest.start_url, './');
     assert.equal(manifest.theme_color, '#1B1E21');
     assert.deepEqual(manifest.icons.map(icone => icone.sizes), ['192x192', '512x512']);
