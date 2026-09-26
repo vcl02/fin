@@ -14,7 +14,7 @@ function regrasCompartilhadas(estado = { ciclos: [], faturas: [] }) {
         setTimeout, clearTimeout,
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte}\nglobalThis.regras = { dataISO, dataBR, semAcento, escapeHtml, valorValido, categoriasSeparadas, normalizaCategorias, ehAntecipacaoFatura, ehTransferenciaFatura, somaMeses, somaDias, dataDaOcorrencia, alocacaoAntecipacoes };`, contexto);
+    vm.runInContext(`${fonte}\nglobalThis.regras = { brl, corValor, dataISO, dataBR, semAcento, escapeHtml, valorValido, categoriasSeparadas, normalizaCategorias, ehAntecipacaoFatura, ehTransferenciaFatura, somaMeses, somaDias, dataDaOcorrencia, alocacaoAntecipacoes };`, contexto);
     return contexto.regras;
 }
 
@@ -24,6 +24,13 @@ test('normaliza data e texto sem perder a intenção da busca', () => {
     assert.equal(r.dataBR('2026-09-21'), '21/09/2026');
     assert.equal(r.semAcento('  Evolução ÓBRA '), '  evolucao obra ');
     assert.equal(r.escapeHtml('<Mercado & "Casa">'), '&lt;Mercado &amp; &quot;Casa&quot;&gt;');
+});
+
+test('não exibe sinal negativo em valores arredondados a zero', () => {
+    const r = regrasCompartilhadas();
+    assert.equal(r.brl(-0.004), 'R$ 0,00');
+    assert.equal(r.corValor(-0.004), '');
+    assert.equal(r.brl(-0.005), '-R$ 0,01');
 });
 
 test('rejeita valores textuais que representam ausência de categoria', () => {

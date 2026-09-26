@@ -39,8 +39,11 @@ function mostraComFade(id, mostrar) {
         alvo._fadeOutTimer = setTimeout(termina, 250);   // duracao do fadeOut (.18s) + folga
     }
 }
-const brl = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const corValor = v => v < 0 ? 'vm' : v > 0 ? 'vd' : '';                                     // classe css: vermelho/verde conforme o sinal
+// Resíduos de ponto flutuante menores que meio centavo já são R$ 0,00 na tela. Normalizá-los
+// aqui evita o falso "-R$ 0,00" sem mudar valores, saldos ou decisões financeiras.
+const valorMonetarioExibivel = v => Math.abs(Number(v) || 0) < 0.005 ? 0 : Number(v);
+const brl = v => valorMonetarioExibivel(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const corValor = v => valorMonetarioExibivel(v) < 0 ? 'vm' : valorMonetarioExibivel(v) > 0 ? 'vd' : ''; // classe css: vermelho/verde conforme o valor mostrado
 const celValor = v => `<td class="n ${corValor(v)}">${brl(v)}`;                             // celula <td> ja formatada em R$
 // mesma celValor, mas clicavel pra edicao inline — so' pra lancamentos REAIS (id numerico
 // vindo do banco; linhas sinteticas tem id negativo fixo -1..-6, e simuladas tem id tipo

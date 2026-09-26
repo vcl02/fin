@@ -4,7 +4,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Convenções gerais
 
-- `fin.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original.
+- `fin.valor` é assinado: entradas são positivas e despesas são negativas. Relatórios podem exibir despesas como valor absoluto, mas os cálculos mantêm o sinal original. Resíduos menores que meio centavo são exibidos como `R$ 0,00`, sem sinal negativo, apenas na apresentação.
 - Uma linha real possui `id` positivo e pode ser persistida. Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
 - Os filtros pago e origem definem o recorte das tabelas e dos cálculos que explicitamente usam `filtrarLancamentos()`. Visões especiais identificadas na interface como acompanhamento total ignoram o recorte de propósito.
 - Não existe flag nem filtro Ativo. Lançamentos com data entram no ciclo correspondente; lançamentos sem data ficam no Backlog.
