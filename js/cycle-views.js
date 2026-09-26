@@ -146,7 +146,9 @@ function vCiclo() {
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,
         tituloFaturaDoCiclo(idxCreditoExibido),
-        creditosExibidos, 'cr', true
+        creditosExibidos, 'cr', true,
+        // Referência visual apenas: o total continua líquido de antecipações, sem recalcular limite.
+        `<span class=limiteCartao> / ${brl(LIMITE_CARTAO)}</span>`
     );
 
     return blocoDebito + blocoCredito;

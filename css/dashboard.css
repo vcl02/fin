@@ -166,6 +166,13 @@
       font-weight: 700;
   }
 
+  /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */
+  .limiteCartao {
+      color: var(--mu);
+      font-size: .88em;
+      font-weight: 500;
+  }
+
   .blk .meta,
   .meta {
       font-size: .85rem;

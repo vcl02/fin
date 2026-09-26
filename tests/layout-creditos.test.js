@@ -5,6 +5,9 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const script = fs.readFileSync('js/finance.js', 'utf8');
+const dominio = fs.readFileSync('js/domain.js', 'utf8');
+const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
+const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const inicio = script.indexOf('function creditosExibidosNoCiclo(');
 const fim = script.length;
 
@@ -33,4 +36,10 @@ test('o título do Crédito mostra o saldo após antecipações da mesma fatura'
         contexto.totalCreditoExibidoAposAntecipacoes([{ v: -2922.26 }], 500),
         -2422.26
     );
+});
+
+test('o único título de Crédito exibe o limite global sem criar outra tabela', () => {
+    assert.match(dominio, /const LIMITE_CARTAO = 3750;/);
+    assert.match(visoes, /<span class=limiteCartao> \/ \$\{brl\(LIMITE_CARTAO\)\}<\/span>/);
+    assert.match(estilos, /\.limiteCartao/);
 });

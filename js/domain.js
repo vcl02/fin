@@ -17,6 +17,8 @@
 
 const NOME_ANCORA_CICLO = 'Faturamento PJ';
 const CATEGORIA_INVESTIMENTO = 'Investimento';
+// Limite único do cartão; ajuste este valor quando o banco alterar o limite contratado.
+const LIMITE_CARTAO = 3750;
 const TOLERANCIA_FINANCEIRA = 0.005;
 const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;
 
