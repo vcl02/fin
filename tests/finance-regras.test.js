@@ -13,11 +13,11 @@ if (inicio < 0 || fim < 0) throw Error('Não encontrou as regras centrais de sal
 function regrasFinanceiras(ciclos) {
     const contexto = {
         Estado: { ciclos }, SALDO_DESDE: '2026-01-01',
-        CATEGORIA_INVESTIMENTO: 'Investimento', TOLERANCIA_FINANCEIRA: 0.005,
+        CATEGORIA_INVESTIMENTO: 'Investimento', LIMITE_CARTAO: 3750, TOLERANCIA_FINANCEIRA: 0.005,
         dataISO: valor => String(valor).slice(0, 10),
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, limiteCartaoOcupado, limiteCartaoLivre };`, contexto);
     return contexto.regras;
 }
 
@@ -56,4 +56,16 @@ test('crédito é visualmente deslocado, mas o total respeita antecipação', ()
     assert.deepEqual(Array.from(r.creditosExibidosNoCiclo(linhas, 0)).map(x => x.id), [2]);
     assert.equal(r.totalCreditoExibidoAposAntecipacoes([{ v: -120 }, { v: -30 }], 70), -80);
     assert.equal(r.totalCreditoExibidoAposAntecipacoes([], 0), 0);
+});
+
+test('limite considera só crédito confirmado e libera cada fatura antecipada', () => {
+    const r = regrasFinanceiras([]);
+    const linhas = [
+        { cred: true, pago: false, periodoIdx: 0, v: -500 }, // projeção: não ocupa
+        { cred: true, pago: true, periodoIdx: 0, v: -300 },
+        { cred: true, pago: true, periodoIdx: 1, v: -450 },
+    ];
+    const abatido = { 0: 100, 1: 450 };
+    assert.equal(r.limiteCartaoOcupado(linhas, abatido), 200);
+    assert.equal(r.limiteCartaoLivre(linhas, abatido), 3550);
 });

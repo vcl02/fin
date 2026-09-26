@@ -250,3 +250,22 @@ function creditosExibidosNoCiclo(linhas, idxCiclo) {
 function totalCreditoExibidoAposAntecipacoes(creditos, valorAntecipado = 0) {
     return creditos.reduce((soma, r) => soma + r.v, 0) + valorAntecipado;
 }
+
+// O limite do cartão é diferente da fatura exibida: crédito Aberto é só projeção e não
+// compromete o cartão. Crédito Pago já virou compra real; uma antecipação da mesma fatura
+// libera esse valor, até o saldo chegar a zero. `abatidoPorCiclo` vem da mesma alocação
+// usada pela fatura para nunca liberar mais que o pagamento realmente abateu.
+function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}) {
+    const confirmadoPorCiclo = new Map();
+    linhas.forEach(r => {
+        if (!r.cred || !r.pago || r.periodoIdx == null) return;
+        confirmadoPorCiclo.set(r.periodoIdx, (confirmadoPorCiclo.get(r.periodoIdx) || 0) + (+r.v || 0));
+    });
+    return Array.from(confirmadoPorCiclo, ([idx, total]) =>
+        Math.max(0, -total - (abatidoPorCiclo[idx] || 0))
+    ).reduce((soma, restante) => soma + restante, 0);
+}
+
+function limiteCartaoLivre(linhas, abatidoPorCiclo = {}) {
+    return LIMITE_CARTAO - limiteCartaoOcupado(linhas, abatidoPorCiclo);
+}
