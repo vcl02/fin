@@ -44,7 +44,7 @@ test('avisa categoria com uma única ocorrência sem confundir caixa ou acento',
         { id: 22, data: '2026-09-21', valor: -10, nome: 'Casa B', categ: 'cása ', cred: false, pago: false },
     ]);
     assert.deepEqual(Array.from(diagnostico.inconsistencias), []);
-    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Viagem" aparece em apenas um lançamento (id 20).')));
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Viagem" aparece em apenas um lançamento: "Único" (id 20).')));
     assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa"')));
 });
 
@@ -54,8 +54,8 @@ test('valida cada categoria separada por vírgula', () => {
         { id: 31, data: '2026-09-22', valor: -20, nome: 'Mercado B', categ: 'Mercado, Saúde', cred: false, pago: true },
     ]);
     assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Mercado"')));
-    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa" aparece em apenas um lançamento (id 30).')));
-    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Saúde" aparece em apenas um lançamento (id 31).')));
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa" aparece em apenas um lançamento: "Mercado A" (id 30).')));
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Saúde" aparece em apenas um lançamento: "Mercado B" (id 31).')));
 });
 
 test('avisa sobre contrato inválido sem alterar os dados recebidos', () => {

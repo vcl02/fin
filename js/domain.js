@@ -54,14 +54,19 @@ function validarLancamentosCarregados(lancamentos) {
         // avalia cada item separadamente, como o formulário faz.
         categoriasSeparadas(lancamento.categ).forEach(categoria => {
             const chave = chaveCategoria(categoria);
-            const grupo = categorias.get(chave) || { nome: categoria, ids: [] };
-            grupo.ids.push(lancamento.id ?? indice + 1);
+            const grupo = categorias.get(chave) || { nome: categoria, lancamentos: [] };
+            // O aviso precisa identificar a linha rapidamente no modal, sem exigir busca pelo id.
+            grupo.lancamentos.push({
+                id: lancamento.id ?? indice + 1,
+                nome: String(lancamento.nome || '').trim() || 'sem nome',
+            });
             categorias.set(chave, grupo);
         });
     });
-    categorias.forEach(({ nome, ids }) => {
-        if (ids.length === 1) {
-            avisos.push(`Categoria "${nome}" aparece em apenas um lançamento (id ${ids[0]}).`);
+    categorias.forEach(({ nome, lancamentos: itens }) => {
+        if (itens.length === 1) {
+            const { id, nome: nomeLancamento } = itens[0];
+            avisos.push(`Categoria "${nome}" aparece em apenas um lançamento: "${nomeLancamento}" (id ${id}).`);
         }
     });
     return { inconsistencias, avisos };
