@@ -11,6 +11,7 @@ const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
+const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
 const fontesJs = fs.readdirSync('js')
     .filter(arquivo => arquivo.endsWith('.js'))
     .map(arquivo => fs.readFileSync(path.join('js', arquivo), 'utf8'))
@@ -18,7 +19,7 @@ const fontesJs = fs.readdirSync('js')
 
 test('modal separa inconsistências de avisos e problemas operacionais usam toast', () => {
     assert.match(html, /<dialog id=modalDiagnostico>/);
-    assert.match(html, /id=fechaDiagnostico/);
+    assert.doesNotMatch(html, /id=fechaDiagnostico/);
     assert.match(html, /id=btDiagnostico/);
     assert.match(html, /id=secaoInconsistencias/);
     assert.match(html, /id=listaInconsistencias/);
@@ -43,6 +44,7 @@ test('modal separa inconsistências de avisos e problemas operacionais usam toas
     assert.match(dadosUi, /Dados para revisar/);
     assert.match(dadosUi, /mostrarToast\('Não foi possível carregar'/);
     assert.match(interacoes, /mostrarToast\('Não foi possível atualizar a visão'/);
+    assert.match(inicializacao, /el\('modalDiagnostico'\)\.addEventListener\('click', e => \{\s*if \(e\.target == el\('modalDiagnostico'\)\) el\('modalDiagnostico'\)\.close\(\);\s*\}\);/);
 });
 
 test('erros operacionais usam toast e só exclusão pede confirmação nativa', () => {

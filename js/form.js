@@ -37,18 +37,20 @@ function categoriasPorPopularidade() {
     const limiteIso = limite.toISOString().slice(0, 10);
     const contagem = {};
     Estado.lancamentos.forEach(r => {
-        if (!r.categ || !r.data || dataISO(r.data) < limiteIso) return;
-        contagem[r.categ] = (contagem[r.categ] || 0) + 1;
+        if (!r.data || dataISO(r.data) < limiteIso) return;
+        categoriasSeparadas(r.categ).forEach(categoria => {
+            contagem[categoria] = (contagem[categoria] || 0) + 1;
+        });
     });
-    const todas = [...new Set(Estado.lancamentos.map(r => r.categ).filter(valorValido))];
-    return todas.sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
+    const todas = Estado.lancamentos.flatMap(r => categoriasSeparadas(r.categ));
+    return [...new Set(todas)].sort((a, b) =>
+        (contagem[b] || 0) - (contagem[a] || 0) || a.localeCompare(b, 'pt'));
 }
-function popularCategoriasNoForm(idSelect = 'fCateg') {
-    const select = el(idSelect);
-    const atual = select.value;
-    select.innerHTML = '<option value="" disabled selected>Selecione…</option>' +
-        categoriasPorPopularidade().map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if (atual) select.value = atual;
+function popularCategoriasNoForm() {
+    // O campo é livre para comportar mais de uma categoria; o datalist só sugere
+    // categorias já usadas, inclusive as que vierem na mesma célula separadas por vírgula.
+    el('fCategList').innerHTML = categoriasPorPopularidade()
+        .map(categoria => `<option value="${escapeHtml(categoria)}"></option>`).join('');
 }
 
 // O nome continua livre: esta lista apenas reaproveita o nome distinto e a categoria mais
@@ -156,7 +158,7 @@ el('fValor').addEventListener('keydown', e => {
     if (el('fNome').value.trim() && el('fCateg').value) submeteNovoLancamento();
 });
 
-// ---- abrir modal: foco no Nome, categorias populares, Isa so pra quem nao e' a Isabella ----
+// ---- abrir modal: foco no Nome e categorias populares ----
 // select de Parcelas so' precisa ser populado uma vez (1x a 40x) — nao muda entre aberturas
 if (el('fParcelas').options.length < 40) {
     for (let n = 2; n <= 40; n++) el('fParcelas').add(new Option(`${n}x`, n));
@@ -174,10 +176,7 @@ function sugereModoValorParcelas() {
 }
 
 function nomeFatura(fatura) {
-    const venc = dataISO(fatura.vencimento);
-    const ano = venc.slice(0, 4);
-    const mes = +venc.slice(5, 7);
-    return `${MESES[mes - 1]} ${ano} — vence ${dataBR(fatura.vencimento)}`;
+    return dataBR(fatura.vencimento);
 }
 
 function idsFaturasDoFormulario(incluirSugestoes = true) {
@@ -259,7 +258,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     ).join('');
     destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
         const selecionada = idsSelecionados[parcela] || sugestoes[parcela];
-        const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Fatura';
+        const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Parcela única';
         return `<label class=fm><span>${titulo} <b class=req>*</b></span>` +
             `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required>` +
             `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a fatura…</option>` +
@@ -283,7 +282,7 @@ el('fCred').addEventListener('change', () => {
 
 // quando a categoria muda pra "Antecipacao Fatura" (debito), o seletor de fatura
 // deve aparecer igual ao credito — e desaparecer se sair dessa categoria.
-el('fCateg').addEventListener('change', () => atualizarFaturasDoFormulario());
+el('fCateg').addEventListener('input', () => atualizarFaturasDoFormulario());
 
 // Uma sugestao ainda automatica acompanha a data da venda; uma fatura escolhida
 // manualmente nunca e' substituida por esse recálculo.
@@ -313,10 +312,9 @@ function abreModalNovo(prefill) {
     el('formNovo').reset();
     popularCategoriasNoForm();
     popularNomesNoForm();
-    el('fCateg').selectedIndex = 0;
+    el('fCateg').value = '';
     sinalPositivo = false;
     el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
-    el('fIsaWrap').hidden = false;
 
     // titulo e aviso mudam conforme o modo simulacao global (Estado.simulando): o MESMO
     // formulario serve pra lancamento real (vai pro banco) e simulado (so' memoria) —
@@ -335,9 +333,7 @@ function abreModalNovo(prefill) {
         el('fCred').checked = !!prefill.cred;
         const fatRef = prefill.fatura || prefill.fatura_id;
         atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
-        el('fIsa').checked = !!prefill.isa;
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
-        el('fReservaEmergencia').checked = !!prefill.reserva;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
         // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
@@ -359,8 +355,11 @@ function abreModalNovo(prefill) {
     sugereModoValorParcelas();
 
     modalNovo.showModal();
-    // duplicando, o foco vai pro Valor (o que mais muda); do zero, vai pro Nome
-    setTimeout(() => el(prefill ? 'fValor' : 'fNome').focus(), 50);
+    // No celular, evitar foco automático impede que o teclado cubra o cadastro ao abrir.
+    // No desktop, duplicando vai para Valor; do zero, vai para Nome.
+    if (window.matchMedia('(min-width: 641px)').matches) {
+        setTimeout(() => el(prefill ? 'fValor' : 'fNome').focus(), 50);
+    }
 }
 el('fDataHoje').onclick = () => {
     el('fData').value = hojeISO();
@@ -559,6 +558,7 @@ function calcToque(tecla) {
     calcInput.focus();
 }
 
+if (modalCalc && el('abreCalc')) {
 el('abreCalc').onclick = () => {
     calcInput.value = '';
     calcRenderiza();
@@ -596,6 +596,7 @@ calcInput.addEventListener('keydown', e => {
 });
 calcInput.addEventListener('click', calcRenderiza);
 calcInput.addEventListener('keyup', calcRenderiza);
+}
 
 el('abreNovo').onclick = () => abreModalNovo();
 el('fechaNovo').onclick = () => modalNovo.close();
@@ -649,7 +650,7 @@ el('seldup').onclick = async () => {
                 if (Estado.simulando) {
                     simulaLancamentoParcelado({
                         nome: ehAporte ? 'Aporte' : 'Resgate', categ: ajuste.categ, freq: null, data,
-                        cred: false, isa: false, pago: false, reservaEmergencia: false,
+                        cred: false, pago: false,
                         parcelas: 1, valores: [valorAjuste],
                     });
                 } else {
@@ -657,9 +658,7 @@ el('seldup').onclick = async () => {
                         data,
                         freq: null,
                         cred: false,
-                        isa: false,
                         pago: false,
-                        ativo: true,
                         nome: ehAporte ? 'Aporte' : 'Resgate',
                         categ: ajuste.categ,
                         valor: valorAjuste,
@@ -759,9 +758,7 @@ async function submeteNovoLancamento() {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     // credito sempre exige fatura; antecipacao de debito tambem (agora com vinculo explicito)
     const faturaIds = (cred || ehAntecip) ? idsFaturasDoFormulario() : [];
-    const isa = el('fIsa').checked;
     const pago = el('fPago').checked;
-    const reservaEmergencia = el('fReservaEmergencia').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
     // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
@@ -787,10 +784,10 @@ async function submeteNovoLancamento() {
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, parcelas, valores, faturaIds });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, parcelas, valores, faturaIds });
 
-        // sucesso: NAO fecha o modal. Limpa so valor/data, mantem nome/categoria/cred/isa
+        // sucesso: NAO fecha o modal. Limpa so valor/data e mantem as opcoes do cadastro
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
         const totalAssinado = valores.reduce((s, v) => s + v, 0);
         el('erroNovo').textContent = (Estado.simulando ? 'Simulado: ' : 'Salvo: ') +
@@ -799,8 +796,7 @@ async function submeteNovoLancamento() {
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
-        el('fReservaEmergencia').checked = false;
-        el('fCateg').selectedIndex = 0;   // categoria vinha do nome; sem nome, nao faz sentido manter
+        el('fCateg').value = '';   // categoria vinha do nome; sem nome, nao faz sentido manter
         atualizaAvisoFronteira();
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
@@ -825,13 +821,13 @@ async function submeteNovoLancamento() {
 // memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
 // regra de classificacao que carregarDados() usa: debito pela propria data, credito pelo
 // vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds = [] }) {
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, parcelas, valores, faturaIds = [] }) {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         const payload = {
-            data: dataParcela, freq, cred, isa, pago, reserva: reservaEmergencia, ativo: true,
+            data: dataParcela, freq, cred, pago,
             nome,
             categ, valor: valores[p],
             fatura: faturaVenc,
@@ -892,7 +888,7 @@ el('toggleSimulacao').onclick = async () => {
 // derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
 // +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
-function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, reservaEmergencia, parcelas, valores, faturaIds = [] }) {
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, parcelas, valores, faturaIds = [] }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
     const ehAntecip = ehAntecipacaoFatura(categ || '');
 
@@ -905,7 +901,7 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, isa, pago, r
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, isa, pago, reserva: reservaEmergencia, ativo: true,
+            cred, pago,
             fatura: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),

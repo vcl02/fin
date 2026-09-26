@@ -6,6 +6,8 @@
 
   dialog#modalNovo,
   dialog#modalCalc,
+  dialog#modalVisualizacoes,
+  dialog#modalVisualizacao,
   dialog#modalGrafico,
   dialog#modalComparativo,
   dialog#modalDetalheCel {
@@ -41,10 +43,9 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
   }
 
-  /* Roberta: ela adiantou um valor (o positivo da categoria) e a divida vai sendo quitada
-     com o que sai pra ela. Por isso o trilho e' VERMELHO (a divida inteira) e o
-     preenchimento VERDE (o que ja foi devolvido) — o verde cresce ate' cobrir tudo. */
-  dialog#modalRoberta {
+  /* Visualizações com a mesma leitura de pago/aberto para qualquer categoria ou nome. */
+  dialog#modalVisualizacoes,
+  dialog#modalVisualizacao {
       border: 1px solid var(--ln);
       border-radius: 16px;
       padding: 1.3rem;
@@ -55,20 +56,26 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
-  .robPct {
+  #modalVisualizacoes[open] {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+  }
+
+  .visPct {
       font-size: 2.6rem;
       font-weight: 700;
       line-height: 1;
       margin-top: 1.4rem;   /* .modalHead nao tem margem propria */
   }
 
-  .robPctSub {
+  .visPctSub {
       color: var(--mu);
       font-size: .9rem;
       margin: .3rem 0 1.2rem;
   }
 
-  .robBarra {
+  .visBarra {
       height: 1.7rem;
       border-radius: 999px;
       background: var(--vm);
@@ -76,13 +83,13 @@
       overflow: hidden;
   }
 
-  .robFill {
+  .visFill {
       height: 100%;
       background: var(--vd);
       transition: width .45s ease;
   }
 
-  .robLegenda {
+  .visLegenda {
       display: flex;
       justify-content: space-between;
       gap: 1rem;
@@ -91,7 +98,7 @@
       color: var(--mu);
   }
 
-  .robTab {
+  .visTab {
       width: 100%;
       margin-top: 1rem;
       border-collapse: separate;
@@ -99,32 +106,33 @@
       background: transparent;
   }
 
-  .robTab td {
+  .visTab td {
       padding: .7rem .8rem;
       background: var(--field);
       border: 0;
   }
 
-  .robTab td:first-child {
+  .visTab td:first-child {
       border-radius: 9px 0 0 9px;
   }
 
-  .robTab td:last-child {
+  .visTab td:last-child {
       border-radius: 0 9px 9px 0;
   }
 
-  .robTab td.n {
+  .visTab td.n {
       text-align: right;
       font-variant-numeric: tabular-nums;
   }
 
-  .robTab tr.tot td {
+  .visTab tr.tot td {
       background: var(--field-hover);
       font-weight: 700;
       font-size: 1.05rem;
   }
 
-  dialog#modalRoberta::backdrop,
+  dialog#modalVisualizacoes::backdrop,
+  dialog#modalVisualizacao::backdrop,
   dialog#modalNovo::backdrop,
   dialog#modalCalc::backdrop,
   dialog#modalGrafico::backdrop,
@@ -158,7 +166,33 @@
       color: var(--fg);
   }
 
+  .modalTituloAcoes {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      min-width: 0;
+  }
+
+  .modalTituloAcoes .fmChecks {
+      margin: 0;
+  }
+
+  #formNovo .modalHead {
+      justify-content: flex-start;
+      gap: 1.15rem;
+  }
+
+  #formNovo .modalTituloAcoes {
+      flex: 1;
+  }
+
+  #formNovo .modalTituloAcoes .fmChecks {
+      margin-left: auto;
+  }
+
   #fechaNovo,
+  #fechaVisualizacoes,
+  #fechaVisualizacao,
   #fechaGrafico,
   #fechaComparativo {
       font-size: 1.5rem;
@@ -173,9 +207,30 @@
   }
 
   #fechaNovo:hover,
+  #fechaVisualizacoes:hover,
+  #fechaVisualizacao:hover,
   #fechaGrafico:hover,
   #fechaComparativo:hover {
       color: var(--fg);
+  }
+
+  #fechaNovo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid var(--vm);
+      border-radius: 9px;
+  }
+
+  #fechaNovo:hover {
+      color: #fff;
+      background: var(--vm);
+      border-color: var(--vm);
   }
 
   /* =========================================================
@@ -318,7 +373,7 @@
 
   .fmChecks {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, 2.9rem);
       gap: .6rem;
   }
 
@@ -349,13 +404,65 @@
       accent-color: #6FCB8F;
   }
 
+  .fmChkIco {
+      justify-content: center;
+      width: 2.9rem;
+      height: 2.9rem;
+      min-width: 0;
+      padding: 0;
+  }
+
+  .fmChkIco input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+  }
+
+  .fmChkIco svg {
+      width: 1.15rem;
+      height: 1.15rem;
+      flex: 0 0 1.15rem;
+      fill: none;
+      stroke: var(--mu);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+  }
+
+  .fmChkIco:has(input:checked) {
+      background: var(--field-hover);
+      border-color: var(--vd);
+  }
+
+  .fmChkIco:has(input:checked) svg {
+      stroke: var(--vd);
+  }
+
+  .parcelasLinha {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: .6rem;
+      align-items: end;
+  }
+
+  #fDivideWrap {
+      min-height: 2.9rem;
+  }
+
   /* =========================================================
        DINHEIRO
        ========================================================= */
 
+  .moneyLinha {
+      display: flex;
+      gap: .6rem;
+      align-items: stretch;
+  }
+
   .moneyWrap {
       display: flex;
       align-items: stretch;
+      flex: 1;
 
       border: 1px solid var(--ln);
       border-radius: 10px;
@@ -365,10 +472,11 @@
   }
 
   .sinalBt {
-      width: 2.4rem;
+      flex: none;
+      width: 2.9rem;
 
-      border: 0;
-      border-right: 1px solid var(--ln);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
 
       background: #191C1F;
       color: var(--vm);
@@ -400,22 +508,9 @@
       opacity: .6;
   }
 
-  .moneyPrefix {
-      display: flex;
-      align-items: center;
-
-      padding: 0 .5rem;
-
-      background: #191C1F;
-      color: var(--mu);
-
-      font-weight: 600;
-      font-size: .9rem;
-  }
-
   .moneyWrap input {
       border: 0;
-      border-radius: 0;
+      border-radius: 10px;
 
       text-align: right;
       font-variant-numeric: tabular-nums;
@@ -429,28 +524,6 @@
 
   .moneyWrap input:focus {
       outline: none;
-  }
-
-  .calcBt {
-      flex: none;
-      width: 2.4rem;
-
-      border: 0;
-      border-left: 1px solid var(--ln);
-
-      background: #191C1F;
-      color: var(--mu);
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      cursor: pointer;
-  }
-
-  .calcBt:hover {
-      background: var(--field-hover);
-      color: var(--fg);
   }
 
   /* =========================================================
@@ -616,10 +689,6 @@
 
   .erroNovo.okNovo.ok {
       color: var(--vd);
-  }
-
-  #fIsaWrap[hidden] {
-      display: none;
   }
 
   /* =========================================================

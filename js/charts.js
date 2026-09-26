@@ -1,6 +1,6 @@
 // Filtros visuais e gráficos do painel.
 
-const FILTROS_PADRAO = { titular: 'T', fpago: 'B', fativo: 'S', origem: 'A', somenteDif: 'N', fvalor: 'T' };
+const FILTROS_PADRAO = { fpago: 'B', origem: 'A', somenteDif: 'N' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
@@ -19,34 +19,12 @@ function limparFiltros() {
 el('btLimparFiltros').onclick = limparFiltros;
 
 // ===================================================================
-// VISUALIZAÇÃO: ROBERTA — acerto de contas
+// VISUALIZAÇÕES — acompanhamento por qualquer categoria ou nome existente
 // ===================================================================
-// Ela adiantou um valor de uma vez (entra POSITIVO na categoria) e a divida vai sendo
-// quitada aos poucos com o que sai pra ela (negativo — credito ou debito, tanto faz).
-// De proposito olha TODOS os lancamentos da categoria e IGNORA os filtros/ciclo da barra:
-// o acerto e' a relacao inteira, nao um recorte dela. Conta so' o que ja e' fato: 'ativo'
-// (desativado foi cancelado) e 'pago' — enquanto o pagamento nao aconteceu o dinheiro nao
-// saiu, e contar agendado inflaria o progresso do acerto.
-const ehCategoria = (categ, procurada) => semAcento(categ).trim() === semAcento(procurada).trim();
-
-function dadosCategoria(categoria) {
-    const linhas = Estado.lancamentos.filter(r => r.ativo && r.pago && ehCategoria(r.categ, categoria));
-    const entradas = linhas.reduce((s, r) => s + Math.max(r.v, 0), 0);
-    const saidas = linhas.reduce((s, r) => s - Math.min(r.v, 0), 0);
-    // O percentual visual para em 100%, mas o saldo continua mostrando excesso de saída.
-    const pctUsado = entradas ? Math.min(100, saidas / entradas * 100) : 0;
-    return { linhas, entradas, saidas, saldo: entradas - saidas, pctUsado, pctRestante: 100 - pctUsado };
-}
-
-// Entrada Econ, Evolução Obra e Dívida Estudantil medem execução financeira: o universo é tudo que
-// está ativo no recorte (pago + não pago), e a barra compara o valor pago com esse total.
-// Usa valor absoluto porque despesas são armazenadas com sinal negativo.
-function dadosPagamentoCategoria(op) {
-    const campo = op.campo || 'categ';
-    const valor = op.valor || op.categoria;
-    const linhas = Estado.lancamentos.filter(r =>
-        r.ativo && ehCategoria(r[campo], valor) && (!op.somenteNegativos || r.v < 0)
-    );
+// A escolha ignora o recorte da barra para mostrar a relação inteira. Pago e aberto usam
+// valor absoluto, pois entradas e saídas são armazenadas com sinais opostos.
+function dadosVisualizacao(campo, valor) {
+    const linhas = Estado.lancamentos.filter(r => ehCategoria(r[campo], valor));
     const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
     const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
     const naoPago = Math.max(0, total - pago);
@@ -56,100 +34,65 @@ function dadosPagamentoCategoria(op) {
 
 const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
 
-function abrirVisCategoria(op) {
-    const d = dadosCategoria(op.categoria);
-    const encerrado = d.saldo <= 0.005;
-    const semBase = d.entradas <= 0.005;
-    const pctDestaque = encerrado ? 0 : d.pctRestante;
-    el('tituloVisCategoria').textContent = op.titulo;
-    el('robertaCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento pago na categoria “${escapeHtml(op.categoria)}” ainda.</p>`
-        : `<div class="robPct ${encerrado ? 'vd' : 'vm'}">${semBase ? '—' : pct1(pctDestaque)}</div>
-           <p class=robPctSub>${encerrado ? op.subEncerrado : op.subAberto}</p>
-           <div class=robBarra><div class=robFill style="width:${d.pctUsado.toFixed(2)}%"></div></div>
-           <div class=robLegenda>
-             <span>${semBase ? 'Sem entrada positiva' : `${op.legendaUsado} ${pct1(d.pctUsado)}`}</span>
-             <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
-           </div>
-           <table class=robTab><tbody>
-             <tr><td>${op.rotuloEntrada}<td class="n vm">${brl(d.entradas)}
-             <tr><td>${op.rotuloSaida}<td class="n vd">${brl(d.saidas)}
-             <tr class=tot><td>${d.saldo < -0.005 ? op.rotuloExcesso : op.rotuloSaldo}<td class=n>${brl(Math.abs(d.saldo))}
-           </tbody></table>`;
-    el('modalRoberta').showModal();
-}
-
-function abrirVisPagamentoCategoria(op) {
-    const d = dadosPagamentoCategoria(op);
+function abrirVisualizacao(campo, valor) {
+    const d = dadosVisualizacao(campo, valor);
     const concluido = d.total > 0 && d.naoPago <= 0.005;
-    const valorFiltro = op.valor || op.categoria;
-    const rotuloFiltro = op.campo == 'nome' ? 'nome' : 'categoria';
-    el('tituloVisCategoria').textContent = op.titulo;
-    el('robertaCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento ativo com ${rotuloFiltro} “${escapeHtml(valorFiltro)}” ainda.</p>`
-        : `<div class="robPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
-           <p class=robPctSub>do valor total está pago</p>
-           <div class=robBarra><div class=robFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
-           <div class=robLegenda>
+    const rotulo = campo == 'nome' ? 'Nome' : 'Categoria';
+    el('tituloVisualizacao').textContent = valor;
+    el('visualizacaoCorpo').innerHTML = !d.linhas.length
+        ? `<p class=meta>Nenhum lançamento com ${rotulo.toLowerCase()} “${escapeHtml(valor)}” ainda.</p>`
+        : `<div class="visPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
+           <p class=visPctSub>do valor total está pago</p>
+           <div class=visBarra><div class=visFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
+           <div class=visLegenda>
              <span>Pago ${pct1(d.pctPago)}</span>
              <span>${d.linhas.length} lançamento${d.linhas.length > 1 ? 's' : ''}</span>
            </div>
-           <table class=robTab><tbody>
+           <table class=visTab><tbody>
              <tr><td>Pago<td class="n vd">${brl(d.pago)}
              <tr><td>Não pago<td class="n vm">${brl(d.naoPago)}
              <tr class=tot><td>Total<td class=n>${brl(d.total)}
            </tbody></table>`;
-    el('modalRoberta').showModal();
+    el('modalVisualizacao').showModal();
 }
 
-const VIS_CATEGORIAS = {
-    Roberta: {
-        categoria: 'Roberta', titulo: 'Roberta', subAberto: 'falta pra quitar com ela',
-        subEncerrado: 'quitado — nada a pagar', legendaUsado: 'Você já pagou',
-        rotuloEntrada: 'Ela te pagou', rotuloSaida: 'Você já pagou',
-        rotuloSaldo: 'Falta', rotuloExcesso: 'Pagou a mais',
-    },
-    EntradaEcon: {
-        categoria: 'Entrada Econ', titulo: 'Entrada Econ',
-    },
-    EvolucaoObra: {
-        categoria: 'Evolução Obra', titulo: 'Evolução Obra',
-    },
-    DividaEstudantil: {
-        categoria: 'Dívida Estudantil', titulo: 'Dívida Estudantil',
-    },
-    RenegociacaoPj: {
-        categoria: 'Renegociação PJ', titulo: 'Renegociação PJ',
-    },
-    Pos: {
-        campo: 'nome', valor: 'Pós', titulo: 'Pós',
-    },
-    RenegociacaoNu: {
-        campo: 'nome', valor: 'Renegociação Nu', titulo: 'Renegociação Nu',
-    },
-    Iphone: {
-        campo: 'nome', valor: 'Iphone', titulo: 'Iphone', somenteNegativos: true,
-    },
-    SeguroResidencial: {
-        campo: 'nome', valor: 'Seguro Residencial', titulo: 'Seguro Residencial',
-    },
-    Senac: {
-        campo: 'nome', valor: 'Senac', titulo: 'Senac',
-    },
-};
+function valoresDaVisualizacao(campo) {
+    const valores = campo == 'nome'
+        ? Estado.lancamentos.map(r => String(r.nome || '').trim())
+        : Estado.lancamentos.flatMap(r => categoriasSeparadas(r.categ));
+    return [...new Set(valores.filter(Boolean).map(valor => valor.trim()))]
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+}
 
-el('btRoberta').onclick = () => abrirVisCategoria(VIS_CATEGORIAS.Roberta);
-el('btEntradaEcon').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EntradaEcon);
-el('btEvolucaoObra').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.EvolucaoObra);
-el('btDividaEstudantil').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.DividaEstudantil);
-el('btRenegociacaoPj').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoPj);
-el('btPos').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Pos);
-el('btRenegociacaoNu').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.RenegociacaoNu);
-el('btIphone').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Iphone);
-el('btSeguroResidencial').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.SeguroResidencial);
-el('btSenac').onclick = () => abrirVisPagamentoCategoria(VIS_CATEGORIAS.Senac);
-el('fechaRoberta').onclick = () => el('modalRoberta').close();
-el('modalRoberta').addEventListener('click', e => { if (e.target == el('modalRoberta')) el('modalRoberta').close(); });
+function popularAlvosVisualizacao() {
+    const campo = el('visTipo').value;
+    const rotulo = campo == 'nome' ? 'Nome' : 'Categoria';
+    const valores = valoresDaVisualizacao(campo);
+    el('visAlvoRotulo').textContent = rotulo;
+    el('visAlvo').replaceChildren(...valores.map(valor => new Option(valor, valor)));
+    el('abreVisualizacao').disabled = !valores.length;
+}
+
+function abrirSeletorVisualizacoes() {
+    el('visTipo').value = 'categ';
+    popularAlvosVisualizacao();
+    el('modalVisualizacoes').showModal();
+}
+
+el('btVisualizacoes').onclick = abrirSeletorVisualizacoes;
+el('visTipo').onchange = popularAlvosVisualizacao;
+el('abreVisualizacao').onclick = () => {
+    const campo = el('visTipo').value;
+    const valor = el('visAlvo').value;
+    if (!valor) return;
+    el('modalVisualizacoes').close();
+    abrirVisualizacao(campo, valor);
+};
+el('fechaVisualizacoes').onclick = () => el('modalVisualizacoes').close();
+el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
+['modalVisualizacoes', 'modalVisualizacao'].forEach(id => el(id).addEventListener('click', e => {
+    if (e.target == el(id)) el(id).close();
+}));
 
 // ===================================================================
 // GRÁFICO DE GASTOS DO CICLO (pizza)
@@ -171,7 +114,7 @@ const MESES_META_RESERVA_EMERGENCIA = 9;
 function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
     const porCiclo = new Map();
     linhas.forEach(r => {
-        if (!(r.v < 0) || r._transferencia || r.reserva !== true || r.periodoIdx == null) return;
+        if (!(r.v < 0) || r._transferencia || !ehCategoria(r.categ, 'Reserva') || r.periodoIdx == null) return;
         const gastos = porCiclo.get(r.periodoIdx) || new Map();
         const nome = String(r.nome || '').trim();
         gastos.set(nome, (gastos.get(nome) || 0) + -r.v);
@@ -209,9 +152,7 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
 
 function dadosDoGraficoCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
-    const visiveis = Estado.lancamentos.filter(r =>
-        passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago)
-    );
+    const visiveis = Estado.lancamentos.filter(r => passaFiltroTriEstado('fpago', r.pago));
     const doPeriodo = visiveis.filter(r =>
         r.periodoIdx == idxPeriodo && !r.cred && !ehTransferenciaFatura(r));
 
@@ -428,55 +369,6 @@ el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
 });
 
-// clique no badge "Reserva emergência" alterna a classificação sem selecionar a linha.
-// Em linhas reais, a mudança vale para todas as ocorrências com o mesmo nome exato.
-// Linhas simuladas continuam exclusivamente em memória.
-el('out').addEventListener('click', async e => {
-    const badge = e.target.closest('[data-tog-reserva-emergencia]');
-    if (!badge) return;
-    if (isMobile()) return;
-    e.stopImmediatePropagation();
-
-    const id = badge.dataset.togReservaEmergencia;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const nome = String(r.nome || '');
-    const novaReservaEmergencia = !r.reserva;
-    badge.classList.toggle('tagReservaEmergencia', novaReservaEmergencia);
-    badge.classList.toggle('tagSemReservaEmergencia', !novaReservaEmergencia);
-    badge.textContent = novaReservaEmergencia ? 'Sim' : 'Não';
-    badge.style.opacity = .5;
-
-    try {
-        if (Estado.simulando || r._sim) {
-            Estado.lancamentos
-                .filter(x => x.nome === nome)
-                .forEach(x => { x.reserva = novaReservaEmergencia; });
-        } else {
-            const esperados = Estado.lancamentos
-                .filter(x => ehLinhaReal(x) && x.nome === nome)
-                .map(x => String(x.id));
-            const atualizados = await atualizarReservaEmergenciaPorNome(nome, novaReservaEmergencia);
-            const idsAtualizados = new Set(atualizados.map(x => String(x.id)));
-            const faltantes = esperados.filter(idEsperado => !idsAtualizados.has(idEsperado));
-            if (faltantes.length) {
-                await load();
-                throw Error(`atualização parcial: ${faltantes.length} lançamento(s) com o nome "${nome}" não retornaram do banco`);
-            }
-            const porId = new Map(atualizados.map(x => [String(x.id), x]));
-            Estado.lancamentos.forEach(x => {
-                const atualizado = porId.get(String(x.id));
-                if (atualizado) x.reserva = !!atualizado.reserva;
-            });
-        }
-        desenhar();
-    } catch (err) {
-        badge.style.opacity = '';
-        mostrarToast('Falhou ao atualizar', err.message);
-        desenhar();
-    }
-});
 el('fechaMetaReservaEmergencia').onclick = () => el('modalMetaReservaEmergencia').close();
 el('modalMetaReservaEmergencia').addEventListener('click', e => {
     if (e.target == el('modalMetaReservaEmergencia')) el('modalMetaReservaEmergencia').close();

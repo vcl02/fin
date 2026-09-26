@@ -13,7 +13,7 @@ test('simulação mantém update e exclusão de linhas reais somente em memória
     assert.match(formulario, /Ocultar .* só nesta simulação/);
     assert.match(formulario, /Volta ao recarregar ou sair da simulação/);
     assert.equal((interacoes.match(/!Estado\.simulando && !r\._sim\) await atualizarLancamento/g) || []).length, 3);
-    assert.match(graficos, /if \(Estado\.simulando \|\| r\._sim\)/);
+    assert.doesNotMatch(graficos, /atualizarLancamento|inserirLancamento|excluirLancamento/);
 });
 
 test('ajuste materializado na simulação vira linha local', () => {

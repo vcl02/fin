@@ -30,7 +30,7 @@
 1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.
 2. Acrescente ou ajuste testes de regressão para o comportamento alterado. Prefira `node:test`, determinístico e sem criar lançamentos de teste no banco.
 3. Documente no código a intenção de regras financeiras, arredondamentos, filtros e efeitos de linhas sintéticas. Comentários devem explicar o porquê, não reescrever a sintaxe.
-4. Rode `node --test tests/*.test.js`, `git diff --check` e verificações de sintaxe aplicáveis. Informe precisamente o que foi validado; não alegue validação visual ou Supabase se ela não ocorreu.
+4. Rode `node --test tests/*.test.js`, `git diff --check` e verificações de sintaxe aplicáveis. A suíte deve incluir a checagem de estrutura HTML/CSS: todo `<div>` precisa fechar na ordem correta e cada stylesheet precisa ter chaves balanceadas. Informe precisamente o que foi validado; não alegue validação visual ou Supabase se ela não ocorreu.
    O atalho oficial é `node scripts/check.mjs`, que executa a validação local completa sem dependências adicionais, inclusive higiene textual definida no `.editorconfig`.
 5. Depois de os testes passarem, faça commit e push para `origin/main` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
 
@@ -43,4 +43,4 @@
 - Mantenha dark mode definitivo, porém em tons de cinza escuro legíveis; evite preto quase puro dominando toda a interface.
 - Prefira ícones a textos nos botões de ação. Todo ícone precisa de `title` e `aria-label`; texto visível só entra quando for indispensável para entendimento.
 - Busque minimalismo: informação útil, textos curtos e formulários somente com campos necessários ao cadastro.
-- Isabella e mobile usam o mesmo `modoSimples`, sem o bloco Crédito. No mobile, as tabelas são somente leitura e o único fluxo de alteração permitido é cadastrar um novo lançamento; nunca exponha edição inline, seleção, duplicação, exclusão ou atualização por toque.
+- Isabella e mobile usam o mesmo `modoSimples`, sem o bloco Crédito. No mobile, as tabelas são somente leitura e o único fluxo de alteração permitido é cadastrar um novo lançamento. O toque na linha pode somente selecioná-la para somar valores; nunca exponha edição inline, duplicação, exclusão ou atualização por toque.

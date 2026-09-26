@@ -14,8 +14,7 @@ function baseEAbatContaUnica() {
     return { base: _baseUnica, abat: _abatUnica };
 }
 function baseContaUnica() {
-    return Estado.lancamentos.filter(r =>
-        passaFiltroTriEstado('fativo', r.ativo) && passaFiltroTriEstado('fpago', r.pago));
+    return Estado.lancamentos.filter(r => passaFiltroTriEstado('fpago', r.pago));
 }
 // as 4 caches acima (filtrada e conta unica) sao zeradas em desenhar() a cada redesenho.
 
@@ -95,7 +94,7 @@ function ajusteDoCiclo(idx) {
     return _cacheAjuste[idx] || null;
 }
 
-// Mesma logica de saldoDoCiclo, mas na base "conta unica" (so Ativo/Pago, ignora Origem/
+// Mesma logica de saldoDoCiclo, mas na base "conta unica" (so Pago, ignora Origem/
 // Titular) — usada por saldoPorDia e pela pizza de gastos, que ja tratavam a conta como
 // uma so antes desta mudanca. Cache proprio pra nao misturar com _cacheSaldo/_cacheAjuste.
 const _cacheSaldoUnico = {};

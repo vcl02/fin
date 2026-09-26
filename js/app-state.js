@@ -15,7 +15,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['reserva', 'Reserva emergência', 'r'], ['id', 'ID', 'n'],
+    ['id', 'ID', 'n'],
 ];
 const COLS_MOBILE = [['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n']];
 const isMobile = () => matchMedia('(max-width: 640px)').matches;

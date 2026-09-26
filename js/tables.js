@@ -4,15 +4,10 @@ const passaFiltroTriEstado = (idSelect, valor) => {
     const v = el(idSelect).value;
     return v == 'B' || (v == 'S') == !!valor;
 };
-// aplica todos os filtros ativos (situacao, origem, titular, valor) sobre a lista de lancamentos.
-// Valor: P/N pegam so' o que e' de fato positivo/negativo — lancamento sem valor (v = 0) nao e'
-// nem um nem outro, entao fica de fora dos dois recortes.
+// Aplica os filtros de situação e origem sobre a lista de lançamentos.
 const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
-    passaFiltroTriEstado('fativo', r.ativo) &&
     passaFiltroTriEstado('fpago', r.pago) &&
-    ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value] &&
-    ({ T: 1, E: !r.isa, I: r.isa })[el('titular').value] &&
-    ({ T: 1, P: r.v > 0, N: r.v < 0 })[el('fvalor').value]
+    ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value]
 );
 
 // ===================================================================
@@ -119,7 +114,7 @@ window.sortComp = k => {
     desenhar();
 };
 
-['fData', 'fNome', 'fCred', 'fIsa'].forEach(id =>
+['fData', 'fNome', 'fCred'].forEach(id =>
     el(id).addEventListener('change', atualizaAvisoFronteira));
 el('fNome').addEventListener('input', atualizaAvisoFronteira);
 
@@ -173,9 +168,7 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (isMobile() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
-    : tipo == 'r' ? `<td>${r[chave] == null ? '—'
-            : `<span class="${r[chave] ? 'tagReservaEmergencia' : 'tagSemReservaEmergencia'}${!isMobile() && (ehLinhaReal(r) || r._sim) ? ' togReservaEmergencia' : ''}"${!isMobile() && (ehLinhaReal(r) || r._sim) ? ` data-tog-reserva-emergencia="${escapeHtml(String(r.id))}" title="Alternar reserva"` : ''}>${r[chave] ? 'Sim' : 'Não'}</span>`}`
-        : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
+    : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
 ).join('');
@@ -204,8 +197,9 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
         });
     }
 
-    // Mobile é consulta: não monta chaves selecionáveis nem a barra de ações que delas depende.
-    const podeSelecionar = selecionavel && !isMobile();
+    // Tanto no desktop quanto no mobile, o toque/clique na linha serve para somar valores.
+    // No mobile a barra mostra apenas a soma e Limpar; ações que mudam dados ficam ocultas.
+    const podeSelecionar = selecionavel;
     return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
             const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);
@@ -229,7 +223,7 @@ function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn) {
 // um card "Débito"/"Crédito"/"Backlog": titulo + total, subtitulo, tabela por baixo.
 // quando selecionavel, ganha um botao "Selecionar tudo" que marca/desmarca todas as linhas
 // dessa tabela de uma vez (respeitando o filtro de texto ativo, se houver).
-// "Ver gráfico" mora na toolbar (#btGrafico, ao lado do filtro Ativo), nao mais aqui.
+// "Ver gráfico" mora na toolbar (#btGrafico), nao mais aqui.
 const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = false, extra = '') => {
     // 'extra' preenchido substitui o total no destaque: o titulo passa a exibir o que
     // falta pagar em evidencia, com o bruto de lado, apagado.

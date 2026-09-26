@@ -10,7 +10,7 @@
   <link rel=icon type="image/svg+xml" href="./icons/fin-192.svg">
   <link rel="stylesheet" href="./css/base.css">
   <link rel="stylesheet" href="./css/dashboard.css">
-  <link rel="stylesheet" href="./css/forms.css">
+  <link rel="stylesheet" href="./css/forms.css?v=20260924-valor-sinal">
   <link rel="stylesheet" href="./css/charts.css">
   <link rel="stylesheet" href="./css/utilities.css">
   <link rel="stylesheet" href="./css/mobile.css">
@@ -97,32 +97,12 @@
 
     <div class=tool>
       <div class=row>
-        <label class=f id=ftit><span>Titular</span>
-          <select id=titular>
-            <option value=T>Todos
-            <option value=E>Victor
-            <option value=I>Isabella
-          </select>
-        </label>
         <label class=f id=fsit><span>Pago</span>
           <select id=fpago>
             <option value=B>Ambos
             <option value=S>Sim
             <option value=N>Não
           </select>
-        </label>
-        <label class=f id=fativoWrap><span>Ativo</span>
-          <select id=fativo>
-            <option value=S>Sim
-            <option value=B>Ambos
-            <option value=N>Não
-          </select>
-        </label>
-        <label class=f id=fgraf><span>&nbsp;</span>
-          <div class=graficosBotoes>
-            <button type=button id=btGrafico class=btFiltro>Gráfico</button>
-            <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de 9 meses">Reserva emergência</button>
-          </div>
         </label>
         <label class=f id=fciclo><span>Ciclo</span>
           <select id=ciclo></select>
@@ -134,13 +114,6 @@
             <option value=F>Crédito
           </select>
         </label>
-        <label class=f id=fvalWrap><span>Valor</span>
-          <select id=fvalor>
-            <option value=T>Tudo
-            <option value=P>Positivo
-            <option value=N>Negativo
-          </select>
-        </label>
         <label class=f id=fdif><span>Linhas</span>
           <select id=somenteDif>
             <option value=N>Todas
@@ -148,40 +121,15 @@
             <option value=I>Diferentes (ignorar repetidas)
           </select>
         </label>
-        <label class=f id=fevol><span>&nbsp;</span>
-          <button type=button id=btEvolucao class=btFiltro>Gráfico</button>
-        </label>
-        <label class=f id=flimpar><span>&nbsp;</span>
-          <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar
-            filtros</button>
-        </label>
-      </div>
-      <div class=row id=rowVis>
-        <div class=f id=fvisRoberta><span>Visualizações</span>
-          <div class=visBotoes>
-            <button type=button id=btRoberta class=btFiltro
-              title="Ignora filtros">Roberta</button>
-            <button type=button id=btEntradaEcon class=btFiltro
-              title="Ignora filtros">Entrada Econ</button>
-            <button type=button id=btEvolucaoObra class=btFiltro
-              title="Ignora filtros">Evolução Obra</button>
-            <button type=button id=btDividaEstudantil class=btFiltro
-              title="Ignora filtros">Dívida Estudantil</button>
-            <button type=button id=btRenegociacaoPj class=btFiltro
-              title="Ignora filtros">Renegociação PJ</button>
-            <button type=button id=btPos class=btFiltro
-              title="Ignora filtros">Pós</button>
-            <button type=button id=btRenegociacaoNu class=btFiltro
-              title="Ignora filtros">Renegociação Nu</button>
-            <button type=button id=btIphone class=btFiltro
-              title="Somente saídas">Iphone</button>
-            <button type=button id=btSeguroResidencial class=btFiltro
-              title="Ignora filtros">Seguro Residencial</button>
-            <button type=button id=btSenac class=btFiltro
-              title="Ignora filtros">Senac</button>
-          </div>
+      <div id=rowVis>
+        <button type=button id=btVisualizacoes class=btFiltro>Visualizações</button>
+        <button type=button id=btGrafico class=btFiltro>Gráfico</button>
+        <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de 9 meses">Reserva emergência</button>
+        <div id=flimpar>
+          <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
         </div>
       </div>
+    </div>
     </div>
     <div id=out></div>
     <div id=selbar><span id=selinfo class=info></span>
@@ -194,22 +142,27 @@
     <dialog id=modalNovo>
       <form id=formNovo method=dialog>
         <div class=modalHead>
-          <h2 id=tituloNovo>Novo lançamento</h2>
-          <button type=button id=fechaNovo aria-label="Fechar">×</button>
+          <div class=modalTituloAcoes>
+            <h2 id=tituloNovo>Novo lançamento</h2>
+            <div class=fmChecks>
+              <label class="fmChk fmChkIco" title="Crédito">
+                <input type=checkbox id=fCred checked aria-label="Crédito">
+                <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3" /></svg>
+              </label>
+              <label class="fmChk fmChkIco" title="Pago">
+                <input type=checkbox id=fPago checked aria-label="Pago">
+                <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><circle cx=12 cy=12 r=8 /><path d="m8.5 12 2.2 2.2 4.8-5" /></svg>
+              </label>
+            </div>
+          </div>
+          <button type=button id=fechaNovo title="Fechar" aria-label="Fechar">
+            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round>
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
         </div>
 
         <p class=avisoFr id=avisoSimulando hidden>Simulação: não salva.</p>
-
-        <div class=fmChecks>
-          <label class=fmChk>
-            <input type=checkbox id=fCred><span>Crédito</span></label>
-          <label class=fmChk id=fIsaWrap>
-            <input type=checkbox id=fIsa><span>Isabella</span></label>
-          <label class=fmChk>
-            <input type=checkbox id=fPago checked><span>Pago</span></label>
-          <label class=fmChk>
-            <input type=checkbox id=fReservaEmergencia><span>Reserva emergência</span></label>
-        </div>
 
         <label class=fm><span>Nome <b class=req>*</b></span>
           <input type=text id=fNome required placeholder="Ex: Mercado, Aluguel…" autocomplete=off
@@ -227,43 +180,32 @@
         </label>
 
         <div class=fm id=fFaturasWrap hidden>
-          <span>Fatura <b class=req>*</b></span>
+          <span>Fatura</span>
           <div id=faturasPorParcela></div>
         </div>
 
         <p class=avisoFr id=avisoFr hidden></p>
 
         <label class=fm><span>Valor</span>
-          <div class=moneyWrap>
-            <button type=button id=fSinal class=sinalBt aria-label="Alternar entre saída e entrada">−</button>
-            <span class=moneyPrefix>R$</span>
-            <input type=text inputmode=numeric id=fValor placeholder="0,00" autocomplete=off>
-            <button type=button id=abreCalc class=calcBt title="Calculadora" aria-label="Abrir calculadora">
-              <svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2
-                stroke-linecap=round stroke-linejoin=round>
-                <rect x=4 y=2 width=16 height=20 rx=2 />
-                <line x1=8 y1=6 x2=16 y2=6 />
-                <line x1=8 y1=11 x2=8 y2=11 />
-                <line x1=12 y1=11 x2=12 y2=11 />
-                <line x1=16 y1=11 x2=16 y2=11 />
-                <line x1=8 y1=15 x2=8 y2=15 />
-                <line x1=12 y1=15 x2=12 y2=15 />
-                <line x1=16 y1=15 x2=16 y2=15 />
-                <line x1=8 y1=19 x2=8 y2=19 />
-                <line x1=12 y1=19 x2=12 y2=19 />
-                <line x1=16 y1=19 x2=16 y2=19 />
-              </svg>
-            </button>
+          <div class=moneyLinha>
+            <div class=moneyWrap>
+              <input type=text inputmode=numeric id=fValor placeholder="0,00" autocomplete=off>
+            </div>
+            <button type=button id=fSinal class=sinalBt title="Alternar entre saída e entrada" aria-label="Alternar entre saída e entrada">−</button>
           </div>
         </label>
 
-        <label class=fm><span>Vezes</span>
-          <select id=fParcelas>
-            <option value=1>À vista (1x)
-          </select>
-        </label>
-        <label class=fmChk id=fDivideWrap>
-          <input type=checkbox id=fDivide checked><span>Dividir entre parcelas</span></label>
+        <div class=parcelasLinha>
+          <label class=fm><span>Vezes</span>
+            <select id=fParcelas>
+              <option value=1>À vista
+            </select>
+          </label>
+          <label class="fmChk fmChkIco" id=fDivideWrap title="Dividir a compra entre parcelas">
+            <input type=checkbox id=fDivide checked aria-label="Dividir a compra entre parcelas">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3M9 12l6 6m0-6-6 6" /></svg>
+          </label>
+        </div>
 
         <label class=fm><span>Frequência</span>
           <select id=fFreq>
@@ -276,8 +218,10 @@
           </select>
         </label>
 
-        <label class=fm><span>Categoria <b class=req>*</b></span>
-          <select id=fCateg required></select>
+        <label class=fm><span>Categorias <b class=req>*</b></span>
+          <input type=text id=fCateg list=fCategList required autocomplete=off
+            placeholder="Ex.: Casa, Mercado">
+          <datalist id=fCategList></datalist>
         </label>
 
         <p class="erroNovo okNovo" id=erroNovo></p>
@@ -286,50 +230,30 @@
       </form>
     </dialog>
 
-    <dialog id=modalCalc>
+    <!-- Seletor e resultado das visualizações de acompanhamento por categoria ou nome. -->
+    <dialog id=modalVisualizacoes>
       <div class=modalHead>
-        <h2>Calculadora</h2>
-        <button type=button id=fechaCalc aria-label="Fechar">×</button>
+        <h2>Visualizações</h2>
+        <button type=button id=fechaVisualizacoes aria-label="Fechar">×</button>
       </div>
-      <div class=calcVisor>
-        <input class=calcExpr id=calcVisor inputmode=none autocomplete=off placeholder=0>
-        <div class=calcResultado id=calcResultado>&nbsp;</div>
-      </div>
-      <div class=calcGrid>
-        <button type=button class="calcTecla calcOp" data-calc=ac>AC</button>
-        <button type=button class="calcTecla calcOp" data-calc=paren>( )</button>
-        <button type=button class="calcTecla calcOp" data-calc=pct>%</button>
-        <button type=button class="calcTecla calcOp" data-calc=div>÷</button>
-
-        <button type=button class=calcTecla data-calc=7>7</button>
-        <button type=button class=calcTecla data-calc=8>8</button>
-        <button type=button class=calcTecla data-calc=9>9</button>
-        <button type=button class="calcTecla calcOp" data-calc=mul>×</button>
-
-        <button type=button class=calcTecla data-calc=4>4</button>
-        <button type=button class=calcTecla data-calc=5>5</button>
-        <button type=button class=calcTecla data-calc=6>6</button>
-        <button type=button class="calcTecla calcOp" data-calc=sub>−</button>
-
-        <button type=button class=calcTecla data-calc=1>1</button>
-        <button type=button class=calcTecla data-calc=2>2</button>
-        <button type=button class=calcTecla data-calc=3>3</button>
-        <button type=button class="calcTecla calcOp" data-calc=add>+</button>
-
-        <button type=button class=calcTecla data-calc=0>0</button>
-        <button type=button class=calcTecla data-calc=ponto>,</button>
-        <button type=button class="calcTecla calcOp" data-calc=back aria-label="Apagar">⌫</button>
-        <button type=button class="calcTecla calcIgual" data-calc=igual title="Inserir valor"
-          aria-label="Inserir valor">✓</button>
-      </div>
+      <label class=fm><span>Tipo</span>
+        <select id=visTipo>
+          <option value=categ>Categoria
+          <option value=nome>Nome
+        </select>
+      </label>
+      <label class=fm><span id=visAlvoRotulo>Categoria</span>
+        <select id=visAlvo></select>
+      </label>
+      <button type=button id=abreVisualizacao class=btPri>Ver visualização</button>
     </dialog>
 
-    <dialog id=modalRoberta>
+    <dialog id=modalVisualizacao>
       <div class=modalHead>
-        <h2 id=tituloVisCategoria>Roberta</h2>
-        <button type=button id=fechaRoberta aria-label="Fechar">×</button>
+        <h2 id=tituloVisualizacao>Visualização</h2>
+        <button type=button id=fechaVisualizacao aria-label="Fechar">×</button>
       </div>
-      <div id=robertaCorpo></div>
+      <div id=visualizacaoCorpo></div>
     </dialog>
 
     <dialog id=modalGrafico>
@@ -391,7 +315,6 @@
     <dialog id=modalDiagnostico>
       <div class=modalHead>
         <h2 id=tituloDiagnostico>Problema identificado</h2>
-        <button type=button id=fechaDiagnostico title="Fechar" aria-label="Fechar">×</button>
       </div>
       <p class=meta id=textoDiagnostico></p>
       <section class=secaoDiagnostico id=secaoInconsistencias>

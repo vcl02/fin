@@ -45,24 +45,22 @@ function desenhar() {
     // em vez de corte seco.
     mostraComFade('forigem', !modoBlocos && !simples);
     if (modoBlocos) el('origem').value = 'A';
-    el('ftit').hidden = simples;
-    el('fvalWrap').hidden = simples;
-    if (simples) el('fvalor').value = 'T';
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
     if (simples) {
-        el('fsit').hidden = el('fativoWrap').hidden = true;
-        el('fpago').value = 'B'; el('fativo').value = 'S';   // ve tudo (pago+aberto), so os ativos
+        el('fsit').hidden = true;
+        el('fpago').value = 'B';
     }
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
-    if (!simples) el('fativo').value = noBacklog ? 'B' : 'S';
     if (!modoBlocos) el('origem').value = 'A';
 
-    // "Ver gráfico" so faz sentido com um ciclo de verdade selecionado (fora do Backlog,
-    // que nao tem periodo pra desenhar a pizza).
-    mostraComFade('fgraf', modoBlocos && !simples && !noBacklog);
+    // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece
+    // no lugar e só fica desabilitado quando não existe período válido (Backlog).
     el('btGrafico').dataset.idx = el('ciclo').value;
-    el('btMetaReservaEmergencia').dataset.idx = el('ciclo').value;
-    mostraComFade('fevol', !modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
+    el('btGrafico').disabled = simples || (modoBlocos ? noBacklog : !el('compDe').value || !el('compAte').value);
+    // A Reserva pode acompanhar tanto um ciclo quanto uma comparação; na comparação,
+    // usa sempre o último ciclo escolhido (Até). Backlog não tem ciclo final válido.
+    el('btMetaReservaEmergencia').dataset.idx = el('compAte').value;
+    el('btMetaReservaEmergencia').disabled = simples || noBacklog || !el('compAte').value;
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
     // (ex: digitar num filtro de texto), senao a tela piscaria a cada tecla
@@ -106,14 +104,9 @@ function desenhar() {
 // SELEÇÃO DE LINHAS (barra flutuante de soma)
 // ===================================================================
 function atualizaBarraSelecao() {
-    // No mobile a visão é estritamente de consulta: descarta eventual seleção herdada do desktop.
-    if (isMobile()) {
-        Estado.selecionados.clear();
-        el('selbar').style.display = 'none';
-        return;
-    }
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
 
+    const mobile = isMobile();
     const chaves = [...Estado.selecionados.keys()];
     // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
     // excluidas. As excecoes de ACAO sao os ajustes "sug:" e "res:": Aporte sugerido
@@ -127,18 +120,17 @@ function atualizaBarraSelecao() {
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
-    // pra somar e selecionar/limpar. Nunca os dois juntos — pra desmarcar uma linha unica,
-    // basta clicar nela de novo. Selecao multipla + soma funciona igual em qualquer
-    // tela desktop — a seleção nunca aparece no mobile e não depende do modo simples.
-    el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
+    // pra somar e selecionar/limpar. No mobile, a barra nunca oferece ações que alteram
+    // dados: fica somente a soma e o botão Limpar.
+    el('seldup').hidden = mobile || (!chaveUnicaReal && !ehAjusteMaterializavel);
     el('seldup').textContent = ehAjusteMaterializavel
         ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
         : 'Duplicar';
-    el('seldel').hidden = !chaveUnicaReal;
+    el('seldel').hidden = mobile || !chaveUnicaReal;
     el('seldel').textContent = Estado.simulando && chaveUnicaReal ? 'Ocultar' : 'Excluir';
-    el('selacao').hidden = !!chaveUnicaReal || ehAjusteMaterializavel;
+    el('selacao').hidden = !mobile && (!!chaveUnicaReal || ehAjusteMaterializavel);
 
-    if (chaveUnica) {
+    if (chaveUnica && !mobile) {
         const r = linhaDaChaveSelecao(chaveUnica);
         el('selinfo').innerHTML =
             `<span class=cnt>Selecionado</span>` +
@@ -417,11 +409,8 @@ el('out').addEventListener('click', e => {
 });
 
 el('out').addEventListener('click', e => {
-    // badges interativos têm seus próprios handlers; nunca podem também selecionar a linha.
-    if (e.target.closest('[data-tog-reserva-emergencia]')) return;
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
-    if (isMobile()) return;
     if (e.shiftKey) { const s = getSelection(); if (s) s.removeAllRanges(); }   // limpa a selecao de texto nativa do shift-click
     if (e.shiftKey && !isMobile() && Estado.ultimaClicada) {
         const idTabela = Object.keys(Estado.linhasVisiveis)
@@ -450,9 +439,14 @@ el('compAte').addEventListener('change', () => {
     atualizaBarraSelecao();
 });
 
-el('btGrafico').onclick = () => abrirGraficoGastos(+el('btGrafico').dataset.idx);
+el('btGrafico').onclick = () => {
+    const de = el('compDe').value;
+    const ate = el('compAte').value;
+    const modoBlocos = de == '-1' || (!!de && de == ate);
+    if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
+    else abrirGraficoEvolucao(+de, +ate);
+};
 el('btMetaReservaEmergencia').onclick = () => abrirMetaReservaEmergencia(+el('btMetaReservaEmergencia').dataset.idx);
-el('btEvolucao').onclick = () => abrirGraficoEvolucao(+el('compDe').value, +el('compAte').value);
 
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
 // desabilitado quando hoje nao cai em periodo nenhum.
@@ -534,5 +528,5 @@ document.querySelectorAll('.tool select,.tool input,#navComparar select').forEac
 // ===================================================================
 // Valor padrao de cada select da toolbar: e' a 1a <option> de cada um no index.html, que e'
 // tambem o que o navegador seleciona sozinho na 1a carga. desenhar() ainda pode sobrescrever
-// alguns deles conforme o modo (ex: Ativo vira "Ambos" no Backlog, Origem volta pra "Tudo"
+// alguns deles conforme o modo (ex: Origem volta pra "Tudo"
 // no modo blocos) — o padrao aqui e' so' o ponto de partida, igual na abertura da pagina.

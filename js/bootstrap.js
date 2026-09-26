@@ -47,7 +47,9 @@ el('senha').onkeydown = e => {
 };
 
 el('sair').onclick = async () => { await sb.auth.signOut(); el('senha').value = ''; mostraTela(0); };
-el('fechaDiagnostico').onclick = () => el('modalDiagnostico').close();
+el('modalDiagnostico').addEventListener('click', e => {
+    if (e.target == el('modalDiagnostico')) el('modalDiagnostico').close();
+});
 el('btDiagnostico').onclick = abrirDiagnosticoDeDados;
 el('recarregar').onclick = async () => {
     const bt = el('recarregar');
