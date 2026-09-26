@@ -162,7 +162,7 @@ function vCiclo() {
         creditosExibidos, 'cr', true,
         `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
-        `value="${limiteContratadoEditavel}" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
+        `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
         `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span>`
     );

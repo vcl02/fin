@@ -199,6 +199,11 @@
       border-bottom-color: var(--line-strong);
   }
 
+  .limiteCartaoEditavel::placeholder {
+      color: var(--mu);
+      opacity: .72;
+  }
+
   .limiteGarantido {
       color: var(--vd);
   }
