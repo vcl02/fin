@@ -115,6 +115,18 @@
           min-width: 0;
           max-width: 100%;
       }
+
+      /* O resumo financeiro preserva a leitura em duas faixas sem apertar os valores
+         do Débito no modo simples. Crédito não é exibido no mobile. */
+      .blk h3:has(.resumoTitulo) {
+          align-items: flex-start;
+          flex-wrap: wrap;
+      }
+
+      .blk h3:has(.resumoTitulo) .resumoTitulo {
+          flex-basis: calc(100% - 1.95rem);
+          margin-left: 1.95rem;
+      }
   }
 
   .blk h3 .tog {

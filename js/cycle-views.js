@@ -116,13 +116,13 @@ function vCiclo() {
     const debitoHoje = resumoDebitoPagoAte(Estado.lancamentos);
     const cicloDebitoFuturo = dataISO(periodo.ini) > hojeISO();
     const linhaHojeDebito = cicloDebitoFuturo ? '' :
-        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<span>Saldo <b class="${corValor(debitoHoje.saldo)}">${brl(debitoHoje.saldo)}</b></span>` +
-        `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span>`;
+        `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span></span>`;
     const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<span>Saldo <b class="${corSoma(totalDebito)}">${brl(totalDebito)}</b></span>` +
-        `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span>`;
+        `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span></span>`;
 
     const blocoDebito = renderBloco(
         'Débito', totalDebito,
@@ -164,16 +164,16 @@ function vCiclo() {
     });
 
     const linhaHojeCredito = cicloDebitoFuturo ? '' :
-        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span>` +
-        `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span></span>`;
+        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
+        `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span></span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<span>Pago + aberto <b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b></span>` +
         `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
-        `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span></span></span>`;
+        `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span></span></span></span>`;
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,

@@ -167,37 +167,58 @@
   }
 
   /* Os títulos financeiro-resumo distinguem o retrato real de hoje da projeção sem criar
-     outro card ou duplicar a tabela. Cada linha mantém saldo/guardado legíveis no desktop. */
+     outro card ou duplicar a tabela. Faixas discretas preservam a leitura em duas linhas. */
+  .blk h3:has(.resumoTitulo) {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+  }
+
+  .blk h3:has(.resumoTitulo) .tog {
+      flex: 0 0 auto;
+      margin: 0;
+  }
+
   .tituloBloco {
-      display: inline-block;
-      vertical-align: top;
-      padding-top: .08rem;
+      flex: 0 0 auto;
+      min-width: 4.25rem;
   }
 
   .resumoTitulo {
-      display: inline-flex;
-      flex-direction: column;
-      gap: .16rem;
-      margin-left: .65rem;
-      font-size: .88em;
+      display: grid;
+      flex: 1 1 auto;
+      gap: .3rem;
+      min-width: 0;
+      margin: 0;
+      font-size: .82em;
       font-weight: 500;
-      vertical-align: top;
   }
 
   .resumoLinha {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: .25rem .7rem;
+      display: grid;
+      grid-template-columns: 3.65rem minmax(0, 1fr);
+      align-items: center;
+      gap: .55rem;
+      padding: .28rem .48rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 7px;
   }
 
   .resumoRotulo {
-      min-width: 3.55rem;
       color: var(--mu);
-      font-size: .82em;
+      font-size: .78em;
       font-weight: 700;
       letter-spacing: .04em;
       text-transform: uppercase;
+  }
+
+  .resumoDados {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .15rem .8rem;
+      min-width: 0;
   }
 
   /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */

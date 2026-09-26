@@ -9,6 +9,7 @@ const dominio = fs.readFileSync('js/domain.js', 'utf8');
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const inicio = script.indexOf('function creditosExibidosNoCiclo(');
@@ -68,6 +69,9 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /Guardado/);
     assert.match(estilos, /\.resumoTitulo/);
     assert.match(estilos, /\.resumoLinha/);
+    assert.match(visoes, /class=resumoDados/);
+    assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
+    assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);
 });
 
 test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura vence depois', () => {
