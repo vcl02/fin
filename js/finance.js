@@ -259,10 +259,13 @@ function lancamentosPagosAte(linhas, dataLimite = hojeISO()) {
 }
 
 // Separa explicitamente o dinheiro disponível do patrimônio guardado no instante atual.
-// Saldo inclui aporte/resgate porque o dinheiro efetivamente sai/volta para a conta;
-// guardado mostra essa parcela separada e nunca conta sugestões sintéticas de futuro.
+// O saldo nasce no mesmo SALDO_DESDE da cascata dos ciclos: antes dele não há saldo inicial
+// confiável e os registros históricos não podem contaminar o retrato de hoje. Saldo inclui
+// aporte/resgate porque o dinheiro efetivamente sai/volta para a conta; guardado mostra essa
+// parcela separada e nunca conta sugestões sintéticas de futuro.
 function resumoDebitoPagoAte(linhas, dataLimite = hojeISO()) {
-    const pagos = lancamentosPagosAte(linhas, dataLimite).filter(r => !r.cred);
+    const pagos = lancamentosPagosAte(linhas, dataLimite)
+        .filter(r => !r.cred && dataISO(r.data) >= SALDO_DESDE);
     return {
         saldo: pagos.reduce((soma, r) => soma + (+r.v || 0), 0),
         guardado: pagos

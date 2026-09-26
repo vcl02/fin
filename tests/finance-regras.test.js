@@ -62,13 +62,14 @@ test('crédito é visualmente deslocado, mas o total respeita antecipação', ()
 test('resumo de hoje ignora abertos e datas futuras, mas separa saldo de guardado', () => {
     const r = regrasFinanceiras([]);
     const linhas = [
+        { data: '2025-12-31', pago: true, cred: false, inv: true, v: -900 },
         { data: '2026-09-20', pago: true, cred: false, v: 1000 },
         { data: '2026-09-21', pago: true, cred: false, inv: true, v: -560 },
         { data: '2026-09-22', pago: false, cred: false, v: -200 },
         { data: '2026-09-27', pago: true, cred: false, v: -300 },
         { data: '2026-09-23', pago: true, cred: true, v: -90 },
     ];
-    assert.deepEqual(Array.from(r.lancamentosPagosAte(linhas, '2026-09-26')).map(linha => linha.v), [1000, -560, -90]);
+    assert.deepEqual(Array.from(r.lancamentosPagosAte(linhas, '2026-09-26')).map(linha => linha.v), [-900, 1000, -560, -90]);
     assert.deepEqual({ ...r.resumoDebitoPagoAte(linhas, '2026-09-26') }, { saldo: 440, guardado: 560 });
 });
 
