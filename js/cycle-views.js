@@ -162,18 +162,22 @@ function vCiclo() {
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
-
-    const linhaHojeCredito = cicloDebitoFuturo ? '' :
-        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
-        `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span></span></span>`;
-    const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
-        `<span>Pago + aberto <b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b></span>` +
-        `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+    // Limite é contexto do cartão, não do recorte Hoje/Futuro. Repeti-lo nas duas faixas
+    // evita comparar o pago de hoje com uma capacidade que só aparece na projeção.
+    const resumoLimiteCartao = `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
-        `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span></span></span></span>`;
+        `<span class=limiteTotal>Total ${brl(limiteTotal)}</span></span>`;
+
+    const linhaHojeCredito = cicloDebitoFuturo ? '' :
+        `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
+        `<span>Pago <b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b></span>` +
+        resumoLimiteCartao + `</span></span>`;
+    const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
+        `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
+        resumoLimiteCartao + `</span></span></span>`;
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,

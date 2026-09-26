@@ -228,6 +228,16 @@
       font-weight: 500;
   }
 
+  /* Total é o teto utilizável; o separador dá respiro sem competir com o limite livre. */
+  .limiteTotal {
+      display: inline-flex;
+      margin-left: .55rem;
+      padding-left: .75rem;
+      color: var(--fg);
+      font-weight: 600;
+      border-left: 1px solid var(--line-strong);
+  }
+
   .limiteCartaoBase {
       display: inline-flex;
       align-items: baseline;
@@ -261,11 +271,6 @@
 
   .limiteGarantido {
       color: var(--vd);
-  }
-
-  .limiteTotal {
-      color: var(--fg);
-      font-weight: 600;
   }
 
   .blk .meta,

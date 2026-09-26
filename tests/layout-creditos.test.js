@@ -50,6 +50,8 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /data-limite-cartao/);
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
+    assert.match(visoes, /const resumoLimiteCartao/);
+    assert.match(visoes, /resumoLimiteCartao \+ `<\/span><\/span>`/);
     assert.match(visoes, /Total \$\{brl\(limiteTotal\)\}/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
@@ -57,6 +59,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
     assert.match(interacoes, /input\.select\(\)/);
     assert.match(estilos, /\.limiteTotal/);
+    assert.match(estilos, /border-left: 1px solid var\(--line-strong\)/);
 });
 
 test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
@@ -65,7 +68,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
-    assert.match(visoes, /Pago \+ aberto/);
+    assert.doesNotMatch(visoes, /Pago \+ aberto/);
     assert.match(visoes, /Guardado/);
     assert.match(estilos, /\.resumoTitulo/);
     assert.match(estilos, /\.resumoLinha/);
