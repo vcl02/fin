@@ -38,9 +38,10 @@ test('o título do Crédito mostra o saldo após antecipações da mesma fatura'
     );
 });
 
-test('o único título de Crédito exibe o limite livre global sem criar outra tabela', () => {
+test('o único título de Crédito exibe limite livre com a garantia do Débito, sem outra tabela', () => {
     assert.match(dominio, /const LIMITE_CARTAO = 3750;/);
-    assert.match(visoes, /const limiteLivre = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao\)/);
-    assert.match(visoes, /Livre <b class="\$\{corValor\(limiteLivre\)\}">\$\{brl\(limiteLivre\)\}<\/b> de \$\{brl\(LIMITE_CARTAO\)\}/);
+    assert.match(visoes, /const limiteTotal = limiteCartaoTotal\(guardado\)/);
+    assert.match(visoes, /const limiteLivre = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardado\)/);
+    assert.match(visoes, /Livre <b class="\$\{corValor\(limiteLivre\)\}">\$\{brl\(limiteLivre\)\}<\/b> de \$\{brl\(limiteTotal\)\}/);
     assert.match(estilos, /\.limiteCartao/);
 });

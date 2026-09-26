@@ -17,7 +17,7 @@ function regrasFinanceiras(ciclos) {
         dataISO: valor => String(valor).slice(0, 10),
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, limiteCartaoOcupado, limiteCartaoLivre };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre };`, contexto);
     return contexto.regras;
 }
 
@@ -58,7 +58,7 @@ test('crédito é visualmente deslocado, mas o total respeita antecipação', ()
     assert.equal(r.totalCreditoExibidoAposAntecipacoes([], 0), 0);
 });
 
-test('limite considera só crédito confirmado e libera cada fatura antecipada', () => {
+test('limite considera só crédito confirmado, antecipação e garantia positiva do ciclo', () => {
     const r = regrasFinanceiras([]);
     const linhas = [
         { cred: true, pago: false, periodoIdx: 0, v: -500 }, // projeção: não ocupa
@@ -68,4 +68,7 @@ test('limite considera só crédito confirmado e libera cada fatura antecipada',
     const abatido = { 0: 100, 1: 450 };
     assert.equal(r.limiteCartaoOcupado(linhas, abatido), 200);
     assert.equal(r.limiteCartaoLivre(linhas, abatido), 3550);
+    assert.equal(r.limiteCartaoTotal(600), 4350);
+    assert.equal(r.limiteCartaoLivre(linhas, abatido, 600), 4150);
+    assert.equal(r.limiteCartaoTotal(-600), 3750);
 });

@@ -266,6 +266,13 @@ function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}) {
     ).reduce((soma, restante) => soma + restante, 0);
 }
 
-function limiteCartaoLivre(linhas, abatidoPorCiclo = {}) {
-    return LIMITE_CARTAO - limiteCartaoOcupado(linhas, abatidoPorCiclo);
+// O guardado positivo que aparece no título de Débito é aplicado na garantia da Nubank.
+// Ele aumenta o teto utilizável do cartão no ciclo atual; valor negativo nunca reduz o limite
+// contratado, pois só dinheiro efetivamente guardado pode estar como garantia.
+function limiteCartaoTotal(guardadoDoCiclo = 0) {
+    return LIMITE_CARTAO + Math.max(0, +guardadoDoCiclo || 0);
+}
+
+function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0) {
+    return limiteCartaoTotal(guardadoDoCiclo) - limiteCartaoOcupado(linhas, abatidoPorCiclo);
 }

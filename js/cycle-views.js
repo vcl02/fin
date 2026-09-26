@@ -144,14 +144,17 @@ function vCiclo() {
     );
     // Limite não segue os filtros da tela: é o retrato do único cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
+    // O guardado é o mesmo valor do título Débito deste ciclo: somente sua parcela
+    // positiva está aplicada como limite garantido na Nubank.
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
-    const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao);
+    const limiteTotal = limiteCartaoTotal(guardado);
+    const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardado);
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,
         tituloFaturaDoCiclo(idxCreditoExibido),
         creditosExibidos, 'cr', true,
-        `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(LIMITE_CARTAO)}</span>`
+        `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)}</span>`
     );
 
     return blocoDebito + blocoCredito;
