@@ -380,7 +380,19 @@ el('out').addEventListener('click', e => {
 });
 
 // O valor "de R$" do título Crédito é editável sem abrir modal. Não é lançamento nem
-// alteração de banco: Enter ou sair do campo atualiza apenas a preferência local.
+// alteração de banco: usa a mesma máscara monetária do cadastro; Enter ou sair do campo
+// atualiza apenas a preferência local.
+el('out').addEventListener('input', e => {
+    const input = e.target.closest('[data-limite-cartao]');
+    if (!input) return;
+    const cursorNoFim = input.selectionEnd == input.value.length;
+    input.value = formataMascaraDinheiro(input.value);
+    if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+});
+el('out').addEventListener('focusin', e => {
+    const input = e.target.closest('[data-limite-cartao]');
+    if (input) input.select();
+});
 el('out').addEventListener('keydown', e => {
     const input = e.target.closest('[data-limite-cartao]');
     if (!input) return;

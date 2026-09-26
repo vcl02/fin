@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const script = fs.readFileSync('js/finance.js', 'utf8');
 const dominio = fs.readFileSync('js/domain.js', 'utf8');
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
+const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
@@ -52,6 +53,8 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
     assert.match(estilos, /\.limiteCartaoEditavel::placeholder/);
+    assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
+    assert.match(interacoes, /input\.select\(\)/);
     assert.match(estilos, /\.limiteTotal/);
 });
 
