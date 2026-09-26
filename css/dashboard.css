@@ -173,6 +173,36 @@
       font-weight: 500;
   }
 
+  .limiteCartaoBase {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .15rem;
+  }
+
+  /* Campo propositalmente parecido com texto: só revela que é editável ao interagir. */
+  .limiteCartaoEditavel {
+      width: 5.9em;
+      padding: 0 .08em;
+      color: inherit;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px dashed transparent;
+      outline: 0;
+      cursor: text;
+  }
+
+  .limiteCartaoEditavel:hover,
+  .limiteCartaoEditavel:focus {
+      color: var(--fg);
+      border-bottom-color: var(--line-strong);
+  }
+
+  .limiteGarantido {
+      color: var(--vd);
+  }
+
   .blk .meta,
   .meta {
       font-size: .85rem;

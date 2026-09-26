@@ -2,6 +2,40 @@
 
 // Controlador da interface: comandos, modais, gráficos, formulário e boot.
 
+const CHAVE_LIMITE_CARTAO_LOCAL = 'fin.limite-cartao';
+
+// O limite contratado é uma preferência desta instalação, não um lançamento financeiro.
+// Guardá-lo localmente evita criar coluna/configuração no Supabase e mantém o ajuste após
+// recarregar; falha de armazenamento nunca pode impedir o uso da tela.
+function restaurarLimiteCartaoLocal() {
+    try {
+        const salvo = localStorage.getItem(CHAVE_LIMITE_CARTAO_LOCAL);
+        if (salvo != null) definirLimiteCartao(salvo);
+    } catch { /* Ambiente sem armazenamento local: mantém o padrão do código. */ }
+}
+
+function numeroDoLimiteDigitado(texto) {
+    const limpo = String(texto || '').trim();
+    if (!limpo) return NaN;
+    if (limpo.includes(',')) return Number(limpo.replace(/\./g, '').replace(',', '.'));
+    // Sem vírgula, "4.000" costuma significar milhar no formato brasileiro; "4000.50"
+    // continua sendo aceito como decimal para não surpreender quem digitar com ponto.
+    return Number(/^\d{1,3}(?:\.\d{3})+$/.test(limpo) ? limpo.replace(/\./g, '') : limpo);
+}
+
+function confirmarLimiteCartao(input) {
+    const valor = numeroDoLimiteDigitado(input.value);
+    if (!definirLimiteCartao(valor)) {
+        mostrarToast('Limite inválido', 'Informe um valor igual ou maior que zero.');
+        desenhar();
+        return;
+    }
+    try { localStorage.setItem(CHAVE_LIMITE_CARTAO_LOCAL, String(LIMITE_CARTAO)); } catch { /* preferência só desta sessão */ }
+    desenhar();
+}
+
+restaurarLimiteCartaoLocal();
+
 // redesenha a tela conforme o modo ativo (blocos Debito/Credito vs matriz de comparacao),
 // escondendo/mostrando os filtros que fazem sentido em cada um
 function desenhar() {
@@ -343,6 +377,19 @@ el('out').addEventListener('click', e => {
 
     input.focus();
     input.select();
+});
+
+// O valor "de R$" do título Crédito é editável sem abrir modal. Não é lançamento nem
+// alteração de banco: Enter ou sair do campo atualiza apenas a preferência local.
+el('out').addEventListener('keydown', e => {
+    const input = e.target.closest('[data-limite-cartao]');
+    if (!input) return;
+    if (e.key == 'Enter') { e.preventDefault(); input.blur(); }
+    else if (e.key == 'Escape') { e.preventDefault(); desenhar(); }
+});
+el('out').addEventListener('change', e => {
+    const input = e.target.closest('[data-limite-cartao]');
+    if (input) confirmarLimiteCartao(input);
 });
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial

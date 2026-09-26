@@ -147,14 +147,20 @@ function vCiclo() {
     // O guardado é o mesmo valor do título Débito deste ciclo: somente sua parcela
     // positiva está aplicada como limite garantido na Nubank.
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
-    const limiteTotal = limiteCartaoTotal(guardado);
     const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardado);
+    const garantia = Math.max(0, guardado);
+    const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
 
     const blocoCredito = renderBloco(
         'Crédito', totalCreditoExibido,
         tituloFaturaDoCiclo(idxCreditoExibido),
         creditosExibidos, 'cr', true,
-        `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)}</span>`
+        `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+        `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
+        `value="${limiteContratadoEditavel}" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
+        `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}</span>`
     );
 
     return blocoDebito + blocoCredito;

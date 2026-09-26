@@ -18,7 +18,7 @@ const categoriasSeparadas = valor => {
 
 const dominio = carregarFuncoes('js/domain.js', [
     'validarLancamentosCarregados', 'NOME_ANCORA_CICLO', 'CATEGORIA_INVESTIMENTO',
-    'TOLERANCIA_FINANCEIRA', 'PREFIXO_LINHA_SINTETICA',
+    'TOLERANCIA_FINANCEIRA', 'PREFIXO_LINHA_SINTETICA', 'definirLimiteCartao', 'limiteCartaoContratado',
 ], { categoriasSeparadas });
 
 test('centraliza nomes e tolerância usados pelas regras financeiras', () => {
@@ -26,6 +26,12 @@ test('centraliza nomes e tolerância usados pelas regras financeiras', () => {
     assert.equal(dominio.CATEGORIA_INVESTIMENTO, 'Investimento');
     assert.equal(dominio.TOLERANCIA_FINANCEIRA, 0.005);
     assert.equal(dominio.PREFIXO_LINHA_SINTETICA.test('sug:4'), true);
+});
+
+test('aceita apenas limite contratado não negativo', () => {
+    assert.equal(dominio.definirLimiteCartao(4123.456), true);
+    assert.equal(dominio.limiteCartaoContratado(), 4123.46);
+    assert.equal(dominio.definirLimiteCartao(-1), false);
 });
 
 test('aceita lançamento persistido completo sem avisos', () => {
