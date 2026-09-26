@@ -6,7 +6,7 @@ const ARQUIVOS_ESTATICOS = [
     './css/base.css', './css/dashboard.css', './css/forms.css', './css/charts.css', './css/utilities.css', './css/mobile.css',
     './js/app-state.js', './js/domain.js', './js/shared.js', './js/supabase-api.js', './js/finance.js', './js/data-ui.js',
     './js/tables.js', './js/cycle-views.js', './js/interactions.js', './js/charts.js', './js/form.js', './js/bootstrap.js',
-    './icons/fin-192.svg', './icons/fin-512.svg',
+    './icons/fin-192.png', './icons/fin-512.png',
 ];
 
 self.addEventListener('install', evento => {

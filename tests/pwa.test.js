@@ -16,10 +16,18 @@ test('declara manifest instalável e cores coerentes com a interface', () => {
     assert.equal(manifest.start_url, './');
     assert.equal(manifest.theme_color, '#1B1E21');
     assert.deepEqual(manifest.icons.map(icone => icone.sizes), ['192x192', '512x512']);
+    assert.deepEqual(manifest.icons.map(icone => icone.type), ['image/png', 'image/png']);
     manifest.icons.forEach(icone => assert.ok(fs.existsSync(icone.src.replace('./', ''))));
 });
 
-test('ícones mantêm o conjunto F e gráfico centralizado no viewBox', () => {
+test('ícones instaláveis são PNGs nos tamanhos declarados e mantêm a arte vetorial centralizada', () => {
+    manifest.icons.forEach(icone => {
+        const png = fs.readFileSync(icone.src.replace('./', ''));
+        const tamanho = Number(icone.sizes.split('x')[0]);
+        assert.deepEqual(png.subarray(0, 8), Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+        assert.equal(png.readUInt32BE(16), tamanho);
+        assert.equal(png.readUInt32BE(20), tamanho);
+    });
     ['icons/fin-192.svg', 'icons/fin-512.svg'].forEach(arquivo => {
         const svg = fs.readFileSync(arquivo, 'utf8');
         assert.match(svg, /viewBox="0 0 192 192"/);
