@@ -27,6 +27,14 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
+  /* No desktop, avisos longos usam a largura disponível antes de quebrar em várias linhas. */
+  @media (min-width: 700px) {
+      dialog#modalDiagnostico {
+          width: min(44rem, calc(100vw - 4rem));
+          max-height: 78vh;
+      }
+  }
+
   dialog#modalNovo {
       border: 1px solid var(--ln);
       border-radius: 16px;
@@ -542,6 +550,7 @@
       padding-left: 1.2rem;
       color: var(--vm);
       font-size: .88rem;
+      overflow-wrap: anywhere;
   }
 
   .listaDiagnostico li + li {
