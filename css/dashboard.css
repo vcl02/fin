@@ -203,6 +203,11 @@
       color: var(--vd);
   }
 
+  .limiteTotal {
+      color: var(--fg);
+      font-weight: 600;
+  }
+
   .blk .meta,
   .meta {
       font-size: .85rem;

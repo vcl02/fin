@@ -149,6 +149,7 @@ function vCiclo() {
     // sem que o dinheiro efetivamente aplicado na Nubank tivesse mudado.
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
     const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
+    const limiteTotal = limiteCartaoTotal(guardadoGarantido);
     const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido);
     const garantia = Math.max(0, guardadoGarantido);
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
@@ -162,7 +163,8 @@ function vCiclo() {
         `<span class=limiteCartao> · Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
-        `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}</span>`
+        `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
+        `<span class=limiteTotal> · Total ${brl(limiteTotal)}</span></span>`
     );
 
     return blocoDebito + blocoCredito;

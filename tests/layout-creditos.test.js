@@ -43,11 +43,14 @@ test('o título do Crédito mostra o saldo após antecipações da mesma fatura'
 test('o único título de Crédito exibe limite livre com a garantia do Débito, sem outra tabela', () => {
     assert.match(dominio, /let LIMITE_CARTAO = 3750;/);
     assert.match(visoes, /const guardadoGarantido = guardadoGarantidoAte\(Estado\.lancamentos, i\)/);
+    assert.match(visoes, /const limiteTotal = limiteCartaoTotal\(guardadoGarantido\)/);
     assert.match(visoes, /const limiteLivre = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardadoGarantido\)/);
     assert.match(visoes, /data-limite-cartao/);
     assert.match(visoes, /limiteGarantido/);
+    assert.match(visoes, /Total \$\{brl\(limiteTotal\)\}/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
+    assert.match(estilos, /\.limiteTotal/);
 });
 
 test('documenta Nubank como cartão único e exige separação explícita antes de outro cartão', () => {
