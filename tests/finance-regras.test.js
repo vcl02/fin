@@ -17,7 +17,7 @@ function regrasFinanceiras(ciclos) {
         dataISO: valor => String(valor).slice(0, 10),
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, guardadoGarantidoAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre };`, contexto);
     return contexto.regras;
 }
 
@@ -71,4 +71,17 @@ test('limite considera só crédito confirmado, antecipação e garantia positiv
     assert.equal(r.limiteCartaoTotal(600), 4350);
     assert.equal(r.limiteCartaoLivre(linhas, abatido, 600), 4150);
     assert.equal(r.limiteCartaoTotal(-600), 3750);
+});
+
+test('garantia Nubank ignora filtro Pago e não inclui aporte sugerido', () => {
+    const r = regrasFinanceiras([]);
+    const linhas = [
+        { inv: true, pago: true, periodoIdx: 0, v: -300 },
+        { inv: true, pago: false, periodoIdx: 1, v: -500 }, // aberto ainda está na garantia
+        { inv: true, pago: true, periodoIdx: 1, v: 100 },    // resgate reduz a garantia
+        { inv: true, pago: true, periodoIdx: 2, v: -900 },   // ciclo futuro não entra
+        { inv: false, periodoIdx: 1, v: -800 },               // sugestão não é aporte real
+    ];
+    assert.equal(r.guardadoGarantidoAte(linhas, 1), 700);
+    assert.equal(r.limiteCartaoTotal(r.guardadoGarantidoAte(linhas, 1)), 4450);
 });

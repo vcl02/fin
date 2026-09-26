@@ -251,6 +251,15 @@ function totalCreditoExibidoAposAntecipacoes(creditos, valorAntecipado = 0) {
     return creditos.reduce((soma, r) => soma + r.v, 0) + valorAntecipado;
 }
 
+// O limite garantido só pode usar dinheiro realmente registrado como investimento: aportes
+// negativos aumentam a garantia e resgates positivos a reduzem. Recebe a lista inteira para
+// não obedecer ao filtro visual Pago (nem contar Aporte sugerido, que é linha sintética).
+function guardadoGarantidoAte(linhas, idx) {
+    return linhas
+        .filter(r => r.inv && r.periodoIdx != null && r.periodoIdx <= idx)
+        .reduce((soma, r) => soma - (+r.v || 0), 0);
+}
+
 // O limite do cartão é diferente da fatura exibida: crédito Aberto é só projeção e não
 // compromete o cartão. Crédito Pago já virou compra real; uma antecipação da mesma fatura
 // libera esse valor, até o saldo chegar a zero. `abatidoPorCiclo` vem da mesma alocação

@@ -144,11 +144,13 @@ function vCiclo() {
     );
     // Limite não segue os filtros da tela: é o retrato do único cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
-    // O guardado é o mesmo valor do título Débito deste ciclo: somente sua parcela
-    // positiva está aplicada como limite garantido na Nubank.
+    // A garantia Nubank usa aportes/resgates REAIS de todos os status. Ela não pode seguir
+    // o filtro Pago da tela nem contar Aporte sugerido, pois ambos fariam o limite variar
+    // sem que o dinheiro efetivamente aplicado na Nubank tivesse mudado.
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
-    const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardado);
-    const garantia = Math.max(0, guardado);
+    const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
+    const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido);
+    const garantia = Math.max(0, guardadoGarantido);
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
