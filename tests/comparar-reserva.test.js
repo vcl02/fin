@@ -55,3 +55,10 @@ test('comparar exclui transferências e não cria abatimento de fatura', () => {
     assert.doesNotMatch(fonte, /nome: 'Abatimento de fatura'/);
     assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
 });
+
+test('linha Total preserva a grade das colunas dinâmicas sem células aninhadas', () => {
+    assert.match(fonte, /const celTotalPeriodo = i => celSoma\(totalDoPeriodo\(i\)\);/);
+    assert.match(fonte, /const totalGeral = chavesFiltradas\.reduce/);
+    assert.match(fonte, /<td class="n colDif"><\/td><td class="n colDif"><\/td><td class="n colDif"><\/td>/);
+    assert.doesNotMatch(fonte, /<td class=n>\$\{celSoma/);
+});

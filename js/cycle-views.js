@@ -373,14 +373,14 @@ function vComp() {
     // periodo — redundante, entao some nesse caso
     const mostraColTotal = periodosUsados.length > 1;
 
-    const cabecalho = `<tr><th class=c1 onclick="sortComp('chave')">${nomeColuna(coluna)}${seta('chave')}` +
+    const cabecalho = `<tr><th class=c1 onclick="sortComp('chave')">${nomeColuna(coluna)}${seta('chave')}</th>` +
         (comparacao2Periodos
             ? `<th class="n colDif" title="Não aparece em ${nomeMes2} nem nos dois ciclos seguintes" onclick="sortComp('acabou')">Acabou em ${nomeMes1}${seta('acabou')}</th>` +
             `<th class="n colDif" title="Aparece em ${nomeMes2} e continua nos dois ciclos seguintes" onclick="sortComp('comecou')">Começou em ${nomeMes2}${seta('comecou')}</th>` +
             `<th class="n colDif" title="Aparece somente em ${nomeMes2} e some nos dois ciclos seguintes" onclick="sortComp('unico')">Único em ${nomeMes2}${seta('unico')}</th>`
             : '') +
-        periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i])}${seta(String(i))}`).join('') +
-        (mostraColTotal ? `<th class=n onclick="sortComp('total')">Total${seta('total')}` : '') +
+        periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i])}${seta(String(i))}</th>`).join('') +
+        (mostraColTotal ? `<th class=n onclick="sortComp('total')">Total${seta('total')}</th>` : '') +
         `</thead>`;
 
     // ordena pela coluna escolhida: 'chave' é alfabética; os estados são booleanos;
@@ -407,17 +407,17 @@ function vComp() {
         linhasSelecionaveis.push({ _sid: sid, nome: chave, v: totalDaChave(chave) });
         const marcada = Estado.selecionados.has(sid);
         const estado = estadoDaChave(chave);
-        return `<tr class="${marcada ? 'on' : ''} pick" data-sid="${escapeHtml(sid)}"><td class=c1>${chave}` +
+        return `<tr class="${marcada ? 'on' : ''} pick" data-sid="${escapeHtml(sid)}"><td class=c1>${chave}</td>` +
             (comparacao2Periodos
                 ? `<td class="n colDif">${estado.acabou ? `<span class=difOk>✓</span>${avisoRecorrenciaDuplicada(chave, idxPrimeiro)}` : ''}</td>` +
                 `<td class="n colDif">${estado.comecou ? `<span class=difNovo>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>` +
                 `<td class="n colDif">${estado.unico ? `<span class=difUnico>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>`
                 : '') +
             periodosUsados.map(i => {
-                if (matriz[chave][i] == null) return '<td class=n>·';
+                if (matriz[chave][i] == null) return '<td class=n>·</td>';
                 const v = matriz[chave][i];
                 const chaveJs = escapeHtml(chave).replace(/'/g, '&#39;');
-                return `<td class="n ${corSoma(v)} celClicavel" onclick="event.stopPropagation();abrirDetalheCelComparar('${chaveJs}',${i})">${brl(v)}`;
+                return `<td class="n ${corSoma(v)} celClicavel" onclick="event.stopPropagation();abrirDetalheCelComparar('${chaveJs}',${i})">${brl(v)}</td>`;
             }).join('') +
             (mostraColTotal ? celSoma(totalDaChave(chave)) : '');
     }).join('');
@@ -427,11 +427,14 @@ function vComp() {
     // Total é a soma exata das linhas visíveis no Comparar. Ele não tenta reproduzir o saldo
     // de caixa do ciclo, que inclui antecipações de fatura deliberadamente ausentes daqui.
     const totalDoPeriodo = i => Object.values(matriz).reduce((soma, valores) => soma + (valores[i] || 0), 0);
-    const celTotalPeriodo = i => `<td class=n>${celSoma(totalDoPeriodo(i))}`;
-    const linhaTotal = '<tr class=tot><td class=c1>Total' +
-        (comparacao2Periodos ? '<td class="n colDif"><td class="n colDif"><td class="n colDif">' : '') +
+    const celTotalPeriodo = i => celSoma(totalDoPeriodo(i));
+    const totalGeral = chavesFiltradas.reduce((soma, chave) => soma + totalDaChave(chave), 0);
+    const linhaTotal = '<tr class=tot><td class=c1>Total</td>' +
+        // As três colunas de status não são valores acumuláveis; células explícitas evitam
+        // que o navegador as reposicione para o fim da linha Total.
+        (comparacao2Periodos ? '<td class="n colDif"></td><td class="n colDif"></td><td class="n colDif"></td>' : '') +
         periodosUsados.map(celTotalPeriodo).join('') +
-        (mostraColTotal ? celTotalPeriodo(periodosUsados.at(-1)) : '');
+        (mostraColTotal ? celSoma(totalGeral) : '');
 
     // subtitulo: quantas linhas a matriz tem (varia com o "Agrupar por" — cada valor
     // distinto da coluna escolhida vira uma linha) e o intervalo de datas do periodo
