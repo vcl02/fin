@@ -5,6 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const fonte = fs.readFileSync('js/cycle-views.js', 'utf8');
+const regrasDocumentadas = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const inicio = fonte.indexOf('function categoriaDaComparacao(');
 const fim = fonte.indexOf('function vComp()', inicio);
 const codigo = fonte.slice(inicio, fim);
@@ -72,4 +73,12 @@ test('linha Total preserva a grade das colunas dinâmicas sem células aninhadas
     assert.match(fonte, /const totalGeral = chavesFiltradas\.reduce/);
     assert.match(fonte, /<td class="n colDif"><\/td><td class="n colDif"><\/td><td class="n colDif"><\/td>/);
     assert.doesNotMatch(fonte, /<td class=n>\$\{celSoma/);
+});
+
+test('regras documentam as exclusões específicas de Comparar, gráficos e Visualizações', () => {
+    assert.match(regrasDocumentadas, /## Escopo e exclusões das visões/);
+    assert.match(regrasDocumentadas, /\*\*Comparar:\*\*[\s\S]*Rendimento[\s\S]*Reembolso[\s\S]*Antecipação Fatura/);
+    assert.match(regrasDocumentadas, /\*\*Gráfico — pizza do ciclo:\*\*[\s\S]*Compras de Crédito[\s\S]*Reserva/);
+    assert.match(regrasDocumentadas, /\*\*Gráfico — evolução ao comparar ciclos:\*\*[\s\S]*Não há exclusão nominal/);
+    assert.match(regrasDocumentadas, /\*\*Visualizações:\*\*[\s\S]*100% quitado[\s\S]*Antecipação Fatura/);
 });
