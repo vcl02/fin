@@ -98,8 +98,7 @@ el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
 // GRÁFICO DE GASTOS DO CICLO (pizza)
 // ===================================================================
 // Regra: total = soma de TUDO positivo no ciclo (renda, sem selecao manual).
-// Fatias = cada categoria com saldo negativo no ciclo (gasto), com a linha
-// sintetica "Fatura do cartão" contando como a categoria "Fatura do cartão", e o
+// Fatias = cada categoria de débito com saldo negativo no ciclo (gasto), com
 // Resgate necessario / Aporte sugerido do ciclo contando como renda / categoria
 // "Investimento", igual um resgate/aporte real contaria.
 // O usuario pode excluir categorias especificas da pizza via multi-select.
@@ -157,14 +156,9 @@ function dadosDoGraficoCiclo(idxPeriodo) {
         r.periodoIdx == idxPeriodo && !r.cred && !ehTransferenciaFatura(r));
 
 
-    // A fatia BRUTA do unico cartao mostra onde o dinheiro foi gasto, e antecipar
-    // e' so a forma de pagar — quem paga a fatura inteira nao gastou menos.
-    const creditosDoPeriodo = Estado.lancamentos.filter(r => r.periodoIdx == idxPeriodo && r.cred);
-    const totalFatura = creditosDoPeriodo.reduce((s, r) => s + r.v, 0);
     const ajuste = ajusteDoCicloContaUnica(idxPeriodo);
     const linhas = [
         ...doPeriodo,
-        totalFatura ? { categ: 'Fatura do cartão', v: totalFatura } : null,
         ajuste ? { categ: ajuste.categ, v: ajuste.v } : null,
     ].filter(Boolean);
 

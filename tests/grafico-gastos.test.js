@@ -21,12 +21,12 @@ function dadosDoGrafico(lancamentos) {
     return contexto.dados(0);
 }
 
-test('pizza mantém a fatura bruta e exclui antecipação salva no nome', () => {
+test('pizza mostra apenas débitos categorizados, sem crédito ou antecipação', () => {
     const dados = dadosDoGrafico([
         { periodoIdx: 0, cred: false, nome: 'Mercado', categ: 'Casa', v: -100 },
         { periodoIdx: 0, cred: false, nome: 'Antecipação de Fatura', categ: 'Fatura', v: -200 },
         { periodoIdx: 0, cred: true, nome: 'Compra cartão', categ: 'Eletrônicos', v: -300 },
     ]);
 
-    assert.deepEqual({ ...dados.porCategoria }, { Casa: 100, 'Fatura do cartão': 300 });
+    assert.deepEqual({ ...dados.porCategoria }, { Casa: 100 });
 });
