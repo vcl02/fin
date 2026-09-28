@@ -53,7 +53,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Visualizações de acompanhamento
 
-- O botão **Visualizações** permite escolher categorias ou nomes já existentes que ainda tenham valor aberto. A lista é preenchida a cada abertura no navegador e não cria classificações novas; categoria e nome são apurados separadamente. Um alvo 100% quitado (saldo aberto de no máximo meio centavo) não aparece, mas volta automaticamente se a carga trouxer algum lançamento aberto para ele.
+- O botão **Visualizações** permite escolher categorias ou nomes já existentes que ainda tenham valor aberto. A lista é preenchida a cada abertura no navegador e não cria classificações novas; categoria e nome são apurados separadamente. Um alvo 100% quitado (saldo aberto de no máximo meio centavo) não aparece, mas volta automaticamente se a carga trouxer algum lançamento aberto para ele. No detalhe, o ícone Voltar reabre o seletor preservando tipo e alvo para a troca rápida de visualização; `×` encerra o fluxo.
 - Toda visualização usa a mesma regra: considera lançamentos pagos e abertos, usa valor absoluto e compara pago, pendente e total. Ela usa a relação inteira escolhida, independente do ciclo da barra.
 
 ## Mobile

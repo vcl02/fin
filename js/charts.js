@@ -69,18 +69,20 @@ function valoresDaVisualizacao(campo) {
         .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 }
 
-function popularAlvosVisualizacao() {
+function popularAlvosVisualizacao(valorSelecionado = '') {
     const campo = el('visTipo').value;
     const rotulo = campo == 'nome' ? 'Nome' : 'Categoria';
     const valores = valoresDaVisualizacao(campo);
     el('visAlvoRotulo').textContent = rotulo;
     el('visAlvo').replaceChildren(...valores.map(valor => new Option(valor, valor)));
+    if (valores.includes(valorSelecionado)) el('visAlvo').value = valorSelecionado;
     el('abreVisualizacao').disabled = !valores.length;
 }
 
-function abrirSeletorVisualizacoes() {
-    el('visTipo').value = 'categ';
-    popularAlvosVisualizacao();
+function abrirSeletorVisualizacoes(manterEscolha = false) {
+    const valorSelecionado = manterEscolha ? el('visAlvo').value : '';
+    if (!manterEscolha) el('visTipo').value = 'categ';
+    popularAlvosVisualizacao(valorSelecionado);
     el('modalVisualizacoes').showModal();
 }
 
@@ -95,6 +97,11 @@ el('abreVisualizacao').onclick = () => {
 };
 el('fechaVisualizacoes').onclick = () => el('modalVisualizacoes').close();
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
+// Voltar reabre o seletor com o mesmo tipo e alvo para comparar outra relação sem reiniciar o fluxo.
+el('voltaVisualizacoes').onclick = () => {
+    el('modalVisualizacao').close();
+    abrirSeletorVisualizacoes(true);
+};
 ['modalVisualizacoes', 'modalVisualizacao'].forEach(id => el(id).addEventListener('click', e => {
     if (e.target == el(id)) el(id).close();
 }));

@@ -83,12 +83,15 @@ test('visualizações usam um seletor único de categoria ou nome ainda aberto',
     assert.match(pagina, /id=btVisualizacoes/);
     assert.match(pagina, /id=visTipo/);
     assert.match(pagina, /id=visAlvo/);
+    assert.match(pagina, /id=voltaVisualizacoes title="Voltar" aria-label="Voltar às visualizações">←/);
     assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
     assert.doesNotMatch(graficos, /VIS_CATEGORIAS|dadosCategoria|somenteNegativos|\bop\./);
     assert.match(graficos, /function valoresDaVisualizacao\(campo\)/);
     assert.match(graficos, /Estado\.lancamentos\.flatMap\(r => categoriasSeparadas\(r\.categ\)\)/);
     assert.match(graficos, /Estado\.lancamentos\.map\(r => String\(r\.nome \|\| ''\)\.trim\(\)\)/);
     assert.match(graficos, /dadosVisualizacao\(campo, valor\)\.naoPago > 0\.005/);
+    assert.match(graficos, /abrirSeletorVisualizacoes\(true\)/);
+    assert.match(graficos, /manterEscolha = false/);
     assert.match(regras, /botão \*\*Visualizações\*\*/);
     assert.match(regras, /100% quitado/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
