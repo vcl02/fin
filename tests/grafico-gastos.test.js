@@ -19,7 +19,7 @@ function dadosDoGrafico(lancamentos) {
         ehCategoria: (categoria, procurada) => String(categoria).trim().toLowerCase() === String(procurada).toLowerCase(),
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza, ordenarCategoriasDoGrafico, proximaExclusaoDasCategorias };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza, ordenarCategoriasDoGrafico, proximaExclusaoDasCategorias, agruparGastosDaPizza };`, contexto);
     return contexto.regras;
 }
 
@@ -62,4 +62,14 @@ test('comando do seletor alterna entre incluir e excluir todas as categorias do 
 test('clique fora do seletor no modal fecha o dropdown antes do gráfico tratar o gesto', () => {
     assert.match(fonte, /modalGrafico'\)\.addEventListener\('pointerdown'/);
     assert.match(fonte, /!e\.target\.closest\('#excluirCatWrap'\)/);
+});
+
+test('fatia mantém as linhas reais para abrir seu detalhamento no recorte atual', () => {
+    const regras = dadosDoGrafico([]);
+    const linha = { id: 12, nome: 'Mercado', v: -100 };
+    const agrupado = regras.agruparGastosDaPizza([{ categorias: ['Casa'], valor: 100, linha }], []);
+    assert.deepEqual({ ...agrupado.porCategoria }, { Casa: 100 });
+    assert.deepEqual(Array.from(agrupado.linhasPorCategoria.Casa), [linha]);
+    assert.match(fonte, /onClick: \(_evento, elementos\)/);
+    assert.match(fonte, /abrirDetalheFatiaGrafico/);
 });

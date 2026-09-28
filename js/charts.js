@@ -194,7 +194,7 @@ function dadosDoGraficoCiclo(idxPeriodo) {
         if (!categoriasDaLinha.length) return;
         categoriasDaLinha.forEach(c => categorias.add(c));
         if (categoriasDaLinha.length > 1) categoriasDaLinha.forEach(c => categoriasCompartilhadas.add(c));
-        gastos.push({ categorias: categoriasDaLinha, valor: -r.v });
+        gastos.push({ categorias: categoriasDaLinha, valor: -r.v, linha: r });
     });
     return { periodo, renda, gastos, categorias: [...categorias], categoriasCompartilhadas };
 }
@@ -206,6 +206,21 @@ function categoriasMinimasDaPizza(porCategoria) {
     const categorias = Object.keys(porCategoria).filter(c =>
         total > 0 && porCategoria[c] / total * 100 >= PERCENTUAL_MINIMO_PIZZA);
     return { total, categorias };
+}
+
+// A fatia pode agrupar vários lançamentos. Preservar as linhas permite abrir o detalhe sem
+// recalcular a regra de seleção e sem correr o risco de mostrar um lançamento excluído.
+function agruparGastosDaPizza(gastos, excluidas) {
+    const porCategoria = {};
+    const linhasPorCategoria = {};
+    gastos.forEach(({ categorias, valor, linha }) => {
+        const selecionadas = categorias.filter(c => !excluidas.includes(c));
+        if (!selecionadas.length) return;
+        const legenda = selecionadas.join(', ');
+        porCategoria[legenda] = (porCategoria[legenda] || 0) + valor;
+        (linhasPorCategoria[legenda] = linhasPorCategoria[legenda] || []).push(linha);
+    });
+    return { porCategoria, linhasPorCategoria };
 }
 
 // clique numa celula da matriz Comparar (categoria x periodo): abre o detalhamento dos
@@ -267,7 +282,9 @@ el('modalDetalheCel').addEventListener('click', e => { if (e.target == el('modal
 window.abrirGraficoGastos = idxPeriodo => {
     const { periodo, renda, categorias, categoriasCompartilhadas } = dadosDoGraficoCiclo(idxPeriodo);
     const todasCategorias = ordenarCategoriasDoGrafico(categorias, categoriasCompartilhadas);
-    excluidasDoGrafico = excluidasDoGrafico.filter(c => todasCategorias.includes(c));
+    // Cada abertura parte da visão total; o recorte anterior serve apenas enquanto este modal
+    // estiver aberto e nunca deve surpreender ao clicar novamente no botão Gráfico.
+    excluidasDoGrafico = [];
 
     el('graficoSubtitulo').textContent = `${nomePeriodo(periodo)} · Renda do ciclo: ${brl(renda)}`;
     montaExcluirCatDrop(todasCategorias, categoriasCompartilhadas);
@@ -344,13 +361,7 @@ const CORES_PIZZA = [
 function desenhaGraficoPizza(idxPeriodo) {
     el('modalGrafico').dataset.periodoIdx = idxPeriodo;
     const { renda, gastos } = dadosDoGraficoCiclo(idxPeriodo);
-    const porCategoria = {};
-    gastos.forEach(({ categorias, valor }) => {
-        const selecionadas = categorias.filter(c => !excluidasDoGrafico.includes(c));
-        if (!selecionadas.length) return;
-        const legenda = selecionadas.join(', ');
-        porCategoria[legenda] = (porCategoria[legenda] || 0) + valor;
-    });
+    const { porCategoria, linhasPorCategoria } = agruparGastosDaPizza(gastos, excluidasDoGrafico);
     const { total: totalGastosSelecionados, categorias: categoriasMinimas } = categoriasMinimasDaPizza(porCategoria);
     const categorias = categoriasMinimas.sort((a, b) => porCategoria[b] - porCategoria[a]);
     const valores = categorias.map(c => porCategoria[c]);
@@ -367,6 +378,12 @@ function desenhaGraficoPizza(idxPeriodo) {
         data: { labels: categorias, datasets: [{ data: valores, backgroundColor: cores, borderColor: '#FFF', borderWidth: 2 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
+            // Clicar em uma fatia abre somente os lançamentos que a compõem no recorte atual.
+            onClick: (_evento, elementos) => {
+                if (!elementos.length) return;
+                const categoria = categorias[elementos[0].index];
+                abrirDetalheFatiaGrafico(categoria, idxPeriodo, linhasPorCategoria[categoria] || []);
+            },
             plugins: {
                 legend: { position: 'right', labels: { boxWidth: 12, padding: 14 } },
                 tooltip: {
@@ -382,6 +399,13 @@ function desenhaGraficoPizza(idxPeriodo) {
             }
         }
     });
+    el('canvasGraficoGastos').style.cursor = 'pointer';
+}
+
+function abrirDetalheFatiaGrafico(categoria, idxPeriodo, linhas) {
+    Estado._detalheAtual = { categoria, periodoIdx: idxPeriodo, linhas, ord: { k: 'valor', d: 2 } };
+    renderizaDetalheCel();
+    el('modalDetalheCel').showModal();
 }
 
 function desenhaMetaReservaEmergencia(idxPeriodo) {
