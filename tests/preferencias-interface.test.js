@@ -89,11 +89,13 @@ test('visualizações usam um seletor único de categoria ou nome ainda aberto',
     assert.match(graficos, /function valoresDaVisualizacao\(campo\)/);
     assert.match(graficos, /Estado\.lancamentos\.flatMap\(r => categoriasSeparadas\(r\.categ\)\)/);
     assert.match(graficos, /Estado\.lancamentos\.map\(r => String\(r\.nome \|\| ''\)\.trim\(\)\)/);
-    assert.match(graficos, /dadosVisualizacao\(campo, valor\)\.naoPago > 0\.005/);
+    assert.match(graficos, /r\.v < 0 && ehCategoria/);
+    assert.match(graficos, /dados\.linhas\.length > 1 && dados\.naoPago > 0\.005/);
     assert.match(graficos, /abrirSeletorVisualizacoes\(true\)/);
     assert.match(graficos, /manterEscolha = false/);
     assert.match(regras, /botão \*\*Visualizações\*\*/);
     assert.match(regras, /100% quitado/);
+    assert.match(regras, /ao menos duas ocorrências negativas/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
 });
 

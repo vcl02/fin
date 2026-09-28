@@ -21,10 +21,11 @@ el('btLimparFiltros').onclick = limparFiltros;
 // ===================================================================
 // VISUALIZAÇÕES — acompanhamento por qualquer categoria ou nome existente
 // ===================================================================
-// A escolha ignora o recorte da barra para mostrar a relação inteira. Pago e aberto usam
-// valor absoluto, pois entradas e saídas são armazenadas com sinais opostos.
+// A escolha ignora o recorte da barra para mostrar a relação inteira, mas acompanha somente
+// despesas recorrentes: lançamentos negativos. Pago e aberto usam valor absoluto porque o
+// sinal já serviu para separar gastos de entradas.
 function dadosVisualizacao(campo, valor) {
-    const linhas = Estado.lancamentos.filter(r => ehCategoria(r[campo], valor));
+    const linhas = Estado.lancamentos.filter(r => r.v < 0 && ehCategoria(r[campo], valor));
     const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
     const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
     const naoPago = Math.max(0, total - pago);
@@ -60,12 +61,14 @@ function valoresDaVisualizacao(campo) {
     const valores = campo == 'nome'
         ? Estado.lancamentos.map(r => String(r.nome || '').trim())
         : Estado.lancamentos.flatMap(r => categoriasSeparadas(r.categ));
-    // O seletor e o detalhe usam exatamente a mesma apuração. Assim, uma categoria ou
-    // nome só fica disponível enquanto houver valor financeiro aberto; itens quitados
-    // (como Alimentação ou Antecipação Fatura quando integralmente pagos) não poluem
-    // a lista e voltam automaticamente se um lançamento aberto for carregado.
+    // O seletor e o detalhe usam a mesma apuração. Só entra despesa recorrente (duas ou
+    // mais ocorrências negativas) que ainda tenha valor aberto; itens isolados, entradas e
+    // relações quitadas não poluem a lista e voltam automaticamente se um aberto for carregado.
     return [...new Set(valores.filter(Boolean).map(valor => valor.trim()))]
-        .filter(valor => dadosVisualizacao(campo, valor).naoPago > 0.005)
+        .filter(valor => {
+            const dados = dadosVisualizacao(campo, valor);
+            return dados.linhas.length > 1 && dados.naoPago > 0.005;
+        })
         .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 }
 

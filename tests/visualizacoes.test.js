@@ -24,12 +24,16 @@ function criarFuncoesVisualizacao(lancamentos) {
     return contexto.valoresDaVisualizacao;
 }
 
-test('oculta categoria ou nome integralmente quitado e mantém alvos com saldo aberto', () => {
+test('mantém somente despesas recorrentes abertas e exclui entradas e itens isolados', () => {
     const valoresDaVisualizacao = criarFuncoesVisualizacao([
         { nome: 'Almoço', categ: 'Alimentação', pago: true, v: -40 },
         { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', pago: true, v: -80 },
         { nome: 'Academia', categ: 'Saúde', pago: false, v: -100 },
+        { nome: 'Academia', categ: 'Saúde', pago: true, v: -20 },
         { nome: 'Mercado', categ: 'Alimentação', pago: false, v: -25 },
+        { nome: 'Mercado', categ: 'Alimentação', pago: true, v: -10 },
+        { nome: 'Faturamento', categ: 'Renda', pago: false, v: 500 },
+        { nome: 'Único', categ: 'Pontual', pago: false, v: -30 },
     ]);
 
     assert.deepEqual([...valoresDaVisualizacao('categ')], ['Alimentação', 'Saúde']);
