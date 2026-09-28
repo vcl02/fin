@@ -73,6 +73,7 @@ test('frequência ausente usa mensal para não concentrar parcelas na mesma data
 
 test('reconhece antecipação sem confundir uma categoria apenas parecida', () => {
     const r = regrasCompartilhadas();
+    assert.equal(r.ehAntecipacaoFatura('Antecipação Fatura'), true);
     assert.equal(r.ehAntecipacaoFatura('Antecipação de Fatura'), true);
     assert.equal(r.ehAntecipacaoFatura('ANTECIPACAO FATURA'), true);
     assert.equal(r.ehAntecipacaoFatura('Antecipação de aluguel'), false);

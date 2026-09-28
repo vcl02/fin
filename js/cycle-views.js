@@ -250,8 +250,8 @@ function vComp() {
     }
 
     const visiveis = filtrarLancamentos();
-    // Comparar é uma visão de categorias, não de transferências de caixa: antecipação de
-    // fatura não entra e tampouco precisa de uma linha sintética de abatimento para compensá-la.
+    // Comparar é uma visão de categorias, não de transferências de caixa: Antecipação Fatura
+    // não entra e tampouco precisa de uma linha sintética de abatimento para compensá-la.
     const reais = visiveis.filter(r => r.periodoIdx != null && !ehTransferenciaFatura(r));
 
     // Saldo anterior e ajuste de investimento ainda são as linhas sintéticas financeiras do
