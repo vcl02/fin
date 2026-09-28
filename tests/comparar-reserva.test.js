@@ -20,9 +20,12 @@ function regrasDaComparacao() {
             const texto = normalizar(valor);
             return texto.includes('antecipacao') && texto.includes('fatura');
         },
+        semAcento: normalizar,
+        ehLinhaReal: linha => Number.isInteger(+linha.id) && +linha.id > 0 && !linha._sid && !linha._sim,
+        dataISO: valor => String(valor || '').slice(0, 10),
         textoOuTraco: valor => String(valor || '-'),
     };
-    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, ehLinhaExcluidaDaComparacao, filtrarLinhasDaComparacao, estadoDaComparacaoPorCiclos };`, contexto);
+    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, ehLinhaExcluidaDaComparacao, filtrarLinhasDaComparacao, temRecorrenciaDuplicadaEntreMeses, recorrenciaDuplicadaReaparece, estadoDaComparacaoPorCiclos };`, contexto);
     return contexto.regras;
 }
 
@@ -61,6 +64,7 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
 
 test('comparar exclui transferências e não cria abatimento de fatura', () => {
     assert.match(fonte, /filtrarLinhasDaComparacao\(reais, sinteticas\)/);
+    assert.match(fonte, /reapareceuAposDuplicidadeAnterior\(chave\)/);
     assert.doesNotMatch(fonte, /nome: 'Abatimento de fatura'/);
     assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
 });
@@ -72,6 +76,29 @@ test('comparar aplica exclusões depois de unir linhas reais e sintéticas', () 
         [{ id: -1, categ: 'Saldo', nome: 'Saldo do mês anterior' }],
     );
     assert.deepEqual(Array.from(filtradas, linha => linha.id), [1]);
+});
+
+test('recorrência duplicada usa nome e categoria, mesmo quando o valor muda', () => {
+    const { temRecorrenciaDuplicadaEntreMeses, recorrenciaDuplicadaReaparece } = regrasDaComparacao();
+    const duplicadas = [
+        { id: 1, nome: 'Trybe', categ: 'Dívida, Reserva', data: '2027-07-08', v: -250 },
+        { id: 2, nome: 'Trybe', categ: 'Dívida, Reserva', data: '2027-08-08', v: -700 },
+    ];
+    assert.equal(temRecorrenciaDuplicadaEntreMeses([
+        ...duplicadas,
+    ]), true);
+    assert.equal(recorrenciaDuplicadaReaparece(duplicadas, [
+        { id: 3, nome: 'Trybe', categ: 'Dívida, Reserva', data: '2027-09-08', v: -700 },
+    ]), true);
+    assert.equal(temRecorrenciaDuplicadaEntreMeses([
+        { id: 1, nome: 'Trybe', categ: 'Dívida', data: '2027-07-08', v: -250 },
+        { id: 2, nome: 'Trybe', categ: 'Curso', data: '2027-08-08', v: -250 },
+        { id: 3, nome: 'Outro', categ: 'Dívida', data: '2027-08-08', v: -250 },
+    ]), false);
+    assert.equal(recorrenciaDuplicadaReaparece(duplicadas, [
+        { id: 4, nome: 'Outro', categ: 'Dívida, Reserva', data: '2027-09-08', v: -700 },
+        { id: 5, nome: 'Trybe', categ: 'Curso', data: '2027-09-08', v: -700 },
+    ]), false);
 });
 
 test('comparar exclui categorias financeiras, técnicas e escolhidas, inclusive compartilhadas', () => {

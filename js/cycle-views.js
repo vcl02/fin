@@ -233,6 +233,35 @@ function filtrarLinhasDaComparacao(reais, sinteticas) {
     return [...reais, ...sinteticas].filter(r => !ehLinhaExcluidaDaComparacao(r));
 }
 
+function chaveDaRecorrencia(r) {
+    const nome = semAcento(r.nome).trim();
+    const categoria = semAcento(categoriaDaComparacao(r.categ)).trim();
+    return `${nome}|${categoria}`;
+}
+
+function gruposComRecorrenciaDuplicadaEntreMeses(linhas) {
+    // Uma recorrência continua sendo a mesma quando seu valor muda. Nome e categoria
+    // identificam o compromisso; o valor é apenas o montante daquela ocorrência.
+    const mesesPorGrupo = {};
+    linhas.filter(ehLinhaReal).forEach(r => {
+        const grupo = chaveDaRecorrencia(r);
+        (mesesPorGrupo[grupo] = mesesPorGrupo[grupo] || new Set()).add(dataISO(r.data).slice(0, 7));
+    });
+    return new Set(Object.entries(mesesPorGrupo)
+        .filter(([, meses]) => meses.size >= 2)
+        .map(([grupo]) => grupo));
+}
+
+function temRecorrenciaDuplicadaEntreMeses(linhas) {
+    return gruposComRecorrenciaDuplicadaEntreMeses(linhas).size > 0;
+}
+
+function recorrenciaDuplicadaReaparece(linhasDuplicadas, linhasQueReaparecem) {
+    const duplicadas = gruposComRecorrenciaDuplicadaEntreMeses(linhasDuplicadas);
+    return linhasQueReaparecem.filter(ehLinhaReal)
+        .some(r => duplicadas.has(chaveDaRecorrencia(r)));
+}
+
 // Classifica uma categoria pelos dois ciclos comparados e pelos dois seguintes. Sem os dois
 // ciclos futuros não há confirmação suficiente para afirmar começo, fim ou ocorrência única.
 function estadoDaComparacaoPorCiclos(presencas, idxPrimeiro, idxSegundo, totalCiclos) {
@@ -347,24 +376,27 @@ function vComp() {
     const nomeMes1 = comparacao2Periodos ? nomeMesPeriodo(Estado.ciclos[idxPrimeiro].fat) : '';
     const nomeMes2 = comparacao2Periodos ? nomeMesPeriodo(Estado.ciclos[idxSegundo].fat) : '';
 
-    // Dentro de uma categoria x periodo, agrupa os lancamentos REAIS por nome+valor e
+    // Dentro de uma categoria x periodo, agrupa os lancamentos REAIS por nome+categoria e
     // avisa quando algum grupo se repete (2+) com datas de MESES DIFERENTES entre si —
-    // sintoma de um lancamento recorrente (mesmo nome, mesmo valor) que caiu 2x dentro do
+    // sintoma de um lancamento recorrente que caiu 2x dentro do
     // MESMO ciclo porque a janela entre dois Faturamentos PJ atravessou a virada do mes,
     // e nao uma despesa que realmente comecou/parou de existir. Sem esse
     // aviso, uma mudança confirmada fazia parecer que a categoria sumiu ou surgiu quando na
     // verdade ela so' foi contada 2x nesse aqui (e ficou de fora, sem repetir, no outro).
     // Ignora linhas sinteticas (Saldo/Fatura/Investimento) — a checagem e' so' pra
     // lancamento de verdade.
-    function temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx) {
-        const linhas = (linhasDaCelula[chave + '||' + periodoIdx] || []).filter(ehLinhaReal);
-        const mesesPorGrupo = {};
-        linhas.forEach(r => {
-            const grupo = semAcento(r.nome).trim() + '|' + Math.round((r.v || 0) * 100);
-            (mesesPorGrupo[grupo] = mesesPorGrupo[grupo] || new Set()).add(dataISO(r.data).slice(0, 7));
-        });
-        return Object.values(mesesPorGrupo).some(meses => meses.size >= 2);
-    }
+    const linhasReaisDaChaveNoCiclo = (chave, periodoIdx) => linhas.filter(r => r.periodoIdx == periodoIdx
+        && categoriaDaComparacao(r[coluna]) == chave && ehLinhaReal(r));
+    const temRecorrenciaDuplicadaNoCiclo = (chave, periodoIdx) => temRecorrenciaDuplicadaEntreMeses(
+        linhasReaisDaChaveNoCiclo(chave, periodoIdx),
+    );
+    // Quando duas mensalidades caem no ciclo anterior, o próximo fica vazio e a recorrência
+    // reaparece um ciclo depois. Isso não é um começo novo se nome e categoria forem os mesmos.
+    const reapareceuAposDuplicidadeAnterior = chave => idxPrimeiro > 0
+        && recorrenciaDuplicadaReaparece(
+            linhasReaisDaChaveNoCiclo(chave, idxPrimeiro - 1),
+            linhasReaisDaChaveNoCiclo(chave, idxSegundo),
+        );
     // HTML do asterisco de aviso, colado no "✓" de difOk/difNovo, so' quando o lado que
     // TEM o lancamento (chave, periodoIdx) apresenta essa duplicata de mes diferente.
     const avisoRecorrenciaDuplicada = (chave, periodoIdx) => temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx)
@@ -392,6 +424,7 @@ function vComp() {
         if (!estado.acabou && !estado.comecou && !estado.unico) return false;
         const cicloMarcado = estado.acabou ? idxPrimeiro : idxSegundo;
         if (temRecorrenciaDuplicadaNoCiclo(chave, cicloMarcado)) return false;
+        if ((estado.comecou || estado.unico) && reapareceuAposDuplicidadeAnterior(chave)) return false;
         return true;
     });
 
