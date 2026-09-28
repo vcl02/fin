@@ -65,12 +65,15 @@ test('comparar exclui transferências e não cria abatimento de fatura', () => {
     assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
 });
 
-test('comparar exclui Rendimento, Reembolso e Teste, inclusive em categorias compartilhadas', () => {
+test('comparar exclui categorias financeiras, técnicas e escolhidas, inclusive compartilhadas', () => {
     const { ehLinhaExcluidaDaComparacao } = regrasDaComparacao();
     assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Rendimento', nome: 'Juros' }), true);
     assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Casa, Reembolso', nome: 'Estorno' }), true);
     assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Teste', nome: 'Rascunho' }), true);
-    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Alimentação', nome: 'Mercado' }), false);
+    ['Alimentação', 'Transporte', 'Besteira', 'Presente', 'Presemte', 'Saldo'].forEach(categoria => {
+        assert.equal(ehLinhaExcluidaDaComparacao({ categ: categoria, nome: categoria }), true);
+    });
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Casa', nome: 'Moradia' }), false);
 });
 
 test('linha Total preserva a grade das colunas dinâmicas sem células aninhadas', () => {
@@ -82,7 +85,7 @@ test('linha Total preserva a grade das colunas dinâmicas sem células aninhadas
 
 test('regras documentam as exclusões específicas de Comparar, gráficos e Visualizações', () => {
     assert.match(regrasDocumentadas, /## Escopo e exclusões das visões/);
-    assert.match(regrasDocumentadas, /\*\*Comparar:\*\*[\s\S]*Rendimento[\s\S]*Reembolso[\s\S]*Teste[\s\S]*Antecipação Fatura/);
+    assert.match(regrasDocumentadas, /\*\*Comparar:\*\*[\s\S]*Rendimento[\s\S]*Alimentação[\s\S]*Saldo[\s\S]*Antecipação Fatura/);
     assert.match(regrasDocumentadas, /\*\*Gráfico — pizza do ciclo:\*\*[\s\S]*Compras de Crédito[\s\S]*Reserva/);
     assert.match(regrasDocumentadas, /\*\*Gráfico — evolução ao comparar ciclos:\*\*[\s\S]*Não há exclusão nominal/);
     assert.match(regrasDocumentadas, /\*\*Visualizações:\*\*[\s\S]*100% quitado[\s\S]*Antecipação Fatura/);

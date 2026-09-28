@@ -212,12 +212,18 @@ function categoriaDaComparacao(categ) {
     return categorias.filter(categoria => !ehCategoria(categoria, 'Reserva')).join(', ');
 }
 
-// Rendimento é entrada financeira, Reembolso compensa uma despesa anterior e Teste é uma
-// categoria técnica. Nenhuma delas pertence à matriz de comparação de gastos.
+// Estas categorias não são comparáveis: Rendimento é entrada, Reembolso compensa uma despesa,
+// Teste é técnica e as demais são recortes que o mantenedor não quer analisar nesta matriz.
+// "Presemte" é tolerado como grafia já usada de Presente; ambas ficam fora da comparação.
+const CATEGORIAS_EXCLUIDAS_DA_COMPARACAO = [
+    'Rendimento', 'Reembolso', 'Teste', 'Alimentação', 'Transporte', 'Besteira',
+    'Presente', 'Presemte', 'Saldo',
+];
+
 function ehLinhaExcluidaDaComparacao(r) {
     const categoriaEspecial = categoriasSeparadas(r.categ)
-        .some(categoria => ehCategoria(categoria, 'Rendimento') ||
-            ehCategoria(categoria, 'Reembolso') || ehCategoria(categoria, 'Teste'));
+        .some(categoria => CATEGORIAS_EXCLUIDAS_DA_COMPARACAO
+            .some(excluida => ehCategoria(categoria, excluida)));
     return categoriaEspecial || ehAntecipacaoFatura(r.categ) || ehAntecipacaoFatura(r.nome);
 }
 
