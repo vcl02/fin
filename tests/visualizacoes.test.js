@@ -1,66 +1,62 @@
-// Regressão da lista de Visualizações: apenas relações com saldo aberto ficam disponíveis.
+// Regressão das Visualizações fixas e de suas correspondências por nome/categoria.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
-const inicio = graficos.indexOf('function dadosVisualizacao(');
+const inicio = graficos.indexOf('const NOMES_DAS_VISUALIZACOES =');
 const fim = graficos.indexOf('function popularAlvosVisualizacao(', inicio);
 const codigo = graficos.slice(inicio, fim);
 
-function criarFuncoesVisualizacao(lancamentos) {
-    const normalizar = valor => String(valor ?? '').trim().normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const categoriasSeparadas = valor => String(valor ?? '').split(',')
-        .map(categoria => categoria.trim()).filter(Boolean);
+function criarVisualizacoes(lancamentos) {
     const contexto = {
         Estado: { lancamentos },
-        categoriasSeparadas,
-        ehCategoria: (valor, procurada) => categoriasSeparadas(valor)
-            .some(categoria => normalizar(categoria) === normalizar(procurada)),
-        ehAntecipacaoFatura: valor => {
-            const texto = normalizar(valor);
-            return texto.includes('antecipacao') && texto.includes('fatura');
-        },
+        semAcento: valor => String(valor ?? '').normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').toLowerCase(),
     };
-    vm.runInNewContext(`${codigo}; this.valoresDaVisualizacao = valoresDaVisualizacao;`, contexto);
-    return contexto.valoresDaVisualizacao;
+    vm.runInNewContext(`${codigo}; this.testadas = { OPCOES_VISUALIZACOES, dadosVisualizacao };`, contexto);
+    return contexto.testadas;
 }
 
-test('mantém somente despesas recorrentes abertas e exclui entradas e itens isolados', () => {
-    const valoresDaVisualizacao = criarFuncoesVisualizacao([
-        { nome: 'Almoço', categ: 'Alimentação', pago: true, v: -40 },
-        { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', pago: true, v: -80 },
-        { nome: 'Academia', categ: 'Saúde', pago: false, v: -100 },
-        { nome: 'Academia', categ: 'Saúde, Reserva', pago: true, v: -20 },
-        { nome: 'Mercado', categ: 'Alimentação', pago: false, v: -25 },
-        { nome: 'Mercado', categ: 'Alimentação', pago: true, v: -10 },
-        { nome: 'Faturamento', categ: 'Renda', pago: false, v: 500 },
-        { nome: 'Único', categ: 'Pontual', pago: false, v: -30 },
+test('oferece somente os acompanhamentos fixos na ordem definida', () => {
+    const { OPCOES_VISUALIZACOES } = criarVisualizacoes([]);
+    assert.deepEqual(Array.from(OPCOES_VISUALIZACOES, opcao => opcao.rotulo), [
+        'Roberta',
+        'Entrada Econ', 'Primeira Anual', 'Segunda Anual', 'Intermediária Ap',
+        'Evolução Obra', 'Financiamento Casa', 'VCardoso', 'Trybe', 'Senac',
+        'Roupa Intima', 'Seguro Residencial', 'Renegociação Nu', 'Iphone', 'Pós',
+        'Banco do Brasil', 'Tênis (Isabella)',
     ]);
-
-    assert.deepEqual([...valoresDaVisualizacao('categ')], ['Alimentação', 'Saúde']);
-    assert.deepEqual([...valoresDaVisualizacao('nome')], ['Academia', 'Mercado']);
 });
 
-test('valor aberto de meio centavo ou menos não mantém alvo quitado no seletor', () => {
-    const valoresDaVisualizacao = criarFuncoesVisualizacao([
-        { nome: 'Ajuste mínimo', categ: 'Ajuste', pago: false, v: -0.005 },
+test('Roberta corresponde a categoria contendo o texto e nunca a entrada positiva', () => {
+    const { dadosVisualizacao } = criarVisualizacoes([
+        { nome: 'Aluguel', categ: 'Casa, Roberta', pago: true, v: -100 },
+        { nome: 'Fatura', categ: 'Roberta', pago: false, v: -50 },
+        { nome: 'Receita', categ: 'Roberta', pago: true, v: 500 },
+        { nome: 'Outra', categ: 'Casa', pago: false, v: -80 },
     ]);
-
-    assert.deepEqual([...valoresDaVisualizacao('categ')], []);
-    assert.deepEqual([...valoresDaVisualizacao('nome')], []);
+    const dados = dadosVisualizacao('categoria-roberta');
+    assert.deepEqual(Array.from(dados.linhas, linha => linha.nome), ['Aluguel', 'Fatura']);
+    assert.equal(dados.pago, 100);
+    assert.equal(dados.naoPago, 50);
 });
 
-test('nunca oferece Antecipação Fatura, mesmo recorrente e aberta', () => {
-    const valoresDaVisualizacao = criarFuncoesVisualizacao([
-        { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', pago: false, v: -100 },
-        { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', pago: false, v: -200 },
-        { nome: 'Mercado', categ: 'Alimentação', pago: false, v: -30 },
-        { nome: 'Mercado', categ: 'Alimentação', pago: true, v: -20 },
+test('nomes são exatos sem diferenciar caixa ou acento', () => {
+    const { OPCOES_VISUALIZACOES, dadosVisualizacao } = criarVisualizacoes([
+        { nome: 'EVOLUÇÃO OBRA', categ: 'Casa', pago: false, v: -200 },
+        { nome: 'Evolução Obra Extra', categ: 'Casa', pago: false, v: -300 },
     ]);
+    const id = OPCOES_VISUALIZACOES.find(opcao => opcao.rotulo == 'Evolução Obra').id;
+    assert.deepEqual(Array.from(dadosVisualizacao(id).linhas, linha => linha.v), [-200]);
+});
 
-    assert.deepEqual([...valoresDaVisualizacao('categ')], ['Alimentação']);
-    assert.deepEqual([...valoresDaVisualizacao('nome')], ['Mercado']);
+test('Tênis exige simultaneamente o nome exato e categoria contendo Isabella', () => {
+    const { dadosVisualizacao } = criarVisualizacoes([
+        { nome: 'Tênis', categ: 'Isabella, Presente', pago: true, v: -150 },
+        { nome: 'Tenis', categ: 'Casa', pago: false, v: -200 },
+        { nome: 'Tênis infantil', categ: 'Isabella', pago: false, v: -100 },
+    ]);
+    assert.deepEqual(Array.from(dadosVisualizacao('tenis-isabella').linhas, linha => linha.v), [-150]);
 });

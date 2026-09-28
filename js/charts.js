@@ -19,13 +19,39 @@ function limparFiltros() {
 el('btLimparFiltros').onclick = limparFiltros;
 
 // ===================================================================
-// VISUALIZAÇÕES — acompanhamento por qualquer categoria ou nome existente
+// VISUALIZAÇÕES — acompanhamentos fixos escolhidos pelo mantenedor
 // ===================================================================
-// A escolha ignora o recorte da barra para mostrar a relação inteira, mas acompanha somente
-// despesas recorrentes: lançamentos negativos. Pago e aberto usam valor absoluto porque o
-// sinal já serviu para separar gastos de entradas.
-function dadosVisualizacao(campo, valor) {
-    const linhas = Estado.lancamentos.filter(r => r.v < 0 && ehCategoria(r[campo], valor));
+const NOMES_DAS_VISUALIZACOES = [
+    'Entrada Econ', 'Primeira Anual', 'Segunda Anual', 'Intermediária Ap',
+    'Evolução Obra', 'Financiamento Casa', 'VCardoso', 'Trybe', 'Senac',
+    'Roupa Intima', 'Seguro Residencial', 'Renegociação Nu', 'Iphone', 'Pós',
+    'Banco do Brasil',
+];
+const OPCOES_VISUALIZACOES = [
+    { id: 'categoria-roberta', rotulo: 'Roberta', categoriaContem: 'Roberta' },
+    ...NOMES_DAS_VISUALIZACOES.map((nome, indice) => ({ id: `nome-${indice}`, rotulo: nome, nome })),
+    { id: 'tenis-isabella', rotulo: 'Tênis (Isabella)', nome: 'Tenis', categoriaContem: 'Isabella' },
+];
+
+const textoNormalizadoVisualizacao = valor => semAcento(valor).trim();
+
+function opcaoDaVisualizacao(id) {
+    return OPCOES_VISUALIZACOES.find(opcao => opcao.id == id);
+}
+
+function pertenceAVisualizacao(r, opcao) {
+    if (!opcao || r.v >= 0) return false;
+    if (opcao.nome && textoNormalizadoVisualizacao(r.nome) !== textoNormalizadoVisualizacao(opcao.nome)) return false;
+    if (opcao.categoriaContem && !textoNormalizadoVisualizacao(r.categ)
+        .includes(textoNormalizadoVisualizacao(opcao.categoriaContem))) return false;
+    return true;
+}
+
+// A escolha ignora o recorte da barra para mostrar a relação inteira. Pago e aberto usam
+// valor absoluto porque o sinal já serviu para separar gastos de entradas.
+function dadosVisualizacao(id) {
+    const opcao = opcaoDaVisualizacao(id);
+    const linhas = Estado.lancamentos.filter(r => pertenceAVisualizacao(r, opcao));
     const total = linhas.reduce((s, r) => s + Math.abs(r.v), 0);
     const pago = linhas.filter(r => r.pago).reduce((s, r) => s + Math.abs(r.v), 0);
     const naoPago = Math.max(0, total - pago);
@@ -35,13 +61,14 @@ function dadosVisualizacao(campo, valor) {
 
 const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
 
-function abrirVisualizacao(campo, valor) {
-    const d = dadosVisualizacao(campo, valor);
+function abrirVisualizacao(id) {
+    const opcao = opcaoDaVisualizacao(id);
+    if (!opcao) return;
+    const d = dadosVisualizacao(id);
     const concluido = d.total > 0 && d.naoPago <= 0.005;
-    const rotulo = campo == 'nome' ? 'Nome' : 'Categoria';
-    el('tituloVisualizacao').textContent = valor;
+    el('tituloVisualizacao').textContent = opcao.rotulo;
     el('visualizacaoCorpo').innerHTML = !d.linhas.length
-        ? `<p class=meta>Nenhum lançamento com ${rotulo.toLowerCase()} “${escapeHtml(valor)}” ainda.</p>`
+        ? '<p class=meta>Nenhum lançamento nesta visualização.</p>'
         : `<div class="visPct ${concluido ? 'vd' : 'vm'}">${pct1(d.pctPago)}</div>
            <p class=visPctSub>do valor total está pago</p>
            <div class=visBarra><div class=visFill style="width:${d.pctPago.toFixed(2)}%"></div></div>
@@ -57,49 +84,24 @@ function abrirVisualizacao(campo, valor) {
     el('modalVisualizacao').showModal();
 }
 
-function valoresDaVisualizacao(campo) {
-    const valores = campo == 'nome'
-        ? Estado.lancamentos.map(r => String(r.nome || '').trim())
-        : Estado.lancamentos.flatMap(r => categoriasSeparadas(r.categ));
-    // O seletor e o detalhe usam a mesma apuração. Só entra despesa recorrente (duas ou
-    // mais ocorrências negativas) que ainda tenha valor aberto; itens isolados, entradas e
-    // relações quitadas não poluem a lista e voltam automaticamente se um aberto for carregado.
-    return [...new Set(valores.filter(Boolean).map(valor => valor.trim()))]
-        // Reserva e Antecipação Fatura não são relações para acompanhar: a primeira pertence
-        // à meta, e a segunda é só a transferência que quita compras já contabilizadas.
-        .filter(valor => !ehCategoria(valor, 'Reserva') && !ehAntecipacaoFatura(valor))
-        .filter(valor => {
-            const dados = dadosVisualizacao(campo, valor);
-            return dados.linhas.length > 1 && dados.naoPago > 0.005;
-        })
-        .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
-}
-
 function popularAlvosVisualizacao(valorSelecionado = '') {
-    const campo = el('visTipo').value;
-    const rotulo = campo == 'nome' ? 'Nome' : 'Categoria';
-    const valores = valoresDaVisualizacao(campo);
-    el('visAlvoRotulo').textContent = rotulo;
-    el('visAlvo').replaceChildren(...valores.map(valor => new Option(valor, valor)));
-    if (valores.includes(valorSelecionado)) el('visAlvo').value = valorSelecionado;
-    el('abreVisualizacao').disabled = !valores.length;
+    el('visAlvo').replaceChildren(...OPCOES_VISUALIZACOES
+        .map(opcao => new Option(opcao.rotulo, opcao.id)));
+    if (opcaoDaVisualizacao(valorSelecionado)) el('visAlvo').value = valorSelecionado;
 }
 
 function abrirSeletorVisualizacoes(manterEscolha = false) {
     const valorSelecionado = manterEscolha ? el('visAlvo').value : '';
-    if (!manterEscolha) el('visTipo').value = 'categ';
     popularAlvosVisualizacao(valorSelecionado);
     el('modalVisualizacoes').showModal();
 }
 
 el('btVisualizacoes').onclick = abrirSeletorVisualizacoes;
-el('visTipo').onchange = popularAlvosVisualizacao;
 el('abreVisualizacao').onclick = () => {
-    const campo = el('visTipo').value;
-    const valor = el('visAlvo').value;
-    if (!valor) return;
+    const id = el('visAlvo').value;
+    if (!id) return;
     el('modalVisualizacoes').close();
-    abrirVisualizacao(campo, valor);
+    abrirVisualizacao(id);
 };
 el('fechaVisualizacoes').onclick = () => el('modalVisualizacoes').close();
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
