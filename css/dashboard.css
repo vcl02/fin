@@ -180,8 +180,11 @@
   }
 
   .tituloBloco {
-      flex: 0 0 auto;
-      min-width: 4.25rem;
+      display: inline-flex;
+      flex: 0 0 6.2rem;
+      align-items: center;
+      justify-content: space-between;
+      width: 6.2rem;
   }
 
   .resumoTitulo {
@@ -238,14 +241,20 @@
       border-left: 1px solid var(--line-strong);
   }
 
-  /* Ícones aparecem somente diante de risco: Crédito acima do teto ou Saldo efetivamente vermelho. */
-  .alertaLimite,
-  .alertaSaldo {
-      margin-left: .35rem;
+  /* Espaço do aviso é fixo nos títulos: o resumo não salta quando um risco aparece. */
+  .alertaTitulo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
       color: var(--vm);
       font-size: 1.05em;
       line-height: 1;
       cursor: help;
+  }
+
+  .alertaTitulo.vazio {
+      visibility: hidden;
   }
 
   .limiteCartaoBase {

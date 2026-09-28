@@ -52,11 +52,11 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
     assert.match(visoes, /const creditoAcimaLimite = Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| Math\.abs\(totalCreditoExibido\) > limiteTotal/);
-    assert.match(visoes, /const alertaLimiteCredito = estaAcima =>/);
+    assert.match(visoes, /const alertaTituloCredito = alertaTitulo\('alertaLimite', creditoAcimaLimite,/);
     assert.match(visoes, /Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /Math\.abs\(totalCreditoExibido\) > limiteTotal/);
-    assert.match(visoes, /aria-label="Gasto acima do limite"/);
-    assert.match(visoes, /Futuro\$\{alertaLimiteCredito\(creditoAcimaLimite\)\}/);
+    assert.match(visoes, /'Gasto acima do limite'/);
+    assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
     assert.match(visoes, /Total \$\{brl\(limiteTotal\)\}/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
@@ -65,7 +65,9 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(interacoes, /input\.select\(\)/);
     assert.match(estilos, /\.limiteTotal/);
     assert.match(estilos, /border-left: 1px solid var\(--line-strong\)/);
-    assert.match(estilos, /\.alertaLimite/);
+    assert.match(estilos, /\.alertaTitulo/);
+    assert.match(estilos, /\.alertaTitulo\.vazio/);
+    assert.match(estilos, /flex: 0 0 6\.2rem/);
 });
 
 test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
@@ -74,15 +76,16 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
-    assert.match(visoes, /const alertaSaldoNegativo = estaVermelho =>/);
-    assert.match(visoes, /aria-label="Saldo negativo após usar o guardado"/);
+    assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
+    assert.match(visoes, /'Saldo negativo após usar o guardado'/);
     assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| classeSaldoFuturo == 'vm'/);
-    assert.match(visoes, /Futuro\$\{alertaSaldoNegativo\(debitoTemSaldoVermelho\)\}/);
+    assert.match(visoes, /const alertaTituloDebito = alertaTitulo\('alertaSaldo', debitoTemSaldoVermelho,/);
+    assert.match(visoes, /`Débito\$\{alertaTituloDebito\}`/);
     assert.doesNotMatch(visoes, /Pago \+ aberto/);
     assert.match(visoes, /Guardado/);
     assert.match(estilos, /\.resumoTitulo/);
     assert.match(estilos, /\.resumoLinha/);
-    assert.match(estilos, /\.alertaSaldo/);
+    assert.match(estilos, /\.alertaTitulo/);
     assert.match(visoes, /class=resumoDados/);
     assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
     assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);

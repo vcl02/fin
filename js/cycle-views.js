@@ -117,24 +117,25 @@ function vCiclo() {
     const cicloDebitoFuturo = dataISO(periodo.ini) > hojeISO();
     const classeSaldoHoje = corValor(debitoHoje.saldo);
     const classeSaldoFuturo = corSoma(totalDebito);
-    // O aviso acompanha exatamente o vermelho já visível: Hoje usa o sinal puro e Futuro
-    // preserva a zona neutra de totais. Ele fica ao lado de Futuro para concentrar os riscos
-    // do bloco, sem interromper a leitura dos valores de Hoje ou Saldo.
-    const alertaSaldoNegativo = estaVermelho => estaVermelho
-        ? '<span class=alertaSaldo title="Saldo negativo" aria-label="Saldo negativo após usar o guardado">⚠</span>'
-        : '';
+    // Todo título reserva o mesmo espaço para alerta. Quando há risco, o ícone fica à direita
+    // de Débito/Crédito; quando não há, continua invisível sem deslocar os resumos ao lado.
+    const alertaTitulo = (classe, visivel, titulo, rotulo) => visivel
+        ? `<span class="alertaTitulo ${classe}" role=img title="${titulo}" aria-label="${rotulo}">⚠</span>`
+        : `<span class="alertaTitulo ${classe} vazio" aria-hidden=true>⚠</span>`;
     const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' || classeSaldoFuturo == 'vm';
+    const alertaTituloDebito = alertaTitulo('alertaSaldo', debitoTemSaldoVermelho,
+        'Saldo negativo', 'Saldo negativo após usar o guardado');
     const linhaHojeDebito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<span>Saldo <b class="${classeSaldoHoje}">${brl(debitoHoje.saldo)}</b></span>` +
         `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span></span>`;
     const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro${alertaSaldoNegativo(debitoTemSaldoVermelho)}</span><span class=resumoDados>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +
         `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span></span>`;
 
     const blocoDebito = renderBloco(
-        'Débito', totalDebito,
+        `Débito${alertaTituloDebito}`, totalDebito,
         `${periodo.ini ? dataBR(periodo.ini) : 'inicio'} a ${dataBR(periodo.fat)}`,
         linhasDebito, 'db', true, '', resumoDebito
     );
@@ -174,11 +175,10 @@ function vCiclo() {
     // Limite é contexto do cartão, não do recorte Hoje/Futuro. Repeti-lo nas duas faixas
     // evita comparar o pago de hoje com uma capacidade que só aparece na projeção.
     // O aviso compara cada gasto líquido com o teto utilizável, não com o limite livre.
-    // Fica no rótulo Futuro para o bloco ter uma única sinalização, inclusive se o excesso for Hoje.
+    // Uma única marca no título indica excesso em Hoje ou Futuro sem deslocar a tabela.
     const creditoAcimaLimite = Math.abs(totalCreditoHoje) > limiteTotal || Math.abs(totalCreditoExibido) > limiteTotal;
-    const alertaLimiteCredito = estaAcima => estaAcima
-        ? '<span class=alertaLimite title="Acima do limite" aria-label="Gasto acima do limite">⚠</span>'
-        : '';
+    const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
+        'Acima do limite', 'Gasto acima do limite');
     const resumoLimiteCartao = `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
@@ -190,12 +190,12 @@ function vCiclo() {
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
         resumoLimiteCartao + `</span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro${alertaLimiteCredito(creditoAcimaLimite)}</span><span class=resumoDados>` +
+        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
         resumoLimiteCartao + `</span></span></span>`;
 
     const blocoCredito = renderBloco(
-        'Crédito', totalCreditoExibido,
+        `Crédito${alertaTituloCredito}`, totalCreditoExibido,
         tituloFaturaDoCiclo(idxCreditoExibido),
         creditosExibidos, 'cr', true, '', resumoCredito
     );
