@@ -1,6 +1,6 @@
 // Filtros visuais e gráficos do painel.
 
-const FILTROS_PADRAO = { fpago: 'B', origem: 'A', somenteDif: 'N' };
+const FILTROS_PADRAO = { somenteDif: 'N' };
 
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
@@ -152,7 +152,7 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
 
 function dadosDoGraficoCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
-    const visiveis = Estado.lancamentos.filter(r => passaFiltroTriEstado('fpago', r.pago));
+    const visiveis = Estado.lancamentos;
     const doPeriodo = visiveis.filter(r =>
         r.periodoIdx == idxPeriodo && !r.cred && !ehTransferenciaFatura(r));
 

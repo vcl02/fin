@@ -88,7 +88,7 @@ test('limite considera só crédito confirmado, antecipação e garantia positiv
     assert.equal(r.limiteCartaoTotal(-600), 3750);
 });
 
-test('garantia Nubank ignora filtro Pago e não inclui aporte sugerido', () => {
+test('garantia Nubank não depende de recorte visual e não inclui aporte sugerido', () => {
     const r = regrasFinanceiras([]);
     const linhas = [
         { inv: true, pago: true, periodoIdx: 0, v: -300 },

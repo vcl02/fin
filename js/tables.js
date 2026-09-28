@@ -1,14 +1,8 @@
 // Filtros, ordenação, seleção e renderização das tabelas.
 
-const passaFiltroTriEstado = (idSelect, valor) => {
-    const v = el(idSelect).value;
-    return v == 'B' || (v == 'S') == !!valor;
-};
-// Aplica os filtros de situação e origem sobre a lista de lançamentos.
-const filtrarLancamentos = () => Estado.lancamentos.filter(r =>
-    passaFiltroTriEstado('fpago', r.pago) &&
-    ({ A: 1, D: !r.cred, F: r.cred })[el('origem').value]
-);
+// A barra não filtra mais por Pago nem Origem. Mantemos esta função como porta única para as
+// tabelas e cálculos comuns, para uma eventual regra futura não espalhar acessos ao estado.
+const filtrarLancamentos = () => Estado.lancamentos;
 
 // ===================================================================
 // ORDENAÇÃO DE TABELAS — cada tabela (id) guarda seu proprio estado

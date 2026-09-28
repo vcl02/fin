@@ -74,18 +74,8 @@ function desenhar() {
     el('compAte').disabled = ehBacklog;
     if (modoBlocos) el('ciclo').value = ehBacklog ? -1 : el('compDe').value;   // vCiclo() le o combo interno
 
-    // Origem so faz sentido comparando a matriz de verdade (2+ periodos) — some de
-    // verdade (hidden) fora do fluxo, sem deixar buraco reservado, mas com um fade suave
-    // em vez de corte seco.
-    mostraComFade('forigem', !modoBlocos && !simples);
-    if (modoBlocos) el('origem').value = 'A';
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
-    if (simples) {
-        el('fsit').hidden = true;
-        el('fpago').value = 'B';
-    }
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
-    if (!modoBlocos) el('origem').value = 'A';
 
     // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece
     // no lugar e só fica desabilitado quando não existe período válido (Backlog).

@@ -14,7 +14,7 @@ function baseEAbatContaUnica() {
     return { base: _baseUnica, abat: _abatUnica };
 }
 function baseContaUnica() {
-    return Estado.lancamentos.filter(r => passaFiltroTriEstado('fpago', r.pago));
+    return Estado.lancamentos;
 }
 // as 4 caches acima (filtrada e conta unica) sao zeradas em desenhar() a cada redesenho.
 
