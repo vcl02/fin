@@ -53,6 +53,12 @@
       color: var(--fg);
   }
 
+  /* Asterisco indica que a categoria divide o mesmo lançamento com outra classificação. */
+  .catCompartilhada {
+      color: var(--red);
+      margin-left: .18rem;
+  }
+
   /* =========================================================
        DETALHAMENTO DE CÉLULA (visão Comparar)
        ========================================================= */

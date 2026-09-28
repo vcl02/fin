@@ -101,7 +101,8 @@ el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
 // Fatias = cada categoria de débito com saldo negativo no ciclo (gasto), com
 // Resgate necessario / Aporte sugerido do ciclo contando como renda / categoria
 // "Investimento", igual um resgate/aporte real contaria.
-// O usuario pode excluir categorias especificas da pizza via multi-select.
+// O usuario pode selecionar categorias especificas da pizza via multi-select. Uma linha com
+// mais de uma categoria continua valendo uma vez só; o seletor decide em qual recorte ela entra.
 let graficoChart = null;
 let excluidasDoGrafico = [];
 let metaReservaEmergenciaChart = null;
@@ -163,12 +164,17 @@ function dadosDoGraficoCiclo(idxPeriodo) {
     ].filter(Boolean);
 
     const renda = linhas.filter(r => r.v > 0).reduce((s, r) => s + r.v, 0);
-    const porCategoria = {};
+    const gastos = [];
+    const categorias = new Set();
+    const categoriasCompartilhadas = new Set();
     linhas.filter(r => r.v < 0).forEach(r => {
-        const cat = textoOuTraco(r.categ);
-        porCategoria[cat] = (porCategoria[cat] || 0) + (-r.v);
+        const daLinha = categoriasSeparadas(r.categ);
+        const categoriasDaLinha = daLinha.length ? daLinha : [textoOuTraco(r.categ)];
+        categoriasDaLinha.forEach(c => categorias.add(c));
+        if (categoriasDaLinha.length > 1) categoriasDaLinha.forEach(c => categoriasCompartilhadas.add(c));
+        gastos.push({ categorias: categoriasDaLinha, valor: -r.v });
     });
-    return { periodo, renda, porCategoria };
+    return { periodo, renda, gastos, categorias: [...categorias], categoriasCompartilhadas };
 }
 
 // clique numa celula da matriz Comparar (categoria x periodo): abre o detalhamento dos
@@ -228,12 +234,12 @@ el('fechaDetalheCel').onclick = () => el('modalDetalheCel').close();
 el('modalDetalheCel').addEventListener('click', e => { if (e.target == el('modalDetalheCel')) el('modalDetalheCel').close(); });
 
 window.abrirGraficoGastos = idxPeriodo => {
-    const { periodo, renda, porCategoria } = dadosDoGraficoCiclo(idxPeriodo);
-    const todasCategorias = Object.keys(porCategoria).sort((a, b) => porCategoria[b] - porCategoria[a]);
+    const { periodo, renda, categorias, categoriasCompartilhadas } = dadosDoGraficoCiclo(idxPeriodo);
+    const todasCategorias = categorias.sort((a, b) => a.localeCompare(b, 'pt-BR'));
     excluidasDoGrafico = excluidasDoGrafico.filter(c => todasCategorias.includes(c));
 
     el('graficoSubtitulo').textContent = `${nomePeriodo(periodo)} · Renda do ciclo: ${brl(renda)}`;
-    montaExcluirCatDrop(todasCategorias);
+    montaExcluirCatDrop(todasCategorias, categoriasCompartilhadas);
     desenhaGraficoPizza(idxPeriodo);
     el('modalGrafico').showModal();
 };
@@ -247,9 +253,9 @@ window.abrirMetaReservaEmergencia = idxPeriodo => {
     el('modalMetaReservaEmergencia').showModal();
 };
 
-function montaExcluirCatDrop(categorias) {
+function montaExcluirCatDrop(categorias, categoriasCompartilhadas) {
     el('excluirCatDrop').innerHTML = categorias.map(c =>
-        `<label><input type=checkbox value="${c}" ${excluidasDoGrafico.includes(c) ? '' : 'checked'} onchange="toggleCategoriaGrafico('${c}',this.checked)">${c}</label>`
+        `<label><input type=checkbox value="${escapeHtml(c)}" ${excluidasDoGrafico.includes(c) ? '' : 'checked'} onchange="toggleCategoriaGrafico(${escapeHtml(JSON.stringify(c))},this.checked)">${escapeHtml(c)}${categoriasCompartilhadas.has(c) ? '<b class=catCompartilhada title="Classificação compartilhada">*</b>' : ''}</label>`
     ).join('');
     atualizaBotaoExcluirCat();
 }
@@ -286,7 +292,14 @@ const CORES_PIZZA = [
 
 function desenhaGraficoPizza(idxPeriodo) {
     el('modalGrafico').dataset.periodoIdx = idxPeriodo;
-    const { renda, porCategoria } = dadosDoGraficoCiclo(idxPeriodo);
+    const { renda, gastos } = dadosDoGraficoCiclo(idxPeriodo);
+    const porCategoria = {};
+    gastos.forEach(({ categorias, valor }) => {
+        const selecionadas = categorias.filter(c => !excluidasDoGrafico.includes(c));
+        if (!selecionadas.length) return;
+        const legenda = selecionadas.join(', ');
+        porCategoria[legenda] = (porCategoria[legenda] || 0) + valor;
+    });
     const categorias = Object.keys(porCategoria)
         .filter(c => !excluidasDoGrafico.includes(c))
         .sort((a, b) => porCategoria[b] - porCategoria[a]);
