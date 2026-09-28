@@ -67,7 +67,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(estilos, /border-left: 1px solid var\(--line-strong\)/);
     assert.match(estilos, /\.alertaTitulo/);
     assert.match(estilos, /\.alertaTitulo\.vazio/);
-    assert.match(estilos, /flex: 0 0 6\.2rem/);
+    assert.match(estilos, /flex: 0 0 5\.7rem/);
 });
 
 test('títulos distinguem o retrato pago até hoje da previsão futura', () => {

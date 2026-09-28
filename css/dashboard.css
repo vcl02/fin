@@ -181,10 +181,10 @@
 
   .tituloBloco {
       display: inline-flex;
-      flex: 0 0 6.2rem;
+      flex: 0 0 5.7rem;
       align-items: center;
       justify-content: space-between;
-      width: 6.2rem;
+      width: 5.7rem;
   }
 
   .resumoTitulo {
