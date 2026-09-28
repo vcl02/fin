@@ -58,3 +58,8 @@ test('comando do seletor alterna entre incluir e excluir todas as categorias do 
     assert.deepEqual(Array.from(regras.proximaExclusaoDasCategorias(['Casa', 'Lazer'], ['Casa', 'Outra'])), ['Outra']);
     assert.match(fonte, /id=excluirCatTudo/);
 });
+
+test('clique fora do seletor no modal fecha o dropdown antes do gráfico tratar o gesto', () => {
+    assert.match(fonte, /modalGrafico'\)\.addEventListener\('pointerdown'/);
+    assert.match(fonte, /!e\.target\.closest\('#excluirCatWrap'\)/);
+});

@@ -319,6 +319,11 @@ window.alternarTodasCategoriasGrafico = () => {
     desenhaGraficoPizza(+el('modalGrafico').dataset.periodoIdx);
 };
 el('excluirCatBtn').onclick = () => el('excluirCatDrop').classList.toggle('open');
+// Chart.js pode interromper o click do canvas; o pointerdown em captura do modal garante que
+// tocar qualquer área fora do seletor feche o dropdown antes de o gráfico tratar o gesto.
+el('modalGrafico').addEventListener('pointerdown', e => {
+    if (!e.target.closest('#excluirCatWrap')) el('excluirCatDrop').classList.remove('open');
+}, true);
 document.addEventListener('click', e => {
     if (!e.target.closest('#excluirCatWrap')) el('excluirCatDrop').classList.remove('open');
 });
