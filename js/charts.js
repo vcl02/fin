@@ -109,6 +109,14 @@ let metaReservaEmergenciaChart = null;
 const MESES_META_RESERVA_EMERGENCIA = 9;
 const PERCENTUAL_MINIMO_PIZZA = 2;
 
+// Categorias compartilhadas pedem decisão do usuário; ficam no início do seletor para não
+// se perderem entre as classificações simples. Dentro de cada grupo, a ordem é estável.
+function ordenarCategoriasDoGrafico(categorias, categoriasCompartilhadas) {
+    return [...categorias].sort((a, b) =>
+        Number(categoriasCompartilhadas.has(b)) - Number(categoriasCompartilhadas.has(a)) ||
+        a.localeCompare(b, 'pt-BR'));
+}
+
 // Projeta cada nome marcado nos nove ciclos a partir do selecionado. Uma ocorrência
 // cadastrada no ciclo substitui a estimativa daquele nome; sem ocorrência, continua
 // valendo o último valor conhecido. Assim uma previsão crescente entra mês a mês.
@@ -245,7 +253,7 @@ el('modalDetalheCel').addEventListener('click', e => { if (e.target == el('modal
 
 window.abrirGraficoGastos = idxPeriodo => {
     const { periodo, renda, categorias, categoriasCompartilhadas } = dadosDoGraficoCiclo(idxPeriodo);
-    const todasCategorias = categorias.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const todasCategorias = ordenarCategoriasDoGrafico(categorias, categoriasCompartilhadas);
     excluidasDoGrafico = excluidasDoGrafico.filter(c => todasCategorias.includes(c));
 
     el('graficoSubtitulo').textContent = `${nomePeriodo(periodo)} · Renda do ciclo: ${brl(renda)}`;

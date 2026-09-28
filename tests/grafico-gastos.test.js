@@ -18,7 +18,7 @@ function dadosDoGrafico(lancamentos) {
         categoriasSeparadas: valor => String(valor || '').split(',').map(c => c.trim()).filter(Boolean),
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza, ordenarCategoriasDoGrafico };`, contexto);
     return contexto.regras;
 }
 
@@ -42,4 +42,11 @@ test('pizza mantém somente categorias de ao menos dois por cento do recorte', (
     const resultado = regras.categoriasMinimasDaPizza({ Casa: 96, Pequena: 1.99, Reserva: 2.01 });
     assert.equal(resultado.total, 100);
     assert.deepEqual(Array.from(resultado.categorias), ['Casa', 'Reserva']);
+});
+
+test('seletor prioriza categorias compartilhadas antes das simples', () => {
+    const regras = dadosDoGrafico([]);
+    assert.deepEqual(Array.from(regras.ordenarCategoriasDoGrafico(
+        ['Transporte', 'Casa', 'Reserva', 'Lazer'], new Set(['Reserva', 'Casa'])
+    )), ['Casa', 'Reserva', 'Lazer', 'Transporte']);
 });
