@@ -227,6 +227,12 @@ function ehLinhaExcluidaDaComparacao(r) {
     return categoriaEspecial || ehAntecipacaoFatura(r.categ) || ehAntecipacaoFatura(r.nome);
 }
 
+function filtrarLinhasDaComparacao(reais, sinteticas) {
+    // A regra vale depois da união para alcançar também Saldo do mês anterior e qualquer
+    // outra linha sintética que venha a receber uma categoria excluída no futuro.
+    return [...reais, ...sinteticas].filter(r => !ehLinhaExcluidaDaComparacao(r));
+}
+
 // Classifica uma categoria pelos dois ciclos comparados e pelos dois seguintes. Sem os dois
 // ciclos futuros não há confirmação suficiente para afirmar começo, fim ou ocorrência única.
 function estadoDaComparacaoPorCiclos(presencas, idxPrimeiro, idxSegundo, totalCiclos) {
@@ -272,7 +278,7 @@ function vComp() {
     // não entra e tampouco precisa de uma linha sintética de abatimento para compensá-la.
     // O rótulo Antecipação Fatura é transferência por regra de negócio, inclusive se algum
     // cadastro legado estiver marcado como crédito. Comparar nunca o trata como gasto.
-    const reais = visiveis.filter(r => r.periodoIdx != null && !ehLinhaExcluidaDaComparacao(r));
+    const reais = visiveis.filter(r => r.periodoIdx != null);
 
     // Saldo anterior e ajuste de investimento ainda são as linhas sintéticas financeiras do
     // ciclo; não há abatimento de fatura nesta visão, pois ele não representa categoria real.
@@ -297,7 +303,7 @@ function vComp() {
         });
     });
 
-    const linhas = [...reais, ...sinteticas];
+    const linhas = filtrarLinhasDaComparacao(reais, sinteticas);
     if (!linhas.length) return '<p class=empty>Vazio</p>';
 
     // A confirmação de começo/fim olha os lançamentos dos ciclos futuros já cadastrados,

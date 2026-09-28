@@ -22,7 +22,7 @@ function regrasDaComparacao() {
         },
         textoOuTraco: valor => String(valor || '-'),
     };
-    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, ehLinhaExcluidaDaComparacao, estadoDaComparacaoPorCiclos };`, contexto);
+    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, ehLinhaExcluidaDaComparacao, filtrarLinhasDaComparacao, estadoDaComparacaoPorCiclos };`, contexto);
     return contexto.regras;
 }
 
@@ -60,9 +60,18 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
 });
 
 test('comparar exclui transferências e não cria abatimento de fatura', () => {
-    assert.match(fonte, /!ehLinhaExcluidaDaComparacao\(r\)/);
+    assert.match(fonte, /filtrarLinhasDaComparacao\(reais, sinteticas\)/);
     assert.doesNotMatch(fonte, /nome: 'Abatimento de fatura'/);
     assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
+});
+
+test('comparar aplica exclusões depois de unir linhas reais e sintéticas', () => {
+    const { filtrarLinhasDaComparacao } = regrasDaComparacao();
+    const filtradas = filtrarLinhasDaComparacao(
+        [{ id: 1, categ: 'Casa', nome: 'Condomínio' }],
+        [{ id: -1, categ: 'Saldo', nome: 'Saldo do mês anterior' }],
+    );
+    assert.deepEqual(Array.from(filtradas, linha => linha.id), [1]);
 });
 
 test('comparar exclui categorias financeiras, técnicas e escolhidas, inclusive compartilhadas', () => {

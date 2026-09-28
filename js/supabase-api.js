@@ -1,5 +1,6 @@
 // Acesso ao Supabase. Regras de interface ficam nos demais módulos de js/.
 const sb = supabase.createClient(API, KEY);
+const TAMANHO_LOTE_SUPABASE = 1000;
 
 const tokenAtual = async (forcar) => {
     if (forcar) await sb.auth.refreshSession();
@@ -8,11 +9,23 @@ const tokenAtual = async (forcar) => {
 };
 
 const buscar = async (tabela, retry) => {
-    // Reconsulta uma única vez após 401 porque a sessão pode ter sido renovada em paralelo.
-    const r = await fetch(`${API}/rest/v1/${tabela}?select=*&limit=100000`, { headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(retry) } });
-    if (r.status === 401 && !retry) return buscar(tabela, true);
-    if (!r.ok) throw Error(`${tabela}: ${r.status} ${await r.text()}`);
-    return r.json();
+    // O limite de linhas da API vale por resposta, mesmo quando a URL pede um limite maior.
+    // Paginar pela chave evita truncar silenciosamente a base e não depende de IDs contínuos.
+    const linhas = [];
+    let ultimoId = null;
+    while (true) {
+        const depois = ultimoId == null ? '' : `&id=gt.${encodeURIComponent(ultimoId)}`;
+        const url = `${API}/rest/v1/${tabela}?select=*&order=id.asc&limit=${TAMANHO_LOTE_SUPABASE}${depois}`;
+        // Reconsulta a carga inteira uma única vez após 401: a sessão pode ter sido renovada
+        // entre dois lotes e reaproveitar os anteriores criaria duplicatas no resultado.
+        const r = await fetch(url, { headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(retry) } });
+        if (r.status === 401 && !retry) return buscar(tabela, true);
+        if (!r.ok) throw Error(`${tabela}: ${r.status} ${await r.text()}`);
+        const lote = await r.json();
+        linhas.push(...lote);
+        if (lote.length < TAMANHO_LOTE_SUPABASE) return linhas;
+        ultimoId = lote.at(-1).id;
+    }
 };
 
 const normalizarCategoriasNoPayload = payload => Object.hasOwn(payload, 'categ')

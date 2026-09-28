@@ -88,6 +88,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Os estilos são carregados em camadas por `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css` e `css/mobile.css`; o responsivo permanece por último para preservar a cascata. A estrutura é coberta por `node --test tests/estrutura-estilos.test.js`.
 - A estrutura em arquivos clássicos carrega `js/app-state.js`, `js/domain.js`, `js/shared.js`, `js/supabase-api.js`, `js/finance.js`, `js/data-ui.js`, `js/tables.js`, `js/cycle-views.js`, `js/interactions.js`, `js/charts.js`, `js/form.js` e `js/bootstrap.js` nessa ordem. Estado/configuração, validação de domínio, utilitários, Supabase, cálculos financeiros, carregamento, tabelas, visões, comandos, gráficos, formulário e inicialização ficam em módulos próprios. A separação é coberta por `node --test tests/estrutura-modulos.test.js`.
+- A carga de `fin` percorre todos os lotes permitidos pela API do Supabase, sempre em ordem crescente de `id`. O limite máximo de uma resposta não pode truncar silenciosamente lançamentos novos nem alterar ciclos, saldos ou classificações do Comparar.
 - O preenchimento sugerido das faturas em vendas simuladas é coberto por `node --test tests/faturas-simulacao.test.js`.
 - A consolidação de aporte/resgate no mesmo ciclo é coberta por `node --test tests/materializacao-ajuste.test.js`.
 - A meta de reserva emergência, calculada para os nove ciclos seguintes com valores previstos e estimados, é coberta por `node --test tests/meta-reserva-emergencia.test.js`.
