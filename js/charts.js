@@ -107,6 +107,7 @@ let graficoChart = null;
 let excluidasDoGrafico = [];
 let metaReservaEmergenciaChart = null;
 const MESES_META_RESERVA_EMERGENCIA = 9;
+const PERCENTUAL_MINIMO_PIZZA = 2;
 
 // Projeta cada nome marcado nos nove ciclos a partir do selecionado. Uma ocorrência
 // cadastrada no ciclo substitui a estimativa daquele nome; sem ocorrência, continua
@@ -175,6 +176,15 @@ function dadosDoGraficoCiclo(idxPeriodo) {
         gastos.push({ categorias: categoriasDaLinha, valor: -r.v });
     });
     return { periodo, renda, gastos, categorias: [...categorias], categoriasCompartilhadas };
+}
+
+// Fatias muito pequenas não ajudam a leitura da pizza. O corte ocorre depois do seletor,
+// para que isolar uma categoria pequena continue possível e nunca descarte dados financeiros.
+function categoriasMinimasDaPizza(porCategoria) {
+    const total = Object.values(porCategoria).reduce((soma, valor) => soma + valor, 0);
+    const categorias = Object.keys(porCategoria).filter(c =>
+        total > 0 && porCategoria[c] / total * 100 >= PERCENTUAL_MINIMO_PIZZA);
+    return { total, categorias };
 }
 
 // clique numa celula da matriz Comparar (categoria x periodo): abre o detalhamento dos
@@ -300,12 +310,12 @@ function desenhaGraficoPizza(idxPeriodo) {
         const legenda = selecionadas.join(', ');
         porCategoria[legenda] = (porCategoria[legenda] || 0) + valor;
     });
-    const categorias = Object.keys(porCategoria)
-        .filter(c => !excluidasDoGrafico.includes(c))
-        .sort((a, b) => porCategoria[b] - porCategoria[a]);
+    const { total: totalGastosSelecionados, categorias: categoriasMinimas } = categoriasMinimasDaPizza(porCategoria);
+    const categorias = categoriasMinimas.sort((a, b) => porCategoria[b] - porCategoria[a]);
     const valores = categorias.map(c => porCategoria[c]);
 
     el('graficoVazio').hidden = categorias.length > 0;
+    el('graficoVazio').textContent = totalGastosSelecionados ? `Sem categorias a partir de ${PERCENTUAL_MINIMO_PIZZA}%.` : 'Sem gastos neste ciclo.';
     el('canvasGraficoGastos').style.display = categorias.length ? 'block' : 'none';
     if (!categorias.length) { if (graficoChart) { graficoChart.destroy(); graficoChart = null } return; }
 
@@ -321,7 +331,7 @@ function desenhaGraficoPizza(idxPeriodo) {
                 tooltip: {
                     callbacks: {
                         label: ctx => {
-                            const total = valores.reduce((a, b) => a + b, 0);
+                            const total = totalGastosSelecionados;
                             const pctRenda = renda ? (ctx.parsed / renda * 100).toFixed(1) : '0.0';
                             const pctGasto = total ? (ctx.parsed / total * 100).toFixed(1) : '0.0';
                             return `${ctx.label}: ${brl(ctx.parsed)} · ${pctGasto}% dos gastos · ${pctRenda}% da renda`;
