@@ -74,10 +74,15 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
+    assert.match(visoes, /const alertaSaldoNegativo = estaVermelho =>/);
+    assert.match(visoes, /aria-label="Saldo negativo após usar o guardado"/);
+    assert.match(visoes, /alertaSaldoNegativo\(classeSaldoHoje == 'vm'\)/);
+    assert.match(visoes, /alertaSaldoNegativo\(classeSaldoFuturo == 'vm'\)/);
     assert.doesNotMatch(visoes, /Pago \+ aberto/);
     assert.match(visoes, /Guardado/);
     assert.match(estilos, /\.resumoTitulo/);
     assert.match(estilos, /\.resumoLinha/);
+    assert.match(estilos, /\.alertaSaldo/);
     assert.match(visoes, /class=resumoDados/);
     assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
     assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);

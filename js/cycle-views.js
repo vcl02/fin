@@ -115,13 +115,20 @@ function vCiclo() {
     // Um ciclo que ainda não começou só tem futuro; repetir o saldo atual nele seria falso.
     const debitoHoje = resumoDebitoPagoAte(Estado.lancamentos);
     const cicloDebitoFuturo = dataISO(periodo.ini) > hojeISO();
+    const classeSaldoHoje = corValor(debitoHoje.saldo);
+    const classeSaldoFuturo = corSoma(totalDebito);
+    // O aviso acompanha exatamente o vermelho já visível: Hoje usa o sinal puro e Futuro
+    // preserva a zona neutra de totais. Ele indica que nem o guardado cobriu o saldo negativo.
+    const alertaSaldoNegativo = estaVermelho => estaVermelho
+        ? '<span class=alertaSaldo title="Saldo negativo" aria-label="Saldo negativo após usar o guardado">⚠</span>'
+        : '';
     const linhaHojeDebito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
-        `<span>Saldo <b class="${corValor(debitoHoje.saldo)}">${brl(debitoHoje.saldo)}</b></span>` +
+        `<span>Saldo <b class="${classeSaldoHoje}">${brl(debitoHoje.saldo)}</b>${alertaSaldoNegativo(classeSaldoHoje == 'vm')}</span>` +
         `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span></span>`;
     const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito +
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
-        `<span>Saldo <b class="${corSoma(totalDebito)}">${brl(totalDebito)}</b></span>` +
+        `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b>${alertaSaldoNegativo(classeSaldoFuturo == 'vm')}</span>` +
         `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span></span>`;
 
     const blocoDebito = renderBloco(

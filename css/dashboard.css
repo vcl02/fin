@@ -238,8 +238,9 @@
       border-left: 1px solid var(--line-strong);
   }
 
-  /* Ícone aparece apenas quando a faixa Hoje ou Futuro supera o teto utilizável do cartão. */
-  .alertaLimite {
+  /* Ícones aparecem somente diante de risco: Crédito acima do teto ou Saldo efetivamente vermelho. */
+  .alertaLimite,
+  .alertaSaldo {
       margin-left: .35rem;
       color: var(--vm);
       font-size: 1.05em;
