@@ -187,7 +187,11 @@ function dadosDoGraficoCiclo(idxPeriodo) {
     const categoriasCompartilhadas = new Set();
     linhas.filter(r => r.v < 0).forEach(r => {
         const daLinha = categoriasSeparadas(r.categ);
-        const categoriasDaLinha = daLinha.length ? daLinha : [textoOuTraco(r.categ)];
+        // Reserva é uma classificação da meta própria, não uma fatia de gastos. Quando ela
+        // coexistir com outra categoria, a outra recebe o lançamento inteiro sem a marca *.
+        const categoriasDaLinha = (daLinha.length ? daLinha : [textoOuTraco(r.categ)])
+            .filter(c => !ehCategoria(c, 'Reserva'));
+        if (!categoriasDaLinha.length) return;
         categoriasDaLinha.forEach(c => categorias.add(c));
         if (categoriasDaLinha.length > 1) categoriasDaLinha.forEach(c => categoriasCompartilhadas.add(c));
         gastos.push({ categorias: categoriasDaLinha, valor: -r.v });

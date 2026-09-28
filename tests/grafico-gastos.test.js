@@ -16,13 +16,14 @@ function dadosDoGrafico(lancamentos) {
         ajusteDoCicloContaUnica: () => null,
         textoOuTraco: valor => String(valor || '-'),
         categoriasSeparadas: valor => String(valor || '').split(',').map(c => c.trim()).filter(Boolean),
+        ehCategoria: (categoria, procurada) => String(categoria).trim().toLowerCase() === String(procurada).toLowerCase(),
     };
     vm.createContext(contexto);
     vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza, ordenarCategoriasDoGrafico, proximaExclusaoDasCategorias };`, contexto);
     return contexto.regras;
 }
 
-test('pizza separa categorias compartilhadas sem incluir crédito ou antecipação', () => {
+test('pizza oculta Reserva e mantém a outra categoria sem duplicação', () => {
     const regras = dadosDoGrafico([
         { periodoIdx: 0, cred: false, nome: 'Mercado', categ: 'Casa, Reserva', v: -100 },
         { periodoIdx: 0, cred: false, nome: 'Antecipação de Fatura', categ: 'Fatura', v: -200 },
@@ -30,10 +31,10 @@ test('pizza separa categorias compartilhadas sem incluir crédito ou antecipaç�
     ]);
 
     const dados = regras.dadosDoGraficoCiclo(0);
-    assert.deepEqual(Array.from(dados.categorias), ['Casa', 'Reserva']);
-    assert.deepEqual(Array.from(dados.categoriasCompartilhadas), ['Casa', 'Reserva']);
+    assert.deepEqual(Array.from(dados.categorias), ['Casa']);
+    assert.deepEqual(Array.from(dados.categoriasCompartilhadas), []);
     assert.deepEqual(Array.from(dados.gastos, gasto => ({ categorias: Array.from(gasto.categorias), valor: gasto.valor })), [
-        { categorias: ['Casa', 'Reserva'], valor: 100 },
+        { categorias: ['Casa'], valor: 100 },
     ]);
 });
 
