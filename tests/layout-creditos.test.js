@@ -43,7 +43,7 @@ test('o título do Crédito mostra o saldo após antecipações da mesma fatura'
 });
 
 test('o único título de Crédito exibe limite livre com a garantia do Débito, sem outra tabela', () => {
-    assert.match(dominio, /let LIMITE_CARTAO = 3750;/);
+    assert.match(dominio, /let LIMITE_CARTAO = 3350;/);
     assert.match(visoes, /const guardadoGarantido = guardadoGarantidoAte\(Estado\.lancamentos, i\)/);
     assert.match(visoes, /const limiteTotal = limiteCartaoTotal\(guardadoGarantido\)/);
     assert.match(visoes, /const limiteLivre = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardadoGarantido\)/);

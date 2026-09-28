@@ -19,7 +19,7 @@ const NOME_ANCORA_CICLO = 'Faturamento PJ';
 const CATEGORIA_INVESTIMENTO = 'Investimento';
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
 // garantia positiva do ciclo é somada separadamente, sem alterar este valor-base.
-let LIMITE_CARTAO = 3750;
+let LIMITE_CARTAO = 3350;
 
 function definirLimiteCartao(valor) {
     const numero = Number(valor);
