@@ -250,23 +250,12 @@ function vComp() {
     }
 
     const visiveis = filtrarLancamentos();
-    // NAO exclui ehTransferenciaFatura aqui: a antecipacao e' uma TRANSFERENCIA (nao gasto
-    // de analise), mas ainda e' uma SAIDA DE CAIXA real, e vCiclo() a inclui normalmente
-    // dentro de `debitos` (ver bloco Debito). Excluir esse debito e so' recolocar o
-    // abatimento (linha "Antecipação Fatura" abaixo) deixava a soma da matriz R$ igual ao
-    // valor antecipado A MAIS do que o Total (saldoDoCiclo) — faltava o lado debito.
-    const reais = visiveis.filter(r => r.periodoIdx != null);
+    // Comparar é uma visão de categorias, não de transferências de caixa: antecipação de
+    // fatura não entra e tampouco precisa de uma linha sintética de abatimento para compensá-la.
+    const reais = visiveis.filter(r => r.periodoIdx != null && !ehTransferenciaFatura(r));
 
-    // abatido[idxDoCiclo] = quanto foi antecipado daquela fatura (mesma logica usada em
-    // vCiclo() pro bloco Credito) — as compras no credito ja entram em `reais` por
-    // categoria, BRUTAS; sem essa injecao a soma da matriz ficaria sem o abatimento.
-    const abatido = alocacaoAntecipacoes(visiveis);
-
-    // injeta as MESMAS linhas sinteticas que a visao Ciclo usa, senao o Total da matriz
-    // (saldo equalizado, igual ao Ciclo) nao bate com a soma das categorias mostradas:
-    // "Saldo do mês anterior" (categoria "Saldo"), Resgate/Aporte (categoria "Investimento")
-    // e "Antecipação Fatura" (categoria "Fatura", o abatimento das antecipacoes na fatura
-    // que vence naquele periodo — sem essa linha a fatura ficaria bruta, sem abater).
+    // Saldo anterior e ajuste de investimento ainda são as linhas sintéticas financeiras do
+    // ciclo; não há abatimento de fatura nesta visão, pois ele não representa categoria real.
     const sinteticas = [];
     Estado.ciclos.forEach((per, idx) => {
         if (!dentroDoIntervalo(idx)) return;
@@ -276,17 +265,6 @@ function vComp() {
                 nome: 'Saldo do mês anterior', categ: 'Saldo', freq: '', pago: null,
                 id: -1, _sid: `sal:${idx}`, data: per.ini, cred: false,
                 v: anterior, valor: anterior, periodoIdx: idx,
-            });
-        }
-        // abatimento da fatura: cancela o valor BRUTO da(s) compra(s) de credito que ja
-        // entraram em `reais` (por categoria original, ex. "Mercado") — a saida de caixa
-        // real da antecipacao ja esta em `reais` tambem, na propria categoria dela.
-        const valorAbatido = abatido[idx];
-        if (valorAbatido) {
-            sinteticas.push({
-                nome: 'Abatimento de fatura', categ: 'Abatimento de fatura', freq: '', pago: null,
-                id: -6, _sid: `abt:${idx}`, data: dataISO(per.fat), cred: false,
-                v: valorAbatido, valor: valorAbatido, periodoIdx: idx,
             });
         }
         const ajuste = ajusteDoCiclo(idx);
@@ -446,15 +424,10 @@ function vComp() {
     Estado.linhasVisiveis['cp'] = linhasSelecionaveis;
 
     const linhasNoIntervalo = linhas.filter(r => dentroDoIntervalo(r.periodoIdx));
-    // Total = mesmo saldo "equalizado" da visao Ciclo (saldo do mes anterior + movimentos
-    // do ciclo + ajuste de Resgate/Aporte). Bate com a soma das categorias mostradas
-    // ACIMA porque "Saldo do mês anterior" e "Resgate/Aporte" agora entram como linhas
-    // sinteticas na matriz (ver injeção de `sinteticas` mais acima) — sem elas, um mes
-    // zerado na visao Ciclo apareceria com saldo bruto (nao-zero) aqui no Comparar.
-    // cada celula usa o MESMO tratamento do titulo do bloco Debito na visao Ciclo: mes
-    // equalizado (saldo ~0) vira "R$ 0,00" em verde de destaque, ou o valor guardado quando
-    // houver — os dois lugares (aqui e o bloco Debito) sempre concordam.
-    const celTotalPeriodo = i => `<td class=n>${celulaSaldoCiclo(i)}`;
+    // Total é a soma exata das linhas visíveis no Comparar. Ele não tenta reproduzir o saldo
+    // de caixa do ciclo, que inclui antecipações de fatura deliberadamente ausentes daqui.
+    const totalDoPeriodo = i => Object.values(matriz).reduce((soma, valores) => soma + (valores[i] || 0), 0);
+    const celTotalPeriodo = i => `<td class=n>${celSoma(totalDoPeriodo(i))}`;
     const linhaTotal = '<tr class=tot><td class=c1>Total' +
         (comparacao2Periodos ? '<td class="n colDif"><td class="n colDif"><td class="n colDif">' : '') +
         periodosUsados.map(celTotalPeriodo).join('') +
