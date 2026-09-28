@@ -256,10 +256,12 @@ function temRecorrenciaDuplicadaEntreMeses(linhas) {
     return gruposComRecorrenciaDuplicadaEntreMeses(linhas).size > 0;
 }
 
-function recorrenciaDuplicadaReaparece(linhasDuplicadas, linhasQueReaparecem) {
-    const duplicadas = gruposComRecorrenciaDuplicadaEntreMeses(linhasDuplicadas);
-    return linhasQueReaparecem.filter(ehLinhaReal)
-        .some(r => duplicadas.has(chaveDaRecorrencia(r)));
+function todasRecorrenciasDaMudancaSaoExplicadas(linhasDaMudanca, fontesDuplicadas) {
+    const gruposDaMudanca = new Set(linhasDaMudanca.filter(ehLinhaReal).map(chaveDaRecorrencia));
+    if (!gruposDaMudanca.size) return false;
+    const gruposExplicados = new Set(fontesDuplicadas
+        .flatMap(linhas => [...gruposComRecorrenciaDuplicadaEntreMeses(linhas)]));
+    return [...gruposDaMudanca].every(grupo => gruposExplicados.has(grupo));
 }
 
 // Classifica uma categoria pelos dois ciclos comparados e pelos dois seguintes. Sem os dois
@@ -390,13 +392,18 @@ function vComp() {
     const temRecorrenciaDuplicadaNoCiclo = (chave, periodoIdx) => temRecorrenciaDuplicadaEntreMeses(
         linhasReaisDaChaveNoCiclo(chave, periodoIdx),
     );
-    // Quando duas mensalidades caem no ciclo anterior, o próximo fica vazio e a recorrência
-    // reaparece um ciclo depois. Isso não é um começo novo se nome e categoria forem os mesmos.
-    const reapareceuAposDuplicidadeAnterior = chave => idxPrimeiro > 0
-        && recorrenciaDuplicadaReaparece(
-            linhasReaisDaChaveNoCiclo(chave, idxPrimeiro - 1),
-            linhasReaisDaChaveNoCiclo(chave, idxSegundo),
-        );
+    // Uma categoria inteira só deixa de ser "Diferente" se TODOS os nomes que sustentam a
+    // mudança forem explicados por duplicidade. Uma recorrência de Ammi, por exemplo, não pode
+    // esconder os demais nomes que realmente fizeram Isabella começar naquele ciclo.
+    const mudancaInteiramenteExplicadaPorDuplicidade = (chave, estado) => {
+        const cicloMarcado = estado.acabou ? idxPrimeiro : idxSegundo;
+        const linhasDaMudanca = linhasReaisDaChaveNoCiclo(chave, cicloMarcado);
+        const fontesDuplicadas = [linhasDaMudanca];
+        if ((estado.comecou || estado.unico) && idxPrimeiro > 0) {
+            fontesDuplicadas.push(linhasReaisDaChaveNoCiclo(chave, idxPrimeiro - 1));
+        }
+        return todasRecorrenciasDaMudancaSaoExplicadas(linhasDaMudanca, fontesDuplicadas);
+    };
     // HTML do asterisco de aviso, colado no "✓" de difOk/difNovo, so' quando o lado que
     // TEM o lancamento (chave, periodoIdx) apresenta essa duplicata de mes diferente.
     const avisoRecorrenciaDuplicada = (chave, periodoIdx) => temRecorrenciaDuplicadaNoCiclo(chave, periodoIdx)
@@ -422,9 +429,7 @@ function vComp() {
         if (!somenteDif) return true;
         const estado = estadoDaChave(chave);
         if (!estado.acabou && !estado.comecou && !estado.unico) return false;
-        const cicloMarcado = estado.acabou ? idxPrimeiro : idxSegundo;
-        if (temRecorrenciaDuplicadaNoCiclo(chave, cicloMarcado)) return false;
-        if ((estado.comecou || estado.unico) && reapareceuAposDuplicidadeAnterior(chave)) return false;
+        if (mudancaInteiramenteExplicadaPorDuplicidade(chave, estado)) return false;
         return true;
     });
 
