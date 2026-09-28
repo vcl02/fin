@@ -18,7 +18,7 @@ function dadosDoGrafico(lancamentos) {
         categoriasSeparadas: valor => String(valor || '').split(',').map(c => c.trim()).filter(Boolean),
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza, ordenarCategoriasDoGrafico };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { dadosDoGraficoCiclo, categoriasMinimasDaPizza, ordenarCategoriasDoGrafico, proximaExclusaoDasCategorias };`, contexto);
     return contexto.regras;
 }
 
@@ -49,4 +49,11 @@ test('seletor prioriza categorias compartilhadas antes das simples', () => {
     assert.deepEqual(Array.from(regras.ordenarCategoriasDoGrafico(
         ['Transporte', 'Casa', 'Reserva', 'Lazer'], new Set(['Reserva', 'Casa'])
     )), ['Casa', 'Reserva', 'Lazer', 'Transporte']);
+});
+
+test('comando do seletor alterna entre incluir e excluir todas as categorias do ciclo', () => {
+    const regras = dadosDoGrafico([]);
+    assert.deepEqual(Array.from(regras.proximaExclusaoDasCategorias(['Casa', 'Lazer'], [])), ['Casa', 'Lazer']);
+    assert.deepEqual(Array.from(regras.proximaExclusaoDasCategorias(['Casa', 'Lazer'], ['Casa', 'Outra'])), ['Outra']);
+    assert.match(fonte, /id=excluirCatTudo/);
 });

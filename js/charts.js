@@ -117,6 +117,15 @@ function ordenarCategoriasDoGrafico(categorias, categoriasCompartilhadas) {
         a.localeCompare(b, 'pt-BR'));
 }
 
+// Um único comando alterna o recorte inteiro sem misturar categorias de outro ciclo que
+// tenham ficado guardadas na preferência temporária do modal.
+function proximaExclusaoDasCategorias(categorias, excluidas) {
+    const todasIncluidas = categorias.every(c => !excluidas.includes(c));
+    return todasIncluidas
+        ? [...new Set([...excluidas, ...categorias])]
+        : excluidas.filter(c => !categorias.includes(c));
+}
+
 // Projeta cada nome marcado nos nove ciclos a partir do selecionado. Uma ocorrência
 // cadastrada no ciclo substitui a estimativa daquele nome; sem ocorrência, continua
 // valendo o último valor conhecido. Assim uma previsão crescente entra mês a mês.
@@ -272,14 +281,20 @@ window.abrirMetaReservaEmergencia = idxPeriodo => {
 };
 
 function montaExcluirCatDrop(categorias, categoriasCompartilhadas) {
-    el('excluirCatDrop').innerHTML = categorias.map(c =>
+    const todasIncluidas = categorias.every(c => !excluidasDoGrafico.includes(c));
+    el('excluirCatDrop').innerHTML =
+        `<button type=button id=excluirCatTudo class=multiSelAll onclick="alternarTodasCategoriasGrafico()">${todasIncluidas ? 'Desmarcar tudo' : 'Selecionar tudo'}</button>` +
+        categorias.map(c =>
         `<label><input type=checkbox value="${escapeHtml(c)}" ${excluidasDoGrafico.includes(c) ? '' : 'checked'} onchange="toggleCategoriaGrafico(${escapeHtml(JSON.stringify(c))},this.checked)">${escapeHtml(c)}${categoriasCompartilhadas.has(c) ? '<b class=catCompartilhada title="Classificação compartilhada">*</b>' : ''}</label>`
-    ).join('');
+        ).join('');
     atualizaBotaoExcluirCat();
 }
 function atualizaBotaoExcluirCat() {
     const n = excluidasDoGrafico.length;
     el('excluirCatBtn').textContent = n == 0 ? 'Nenhuma excluída' : `${n} excluída${n > 1 ? 's' : ''}`;
+    const caixas = [...el('excluirCatDrop').querySelectorAll('input[type=checkbox]')];
+    const botaoTudo = el('excluirCatTudo');
+    if (botaoTudo) botaoTudo.textContent = caixas.every(caixa => caixa.checked) ? 'Desmarcar tudo' : 'Selecionar tudo';
 }
 // checkbox MARCADO = categoria incluida na pizza; desmarcar exclui
 window.toggleCategoriaGrafico = (categoria, incluida) => {
@@ -289,6 +304,15 @@ window.toggleCategoriaGrafico = (categoria, incluida) => {
     atualizaBotaoExcluirCat();
     const idxAtual = el('modalGrafico').dataset.periodoIdx;
     desenhaGraficoPizza(+idxAtual);
+};
+window.alternarTodasCategoriasGrafico = () => {
+    const caixas = [...el('excluirCatDrop').querySelectorAll('input[type=checkbox]')];
+    const categorias = caixas.map(caixa => caixa.value);
+    excluidasDoGrafico = proximaExclusaoDasCategorias(categorias, excluidasDoGrafico);
+    const incluidas = categorias.every(c => !excluidasDoGrafico.includes(c));
+    caixas.forEach(caixa => { caixa.checked = incluidas; });
+    atualizaBotaoExcluirCat();
+    desenhaGraficoPizza(+el('modalGrafico').dataset.periodoIdx);
 };
 el('excluirCatBtn').onclick = () => el('excluirCatDrop').classList.toggle('open');
 document.addEventListener('click', e => {
