@@ -65,8 +65,9 @@ function valoresDaVisualizacao(campo) {
     // mais ocorrências negativas) que ainda tenha valor aberto; itens isolados, entradas e
     // relações quitadas não poluem a lista e voltam automaticamente se um aberto for carregado.
     return [...new Set(valores.filter(Boolean).map(valor => valor.trim()))]
-        // Reserva pertence exclusivamente à meta; a categoria não é um assunto de acompanhamento.
-        .filter(valor => campo != 'categ' || !ehCategoria(valor, 'Reserva'))
+        // Reserva e Antecipação Fatura não são relações para acompanhar: a primeira pertence
+        // à meta, e a segunda é só a transferência que quita compras já contabilizadas.
+        .filter(valor => !ehCategoria(valor, 'Reserva') && !ehAntecipacaoFatura(valor))
         .filter(valor => {
             const dados = dadosVisualizacao(campo, valor);
             return dados.linhas.length > 1 && dados.naoPago > 0.005;

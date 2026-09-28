@@ -19,6 +19,10 @@ function criarFuncoesVisualizacao(lancamentos) {
         categoriasSeparadas,
         ehCategoria: (valor, procurada) => categoriasSeparadas(valor)
             .some(categoria => normalizar(categoria) === normalizar(procurada)),
+        ehAntecipacaoFatura: valor => {
+            const texto = normalizar(valor);
+            return texto.includes('antecipacao') && texto.includes('fatura');
+        },
     };
     vm.runInNewContext(`${codigo}; this.valoresDaVisualizacao = valoresDaVisualizacao;`, contexto);
     return contexto.valoresDaVisualizacao;
@@ -47,4 +51,16 @@ test('valor aberto de meio centavo ou menos não mantém alvo quitado no seletor
 
     assert.deepEqual([...valoresDaVisualizacao('categ')], []);
     assert.deepEqual([...valoresDaVisualizacao('nome')], []);
+});
+
+test('nunca oferece Antecipação Fatura, mesmo recorrente e aberta', () => {
+    const valoresDaVisualizacao = criarFuncoesVisualizacao([
+        { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', pago: false, v: -100 },
+        { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', pago: false, v: -200 },
+        { nome: 'Mercado', categ: 'Alimentação', pago: false, v: -30 },
+        { nome: 'Mercado', categ: 'Alimentação', pago: true, v: -20 },
+    ]);
+
+    assert.deepEqual([...valoresDaVisualizacao('categ')], ['Alimentação']);
+    assert.deepEqual([...valoresDaVisualizacao('nome')], ['Mercado']);
 });
