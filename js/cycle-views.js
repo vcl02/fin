@@ -333,15 +333,13 @@ function vComp() {
         ? '<span class=avisoDup title="Possível recorrência duplicada">*</span>'
         : '';
 
-    // Filtro "Linhas": Todas (N) mostra tudo; Diferentes (S) so' as que sumiram/surgiram
-    // entre os 2 periodos; Diferentes sem recorrência (I) faz a mesma coisa, mas ainda
-    // descarta as que carregam o aviso de recorrência duplicada (avisoRecorrenciaDuplicada
-    // acima) — a categoria so' "sumiu"/"surgiu" por causa da janela do ciclo cortando o mes
-    // ao meio, entao nao e' uma diferenca de verdade.
+    // Filtro "Linhas": Todas (N) mostra tudo. Diferentes (ignorar repetidas, I) mostra só
+    // categorias que surgiram/sumiram e descarta as que carregam aviso de recorrência
+    // duplicada: nesse caso a janela do ciclo cortou o mês ao meio, não houve diferença real.
     const modoLinhas = el('somenteDif').value;
-    const somenteDif = comparacao2Periodos && modoLinhas != 'N';
+    const somenteDif = comparacao2Periodos && modoLinhas == 'I';
 
-    // ao LIGAR o filtro (de Todas pra qualquer um dos dois modos de diferenca), passa a
+    // ao LIGAR o filtro (de Todas para Diferentes), passa a
     // ordenar pela coluna "Somente <2º mês>" (a coisa nova fica em cima); ao DESLIGAR,
     // volta a ordenar pela coluna principal (nome/categ/o que estiver em "Agrupar por").
     // So dispara na TRANSICAO (nao a cada redesenho, senao o usuario nunca conseguiria
@@ -354,10 +352,8 @@ function vComp() {
         if (!somenteDif) return true;
         const saiu = deixouDePagar(chave), entrou = comecouAPagar(chave);
         if (!saiu && !entrou) return false;
-        if (modoLinhas == 'I' && (
-            (saiu && temRecorrenciaDuplicadaNoCiclo(chave, idxPrimeiro)) ||
-            (entrou && temRecorrenciaDuplicadaNoCiclo(chave, idxSegundo))
-        )) return false;
+        if ((saiu && temRecorrenciaDuplicadaNoCiclo(chave, idxPrimeiro)) ||
+            (entrou && temRecorrenciaDuplicadaNoCiclo(chave, idxSegundo))) return false;
         return true;
     });
 
