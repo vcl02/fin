@@ -204,6 +204,14 @@ function vCiclo() {
 }
 
 // Visão "Comparar": uma matriz [categoria/nome/etc × periodo], com totais por linha e coluna.
+// Reserva é uma marca para a meta própria. Na comparação ela nunca vira uma categoria: se
+// coexistir com outra, preserva-se apenas a classificação útil; se vier sozinha, a linha sai.
+function categoriaDaComparacao(categ) {
+    const categorias = categoriasSeparadas(categ);
+    if (!categorias.length) return textoOuTraco(categ);
+    return categorias.filter(categoria => !ehCategoria(categoria, 'Reserva')).join(', ');
+}
+
 function vComp() {
     // reseta ANTES de qualquer return antecipado — senao um valor de uma chamada
     // anterior fica "preso" (ex: filtro "Somente Diferentes" continua aparecendo mesmo
@@ -285,7 +293,8 @@ function vComp() {
     // abrir o detalhamento (nome + valor) ao clicar. Chave = "<categoria>||<periodoIdx>".
     const linhasDaCelula = {};
     linhas.filter(r => dentroDoIntervalo(r.periodoIdx)).forEach(r => {
-        const chave = textoOuTraco(r[coluna]);
+        const chave = categoriaDaComparacao(r[coluna]);
+        if (!chave) return; // linha classificada apenas como Reserva não participa do Comparar.
         (matriz[chave] = matriz[chave] || {})[r.periodoIdx] = (matriz[chave][r.periodoIdx] || 0) + r.v;
         const chaveCelula = chave + '||' + r.periodoIdx;
         (linhasDaCelula[chaveCelula] = linhasDaCelula[chaveCelula] || []).push(r);
