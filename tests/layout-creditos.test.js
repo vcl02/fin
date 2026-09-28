@@ -51,12 +51,12 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
-    assert.match(visoes, /const resumoLimiteCartao = ultrapassaLimite =>/);
+    assert.match(visoes, /const creditoAcimaLimite = Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| Math\.abs\(totalCreditoExibido\) > limiteTotal/);
+    assert.match(visoes, /const alertaLimiteCredito = estaAcima =>/);
     assert.match(visoes, /Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /Math\.abs\(totalCreditoExibido\) > limiteTotal/);
     assert.match(visoes, /aria-label="Gasto acima do limite"/);
-    assert.match(visoes, /resumoLimiteCartao\(Math\.abs\(totalCreditoHoje\) > limiteTotal\)/);
-    assert.match(visoes, /resumoLimiteCartao\(Math\.abs\(totalCreditoExibido\) > limiteTotal\)/);
+    assert.match(visoes, /Futuro\$\{alertaLimiteCredito\(creditoAcimaLimite\)\}/);
     assert.match(visoes, /Total \$\{brl\(limiteTotal\)\}/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
@@ -76,8 +76,8 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const alertaSaldoNegativo = estaVermelho =>/);
     assert.match(visoes, /aria-label="Saldo negativo após usar o guardado"/);
-    assert.match(visoes, /alertaSaldoNegativo\(classeSaldoHoje == 'vm'\)/);
-    assert.match(visoes, /alertaSaldoNegativo\(classeSaldoFuturo == 'vm'\)/);
+    assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| classeSaldoFuturo == 'vm'/);
+    assert.match(visoes, /Futuro\$\{alertaSaldoNegativo\(debitoTemSaldoVermelho\)\}/);
     assert.doesNotMatch(visoes, /Pago \+ aberto/);
     assert.match(visoes, /Guardado/);
     assert.match(estilos, /\.resumoTitulo/);
