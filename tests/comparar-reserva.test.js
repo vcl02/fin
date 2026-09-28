@@ -15,9 +15,13 @@ function regrasDaComparacao() {
     const contexto = {
         categoriasSeparadas: valor => String(valor ?? '').split(',').map(c => c.trim()).filter(Boolean),
         ehCategoria: (valor, procurada) => normalizar(valor) === normalizar(procurada),
+        ehAntecipacaoFatura: valor => {
+            const texto = normalizar(valor);
+            return texto.includes('antecipacao') && texto.includes('fatura');
+        },
         textoOuTraco: valor => String(valor || '-'),
     };
-    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, estadoDaComparacaoPorCiclos };`, contexto);
+    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, ehLinhaExcluidaDaComparacao, estadoDaComparacaoPorCiclos };`, contexto);
     return contexto.regras;
 }
 
@@ -51,9 +55,16 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
 });
 
 test('comparar exclui transferências e não cria abatimento de fatura', () => {
-    assert.match(fonte, /!ehAntecipacaoFatura\(r\.categ\) && !ehAntecipacaoFatura\(r\.nome\)/);
+    assert.match(fonte, /!ehLinhaExcluidaDaComparacao\(r\)/);
     assert.doesNotMatch(fonte, /nome: 'Abatimento de fatura'/);
     assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
+});
+
+test('comparar exclui Rendimento e Reembolso, inclusive em categorias compartilhadas', () => {
+    const { ehLinhaExcluidaDaComparacao } = regrasDaComparacao();
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Rendimento', nome: 'Juros' }), true);
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Casa, Reembolso', nome: 'Estorno' }), true);
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Alimentação', nome: 'Mercado' }), false);
 });
 
 test('linha Total preserva a grade das colunas dinâmicas sem células aninhadas', () => {

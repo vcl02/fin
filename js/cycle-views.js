@@ -212,6 +212,14 @@ function categoriaDaComparacao(categ) {
     return categorias.filter(categoria => !ehCategoria(categoria, 'Reserva')).join(', ');
 }
 
+// Rendimento é entrada financeira e Reembolso apenas compensa uma despesa anterior; ambos
+// distorcem a leitura de gastos recorrentes e por isso não pertencem à matriz Comparar.
+function ehLinhaExcluidaDaComparacao(r) {
+    const categoriaEspecial = categoriasSeparadas(r.categ)
+        .some(categoria => ehCategoria(categoria, 'Rendimento') || ehCategoria(categoria, 'Reembolso'));
+    return categoriaEspecial || ehAntecipacaoFatura(r.categ) || ehAntecipacaoFatura(r.nome);
+}
+
 // Classifica uma categoria pelos dois ciclos comparados e pelos dois seguintes. Sem os dois
 // ciclos futuros não há confirmação suficiente para afirmar começo, fim ou ocorrência única.
 function estadoDaComparacaoPorCiclos(presencas, idxPrimeiro, idxSegundo, totalCiclos) {
@@ -254,8 +262,7 @@ function vComp() {
     // não entra e tampouco precisa de uma linha sintética de abatimento para compensá-la.
     // O rótulo Antecipação Fatura é transferência por regra de negócio, inclusive se algum
     // cadastro legado estiver marcado como crédito. Comparar nunca o trata como gasto.
-    const reais = visiveis.filter(r => r.periodoIdx != null &&
-        !ehAntecipacaoFatura(r.categ) && !ehAntecipacaoFatura(r.nome));
+    const reais = visiveis.filter(r => r.periodoIdx != null && !ehLinhaExcluidaDaComparacao(r));
 
     // Saldo anterior e ajuste de investimento ainda são as linhas sintéticas financeiras do
     // ciclo; não há abatimento de fatura nesta visão, pois ele não representa categoria real.
