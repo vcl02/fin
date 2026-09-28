@@ -252,7 +252,10 @@ function vComp() {
     const visiveis = filtrarLancamentos();
     // Comparar é uma visão de categorias, não de transferências de caixa: Antecipação Fatura
     // não entra e tampouco precisa de uma linha sintética de abatimento para compensá-la.
-    const reais = visiveis.filter(r => r.periodoIdx != null && !ehTransferenciaFatura(r));
+    // O rótulo Antecipação Fatura é transferência por regra de negócio, inclusive se algum
+    // cadastro legado estiver marcado como crédito. Comparar nunca o trata como gasto.
+    const reais = visiveis.filter(r => r.periodoIdx != null &&
+        !ehAntecipacaoFatura(r.categ) && !ehAntecipacaoFatura(r.nome));
 
     // Saldo anterior e ajuste de investimento ainda são as linhas sintéticas financeiras do
     // ciclo; não há abatimento de fatura nesta visão, pois ele não representa categoria real.

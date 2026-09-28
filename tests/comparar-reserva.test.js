@@ -51,7 +51,7 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
 });
 
 test('comparar exclui transferências e não cria abatimento de fatura', () => {
-    assert.match(fonte, /r\.periodoIdx != null && !ehTransferenciaFatura\(r\)/);
+    assert.match(fonte, /!ehAntecipacaoFatura\(r\.categ\) && !ehAntecipacaoFatura\(r\.nome\)/);
     assert.doesNotMatch(fonte, /nome: 'Abatimento de fatura'/);
     assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
 });
