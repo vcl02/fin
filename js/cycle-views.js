@@ -227,10 +227,13 @@ function estadoDaComparacaoPorCiclos(presencas, idxPrimeiro, idxSegundo, totalCi
     if (idxSegundo + 2 >= totalCiclos) return { acabou: false, comecou: false, unico: false };
     const tem = idx => presencas.has(idx);
     const haviaAntes = tem(idxPrimeiro), temAgora = tem(idxSegundo);
+    // "Acabou" só vale para algo que vinha recorrendo. Sem presença no ciclo anterior ao
+    // primeiro comparado, uma ocorrência isolada não pode virar falsamente um encerramento.
+    const vinhaRecorrendo = idxPrimeiro > 0 && tem(idxPrimeiro - 1);
     const continuaDoisCiclos = tem(idxSegundo + 1) && tem(idxSegundo + 2);
     const someDoisCiclos = !tem(idxSegundo + 1) && !tem(idxSegundo + 2);
     return {
-        acabou: haviaAntes && !temAgora && someDoisCiclos,
+        acabou: haviaAntes && vinhaRecorrendo && !temAgora && someDoisCiclos,
         comecou: !haviaAntes && temAgora && continuaDoisCiclos,
         unico: !haviaAntes && temAgora && someDoisCiclos,
     };

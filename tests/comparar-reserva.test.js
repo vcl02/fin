@@ -38,7 +38,7 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
     const { estadoDaComparacaoPorCiclos } = regrasDaComparacao();
     const estado = (...args) => JSON.parse(JSON.stringify(estadoDaComparacaoPorCiclos(...args)));
     assert.deepEqual(
-        estado(new Set([0]), 0, 1, 4),
+        estado(new Set([0, 1]), 1, 2, 5),
         { acabou: true, comecou: false, unico: false },
     );
     assert.deepEqual(
@@ -51,6 +51,10 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
     );
     assert.deepEqual(
         estado(new Set([0]), 0, 1, 3),
+        { acabou: false, comecou: false, unico: false },
+    );
+    assert.deepEqual(
+        estado(new Set([1]), 1, 2, 5),
         { acabou: false, comecou: false, unico: false },
     );
 });
