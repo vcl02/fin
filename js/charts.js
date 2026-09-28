@@ -60,7 +60,12 @@ function valoresDaVisualizacao(campo) {
     const valores = campo == 'nome'
         ? Estado.lancamentos.map(r => String(r.nome || '').trim())
         : Estado.lancamentos.flatMap(r => categoriasSeparadas(r.categ));
+    // O seletor e o detalhe usam exatamente a mesma apuração. Assim, uma categoria ou
+    // nome só fica disponível enquanto houver valor financeiro aberto; itens quitados
+    // (como Alimentação ou Antecipação Fatura quando integralmente pagos) não poluem
+    // a lista e voltam automaticamente se um lançamento aberto for carregado.
     return [...new Set(valores.filter(Boolean).map(valor => valor.trim()))]
+        .filter(valor => dadosVisualizacao(campo, valor).naoPago > 0.005)
         .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 }
 

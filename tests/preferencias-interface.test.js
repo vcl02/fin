@@ -79,7 +79,7 @@ test('fatura à vista não repete o rótulo nem o asterisco', () => {
     assert.match(formulario, /function nomeFatura\(fatura\) \{\s*return dataBR\(fatura\.vencimento\);/);
 });
 
-test('visualizações usam um seletor único de categoria ou nome', () => {
+test('visualizações usam um seletor único de categoria ou nome ainda aberto', () => {
     assert.match(pagina, /id=btVisualizacoes/);
     assert.match(pagina, /id=visTipo/);
     assert.match(pagina, /id=visAlvo/);
@@ -88,7 +88,9 @@ test('visualizações usam um seletor único de categoria ou nome', () => {
     assert.match(graficos, /function valoresDaVisualizacao\(campo\)/);
     assert.match(graficos, /Estado\.lancamentos\.flatMap\(r => categoriasSeparadas\(r\.categ\)\)/);
     assert.match(graficos, /Estado\.lancamentos\.map\(r => String\(r\.nome \|\| ''\)\.trim\(\)\)/);
+    assert.match(graficos, /dadosVisualizacao\(campo, valor\)\.naoPago > 0\.005/);
     assert.match(regras, /botão \*\*Visualizações\*\*/);
+    assert.match(regras, /100% quitado/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
 });
 
