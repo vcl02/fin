@@ -451,18 +451,19 @@
       white-space: nowrap;
   }
 
-  /* colunas "Somente <mês>" da comparacao 1-a-1 (visao Comparar, exatamente 2 periodos):
-     bem mais estreitas que as colunas numericas normais, ja que so' levam um check. */
+  /* Colunas de estado confirmado na comparação de dois ciclos; o texto pode quebrar, mas
+     as células ficam compactas porque levam somente um check. */
   .colDif {
-      width: 2.2rem;
-      min-width: 2.2rem;
+      width: 4.5rem;
+      min-width: 4.5rem;
       text-align: center;
       padding-left: .3rem;
       padding-right: .3rem;
   }
 
   .difOk,
-  .difNovo {
+  .difNovo,
+  .difUnico {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -474,16 +475,22 @@
       line-height: 1;
   }
 
-  /* esquerda ("Somente <1º mês>", sumiu do 1º pro 2º) = verde */
+  /* Acabou = verde, porque a despesa deixou de existir de forma confirmada. */
   .difOk {
       color: #10231A;
       background: var(--vd);
   }
 
-  /* direita ("Somente <2º mês>", surgiu no 2º) = vermelho */
+  /* Começou = vermelho, porque é uma nova despesa recorrente. */
   .difNovo {
       color: #2B1211;
       background: var(--vm);
+  }
+
+  /* Único = âmbar, pois apareceu uma vez e não se confirmou como recorrência. */
+  .difUnico {
+      color: #2B2110;
+      background: #F0A83A;
   }
 
   /* asterisco de aviso colado no ✓ de difOk/difNovo: mesmo nome+valor apareceu 2x dentro

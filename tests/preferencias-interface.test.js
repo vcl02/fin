@@ -116,12 +116,15 @@ test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => 
     assert.doesNotMatch(interacoes, /mostraComFade\('(fgraf|fevol|fReserva)'/);
 });
 
-test('comparar mantém apenas todas ou diferentes sem recorrência duplicada', () => {
-    assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=I>Diferentes \(ignorar repetidas\)/);
+test('comparar mantém apenas todas ou diferentes confirmados sem recorrência duplicada', () => {
+    assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
-    assert.match(visoes, /const somenteDif = comparacao2Periodos && modoLinhas == 'I';/);
-    assert.doesNotMatch(visoes, /modoLinhas == 'I' &&/);
-    assert.match(regras, /Diferentes \(ignorar repetidas\)/);
+    assert.doesNotMatch(pagina, /Diferentes \(ignorar repetidas\)/);
+    assert.match(visoes, /const somenteDif = comparacao2Periodos && modoLinhas == 'D';/);
+    assert.match(visoes, /Acabou em \$\{nomeMes1\}/);
+    assert.match(visoes, /Começou em \$\{nomeMes2\}/);
+    assert.match(visoes, /Único em \$\{nomeMes2\}/);
+    assert.match(regras, /dois ciclos seguintes/);
 });
 
 test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {

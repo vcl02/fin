@@ -212,6 +212,21 @@ function categoriaDaComparacao(categ) {
     return categorias.filter(categoria => !ehCategoria(categoria, 'Reserva')).join(', ');
 }
 
+// Classifica uma categoria pelos dois ciclos comparados e pelos dois seguintes. Sem os dois
+// ciclos futuros não há confirmação suficiente para afirmar começo, fim ou ocorrência única.
+function estadoDaComparacaoPorCiclos(presencas, idxPrimeiro, idxSegundo, totalCiclos) {
+    if (idxSegundo + 2 >= totalCiclos) return { acabou: false, comecou: false, unico: false };
+    const tem = idx => presencas.has(idx);
+    const haviaAntes = tem(idxPrimeiro), temAgora = tem(idxSegundo);
+    const continuaDoisCiclos = tem(idxSegundo + 1) && tem(idxSegundo + 2);
+    const someDoisCiclos = !tem(idxSegundo + 1) && !tem(idxSegundo + 2);
+    return {
+        acabou: haviaAntes && !temAgora && someDoisCiclos,
+        comecou: !haviaAntes && temAgora && continuaDoisCiclos,
+        unico: !haviaAntes && temAgora && someDoisCiclos,
+    };
+}
+
 function vComp() {
     // reseta ANTES de qualquer return antecipado — senao um valor de uma chamada
     // anterior fica "preso" (ex: filtro "Somente Diferentes" continua aparecendo mesmo
@@ -287,6 +302,17 @@ function vComp() {
     const linhas = [...reais, ...sinteticas];
     if (!linhas.length) return '<p class=empty>Vazio</p>';
 
+    // A confirmação de começo/fim olha os lançamentos dos ciclos futuros já cadastrados,
+    // inclusive fora do intervalo visível. Reserva é removida pelo mesmo normalizador da matriz.
+    const presencasPorChave = new Map();
+    linhas.filter(r => r.periodoIdx != null).forEach(r => {
+        const chave = categoriaDaComparacao(r[coluna]);
+        if (!chave) return;
+        const presencas = presencasPorChave.get(chave) || new Set();
+        presencas.add(r.periodoIdx);
+        presencasPorChave.set(chave, presencas);
+    });
+
     const periodosUsados = [...new Set(linhas.map(r => r.periodoIdx))].filter(dentroDoIntervalo).sort((a, b) => a - b);
     const matriz = {};
     // guarda tambem os LANCAMENTOS individuais de cada celula (categoria x periodo), pra
@@ -305,16 +331,15 @@ function vComp() {
     const oc = Estado.ordComp;
     const seta = k => oc.k == k ? (oc.d == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
 
-    // com EXATAMENTE 2 periodos no intervalo (De/Ate cronologicos), duas colunas extras
-    // no inicio marcam o que sumiu do 1o pro 2o mes ("Somente <mes 1>": tinha valor no
-    // 1o, celula vazia no 2o) e o que surgiu ("Somente <mes 2>": vazio no 1o, valor no
-    // 2o). Exposto em Estado._comparacao2Periodos pra desenhar() saber se mostra o
-    // filtro "Somente Diferentes" na toolbar (so' faz sentido com exatamente 2 periodos).
+    // Com EXATAMENTE 2 períodos no intervalo, as três colunas extras confirmam mudanças
+    // olhando os dois ciclos seguintes: Acabou, Começou e Único. A opção Diferentes usa as
+    // mesmas confirmações; fora dessa comparação, a toolbar permanece oculta.
     const comparacao2Periodos = periodosUsados.length == 2;
     Estado._comparacao2Periodos = comparacao2Periodos;
     const [idxPrimeiro, idxSegundo] = periodosUsados;
-    const deixouDePagar = chave => comparacao2Periodos && matriz[chave][idxPrimeiro] != null && matriz[chave][idxSegundo] == null;
-    const comecouAPagar = chave => comparacao2Periodos && matriz[chave][idxPrimeiro] == null && matriz[chave][idxSegundo] != null;
+    const estadoDaChave = chave => comparacao2Periodos
+        ? estadoDaComparacaoPorCiclos(presencasPorChave.get(chave) || new Set(), idxPrimeiro, idxSegundo, Estado.ciclos.length)
+        : { acabou: false, comecou: false, unico: false };
     const nomeMes1 = comparacao2Periodos ? nomeMesPeriodo(Estado.ciclos[idxPrimeiro].fat) : '';
     const nomeMes2 = comparacao2Periodos ? nomeMesPeriodo(Estado.ciclos[idxSegundo].fat) : '';
 
@@ -323,7 +348,7 @@ function vComp() {
     // sintoma de um lancamento recorrente (mesmo nome, mesmo valor) que caiu 2x dentro do
     // MESMO ciclo porque a janela entre dois Faturamentos PJ atravessou a virada do mes,
     // e nao uma despesa que realmente comecou/parou de existir. Sem esse
-    // aviso, "Somente <mes>" fazia parecer que a categoria sumiu no outro mes quando na
+    // aviso, uma mudança confirmada fazia parecer que a categoria sumiu ou surgiu quando na
     // verdade ela so' foi contada 2x nesse aqui (e ficou de fora, sem repetir, no outro).
     // Ignora linhas sinteticas (Saldo/Fatura/Investimento) — a checagem e' so' pra
     // lancamento de verdade.
@@ -342,27 +367,27 @@ function vComp() {
         ? '<span class=avisoDup title="Possível recorrência duplicada">*</span>'
         : '';
 
-    // Filtro "Linhas": Todas (N) mostra tudo. Diferentes (ignorar repetidas, I) mostra só
-    // categorias que surgiram/sumiram e descarta as que carregam aviso de recorrência
+    // Filtro "Linhas": Todas (N) mostra tudo. Diferentes (D) mostra apenas categorias com
+    // começo, fim ou ocorrência única confirmados e descarta as que carregam aviso de recorrência
     // duplicada: nesse caso a janela do ciclo cortou o mês ao meio, não houve diferença real.
     const modoLinhas = el('somenteDif').value;
-    const somenteDif = comparacao2Periodos && modoLinhas == 'I';
+    const somenteDif = comparacao2Periodos && modoLinhas == 'D';
 
     // ao LIGAR o filtro (de Todas para Diferentes), passa a
-    // ordenar pela coluna "Somente <2º mês>" (a coisa nova fica em cima); ao DESLIGAR,
+    // ordenar pela coluna "Começou" (a coisa nova recorrente fica em cima); ao DESLIGAR,
     // volta a ordenar pela coluna principal (nome/categ/o que estiver em "Agrupar por").
     // So dispara na TRANSICAO (nao a cada redesenho, senao o usuario nunca conseguiria
     // reordenar manualmente por outra coluna).
-    if (somenteDif && !Estado._somenteDifAnterior) oc.k = 'dif2', oc.d = 2;
+    if (somenteDif && !Estado._somenteDifAnterior) oc.k = 'comecou', oc.d = 2;
     else if (!somenteDif && Estado._somenteDifAnterior) oc.k = 'chave', oc.d = 1;
     Estado._somenteDifAnterior = somenteDif;
 
     const chavesFiltradas = Object.keys(matriz).filter(chave => {
         if (!somenteDif) return true;
-        const saiu = deixouDePagar(chave), entrou = comecouAPagar(chave);
-        if (!saiu && !entrou) return false;
-        if ((saiu && temRecorrenciaDuplicadaNoCiclo(chave, idxPrimeiro)) ||
-            (entrou && temRecorrenciaDuplicadaNoCiclo(chave, idxSegundo))) return false;
+        const estado = estadoDaChave(chave);
+        if (!estado.acabou && !estado.comecou && !estado.unico) return false;
+        const cicloMarcado = estado.acabou ? idxPrimeiro : idxSegundo;
+        if (temRecorrenciaDuplicadaNoCiclo(chave, cicloMarcado)) return false;
         return true;
     });
 
@@ -372,20 +397,22 @@ function vComp() {
 
     const cabecalho = `<tr><th class=c1 onclick="sortComp('chave')">${nomeColuna(coluna)}${seta('chave')}` +
         (comparacao2Periodos
-            ? `<th class="n colDif" title="Saiu em ${nomeMes2}" onclick="sortComp('dif1')">Somente ${nomeMes1}${seta('dif1')}</th>` +
-            `<th class="n colDif" title="Entrou em ${nomeMes2}" onclick="sortComp('dif2')">Somente ${nomeMes2}${seta('dif2')}</th>`
+            ? `<th class="n colDif" title="Não aparece em ${nomeMes2} nem nos dois ciclos seguintes" onclick="sortComp('acabou')">Acabou em ${nomeMes1}${seta('acabou')}</th>` +
+            `<th class="n colDif" title="Aparece em ${nomeMes2} e continua nos dois ciclos seguintes" onclick="sortComp('comecou')">Começou em ${nomeMes2}${seta('comecou')}</th>` +
+            `<th class="n colDif" title="Aparece somente em ${nomeMes2} e some nos dois ciclos seguintes" onclick="sortComp('unico')">Único em ${nomeMes2}${seta('unico')}</th>`
             : '') +
         periodosUsados.map(i => `<th class=n onclick="sortComp('${i}')">${nomePeriodo(Estado.ciclos[i])}${seta(String(i))}`).join('') +
         (mostraColTotal ? `<th class=n onclick="sortComp('total')">Total${seta('total')}` : '') +
         `</thead>`;
 
-    // ordena pela coluna escolhida: 'chave' e' alfabetica; 'dif1'/'dif2' sao booleanos
-    // (deixou/comecou a pagar primeiro); 'total' e as colunas de periodo sao numericas
+    // ordena pela coluna escolhida: 'chave' é alfabética; os estados são booleanos;
+    // 'total' e as colunas de período são numéricos
     // (celula vazia conta como zero)
     const valorDaLinha = chave =>
         oc.k == 'total' ? totalDaChave(chave)
-            : oc.k == 'dif1' ? (deixouDePagar(chave) ? 1 : 0)
-                : oc.k == 'dif2' ? (comecouAPagar(chave) ? 1 : 0)
+            : oc.k == 'acabou' ? (estadoDaChave(chave).acabou ? 1 : 0)
+                : oc.k == 'comecou' ? (estadoDaChave(chave).comecou ? 1 : 0)
+                    : oc.k == 'unico' ? (estadoDaChave(chave).unico ? 1 : 0)
                     : (matriz[chave][+oc.k] || 0);
     // cada linha de categoria vira selecionavel igual as tabelas do Ciclo (clique marca,
     // shift-click marca intervalo, soma na barra flutuante) — o valor usado e' o Total da
@@ -401,10 +428,12 @@ function vComp() {
         const sid = 'cp:' + chave;
         linhasSelecionaveis.push({ _sid: sid, nome: chave, v: totalDaChave(chave) });
         const marcada = Estado.selecionados.has(sid);
+        const estado = estadoDaChave(chave);
         return `<tr class="${marcada ? 'on' : ''} pick" data-sid="${escapeHtml(sid)}"><td class=c1>${chave}` +
             (comparacao2Periodos
-                ? `<td class="n colDif">${deixouDePagar(chave) ? `<span class=difOk>✓</span>${avisoRecorrenciaDuplicada(chave, idxPrimeiro)}` : ''}</td>` +
-                `<td class="n colDif">${comecouAPagar(chave) ? `<span class=difNovo>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>`
+                ? `<td class="n colDif">${estado.acabou ? `<span class=difOk>✓</span>${avisoRecorrenciaDuplicada(chave, idxPrimeiro)}` : ''}</td>` +
+                `<td class="n colDif">${estado.comecou ? `<span class=difNovo>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>` +
+                `<td class="n colDif">${estado.unico ? `<span class=difUnico>✓</span>${avisoRecorrenciaDuplicada(chave, idxSegundo)}` : ''}</td>`
                 : '') +
             periodosUsados.map(i => {
                 if (matriz[chave][i] == null) return '<td class=n>·';
@@ -427,7 +456,7 @@ function vComp() {
     // houver — os dois lugares (aqui e o bloco Debito) sempre concordam.
     const celTotalPeriodo = i => `<td class=n>${celulaSaldoCiclo(i)}`;
     const linhaTotal = '<tr class=tot><td class=c1>Total' +
-        (comparacao2Periodos ? '<td class="n colDif"><td class="n colDif">' : '') +
+        (comparacao2Periodos ? '<td class="n colDif"><td class="n colDif"><td class="n colDif">' : '') +
         periodosUsados.map(celTotalPeriodo).join('') +
         (mostraColTotal ? celTotalPeriodo(periodosUsados.at(-1)) : '');
 

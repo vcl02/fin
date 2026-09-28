@@ -9,7 +9,7 @@ const inicio = fonte.indexOf('function categoriaDaComparacao(');
 const fim = fonte.indexOf('function vComp()', inicio);
 const codigo = fonte.slice(inicio, fim);
 
-function categoriaDaComparacao(categ) {
+function regrasDaComparacao() {
     const normalizar = valor => String(valor ?? '').trim().normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const contexto = {
@@ -17,13 +17,35 @@ function categoriaDaComparacao(categ) {
         ehCategoria: (valor, procurada) => normalizar(valor) === normalizar(procurada),
         textoOuTraco: valor => String(valor || '-'),
     };
-    vm.runInNewContext(`${codigo}; this.categoriaDaComparacao = categoriaDaComparacao;`, contexto);
-    return contexto.categoriaDaComparacao(categ);
+    vm.runInNewContext(`${codigo}; this.regras = { categoriaDaComparacao, estadoDaComparacaoPorCiclos };`, contexto);
+    return contexto.regras;
 }
 
 test('comparar remove Reserva de categoria compartilhada e ignora Reserva isolada', () => {
-    assert.equal(categoriaDaComparacao('Casa, Reserva'), 'Casa');
-    assert.equal(categoriaDaComparacao('Reserva, Saúde'), 'Saúde');
-    assert.equal(categoriaDaComparacao('Reserva'), '');
-    assert.equal(categoriaDaComparacao(null), '-');
+    const regras = regrasDaComparacao();
+    assert.equal(regras.categoriaDaComparacao('Casa, Reserva'), 'Casa');
+    assert.equal(regras.categoriaDaComparacao('Reserva, Saúde'), 'Saúde');
+    assert.equal(regras.categoriaDaComparacao('Reserva'), '');
+    assert.equal(regras.categoriaDaComparacao(null), '-');
+});
+
+test('confirma acabou, começou e único somente com dois ciclos futuros', () => {
+    const { estadoDaComparacaoPorCiclos } = regrasDaComparacao();
+    const estado = (...args) => JSON.parse(JSON.stringify(estadoDaComparacaoPorCiclos(...args)));
+    assert.deepEqual(
+        estado(new Set([0]), 0, 1, 4),
+        { acabou: true, comecou: false, unico: false },
+    );
+    assert.deepEqual(
+        estado(new Set([1, 2, 3]), 0, 1, 4),
+        { acabou: false, comecou: true, unico: false },
+    );
+    assert.deepEqual(
+        estado(new Set([1]), 0, 1, 4),
+        { acabou: false, comecou: false, unico: true },
+    );
+    assert.deepEqual(
+        estado(new Set([0]), 0, 1, 3),
+        { acabou: false, comecou: false, unico: false },
+    );
 });
