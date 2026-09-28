@@ -77,6 +77,7 @@ test('reconhece antecipação sem confundir uma categoria apenas parecida', () =
     assert.equal(r.ehAntecipacaoFatura('ANTECIPACAO FATURA'), true);
     assert.equal(r.ehAntecipacaoFatura('Antecipação de aluguel'), false);
     assert.equal(r.ehTransferenciaFatura({ cred: false, categ: 'Antecipação de Fatura' }), true);
+    assert.equal(r.ehTransferenciaFatura({ cred: false, nome: 'Antecipação de Fatura', categ: 'Fatura' }), true);
     assert.equal(r.ehTransferenciaFatura({ cred: true, categ: 'Antecipação de Fatura' }), false);
 });
 

@@ -100,8 +100,8 @@ const ehAntecipacaoFatura = categ => {
     return c.includes('antecipacao') && c.includes('fatura');
 };
 
-// Antecipacao e' TRANSFERENCIA, nao gasto: a despesa ja foi contada na compra do credito. Entra no fluxo de caixa (bloco Debito) e fica fora das analises de gasto (Comparar, Balanco, evolucao, pizza) — senao a mesma despesa conta duas vezes.
-const ehTransferenciaFatura = r => !r.cred && ehAntecipacaoFatura(r.categ);
+// Antecipacao e' TRANSFERENCIA, nao gasto: a despesa ja foi contada na compra do credito. Entra no fluxo de caixa (bloco Debito) e fica fora das analises de gasto (Comparar, Balanco, evolucao, pizza) — senao a mesma despesa conta duas vezes. Dados antigos podem ter esse rótulo no nome, com categoria genérica; por isso os dois campos identificam a transferência.
+const ehTransferenciaFatura = r => !r.cred && (ehAntecipacaoFatura(r.categ) || ehAntecipacaoFatura(r.nome));
 
 // Data a partir da qual voce passou a lancar os pagamentos de fatura. Faturas que venceram antes disso foram pagas sem lancamento, entao tem saldo "fantasma" e engoliriam as antecipacoes novas. AJUSTE aqui quando comecar a lancar. proximo dia (usado pra calcular o inicio de um periodo a partir do 'fat' do anterior)
 function proximoDia(iso) {
