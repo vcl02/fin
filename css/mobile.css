@@ -172,7 +172,8 @@
   .btFiltro {
       font: inherit;
       color: var(--fg);
-      background: var(--field);
+      /* Não usar shorthand aqui: #visAlvo é um select e preserva a seta definida na camada base. */
+      background-color: var(--field);
       border: 1px solid var(--ln);
       border-radius: 9px;
       padding: .42rem .9rem;
@@ -181,7 +182,7 @@
   }
 
   .btFiltro:hover {
-      background: var(--field-hover);
+      background-color: var(--field-hover);
       border-color: var(--line-strong);
   }
 

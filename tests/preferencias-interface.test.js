@@ -8,6 +8,7 @@ const agentes = fs.readFileSync('AGENTS.md', 'utf8');
 const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const base = fs.readFileSync('css/base.css', 'utf8');
+const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
@@ -94,6 +95,9 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.match(regras, /seletor é fixo/);
     assert.match(regras, /nome `Tenis`/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
+    // No mobile, a regra de botão não pode apagar a imagem de fundo que desenha a seta do select.
+    assert.match(estilosMobile, /\.btFiltro\s*\{[\s\S]*background-color: var\(--field\);/);
+    assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
 test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => {
