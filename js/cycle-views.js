@@ -167,19 +167,23 @@ function vCiclo() {
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
     const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
     const limiteTotal = limiteCartaoTotal(guardadoGarantido);
-    const limiteLivre = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido);
+    const limiteLivreHoje = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido);
+    // A prévia é a fatura do próximo ciclo. Quando ela vencer, as compras confirmadas até
+    // este ciclo `i` já terão sido quitadas; por isso não podem continuar reduzindo o Livre
+    // projetado. Compras confirmadas posteriores ainda ocupam o limite normalmente.
+    const limiteLivreFuturo = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido, i);
     const garantia = Math.max(0, guardadoGarantido);
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
-    // Limite é contexto do cartão, não do recorte Hoje/Futuro. Repeti-lo nas duas faixas
-    // evita comparar o pago de hoje com uma capacidade que só aparece na projeção.
+    // O teto e a garantia são contexto do cartão. Só o Livre muda: Hoje retrata o uso real,
+    // enquanto Futuro já considera quitada a fatura anterior à prévia.
     // O aviso compara cada gasto líquido com o teto utilizável, não com o limite livre.
     // Uma única marca no título indica excesso em Hoje ou Futuro sem deslocar a tabela.
     const creditoAcimaLimite = Math.abs(totalCreditoHoje) > limiteTotal || Math.abs(totalCreditoExibido) > limiteTotal;
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
-    const resumoLimiteCartao = `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+    const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
@@ -188,11 +192,11 @@ function vCiclo() {
     const linhaHojeCredito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
-        resumoLimiteCartao + `</span></span>`;
+        resumoLimiteCartao(limiteLivreHoje) + `</span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
-        resumoLimiteCartao + `</span></span></span>`;
+        resumoLimiteCartao(limiteLivreFuturo) + `</span></span></span>`;
 
     const blocoCredito = renderBloco(
         `Crédito${alertaTituloCredito}`, totalCreditoExibido,

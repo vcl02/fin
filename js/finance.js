@@ -285,12 +285,15 @@ function guardadoGarantidoAte(linhas, idx) {
 
 // O limite do cartão é diferente da fatura exibida: crédito Aberto é só projeção e não
 // compromete o cartão. Crédito Pago já virou compra real; uma antecipação da mesma fatura
-// libera esse valor, até o saldo chegar a zero. `abatidoPorCiclo` vem da mesma alocação
+// libera esse valor, até o saldo chegar a zero. `cicloQuitadoAte` é usado exclusivamente
+// pela projeção Futuro: os créditos até esse ciclo são tratados como faturas já quitadas,
+// liberando o limite antes de avaliar a próxima. `abatidoPorCiclo` vem da mesma alocação
 // usada pela fatura para nunca liberar mais que o pagamento realmente abateu.
-function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}) {
+function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}, cicloQuitadoAte = -Infinity) {
     const confirmadoPorCiclo = new Map();
     linhas.forEach(r => {
         if (!r.cred || !r.pago || r.periodoIdx == null) return;
+        if (r.periodoIdx <= cicloQuitadoAte) return;
         confirmadoPorCiclo.set(r.periodoIdx, (confirmadoPorCiclo.get(r.periodoIdx) || 0) + (+r.v || 0));
     });
     return Array.from(confirmadoPorCiclo, ([idx, total]) =>
@@ -305,6 +308,6 @@ function limiteCartaoTotal(guardadoDoCiclo = 0) {
     return LIMITE_CARTAO + Math.max(0, +guardadoDoCiclo || 0);
 }
 
-function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0) {
-    return limiteCartaoTotal(guardadoDoCiclo) - limiteCartaoOcupado(linhas, abatidoPorCiclo);
+function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, cicloQuitadoAte = -Infinity) {
+    return limiteCartaoTotal(guardadoDoCiclo) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte);
 }

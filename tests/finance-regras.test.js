@@ -73,7 +73,7 @@ test('resumo de hoje ignora abertos e datas futuras, mas separa saldo de guardad
     assert.deepEqual({ ...r.resumoDebitoPagoAte(linhas, '2026-09-26') }, { saldo: 440, guardado: 560 });
 });
 
-test('limite considera só crédito confirmado, antecipação e garantia positiva do ciclo', () => {
+test('limite considera só crédito confirmado, antecipação, garantia e quitação projetada', () => {
     const r = regrasFinanceiras([]);
     const linhas = [
         { cred: true, pago: false, periodoIdx: 0, v: -500 }, // projeção: não ocupa
@@ -86,6 +86,23 @@ test('limite considera só crédito confirmado, antecipação e garantia positiv
     assert.equal(r.limiteCartaoTotal(600), 4350);
     assert.equal(r.limiteCartaoLivre(linhas, abatido, 600), 4150);
     assert.equal(r.limiteCartaoTotal(-600), 3750);
+    // A prévia do próximo ciclo assume as faturas até o ciclo atual quitadas; o crédito
+    // confirmado da próxima fatura continua ocupando limite.
+    assert.equal(r.limiteCartaoOcupado(linhas, abatido, 0), 0);
+    assert.equal(r.limiteCartaoLivre(linhas, abatido, 0, 0), 3750);
+});
+
+test('Livre Futuro quita só faturas anteriores e preserva compras confirmadas posteriores', () => {
+    const r = regrasFinanceiras([]);
+    const linhas = [
+        { cred: true, pago: true, periodoIdx: 0, v: -600 },
+        { cred: true, pago: true, periodoIdx: 1, v: -450 },
+        { cred: true, pago: true, periodoIdx: 2, v: -250 },
+    ];
+    assert.equal(r.limiteCartaoOcupado(linhas), 1300);
+    // Ao projetar a fatura do ciclo 1, a fatura do ciclo 0 já foi quitada.
+    assert.equal(r.limiteCartaoOcupado(linhas, {}, 0), 700);
+    assert.equal(r.limiteCartaoLivre(linhas, {}, 0, 0), 3050);
 });
 
 test('garantia Nubank não depende de recorte visual e não inclui aporte sugerido', () => {

@@ -46,7 +46,8 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(dominio, /let LIMITE_CARTAO = 3350;/);
     assert.match(visoes, /const guardadoGarantido = guardadoGarantidoAte\(Estado\.lancamentos, i\)/);
     assert.match(visoes, /const limiteTotal = limiteCartaoTotal\(guardadoGarantido\)/);
-    assert.match(visoes, /const limiteLivre = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardadoGarantido\)/);
+    assert.match(visoes, /const limiteLivreHoje = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardadoGarantido\)/);
+    assert.match(visoes, /const limiteLivreFuturo = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardadoGarantido, i\)/);
     assert.match(visoes, /data-limite-cartao/);
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
