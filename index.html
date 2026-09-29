@@ -107,7 +107,9 @@
           </select>
         </label>
       <div id=rowVis>
-        <button type=button id=btVisualizacoes class=btFiltro>Visualizações</button>
+        <select id=visAlvo class=btFiltro aria-label="Visualizações">
+          <option value="">Visualizações</option>
+        </select>
         <button type=button id=btGrafico class=btFiltro>Gráfico</button>
         <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de 9 meses">Reserva emergência</button>
         <div id=flimpar>
@@ -215,22 +217,9 @@
       </form>
     </dialog>
 
-    <!-- Seletor fixo e resultado das visualizações de acompanhamento. -->
-    <dialog id=modalVisualizacoes>
-      <div class=modalHead>
-        <h2>Visualizações</h2>
-        <button type=button id=fechaVisualizacoes aria-label="Fechar">×</button>
-      </div>
-      <label class=fm><span>Acompanhamento</span>
-        <select id=visAlvo></select>
-      </label>
-      <button type=button id=abreVisualizacao class=btPri>Ver visualização</button>
-    </dialog>
-
     <dialog id=modalVisualizacao>
       <div class=modalHead>
         <div class=modalTituloAcoes>
-          <button type=button id=voltaVisualizacoes title="Voltar" aria-label="Voltar às visualizações">←</button>
           <h2 id=tituloVisualizacao>Visualização</h2>
         </div>
         <button type=button id=fechaVisualizacao aria-label="Fechar">×</button>

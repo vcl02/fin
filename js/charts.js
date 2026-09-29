@@ -22,7 +22,7 @@ el('btLimparFiltros').onclick = limparFiltros;
 // VISUALIZAÇÕES — acompanhamentos fixos escolhidos pelo mantenedor
 // ===================================================================
 const NOMES_DAS_VISUALIZACOES = [
-    'Entrada Econ', 'Primeira Anual', 'Segunda Anual', 'Intermediária Ap',
+    'Entrada Econ',
     'Evolução Obra', 'Financiamento Casa', 'VCardoso', 'Trybe', 'Senac',
     'Roupa Intima', 'Seguro Residencial', 'Renegociação Nu', 'Iphone', 'Pós',
     'Banco do Brasil',
@@ -85,34 +85,25 @@ function abrirVisualizacao(id) {
 }
 
 function popularAlvosVisualizacao(valorSelecionado = '') {
-    el('visAlvo').replaceChildren(...OPCOES_VISUALIZACOES
+    // O próprio controle da barra é o seletor: a opção vazia o devolve ao rótulo curto após
+    // abrir um detalhe, sem criar outro modal nem exigir uma confirmação extra.
+    el('visAlvo').replaceChildren(new Option('Visualizações', ''), ...OPCOES_VISUALIZACOES
         .map(opcao => new Option(opcao.rotulo, opcao.id)));
     if (opcaoDaVisualizacao(valorSelecionado)) el('visAlvo').value = valorSelecionado;
 }
 
-function abrirSeletorVisualizacoes(manterEscolha = false) {
-    const valorSelecionado = manterEscolha ? el('visAlvo').value : '';
-    popularAlvosVisualizacao(valorSelecionado);
-    el('modalVisualizacoes').showModal();
-}
-
-el('btVisualizacoes').onclick = abrirSeletorVisualizacoes;
-el('abreVisualizacao').onclick = () => {
+// A escolha abre o acompanhamento diretamente; não existe etapa intermediária de "Ver".
+popularAlvosVisualizacao();
+el('visAlvo').onchange = () => {
     const id = el('visAlvo').value;
     if (!id) return;
-    el('modalVisualizacoes').close();
+    el('visAlvo').value = '';
     abrirVisualizacao(id);
 };
-el('fechaVisualizacoes').onclick = () => el('modalVisualizacoes').close();
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
-// Voltar reabre o seletor com o mesmo tipo e alvo para comparar outra relação sem reiniciar o fluxo.
-el('voltaVisualizacoes').onclick = () => {
-    el('modalVisualizacao').close();
-    abrirSeletorVisualizacoes(true);
-};
-['modalVisualizacoes', 'modalVisualizacao'].forEach(id => el(id).addEventListener('click', e => {
-    if (e.target == el(id)) el(id).close();
-}));
+el('modalVisualizacao').addEventListener('click', e => {
+    if (e.target == el('modalVisualizacao')) el('modalVisualizacao').close();
+});
 
 // ===================================================================
 // GRÁFICO DE GASTOS DO CICLO (pizza)

@@ -23,7 +23,7 @@ test('oferece somente os acompanhamentos fixos na ordem definida', () => {
     const { OPCOES_VISUALIZACOES } = criarVisualizacoes([]);
     assert.deepEqual(Array.from(OPCOES_VISUALIZACOES, opcao => opcao.rotulo), [
         'Roberta',
-        'Entrada Econ', 'Primeira Anual', 'Segunda Anual', 'Intermediária Ap',
+        'Entrada Econ',
         'Evolução Obra', 'Financiamento Casa', 'VCardoso', 'Trybe', 'Senac',
         'Roupa Intima', 'Seguro Residencial', 'Renegociação Nu', 'Iphone', 'Pós',
         'Banco do Brasil', 'Tênis (Isabella)',

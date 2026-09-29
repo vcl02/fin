@@ -80,18 +80,17 @@ test('fatura à vista não repete o rótulo nem o asterisco', () => {
 });
 
 test('visualizações usam um único dropdown com acompanhamentos fixos', () => {
-    assert.match(pagina, /id=btVisualizacoes/);
-    assert.match(pagina, /id=visAlvo/);
+    assert.match(pagina, /id=visAlvo class=btFiltro aria-label="Visualizações"/);
     assert.doesNotMatch(pagina, /id=visTipo|id=visAlvoRotulo/);
-    assert.match(pagina, /id=voltaVisualizacoes title="Voltar" aria-label="Voltar às visualizações">←/);
+    assert.doesNotMatch(pagina, /id=btVisualizacoes|id=modalVisualizacoes|id=abreVisualizacao|id=voltaVisualizacoes/);
     assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
     assert.match(graficos, /const OPCOES_VISUALIZACOES/);
     assert.match(graficos, /categoriaContem: 'Roberta'/);
     assert.match(graficos, /id: 'tenis-isabella'[^\n]*nome: 'Tenis'[^\n]*categoriaContem: 'Isabella'/);
     assert.doesNotMatch(graficos, /function valoresDaVisualizacao|visTipo/);
-    assert.match(graficos, /abrirSeletorVisualizacoes\(true\)/);
-    assert.match(graficos, /manterEscolha = false/);
-    assert.match(regras, /botão \*\*Visualizações\*\*/);
+    assert.match(graficos, /el\('visAlvo'\)\.onchange/);
+    assert.match(graficos, /new Option\('Visualizações', ''\)/);
+    assert.match(regras, /\*\*Visualizações\*\* é o próprio dropdown/);
     assert.match(regras, /seletor é fixo/);
     assert.match(regras, /nome `Tenis`/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
@@ -99,7 +98,7 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
 
 test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
-    assert.ok(acoes.indexOf('id=btVisualizacoes') < acoes.indexOf('id=btGrafico'));
+    assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=btGrafico'));
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btMetaReservaEmergencia'));
     assert.ok(acoes.indexOf('id=btMetaReservaEmergencia') < acoes.indexOf('id=flimpar'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
