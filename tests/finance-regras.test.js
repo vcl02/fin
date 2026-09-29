@@ -18,7 +18,7 @@ function regrasFinanceiras(ciclos) {
         hojeISO: () => '2026-09-26',
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, lancamentosPagosAte, resumoDebitoPagoAte, guardadoGarantidoAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, lancamentosPagosAte, resumoDebitoPagoAte, guardadoGarantidoAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre, limiteCartaoLivreFuturo };`, contexto);
     return contexto.regras;
 }
 
@@ -103,6 +103,19 @@ test('Livre Futuro quita só faturas anteriores e preserva compras confirmadas p
     // Ao projetar a fatura do ciclo 1, a fatura do ciclo 0 já foi quitada.
     assert.equal(r.limiteCartaoOcupado(linhas, {}, 0), 700);
     assert.equal(r.limiteCartaoLivre(linhas, {}, 0, 0), 3050);
+});
+
+test('Livre Futuro subtrai a fatura inteira exibida e o uso confirmado posterior', () => {
+    const r = regrasFinanceiras([]);
+    const linhas = [
+        { cred: true, pago: true, periodoIdx: 0, v: -600 },
+        { cred: true, pago: true, periodoIdx: 1, v: -450 },
+        { cred: true, pago: true, periodoIdx: 2, v: -250 },
+    ];
+    // Fatura do ciclo 1 já reúne R$ 900,00 (inclui R$ 450,00 ainda aberto); só R$ 250,00
+    // do ciclo 2 continua sendo uma compra confirmada além dela.
+    assert.equal(r.limiteCartaoLivreFuturo(linhas, {}, 0, 1, -900), 2600);
+    assert.equal(r.limiteCartaoLivreFuturo(linhas, {}, 0, 1, 100), 3500);
 });
 
 test('garantia Nubank não depende de recorte visual e não inclui aporte sugerido', () => {

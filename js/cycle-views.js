@@ -168,10 +168,12 @@ function vCiclo() {
     const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
     const limiteTotal = limiteCartaoTotal(guardadoGarantido);
     const limiteLivreHoje = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido);
-    // A prévia é a fatura do próximo ciclo. Quando ela vencer, as compras confirmadas até
-    // este ciclo `i` já terão sido quitadas; por isso não podem continuar reduzindo o Livre
-    // projetado. Compras confirmadas posteriores ainda ocupam o limite normalmente.
-    const limiteLivreFuturo = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido, i);
+    // A prévia é a fatura do próximo ciclo. O Livre futuro parte do teto menos essa fatura
+    // inteira (paga e aberta), como se a anterior já tivesse sido quitada; compras
+    // confirmadas de faturas posteriores também continuam ocupando o cartão.
+    const limiteLivreFuturo = limiteCartaoLivreFuturo(
+        Estado.lancamentos, abatidoDoCartao, guardadoGarantido, idxCreditoExibido, totalCreditoExibido
+    );
     const garantia = Math.max(0, guardadoGarantido);
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
@@ -180,7 +182,7 @@ function vCiclo() {
     // enquanto Futuro já considera quitada a fatura anterior à prévia.
     // O aviso compara cada gasto líquido com o teto utilizável, não com o limite livre.
     // Uma única marca no título indica excesso em Hoje ou Futuro sem deslocar a tabela.
-    const creditoAcimaLimite = Math.abs(totalCreditoHoje) > limiteTotal || Math.abs(totalCreditoExibido) > limiteTotal;
+    const creditoAcimaLimite = Math.abs(totalCreditoHoje) > limiteTotal || limiteLivreFuturo < -TOLERANCIA_FINANCEIRA;
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
     const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +

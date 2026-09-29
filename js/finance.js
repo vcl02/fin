@@ -311,3 +311,12 @@ function limiteCartaoTotal(guardadoDoCiclo = 0) {
 function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, cicloQuitadoAte = -Infinity) {
     return limiteCartaoTotal(guardadoDoCiclo) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte);
 }
+
+// No Futuro, a fatura exibida é uma obrigação inteira (paga e aberta), então ela precisa
+// consumir o limite mesmo que uma parte ainda não esteja marcada como `pago`. As faturas até
+// ela já são descontadas como quitadas por `limiteCartaoLivre`; créditos confirmados depois
+// dela continuam ocupando. Antecipação acima do total não gera limite extra nesta projeção.
+function limiteCartaoLivreFuturo(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, idxFatura, totalFatura = 0) {
+    const faturaExibida = Math.max(0, -(+totalFatura || 0));
+    return limiteCartaoLivre(linhas, abatidoPorCiclo, guardadoDoCiclo, idxFatura) - faturaExibida;
+}
