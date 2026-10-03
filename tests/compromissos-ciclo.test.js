@@ -1,4 +1,4 @@
-// Regra de orçamento: limites de Parcelado e Fixo usam o Faturamento PJ do próprio ciclo.
+// Regra de orçamento: Comprometido usa o Faturamento PJ do próprio ciclo.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -16,30 +16,26 @@ const contexto = {
 vm.createContext(contexto);
 vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.calcular = dadosCompromissosDoCiclo;`, contexto);
 
-test('Parcelado e Fixo usam crédito e débito contra o faturamento do ciclo', () => {
+test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', () => {
     const d = contexto.calcular([
         { nome: 'Faturamento PJ', categ: 'Évora', v: 10000 },
-        { nome: 'Curso', categ: 'Casa, Parcelado', v: -900, cred: true },
-        { nome: 'Aluguel', categ: 'Fixo', v: -3500, cred: false },
-        { nome: 'Plano', categ: 'Fixo, Parcelado', v: -200, cred: false },
-        { nome: 'Antecipação', categ: 'Parcelado', v: -700, _transferencia: true },
+        { nome: 'Curso', categ: 'Casa, Comprometido', v: -900, cred: true },
+        { nome: 'Aluguel', categ: 'Comprometido', v: -3500, cred: false },
+        { nome: 'Antecipação', categ: 'Comprometido', v: -700, _transferencia: true },
     ]);
-    const [parcelado, fixo] = d.limites;
+    const [comprometido] = d.limites;
     assert.equal(d.faturamento, 10000);
-    assert.equal(parcelado.valor, 1100);
-    assert.equal(parcelado.teto, 1000);
-    assert.equal(parcelado.percentualFaturamento, 11);
-    assert.ok(Math.abs(parcelado.percentualDoTeto - 110) < 0.000001);
-    assert.equal(parcelado.excedido, true);
-    assert.equal(fixo.valor, 3700);
-    assert.equal(fixo.teto, 4000);
-    assert.equal(fixo.excedido, false);
+    assert.equal(comprometido.valor, 4400);
+    assert.equal(comprometido.teto, 5000);
+    assert.equal(comprometido.percentualFaturamento, 44);
+    assert.equal(comprometido.percentualDoTeto, 88);
+    assert.equal(comprometido.excedido, false);
 });
 
 test('sem faturamento o limite permanece zerado', () => {
-    const d = contexto.calcular([{ nome: 'Conta', categ: 'Fíxo', v: -200 }]);
+    const d = contexto.calcular([{ nome: 'Conta', categ: 'Comprometido', v: -200 }]);
     assert.equal(d.faturamento, 0);
-    assert.equal(d.limites[1].valor, 200);
-    assert.equal(d.limites[1].teto, 0);
-    assert.equal(d.limites[1].excedido, true);
+    assert.equal(d.limites[0].valor, 200);
+    assert.equal(d.limites[0].teto, 0);
+    assert.equal(d.limites[0].excedido, true);
 });

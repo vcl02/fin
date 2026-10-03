@@ -120,8 +120,7 @@ let metaReservaEmergenciaChart = null;
 const MESES_META_RESERVA_EMERGENCIA = 9;
 const PERCENTUAL_MINIMO_PIZZA = 2;
 const LIMITES_COMPROMISSOS = [
-    { chave: 'parcelado', rotulo: 'Parcelado', categoria: 'Parcelado', percentual: 10 },
-    { chave: 'fixo', rotulo: 'Fixo', categoria: 'Fixo', percentual: 40 },
+    { chave: 'comprometido', rotulo: 'Comprometido', categoria: 'Comprometido', percentual: 50 },
 ];
 
 // Categorias compartilhadas pedem decisão do usuário; ficam no início do seletor para não
@@ -183,8 +182,8 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
     return { periodo, ...dadosMetaReservaEmergencia(gastos, idxPeriodo, guardadoAte(idxPeriodo)) };
 }
 
-// Compromissos são uma leitura do orçamento, não uma mudança de dado: cada categoria
-// especial pode coexistir na mesma linha e entra no próprio limite sobre o Faturamento PJ.
+// Comprometido é uma leitura do orçamento, não uma mudança de dado: ele identifica a
+// categoria especial no lançamento e a compara ao teto único sobre o Faturamento PJ.
 const categoriaContemCompromisso = (categ, texto) => semAcento(categ).toLowerCase()
     .includes(semAcento(texto).toLowerCase());
 
