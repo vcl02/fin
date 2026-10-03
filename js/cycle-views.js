@@ -124,11 +124,12 @@ function vCiclo() {
     const alertaTitulo = (classe, visivel, titulo, rotulo) => visivel
         ? `<span class="alertaTitulo ${classe}" role=img title="${titulo}" aria-label="${rotulo}">⚠</span>`
         : `<span class="alertaTitulo ${classe} vazio" aria-hidden=true>⚠</span>`;
-    // A quitação só é confirmada depois de verificar a fatura de Crédito abaixo.
-    // Por enquanto o mobile consegue decidir só pela obrigação de Débito.
+    // Esta é uma decisão de layout: se Hoje e Futuro dizem a mesma coisa, a segunda
+    // linha não acrescenta informação. A tolerância evita diferença falsa de centavos.
     const cicloAtual = i === Estado.idxHoje;
-    const debitosQuitados = debitos.every(r => r.pago) && !linhasFatura.length &&
-        !linhaResgate.length && !linhaSugestao.length;
+    const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo &&
+        Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&
+        Math.abs(debitoHoje.guardado - guardado) <= TOLERANCIA_FINANCEIRA;
     // A mesma casca de Débito atende ao mobile e ao desktop; só a decisão de exibir
     // Futuro muda quando o desktop também consegue conferir a fatura de Crédito.
     const criaBlocoDebito = exibeFuturo => {
@@ -151,17 +152,16 @@ function vCiclo() {
         );
     };
 
-    // Mobile não exibe Crédito; para ele, a quitação depende somente do Débito visível.
+    // Mobile não exibe Crédito; nele basta comparar as duas linhas do Débito.
     let blocoDebito;
     if (modoSimples()) {
-        const quitadoNoMobile = cicloAtual && debitosQuitados;
-        if (quitadoNoMobile && Estado.cicloQuitadoRecolhido !== `${i}:db`) {
+        if (resumoDebitoIgual && Estado.cicloQuitadoRecolhido !== `${i}:db`) {
             recolherBloco('db');
             Estado.cicloQuitadoRecolhido = `${i}:db`;
-        } else if (!quitadoNoMobile) {
+        } else if (!resumoDebitoIgual) {
             Estado.cicloQuitadoRecolhido = null;
         }
-        blocoDebito = criaBlocoDebito(!cicloDebitoPassado && !quitadoNoMobile);
+        blocoDebito = criaBlocoDebito(!cicloDebitoPassado && !resumoDebitoIgual);
         if (modoSimples()) return blocoDebito;
     }
 
@@ -171,17 +171,6 @@ function vCiclo() {
     const totalCreditoExibido = totalCreditoExibidoAposAntecipacoes(
         creditosExibidos, abatido[idxCreditoExibido] || 0
     );
-    const creditoQuitado = creditosExibidos.every(r => r.pago) &&
-        Math.abs(totalCreditoExibido) <= TOLERANCIA_FINANCEIRA;
-    const cicloAtualQuitado = cicloAtual && debitosQuitados && creditoQuitado;
-    // Recolhe apenas uma vez por quitação: ainda dá para abrir e auditar as linhas.
-    if (cicloAtualQuitado && Estado.cicloQuitadoRecolhido !== `${i}:todos`) {
-        ['db', 'cr'].forEach(recolherBloco);
-        Estado.cicloQuitadoRecolhido = `${i}:todos`;
-    } else if (!cicloAtualQuitado) {
-        Estado.cicloQuitadoRecolhido = null;
-    }
-    const exibeFuturo = !cicloDebitoPassado && !cicloAtualQuitado;
     // No histórico, pagamento/antecipação não pode apagar a memória da fatura. O título
     // compacto mostra as compras brutas daquela fatura, inclusive as já quitadas.
     const totalCreditoHistorico = creditosExibidos.reduce((soma, r) => soma + r.v, 0);
@@ -195,6 +184,20 @@ function vCiclo() {
     const totalCreditoHoje = totalCreditoExibidoAposAntecipacoes(
         creditosExibidosNoCiclo(pagosAteHoje, i), abatidoAteHoje[idxCreditoExibido] || 0
     );
+    const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo &&
+        Math.abs(totalCreditoHoje - totalCreditoExibido) <= TOLERANCIA_FINANCEIRA;
+    // Cada bloco é independente: um pode estar igual e recolhido sem esconder a projeção
+    // útil do outro. A marca evita recolher de novo depois de o usuário abrir para auditar.
+    const blocosResumosIguais = `${resumoDebitoIgual ? 'db' : ''}${resumoCreditoIgual ? 'cr' : ''}`;
+    const marcaResumosIguais = blocosResumosIguais ? `${i}:${blocosResumosIguais}` : null;
+    if (marcaResumosIguais && Estado.cicloQuitadoRecolhido !== marcaResumosIguais) {
+        blocosResumosIguais.split(/(?=cr)/).filter(Boolean).forEach(recolherBloco);
+        Estado.cicloQuitadoRecolhido = marcaResumosIguais;
+    } else if (!marcaResumosIguais) {
+        Estado.cicloQuitadoRecolhido = null;
+    }
+    const exibeFuturoDebito = !cicloDebitoPassado && !resumoDebitoIgual;
+    const exibeFuturoCredito = !cicloDebitoPassado && !resumoCreditoIgual;
     // Limite não segue os filtros da tela: é o retrato do único cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
     // A garantia Nubank usa aportes/resgates REAIS de todos os status. Ela não pode seguir
@@ -225,7 +228,7 @@ function vCiclo() {
     // Uma única marca no título indica excesso em Hoje ou Futuro sem deslocar a tabela.
     // O limite é um alerta operacional, então ciclos encerrados não exibem aviso retrospectivo.
     const creditoAcimaLimite = !cicloDebitoPassado &&
-        (Math.abs(totalCreditoHoje) > limiteTotal || (exibeFuturo && limiteLivreFuturo < -TOLERANCIA_FINANCEIRA));
+        (Math.abs(totalCreditoHoje) > limiteTotal || (exibeFuturoCredito && limiteLivreFuturo < -TOLERANCIA_FINANCEIRA));
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
     const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} (` +
@@ -238,14 +241,14 @@ function vCiclo() {
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
         resumoLimiteCartao(limiteLivreHoje) + `</span></span>`;
-    const linhaFuturoCredito = exibeFuturo ?
+    const linhaFuturoCredito = exibeFuturoCredito ?
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
         resumoLimiteCartao(limiteLivreFuturo) + `</span></span>` : '';
     const resumoCredito = cicloDebitoPassado ? '' :
         `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;
 
-    blocoDebito = criaBlocoDebito(exibeFuturo);
+    blocoDebito = criaBlocoDebito(exibeFuturoDebito);
 
     const blocoCredito = renderBloco(
         `Crédito${alertaTituloCredito}`, totalTituloCredito,
