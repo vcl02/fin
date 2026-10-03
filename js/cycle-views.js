@@ -216,7 +216,9 @@ function vCiclo() {
     const blocoCredito = renderBloco(
         `Crédito${alertaTituloCredito}`, totalTituloCredito,
         tituloFaturaDoCiclo(idxCreditoExibido),
-        creditosExibidos, 'cr', true, '', resumoCredito
+        creditosExibidos, 'cr', true, '', resumoCredito,
+        // Só o título compacto do Crédito histórico não usa ponto entre nome e total.
+        cicloDebitoPassado ? ' ' : undefined
     );
 
     return blocoDebito + blocoCredito;

@@ -92,6 +92,8 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const totalCreditoHistorico = creditosExibidos\.reduce\(\(soma, r\) => soma \+ r\.v, 0\)/);
     assert.match(visoes, /const totalTituloCredito = cicloDebitoPassado \? totalCreditoHistorico : totalCreditoExibido/);
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`, totalTituloCredito,/);
+    assert.match(visoes, /cicloDebitoPassado \? ' ' : undefined/);
+    assert.match(fs.readFileSync('js\/tables\.js', 'utf8'), /separadorTotal = ' · '/);
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
     assert.match(visoes, /'Saldo negativo após usar o guardado'/);
     assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| classeSaldoFuturo == 'vm'/);

@@ -218,7 +218,7 @@ function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn) {
 // quando selecionavel, ganha um botao "Selecionar tudo" que marca/desmarca todas as linhas
 // dessa tabela de uma vez (respeitando o filtro de texto ativo, se houver).
 // "Ver gráfico" mora na toolbar (#btGrafico), nao mais aqui.
-const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = false, extra = '', resumoTitulo = '') => {
+const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = false, extra = '', resumoTitulo = '', separadorTotal = ' · ') => {
     // 'extra' preenchido substitui o total no destaque: o titulo passa a exibir o que
     // falta pagar em evidencia, com o bruto de lado, apagado.
     const valor = extra.startsWith('<b') ? extra
@@ -227,7 +227,7 @@ const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = 
     // o retrato de hoje da projeção. Os demais blocos preservam o título compacto legado.
     const tituloCompleto = resumoTitulo
         ? `<span class=tituloBloco>${titulo}</span>${resumoTitulo}`
-        : `${titulo} · ${valor}`;
+        : `${titulo}${separadorTotal}${valor}`;
     return blocoCasca(tituloCompleto, subtitulo, linhas.length, idTabela,
         () => renderTabela(linhas, idTabela, selecionavel));
 };
