@@ -87,7 +87,8 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /linhaHojeDebito \+ linhaFuturoDebito/);
     assert.match(visoes, /linhaHojeCredito \+ linhaFuturoCredito/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
-    assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
+    assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \|\| cicloDebitoPassado \? ''/);
+    assert.match(visoes, /const resumoCredito = cicloDebitoPassado \? '' :/);
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
     assert.match(visoes, /'Saldo negativo após usar o guardado'/);
     assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| classeSaldoFuturo == 'vm'/);

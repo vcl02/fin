@@ -197,7 +197,8 @@ function vCiclo() {
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"> Aprovado</span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} Garantido</span>` : ''})</span>`;
 
-    const linhaHojeCredito = cicloDebitoFuturo ? '' :
+    // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
+    const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
         resumoLimiteCartao(limiteLivreHoje) + `</span></span>`;
@@ -205,7 +206,8 @@ function vCiclo() {
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
         resumoLimiteCartao(limiteLivreFuturo) + `</span></span>`;
-    const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;
+    const resumoCredito = cicloDebitoPassado ? '' :
+        `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;
 
     const blocoCredito = renderBloco(
         `Crédito${alertaTituloCredito}`, totalCreditoExibido,
