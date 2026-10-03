@@ -45,6 +45,17 @@ test('saldo base carrega o anterior, débito e fatura líquida de antecipação'
     assert.equal(r.totalBaseDoCiclo(1, base, { 1: 80 }, () => 30), -40);
 });
 
+test('saldo diário inclui pagamento antecipado na data e deixa a fatura futura líquida', () => {
+    // A antecipação é débito real da conta; o abatimento já reduz a fatura sintética futura.
+    assert.match(fonte, /\.filter\(r => !r\.cred && r\.data\)\s*\.map\(r => \(\{ data: dataISO\(r\.data\), v: r\.v \}\)\)/);
+    assert.doesNotMatch(fonte, /!r\.cred && r\.data && !ehTransferenciaFatura\(r\)/);
+    const r = regrasFinanceiras([{ fat: '2026-09-30' }]);
+    assert.equal(r.totalBaseDoCiclo(0, [
+        { periodoIdx: 0, cred: false, v: -114 },
+        { periodoIdx: 0, cred: true, v: -500 },
+    ], { 0: 114 }, () => 0), -500);
+});
+
 test('saldo base não usa ciclos anteriores ao marco de saldo', () => {
     const r = regrasFinanceiras([{ fat: '2025-12-31' }]);
     assert.equal(r.totalBaseDoCiclo(0, [{ periodoIdx: 0, cred: false, v: 999 }], {}, () => 0), 0);

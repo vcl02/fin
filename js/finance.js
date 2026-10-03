@@ -125,10 +125,11 @@ function ajusteDoCicloContaUnica(idx) {
 }
 
 // Saldo em conta ao fim de cada dia, acumulado desde SALDO_INICIAL. Considera o que
-// de fato passa pela conta: os debitos (compra no credito nao sai da conta) mais as
-// linhas sinteticas de fatura, que representam o que ainda vai sair no vencimento, mais
+// de fato passa pela conta: os debitos (inclusive antecipação/pagamento de fatura) mais as
+// linhas sinteticas de fatura, que representam apenas o restante a sair no vencimento, mais
 // o Resgate necessario / Aporte sugerido de cada ciclo (na data de fechamento dele) — pra
-// que o saldo do ultimo dia do ciclo bata com saldoCicloContaUnica(idx).
+// que cada pagamento de cartão entre uma vez, na sua data real, e o saldo final bata com
+// saldoCicloContaUnica(idx).
 // Ignora o filtro de Titular — a conta e' uma so.
 function saldoPorDia() {
     const { base, abat } = baseEAbatContaUnica();
@@ -155,7 +156,7 @@ function saldoPorDia() {
 
     const eventos = [
         ...base
-            .filter(r => !r.cred && r.data && !ehTransferenciaFatura(r))
+            .filter(r => !r.cred && r.data)
             .map(r => ({ data: dataISO(r.data), v: r.v })),
         ...faturas,
         ...ajustes,

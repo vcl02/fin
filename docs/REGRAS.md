@@ -55,7 +55,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Ciclos, saldo e gráficos
 
 - Cada ciclo começa em um `Faturamento PJ` e termina no dia anterior ao próximo. Lançamentos sem data ou sem ciclo válido ficam no Backlog.
-- O saldo de um ciclo carrega o saldo anterior, os débitos e a fatura líquida. A antecipação de fatura é transferência: reduz o saldo devido da fatura, mas não cria uma segunda despesa nas análises de gasto.
+- O saldo de um ciclo carrega o saldo anterior, os débitos e a fatura líquida. Antecipação/pagamento de fatura é saída real de conta na sua própria data e entra no saldo diário; ao mesmo tempo reduz a fatura futura, que representa somente o restante a pagar. Assim a saída de caixa aparece uma vez, sem criar segunda despesa nas análises de gasto.
 - Se houver déficit, o `Resgate necessário` é limitado ao patrimônio disponível. Se houver excedente, o `Aporte sugerido` absorve o excedente. Ambos são linhas sintéticas até serem materializados/consolidados pelo usuário.
 - A pizza de gastos usa o ciclo inteiro conforme seu escopo próprio descrito em **Escopo e exclusões das visões**. As demais categorias separadas por vírgula ficam selecionáveis individualmente; `*` vermelho indica classificação compartilhada e aparece primeiro no seletor. O dropdown alterna entre Selecionar tudo e Desmarcar tudo. Selecionar uma ou mais delas recorta o lançamento, mas nunca duplica seu valor na pizza. A pizza e sua legenda exibem somente fatias de ao menos 2% do total atualmente selecionado; categorias menores continuam no seletor e aparecem quando isoladas. Fechar e abrir o modal restaura todas as categorias; clicar numa fatia abre seu detalhamento de lançamentos no modal próprio.
 
