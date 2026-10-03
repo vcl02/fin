@@ -39,3 +39,10 @@ test('sem faturamento o limite permanece zerado', () => {
     assert.equal(d.limites[0].teto, 0);
     assert.equal(d.limites[0].excedido, true);
 });
+
+test('card de Comprometido abre o detalhamento das próprias linhas calculadas', () => {
+    assert.match(fonte, /data-compromisso="\$\{limite\.chave\}"/);
+    assert.match(fonte, /function abrirDetalheCompromisso\(idxPeriodo, chave\)/);
+    assert.match(fonte, /linhas: limite\.linhas/);
+    assert.match(fonte, /el\('compromissosResumo'\)\.addEventListener\('click'/);
+});

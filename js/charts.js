@@ -350,6 +350,7 @@ window.abrirMetaReservaEmergencia = idxPeriodo => {
 window.abrirCompromissos = idxPeriodo => {
     if (!Estado.ciclos[idxPeriodo]) return;
     const d = dadosCompromissosCiclo(idxPeriodo);
+    el('modalCompromissos').dataset.periodoIdx = idxPeriodo;
     const temFaturamento = d.faturamento > TOLERANCIA_FINANCEIRA;
     el('compromissosSubtitulo').textContent = temFaturamento
         ? `${nomePeriodo(d.periodo)} · Faturamento PJ: ${brl(d.faturamento)}`
@@ -358,15 +359,32 @@ window.abrirCompromissos = idxPeriodo => {
     el('compromissosResumo').innerHTML = !temFaturamento ? '' :
         `<div class=compromissosLista>${d.limites.map(limite => {
             const consumo = Math.min(100, limite.percentualDoTeto);
-            return `<section class="compromissoItem ${limite.excedido ? 'excedido' : ''}">
+            return `<button type=button class="compromissoItem ${limite.excedido ? 'excedido' : ''}" data-compromisso="${limite.chave}" title="Ver lançamentos">
               <div class=compromissoTopo><b>${limite.rotulo}</b><strong class="${limite.excedido ? 'vm' : 'vd'}">${brl(limite.valor)}</strong></div>
               <div class=compromissoMeta><span>${pct1(limite.percentualFaturamento)} do faturamento</span><span>de ${pct1(limite.percentual)} · ${brl(limite.teto)}</span></div>
               <div class=compromissoBarra><span style="width:${consumo.toFixed(2)}%"></span></div>
               <div class=compromissoMeta><span>${pct1(limite.percentualDoTeto)} do limite</span><span>${limite.excedido ? `Excedeu ${brl(limite.valor - limite.teto)}` : `Restam ${brl(limite.teto - limite.valor)}`}</span></div>
-            </section>`;
+            </button>`;
         }).join('')}</div>`;
     el('modalCompromissos').showModal();
 };
+
+// O card do resumo abre as linhas já usadas no cálculo; não recalcula com filtros visuais.
+function abrirDetalheCompromisso(idxPeriodo, chave) {
+    const limite = dadosCompromissosCiclo(idxPeriodo).limites.find(item => item.chave == chave);
+    if (!limite) return;
+    Estado._detalheAtual = {
+        categoria: limite.rotulo, periodoIdx: idxPeriodo, linhas: limite.linhas, ord: { k: 'valor', d: 2 },
+    };
+    renderizaDetalheCel();
+    el('modalDetalheCel').showModal();
+}
+
+el('compromissosResumo').addEventListener('click', e => {
+    const card = e.target.closest('[data-compromisso]');
+    if (!card) return;
+    abrirDetalheCompromisso(+el('modalCompromissos').dataset.periodoIdx, card.dataset.compromisso);
+});
 
 function montaExcluirCatDrop(categorias, categoriasCompartilhadas) {
     const todasIncluidas = categorias.every(c => !excluidasDoGrafico.includes(c));
