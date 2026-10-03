@@ -82,7 +82,10 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const pagosAteHoje = lancamentosPagosAte\(Estado\.lancamentos\)/);
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
     assert.match(visoes, /const cicloDebitoPassado = dataISO\(periodo\.fat\) < hojeISO\(\)/);
-    assert.match(visoes, /const rotuloFuturo = cicloDebitoPassado \? '' : '<span class=resumoRotulo>Futuro<\/span>'/);
+    assert.match(visoes, /const linhaFuturoDebito = cicloDebitoPassado \? '' :/);
+    assert.match(visoes, /const linhaFuturoCredito = cicloDebitoPassado \? '' :/);
+    assert.match(visoes, /linhaHojeDebito \+ linhaFuturoDebito/);
+    assert.match(visoes, /linhaHojeCredito \+ linhaFuturoCredito/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
