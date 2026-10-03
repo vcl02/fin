@@ -24,9 +24,13 @@ function numeroDoLimiteDigitado(texto) {
 }
 
 function confirmarLimiteCartao(input) {
-    const valor = numeroDoLimiteDigitado(input.value);
-    if (!definirLimiteCartao(valor)) {
-        mostrarToast('Limite inválido', 'Informe um valor igual ou maior que zero.');
+    const total = numeroDoLimiteDigitado(input.value);
+    // O campo mostra o teto utilizável. A preferência persistida continua sendo somente o
+    // contratado; retirar a garantia evita gravá-la duas vezes quando o ciclo redesenhar.
+    const garantia = Number(input.dataset.garantiaCartao || 0);
+    const contratado = total - garantia;
+    if (!definirLimiteCartao(contratado)) {
+        mostrarToast('Limite inválido', 'Informe um total igual ou maior que a garantia.');
         desenhar();
         return;
     }
@@ -369,9 +373,9 @@ el('out').addEventListener('click', e => {
     input.select();
 });
 
-// O valor "de R$" do título Crédito é editável sem abrir modal. Não é lançamento nem
-// alteração de banco: usa a mesma máscara monetária do cadastro; Enter ou sair do campo
-// atualiza apenas a preferência local.
+// O total depois de "de R$" no título Crédito é editável sem abrir modal. Não é lançamento
+// nem alteração de banco: usa a mesma máscara monetária do cadastro; Enter ou sair do campo
+// atualiza apenas a preferência local do limite contratado, já descontada a garantia.
 el('out').addEventListener('input', e => {
     const input = e.target.closest('[data-limite-cartao]');
     if (!input) return;

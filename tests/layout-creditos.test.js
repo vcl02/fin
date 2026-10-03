@@ -50,6 +50,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /const limiteLivreFuturo = limiteCartaoLivreFuturo\(/);
     assert.match(visoes, /guardadoGarantido, idxCreditoExibido, totalCreditoExibido/);
     assert.match(visoes, /data-limite-cartao/);
+    assert.match(visoes, /data-garantia-cartao/);
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
@@ -59,14 +60,16 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
     assert.match(visoes, /'Gasto acima do limite'/);
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
-    assert.match(visoes, /Total \$\{brl\(limiteTotal\)\}/);
+    assert.match(visoes, /value="\$\{limiteTotalEditavel\}"/);
+    assert.match(visoes, /\(\+ \$\{brl\(garantia\)\} garantido\)/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
     assert.match(estilos, /\.limiteCartaoEditavel::placeholder/);
     assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
     assert.match(interacoes, /input\.select\(\)/);
-    assert.match(estilos, /\.limiteTotal/);
-    assert.match(estilos, /border-left: 1px solid var\(--line-strong\)/);
+    assert.match(interacoes, /const garantia = Number\(input\.dataset\.garantiaCartao \|\| 0\);/);
+    assert.match(interacoes, /const contratado = total - garantia;/);
+    assert.doesNotMatch(estilos, /\.limiteTotal/);
     assert.match(estilos, /\.alertaTitulo/);
     assert.match(estilos, /\.alertaTitulo\.vazio/);
     assert.match(estilos, /flex: 0 0 5\.7rem/);

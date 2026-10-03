@@ -175,7 +175,9 @@ function vCiclo() {
         Estado.lancamentos, abatidoDoCartao, guardadoGarantido, idxCreditoExibido, totalCreditoExibido
     );
     const garantia = Math.max(0, guardadoGarantido);
-    const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
+    // O campo exibe o teto total (contratado + garantia), que é o número usado no "de".
+    // Ao editá-lo, a interface converte de volta para a parcela contratada antes de salvar.
+    const limiteTotalEditavel = limiteTotal.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
     // O teto e a garantia são contexto do cartão. Só o Livre muda: Hoje retrata o uso real,
@@ -187,9 +189,8 @@ function vCiclo() {
         'Acima do limite', 'Gasto acima do limite');
     const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
-        `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite do cartão" aria-label="Limite contratado do cartão"></span>` +
-        `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} garantido</span>` : ''}` +
-        `<span class=limiteTotal>Total ${brl(limiteTotal)}</span></span>`;
+        `data-garantia-cartao="${garantia}" value="${limiteTotalEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite total do cartão" aria-label="Limite total do cartão"></span>` +
+        `${garantia ? `<span class=limiteGarantido> (+ ${brl(garantia)} garantido)</span>` : ''}</span>`;
 
     const linhaHojeCredito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
