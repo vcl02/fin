@@ -54,7 +54,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
-    assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\);/);
+    assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| \(exibeFuturo && limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\)\);/);
     assert.match(visoes, /const alertaTituloCredito = alertaTitulo\('alertaLimite', creditoAcimaLimite,/);
     assert.match(visoes, /Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
@@ -85,8 +85,8 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const pagosAteHoje = lancamentosPagosAte\(Estado\.lancamentos\)/);
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
     assert.match(visoes, /const cicloDebitoPassado = dataISO\(periodo\.fat\) < hojeISO\(\)/);
-    assert.match(visoes, /const linhaFuturoDebito = cicloDebitoPassado \? '' :/);
-    assert.match(visoes, /const linhaFuturoCredito = cicloDebitoPassado \? '' :/);
+    assert.match(visoes, /const linhaFuturoDebito = exibeFuturo \?/);
+    assert.match(visoes, /const linhaFuturoCredito = exibeFuturo \?/);
     assert.match(visoes, /linhaHojeDebito \+ linhaFuturoDebito/);
     assert.match(visoes, /linhaHojeCredito \+ linhaFuturoCredito/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
@@ -99,7 +99,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(fs.readFileSync('js\/tables\.js', 'utf8'), /separadorTotal = ' · '/);
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
     assert.match(visoes, /'Saldo negativo após usar o guardado'/);
-    assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| classeSaldoFuturo == 'vm'/);
+    assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| \(exibeFuturo && classeSaldoFuturo == 'vm'\)/);
     assert.match(visoes, /!cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /const alertaTituloDebito = alertaTitulo\('alertaSaldo', debitoTemSaldoVermelho,/);
     assert.match(visoes, /`Débito\$\{alertaTituloDebito\}`/);
@@ -123,6 +123,15 @@ test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura venc
     const inicioHoje = visoes.indexOf('const linhaHojeCredito');
     const fimHoje = visoes.indexOf('const resumoCredito');
     assert.doesNotMatch(visoes.slice(inicioHoje, fimHoje), /Pago <b/);
+});
+
+test('ciclo atual quitado recolhe os blocos uma vez e oculta ambas as projeções Futuro', () => {
+    assert.match(visoes, /const cicloAtualQuitado = cicloAtual && debitosQuitados && creditoQuitado;/);
+    assert.match(visoes, /if \(cicloAtualQuitado && Estado\.cicloQuitadoRecolhido !== `\$\{i\}:todos`\) \{[\s\S]*\['db', 'cr'\]\.forEach\(recolherBloco\)/);
+    assert.match(visoes, /const exibeFuturo = !cicloDebitoPassado && !cicloAtualQuitado;/);
+    assert.match(visoes, /const linhaFuturoDebito = exibeFuturo \?/);
+    assert.match(visoes, /const linhaFuturoCredito = exibeFuturo \?/);
+    assert.match(regras, /ciclo atual estiver inteiramente quitado[\s\S]*a linha Futuro some/);
 });
 
 test('documenta Nubank como cartão único e exige separação explícita antes de outro cartão', () => {

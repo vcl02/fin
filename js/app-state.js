@@ -26,7 +26,7 @@ const colunasAtivas = () => isMobile() ? COLS_MOBILE : COLS;
 const Estado = {
     ciclos: [], faturas: [], lancamentos: [], valorFaturaPorCiclo: {},
     selecionados: new Map(), ordenacaoPorTabela: {}, filtroTexto: {}, linhasVisiveis: {},
-    fechados: {}, ordComp: { k: 'total', d: 2 }, simulando: false,
+    fechados: {}, cicloQuitadoRecolhido: null, ordComp: { k: 'total', d: 2 }, simulando: false,
     _proxIdSimulado: 0,
 };
 
