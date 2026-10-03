@@ -63,7 +63,8 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /de \$\{brl\(limiteTotal\)\} \(/);
     assert.match(visoes, /value="\$\{limiteContratadoEditavel\}"/);
     assert.match(visoes, /<span class=limiteCartaoRotulo>Aprovado<\/span>/);
-    assert.match(visoes, /\+ \$\{brl\(garantia\)\} Garantido/);
+    assert.match(visoes, /const garantiaExibida = Math\.floor\(garantia \/ 100\) \* 100/);
+    assert.match(visoes, /\+ \$\{brl\(garantiaExibida\)\} Garantido/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
     assert.match(estilos, /\.limiteCartaoEditavel::placeholder/);

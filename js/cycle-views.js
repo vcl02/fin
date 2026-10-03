@@ -182,6 +182,9 @@ function vCiclo() {
         Estado.lancamentos, abatidoDoCartao, guardadoGarantido, idxCreditoExibido, totalCreditoExibido
     );
     const garantia = Math.max(0, guardadoGarantido);
+    // O valor visível da garantia é conservador e legível: só exibe centenas já completas.
+    // O teto e o Livre continuam usando `garantia` exata, sem perder centavos no cálculo.
+    const garantiaExibida = Math.floor(garantia / 100) * 100;
     // O teto total é somente leitura no "de"; o campo discreto dentro dos parênteses edita
     // a parte aprovada/contratada sem misturá-la com a garantia variável do ciclo.
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
@@ -199,7 +202,7 @@ function vCiclo() {
     const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} (` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"><span class=limiteCartaoRotulo>Aprovado</span></span>` +
-        `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} Garantido</span>` : ''})</span>`;
+        `${garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''})</span>`;
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :
