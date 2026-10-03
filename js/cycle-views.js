@@ -153,6 +153,10 @@ function vCiclo() {
     const totalCreditoExibido = totalCreditoExibidoAposAntecipacoes(
         creditosExibidos, abatido[idxCreditoExibido] || 0
     );
+    // No histórico, pagamento/antecipação não pode apagar a memória da fatura. O título
+    // compacto mostra as compras brutas daquela fatura, inclusive as já quitadas.
+    const totalCreditoHistorico = creditosExibidos.reduce((soma, r) => soma + r.v, 0);
+    const totalTituloCredito = cicloDebitoPassado ? totalCreditoHistorico : totalCreditoExibido;
     // A linha "Hoje" considera só compras confirmadas até a data local atual e
     // antecipações já registradas. A prévia de Crédito do ciclo atual continua tendo
     // "Hoje", ainda que sua fatura vença no ciclo seguinte; só a navegação para um ciclo
@@ -210,7 +214,7 @@ function vCiclo() {
         `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;
 
     const blocoCredito = renderBloco(
-        `Crédito${alertaTituloCredito}`, totalCreditoExibido,
+        `Crédito${alertaTituloCredito}`, totalTituloCredito,
         tituloFaturaDoCiclo(idxCreditoExibido),
         creditosExibidos, 'cr', true, '', resumoCredito
     );
