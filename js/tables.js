@@ -88,7 +88,16 @@ function passaFiltroTexto(r, idTabela) {
             const valorLinha = Math.abs(r._sug != null ? r._sug : (r.v || 0));
             return Math.abs(valorLinha - alvo) <= TOLERANCIA_BUSCA_VALOR;
         }
-        return semAcento(r[coluna]).includes(semAcento(termo));
+        const texto = semAcento(r[coluna]);
+        const termoNormalizado = semAcento(termo);
+        // Categorias podem ser compostas (por exemplo, "Casa, Reserva"). O ! é
+        // propositalmente exclusivo deste campo para não mudar a busca literal de Nome
+        // ou Frequência. ! isolado equivale a filtro vazio e evita ocultar toda a tabela.
+        if (coluna == 'categ' && termoNormalizado.startsWith('!')) {
+            const termoExcluido = termoNormalizado.slice(1).trim();
+            return !termoExcluido || !texto.includes(termoExcluido);
+        }
+        return texto.includes(termoNormalizado);
     });
 }
 // clique no header: 1o clique ordena asc, 2o desc, alternando (sem 3o estado "original")
