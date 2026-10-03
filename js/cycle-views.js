@@ -175,9 +175,9 @@ function vCiclo() {
         Estado.lancamentos, abatidoDoCartao, guardadoGarantido, idxCreditoExibido, totalCreditoExibido
     );
     const garantia = Math.max(0, guardadoGarantido);
-    // O campo exibe o teto total (contratado + garantia), que é o número usado no "de".
-    // Ao editá-lo, a interface converte de volta para a parcela contratada antes de salvar.
-    const limiteTotalEditavel = limiteTotal.toLocaleString('pt-BR', {
+    // O teto total é somente leitura no "de"; o campo discreto dentro dos parênteses edita
+    // a parte aprovada/contratada sem misturá-la com a garantia variável do ciclo.
+    const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
     // O teto e a garantia são contexto do cartão. Só o Livre muda: Hoje retrata o uso real,
@@ -187,10 +187,10 @@ function vCiclo() {
     const creditoAcimaLimite = Math.abs(totalCreditoHoje) > limiteTotal || limiteLivreFuturo < -TOLERANCIA_FINANCEIRA;
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
-    const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+    const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} (` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
-        `data-garantia-cartao="${garantia}" value="${limiteTotalEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite total do cartão" aria-label="Limite total do cartão"></span>` +
-        `${garantia ? `<span class=limiteGarantido> (+ ${brl(garantia)} garantido)</span>` : ''}</span>`;
+        `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"> Aprovado</span>` +
+        `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} Garantido</span>` : ''})</span>`;
 
     const linhaHojeCredito = cicloDebitoFuturo ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
