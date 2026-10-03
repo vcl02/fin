@@ -113,8 +113,11 @@ function vCiclo() {
     // O título passa a dizer o que já ocorreu hoje, separado da previsão do ciclo. O
     // recorte de hoje não acompanha filtros da tela: ele é um retrato financeiro real.
     // Um ciclo que ainda não começou só tem futuro; repetir o saldo atual nele seria falso.
+    // O passado continua mostrando seus valores, mas não recebe o rótulo "Futuro": é histórico.
     const debitoHoje = resumoDebitoPagoAte(Estado.lancamentos);
     const cicloDebitoFuturo = dataISO(periodo.ini) > hojeISO();
+    const cicloDebitoPassado = dataISO(periodo.fat) < hojeISO();
+    const rotuloFuturo = cicloDebitoPassado ? '' : '<span class=resumoRotulo>Futuro</span>';
     const classeSaldoHoje = corValor(debitoHoje.saldo);
     const classeSaldoFuturo = corSoma(totalDebito);
     // Todo título reserva o mesmo espaço para alerta. Quando há risco, o ícone fica à direita
@@ -130,7 +133,7 @@ function vCiclo() {
         `<span>Saldo <b class="${classeSaldoHoje}">${brl(debitoHoje.saldo)}</b></span>` +
         `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span></span>`;
     const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
+        `<span class=resumoLinha>${rotuloFuturo}<span class=resumoDados>` +
         `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +
         `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span></span>`;
 
@@ -184,7 +187,9 @@ function vCiclo() {
     // enquanto Futuro já considera quitada a fatura anterior à prévia.
     // O aviso compara cada gasto líquido com o teto utilizável, não com o limite livre.
     // Uma única marca no título indica excesso em Hoje ou Futuro sem deslocar a tabela.
-    const creditoAcimaLimite = Math.abs(totalCreditoHoje) > limiteTotal || limiteLivreFuturo < -TOLERANCIA_FINANCEIRA;
+    // O limite é um alerta operacional, então ciclos encerrados não exibem aviso retrospectivo.
+    const creditoAcimaLimite = !cicloDebitoPassado &&
+        (Math.abs(totalCreditoHoje) > limiteTotal || limiteLivreFuturo < -TOLERANCIA_FINANCEIRA);
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
     const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} (` +
@@ -197,7 +202,7 @@ function vCiclo() {
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
         resumoLimiteCartao(limiteLivreHoje) + `</span></span>`;
     const resumoCredito = `<span class=resumoTitulo>` + linhaHojeCredito +
-        `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
+        `<span class=resumoLinha>${rotuloFuturo}<span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
         resumoLimiteCartao(limiteLivreFuturo) + `</span></span></span>`;
 

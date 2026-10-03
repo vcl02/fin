@@ -54,7 +54,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
-    assert.match(visoes, /const creditoAcimaLimite = Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
+    assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\);/);
     assert.match(visoes, /const alertaTituloCredito = alertaTitulo\('alertaLimite', creditoAcimaLimite,/);
     assert.match(visoes, /Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
@@ -81,11 +81,14 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const debitoHoje = resumoDebitoPagoAte\(Estado\.lancamentos\)/);
     assert.match(visoes, /const pagosAteHoje = lancamentosPagosAte\(Estado\.lancamentos\)/);
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
+    assert.match(visoes, /const cicloDebitoPassado = dataISO\(periodo\.fat\) < hojeISO\(\)/);
+    assert.match(visoes, /const rotuloFuturo = cicloDebitoPassado \? '' : '<span class=resumoRotulo>Futuro<\/span>'/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \? ''/);
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
     assert.match(visoes, /'Saldo negativo após usar o guardado'/);
     assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| classeSaldoFuturo == 'vm'/);
+    assert.match(visoes, /!cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /const alertaTituloDebito = alertaTitulo\('alertaSaldo', debitoTemSaldoVermelho,/);
     assert.match(visoes, /`Débito\$\{alertaTituloDebito\}`/);
     assert.doesNotMatch(visoes, /Pago \+ aberto/);
