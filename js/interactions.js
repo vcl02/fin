@@ -265,6 +265,10 @@ function recolherBloco(idTabela) {
     Estado.linhasVisiveis[idTabela] = [];
 }
 
+function abrirBlocosFinanceiros() {
+    ['db', 'cr'].forEach(idTabela => { Estado.fechados[idTabela] = false; });
+}
+
 window.alternarBloco = idTabela => {
     if (Estado.fechados[idTabela]) Estado.fechados[idTabela] = false;
     else recolherBloco(idTabela);
@@ -508,6 +512,7 @@ function atualizaBtCicloHoje() {
 }
 el('cicloHoje').onclick = () => {
     if (Estado.idxHoje < 0) return;
+    abrirBlocosFinanceiros();
     el('compDe').value = Estado.idxHoje;
     el('compAte').value = Estado.idxHoje;
     desenhar();
@@ -546,6 +551,8 @@ function navegaCiclo(direcao) {
     // disponíveis no toque, mas não ocupam a tela antes de o usuário pedi-los.
     const voltouDoAtualParaHistorico = direcao < 0 && +deAtual === Estado.idxHoje && +novoValor < Estado.idxHoje;
     if (voltouDoAtualParaHistorico) ['db', 'cr'].forEach(recolherBloco);
+    // Ao chegar no ciclo atual ou avançar além dele, os resumos financeiros voltam a abrir.
+    if (direcao > 0 && +novoValor >= Estado.idxHoje) abrirBlocosFinanceiros();
     el('compDe').value = novoValor;
     el('compAte').value = novoValor == '-1' ? el('compAte').value : novoValor;
     desenhar();
