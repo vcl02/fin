@@ -267,7 +267,12 @@
   .limiteCartaoBase {
       display: inline-flex;
       align-items: baseline;
-      gap: .15rem;
+      /* R$ / campo / Aprovado precisam ficar compactos nas linhas Hoje e Futuro. */
+      gap: .1rem;
+  }
+
+  .limiteCartaoRotulo {
+      white-space: nowrap;
   }
 
   /* Campo propositalmente parecido com texto: só revela que é editável ao interagir. */

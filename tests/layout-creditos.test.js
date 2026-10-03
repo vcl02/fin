@@ -62,11 +62,13 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
     assert.match(visoes, /de \$\{brl\(limiteTotal\)\} \(/);
     assert.match(visoes, /value="\$\{limiteContratadoEditavel\}"/);
-    assert.match(visoes, /> Aprovado<\/span>/);
+    assert.match(visoes, /<span class=limiteCartaoRotulo>Aprovado<\/span>/);
     assert.match(visoes, /\+ \$\{brl\(garantia\)\} Garantido/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
     assert.match(estilos, /\.limiteCartaoEditavel::placeholder/);
+    assert.match(estilos, /\.limiteCartaoRotulo/);
+    assert.match(estilos, /gap: \.1rem/);
     assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
     assert.match(interacoes, /input\.select\(\)/);
     assert.match(interacoes, /const aprovado = numeroDoLimiteDigitado\(input\.value\);/);
@@ -108,6 +110,8 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /class=resumoDados/);
     assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
     assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);
+    assert.match(interacoes, /const voltouDoAtualParaHistorico = direcao < 0 && \+deAtual === Estado\.idxHoje && \+novoValor < Estado\.idxHoje/);
+    assert.match(interacoes, /\['db', 'cr'\]\.forEach\(recolherBloco\)/);
 });
 
 test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura vence depois', () => {

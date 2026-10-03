@@ -257,13 +257,17 @@ function selecionarIntervalo(idTabela, chave) {
     desenhar();
 }
 
+function recolherBloco(idTabela) {
+    Estado.fechados[idTabela] = true;
+    // Uma seleção não pode sobreviver escondida: o total flutuante deve refletir a tela.
+    (Estado.linhasVisiveis[idTabela] || []).map(chaveSelecao).filter(Boolean)
+        .forEach(c => Estado.selecionados.delete(c));
+    Estado.linhasVisiveis[idTabela] = [];
+}
+
 window.alternarBloco = idTabela => {
-    Estado.fechados[idTabela] = !Estado.fechados[idTabela];
-    if (Estado.fechados[idTabela]) {
-        (Estado.linhasVisiveis[idTabela] || []).map(chaveSelecao).filter(Boolean)
-            .forEach(c => Estado.selecionados.delete(c));
-        Estado.linhasVisiveis[idTabela] = [];
-    }
+    if (Estado.fechados[idTabela]) Estado.fechados[idTabela] = false;
+    else recolherBloco(idTabela);
     desenhar();
 };
 
@@ -538,6 +542,10 @@ function navegaCiclo(direcao) {
     const novaPos = posDeAtual < 0 ? (direcao > 0 ? 0 : -1) : posDeAtual + direcao;
     if (novaPos < 0 || novaPos >= opcoes.length) return;
     const novoValor = opcoes[novaPos];
+    // Voltar do ciclo atual para o histórico começa recolhido: os detalhes continuam
+    // disponíveis no toque, mas não ocupam a tela antes de o usuário pedi-los.
+    const voltouDoAtualParaHistorico = direcao < 0 && +deAtual === Estado.idxHoje && +novoValor < Estado.idxHoje;
+    if (voltouDoAtualParaHistorico) ['db', 'cr'].forEach(recolherBloco);
     el('compDe').value = novoValor;
     el('compAte').value = novoValor == '-1' ? el('compAte').value : novoValor;
     desenhar();

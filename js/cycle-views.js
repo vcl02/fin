@@ -198,7 +198,7 @@ function vCiclo() {
         'Acima do limite', 'Gasto acima do limite');
     const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} (` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
-        `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"> Aprovado</span>` +
+        `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"><span class=limiteCartaoRotulo>Aprovado</span></span>` +
         `${garantia ? `<span class=limiteGarantido> + ${brl(garantia)} Garantido</span>` : ''})</span>`;
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
