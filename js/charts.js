@@ -119,6 +119,10 @@ let excluidasDoGrafico = [];
 let metaReservaEmergenciaChart = null;
 const MESES_META_RESERVA_EMERGENCIA = 9;
 const PERCENTUAL_MINIMO_PIZZA = 2;
+const LIMITES_COMPROMISSOS = [
+    { chave: 'parcelado', rotulo: 'Parcelado', categoria: 'Parcelado', percentual: 10 },
+    { chave: 'fixo', rotulo: 'Fixo', categoria: 'Fixo', percentual: 40 },
+];
 
 // Categorias compartilhadas pedem decisão do usuário; ficam no início do seletor para não
 // se perderem entre as classificações simples. Dentro de cada grupo, a ordem é estável.
@@ -177,6 +181,38 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
         .filter(r => r.periodoIdx != null && r.periodoIdx >= idxPeriodo && r.periodoIdx < idxPeriodo + MESES_META_RESERVA_EMERGENCIA)
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
     return { periodo, ...dadosMetaReservaEmergencia(gastos, idxPeriodo, guardadoAte(idxPeriodo)) };
+}
+
+// Compromissos são uma leitura do orçamento, não uma mudança de dado: cada categoria
+// especial pode coexistir na mesma linha e entra no próprio limite sobre o Faturamento PJ.
+const categoriaContemCompromisso = (categ, texto) => semAcento(categ).toLowerCase()
+    .includes(semAcento(texto).toLowerCase());
+
+function dadosCompromissosDoCiclo(linhas) {
+    const faturamento = linhas
+        .filter(r => r.v > 0 && String(r.nome || '').trim() === NOME_ANCORA_CICLO)
+        .reduce((soma, r) => soma + r.v, 0);
+    const resumo = limite => {
+        const gastos = linhas.filter(r => r.v < 0 && !r._transferencia &&
+            categoriaContemCompromisso(r.categ, limite.categoria));
+        const valor = gastos.reduce((soma, r) => soma + -r.v, 0);
+        const teto = faturamento * limite.percentual / 100;
+        return {
+            ...limite, valor, teto, linhas: gastos,
+            percentualFaturamento: faturamento ? valor / faturamento * 100 : 0,
+            percentualDoTeto: teto ? valor / teto * 100 : 0,
+            excedido: valor > teto + TOLERANCIA_FINANCEIRA,
+        };
+    };
+    return { faturamento, limites: LIMITES_COMPROMISSOS.map(resumo) };
+}
+
+function dadosCompromissosCiclo(idxPeriodo) {
+    const periodo = Estado.ciclos[idxPeriodo];
+    const linhas = Estado.lancamentos
+        .filter(r => r.periodoIdx == idxPeriodo)
+        .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
+    return { periodo, ...dadosCompromissosDoCiclo(linhas) };
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
@@ -310,6 +346,27 @@ window.abrirMetaReservaEmergencia = idxPeriodo => {
         `${nomePeriodo(d.periodo)} · despesas previstas para ${MESES_META_RESERVA_EMERGENCIA} ciclos`;
     desenhaMetaReservaEmergencia(idxPeriodo);
     el('modalMetaReservaEmergencia').showModal();
+};
+
+window.abrirCompromissos = idxPeriodo => {
+    if (!Estado.ciclos[idxPeriodo]) return;
+    const d = dadosCompromissosCiclo(idxPeriodo);
+    const temFaturamento = d.faturamento > TOLERANCIA_FINANCEIRA;
+    el('compromissosSubtitulo').textContent = temFaturamento
+        ? `${nomePeriodo(d.periodo)} · Faturamento PJ: ${brl(d.faturamento)}`
+        : nomePeriodo(d.periodo);
+    el('compromissosVazio').hidden = temFaturamento;
+    el('compromissosResumo').innerHTML = !temFaturamento ? '' :
+        `<div class=compromissosLista>${d.limites.map(limite => {
+            const consumo = Math.min(100, limite.percentualDoTeto);
+            return `<section class="compromissoItem ${limite.excedido ? 'excedido' : ''}">
+              <div class=compromissoTopo><b>${limite.rotulo}</b><strong class="${limite.excedido ? 'vm' : 'vd'}">${brl(limite.valor)}</strong></div>
+              <div class=compromissoMeta><span>${pct1(limite.percentualFaturamento)} do faturamento</span><span>de ${pct1(limite.percentual)} · ${brl(limite.teto)}</span></div>
+              <div class=compromissoBarra><span style="width:${consumo.toFixed(2)}%"></span></div>
+              <div class=compromissoMeta><span>${pct1(limite.percentualDoTeto)} do limite</span><span>${limite.excedido ? `Excedeu ${brl(limite.valor - limite.teto)}` : `Restam ${brl(limite.teto - limite.valor)}`}</span></div>
+            </section>`;
+        }).join('')}</div>`;
+    el('modalCompromissos').showModal();
 };
 
 function montaExcluirCatDrop(categorias, categoriasCompartilhadas) {
@@ -465,6 +522,10 @@ el('modalGrafico').addEventListener('click', e => {
 el('fechaMetaReservaEmergencia').onclick = () => el('modalMetaReservaEmergencia').close();
 el('modalMetaReservaEmergencia').addEventListener('click', e => {
     if (e.target == el('modalMetaReservaEmergencia')) el('modalMetaReservaEmergencia').close();
+});
+el('fechaCompromissos').onclick = () => el('modalCompromissos').close();
+el('modalCompromissos').addEventListener('click', e => {
+    if (e.target == el('modalCompromissos')) el('modalCompromissos').close();
 });
 
 // ===================================================================

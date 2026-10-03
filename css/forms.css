@@ -9,6 +9,7 @@
   dialog#modalVisualizacoes,
   dialog#modalVisualizacao,
   dialog#modalGrafico,
+  dialog#modalCompromissos,
   dialog#modalComparativo,
   dialog#modalDetalheCel {
       color: var(--fg);
@@ -144,6 +145,7 @@
   dialog#modalNovo::backdrop,
   dialog#modalCalc::backdrop,
   dialog#modalGrafico::backdrop,
+  dialog#modalCompromissos::backdrop,
   dialog#modalComparativo::backdrop,
   dialog#modalDetalheCel::backdrop {
       background: rgba(0, 0, 0, .68);
@@ -203,6 +205,7 @@
   #fechaVisualizacao,
   #voltaVisualizacoes,
   #fechaGrafico,
+  #fechaCompromissos,
   #fechaComparativo {
       font-size: 1.5rem;
       line-height: 1;
@@ -220,6 +223,7 @@
   #fechaVisualizacao:hover,
   #voltaVisualizacoes:hover,
   #fechaGrafico:hover,
+  #fechaCompromissos:hover,
   #fechaComparativo:hover {
       color: var(--fg);
   }

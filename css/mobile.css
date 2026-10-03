@@ -84,6 +84,7 @@
       }
 
       dialog#modalGrafico,
+      dialog#modalCompromissos,
       dialog#modalMetaReservaEmergencia,
       dialog#modalComparativo {
           width: 100vw;

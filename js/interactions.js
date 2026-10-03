@@ -85,6 +85,8 @@ function desenhar() {
     // usa sempre o último ciclo escolhido (Até). Backlog não tem ciclo final válido.
     el('btMetaReservaEmergencia').dataset.idx = el('compAte').value;
     el('btMetaReservaEmergencia').disabled = simples || noBacklog || !el('compAte').value;
+    el('btCompromissos').dataset.idx = el('compAte').value;
+    el('btCompromissos').disabled = simples || noBacklog || !el('compAte').value;
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
     // (ex: digitar num filtro de texto), senao a tela piscaria a cada tecla
@@ -504,6 +506,7 @@ el('btGrafico').onclick = () => {
     else abrirGraficoEvolucao(+de, +ate);
 };
 el('btMetaReservaEmergencia').onclick = () => abrirMetaReservaEmergencia(+el('btMetaReservaEmergencia').dataset.idx);
+el('btCompromissos').onclick = () => abrirCompromissos(+el('btCompromissos').dataset.idx);
 
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
 // desabilitado quando hoje nao cai em periodo nenhum.

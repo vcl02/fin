@@ -112,6 +112,7 @@
         </select>
         <button type=button id=btGrafico class=btFiltro>Gráfico</button>
         <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de 9 meses">Reserva emergência</button>
+        <button type=button id=btCompromissos class=btFiltro title="Limites de parcelados e fixos">Parcelado/Fixo</button>
         <div id=flimpar>
           <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
         </div>
@@ -261,6 +262,17 @@
         <div id=metaReservaEmergenciaResumo></div>
       </div>
       <p class=empty id=metaReservaEmergenciaVazio hidden>Sem gastos marcados nos próximos 9 ciclos.</p>
+    </dialog>
+
+    <!-- Resumo calculado no navegador dos compromissos especiais do ciclo selecionado. -->
+    <dialog id=modalCompromissos>
+      <div class=modalHead>
+        <h2>Parcelado e fixo</h2>
+        <button type=button id=fechaCompromissos aria-label="Fechar">×</button>
+      </div>
+      <p class=meta id=compromissosSubtitulo></p>
+      <div id=compromissosResumo></div>
+      <p class=empty id=compromissosVazio hidden>Sem faturamento PJ neste ciclo.</p>
     </dialog>
 
     <dialog id=modalComparativo>
