@@ -182,9 +182,9 @@ function vCiclo() {
         Estado.lancamentos, abatidoDoCartao, guardadoGarantido, idxCreditoExibido, totalCreditoExibido
     );
     const garantia = Math.max(0, guardadoGarantido);
-    // O valor visível da garantia é conservador e legível: só exibe centenas já completas.
-    // O teto e o Livre continuam usando `garantia` exata, sem perder centavos no cálculo.
-    const garantiaExibida = Math.floor(garantia / 100) * 100;
+    // Fora do ciclo atual, o valor visível é conservador e só exibe centenas completas.
+    // O ciclo atual, o teto e o Livre mantêm a garantia exata, sem perder centavos no cálculo.
+    const garantiaExibida = i === Estado.idxHoje ? garantia : Math.floor(garantia / 100) * 100;
     // O teto total é somente leitura no "de"; o campo discreto dentro dos parênteses edita
     // a parte aprovada/contratada sem misturá-la com a garantia variável do ciclo.
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
