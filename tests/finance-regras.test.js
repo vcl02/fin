@@ -56,6 +56,29 @@ test('saldo diário inclui pagamento antecipado na data e deixa a fatura futura 
     ], { 0: 114 }, () => 0), -500);
 });
 
+test('saldo diário alternativo recalcula eventos e ajustes só com a categoria não excluída', () => {
+    const contexto = {
+        Estado: {
+            ciclos: [{ fat: '2026-01-01' }],
+            lancamentos: [],
+        },
+        SALDO_DESDE: '2026-01-01', SALDO_INICIAL: 0,
+        CATEGORIA_INVESTIMENTO: 'Investimento', TOLERANCIA_FINANCEIRA: 0.005,
+        dataISO: valor => String(valor).slice(0, 10),
+        alocacaoAntecipacoes: () => ({}),
+        vencimentoDoCiclo: () => '2026-01-31',
+        filtrarLancamentos: () => contexto.Estado.lancamentos,
+    };
+    vm.createContext(contexto);
+    vm.runInContext(`${fonte}\nglobalThis.regras = { saldoPorDia };`, contexto);
+    const base = [
+        { data: '2026-01-05', periodoIdx: 0, cred: false, categ: 'Casa', v: -100 },
+        { data: '2026-01-05', periodoIdx: 0, cred: false, categ: 'Investimento', v: -70 },
+    ];
+    assert.equal(contexto.regras.saldoPorDia(base)['2026-01-05'], -170);
+    assert.equal(contexto.regras.saldoPorDia(base.filter(r => r.categ != 'Investimento'))['2026-01-05'], -100);
+});
+
 test('saldo base não usa ciclos anteriores ao marco de saldo', () => {
     const r = regrasFinanceiras([{ fat: '2025-12-31' }]);
     assert.equal(r.totalBaseDoCiclo(0, [{ periodoIdx: 0, cred: false, v: 999 }], {}, () => 0), 0);

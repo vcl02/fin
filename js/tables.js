@@ -72,6 +72,24 @@ window.filtrarColuna = (idTabela, coluna, input) => {
     const novoInput = document.querySelector(`[data-filtro="${idTabela}|${coluna}"]`);
     if (novoInput) { novoInput.focus(); if (posicaoCursor != null) novoInput.setSelectionRange(posicaoCursor, posicaoCursor); }
 };
+// Extrai somente a exclusão explícita de Categoria. A mesma leitura serve para o filtro
+// da linha e para o saldo diário, sem deixar filtros visuais de outras colunas alterarem caixa.
+function categoriaExcluidaDoFiltro(termo) {
+    const normalizado = semAcento(termo);
+    return normalizado.startsWith('!') ? normalizado.slice(1).trim() : '';
+}
+
+// O saldo cinza ao fim do dia acompanha exclusivamente `!Categoria`: é a única busca que
+// remove movimentos da conta. A cópia protege o array carregado de qualquer mutação no render.
+function baseParaSaldoDiario(idTabela) {
+    const categoriaExcluida = idTabela == 'db'
+        ? categoriaExcluidaDoFiltro(estadoFiltroTexto(idTabela).categ)
+        : '';
+    return categoriaExcluida
+        ? Estado.lancamentos.filter(r => !semAcento(r.categ).includes(categoriaExcluida))
+        : null;
+}
+
 // remove acentos e caixa: "Café" e "cafe" viram a mesma coisa pra comparar
 // uma linha passa no filtro de texto da tabela se contem (ignorando acento e maiuscula) todos os termos digitados
 function passaFiltroTexto(r, idTabela) {
@@ -94,7 +112,7 @@ function passaFiltroTexto(r, idTabela) {
         // propositalmente exclusivo deste campo para não mudar a busca literal de Nome
         // ou Frequência. ! isolado equivale a filtro vazio e evita ocultar toda a tabela.
         if (coluna == 'categ' && termoNormalizado.startsWith('!')) {
-            const termoExcluido = termoNormalizado.slice(1).trim();
+            const termoExcluido = categoriaExcluidaDoFiltro(termo);
             return !termoExcluido || !texto.includes(termoExcluido);
         }
         return texto.includes(termoNormalizado);
@@ -191,7 +209,7 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     const ord = estadoOrdenacao(idTabela);
     ordenadas.forEach(r => { r._saldo = null; });
     if (idTabela == 'db' && ord.k == 'data' && ord.d == 1) {
-        const saldo = saldoPorDia();
+        const saldo = saldoPorDia(baseParaSaldoDiario(idTabela));
         ordenadas.forEach((r, i) => {
             const d = dataISO(r.data);
             if (!d || d < SALDO_DESDE) return;

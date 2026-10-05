@@ -18,7 +18,7 @@ function filtros() {
 }
 
 function filtroDeTexto() {
-    const inicio = fonte.indexOf('function passaFiltroTexto');
+    const inicio = fonte.indexOf('function categoriaExcluidaDoFiltro');
     const fim = fonte.indexOf('\n// clique no header', inicio);
     if (inicio < 0 || fim < 0) throw Error('Não encontrou o filtro textual da tabela.');
     const contexto = {
@@ -29,7 +29,7 @@ function filtroDeTexto() {
         TOLERANCIA_BUSCA_VALOR: 0.05,
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { passaFiltroTexto };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { passaFiltroTexto, categoriaExcluidaDoFiltro, baseParaSaldoDiario };`, contexto);
     return contexto;
 }
 
@@ -69,4 +69,16 @@ test('! isolado em Categoria não filtra e os outros campos mantêm busca litera
     );
     c.Estado.filtroTexto.debito = { nome: '!casa' };
     assert.deepEqual(linhas.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')), []);
+});
+
+test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer outros filtros', () => {
+    const c = filtroDeTexto();
+    c.Estado.lancamentos = linhas;
+    c.Estado.filtroTexto.db = { categ: '!isabella', nome: 'casa' };
+    assert.deepEqual(
+        Array.from(c.regras.baseParaSaldoDiario('db')).map(linha => linha.id),
+        [1, 4],
+    );
+    c.Estado.filtroTexto.db = { categ: 'Casa' };
+    assert.equal(c.regras.baseParaSaldoDiario('db'), null);
 });

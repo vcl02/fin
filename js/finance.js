@@ -130,9 +130,46 @@ function ajusteDoCicloContaUnica(idx) {
 // o Resgate necessario / Aporte sugerido de cada ciclo (na data de fechamento dele) — pra
 // que cada pagamento de cartão entre uma vez, na sua data real, e o saldo final bata com
 // saldoCicloContaUnica(idx).
-// Ignora o filtro de Titular — a conta e' uma so.
-function saldoPorDia() {
-    const { base, abat } = baseEAbatContaUnica();
+// A exclusão por categoria é um recorte exclusivamente visual da tabela de Débito. Como
+// fatura e aporte/resgate sintéticos dependem da mesma base, este contexto local os refaz
+// junto com os eventos reais; reutilizar o cache da conta inteira misturaria o recorte com
+// os valores não filtrados. Os demais totais da tela continuam usando a conta inteira.
+function ajusteDoCicloParaSaldoDiario(base, abat) {
+    const saldos = {};
+    const ajustes = {};
+
+    const guardadoAte = idx => {
+        const reais = base
+            .filter(r => r.inv && r.periodoIdx != null && r.periodoIdx <= idx)
+            .reduce((s, r) => s - r.v, 0);
+        let hipotetico = 0;
+        for (let i = 0; i <= idx; i++) {
+            const ajuste = ajusteDoCiclo(i);
+            if (ajuste) hipotetico -= ajuste.v;
+        }
+        return reais + hipotetico;
+    };
+
+    const saldoDoCiclo = idx => {
+        if (idx < 0 || !Estado.ciclos[idx] || dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
+        if (saldos[idx] != null) return saldos[idx];
+        saldos[idx] = 0; // impede a cascata de reentrar no próprio ciclo enquanto calcula.
+
+        const totalBase = totalBaseDoCiclo(idx, base, abat, saldoDoCiclo);
+        const ajuste = ajusteInvestimento(totalBase,
+            guardadoDisponivelNoCiclo(idx, base, guardadoAte(idx - 1)));
+        ajustes[idx] = ajuste;
+        saldos[idx] = totalBase + (ajuste ? ajuste.v : 0);
+        return saldos[idx];
+    };
+
+    return idx => {
+        saldoDoCiclo(idx);
+        return ajustes[idx] || null;
+    };
+}
+
+function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
 
     // faturas em aberto de todos os ciclos, ja liquidas de antecipacao
     const faturas = [];
@@ -150,7 +187,7 @@ function saldoPorDia() {
     // recalcula alocacaoAntecipacoes por periodo)
     const ajustes = [];
     Estado.ciclos.forEach((per, idx) => {
-        const ajuste = ajusteDoCicloContaUnica(idx);
+        const ajuste = ajusteDoCiclo(idx);
         if (ajuste) ajustes.push({ data: dataISO(per.fat), v: ajuste.v });
     });
 
@@ -168,6 +205,18 @@ function saldoPorDia() {
     let acc = SALDO_INICIAL;
     eventos.forEach(e => { acc += e.v; saldo[e.data] = acc; });
     return saldo;
+}
+
+// Ignora o filtro de Titular — a conta e' uma so. `baseVisual` só é enviada pela tabela
+// quando Categoria usa `!texto`; assim filtros de Nome, Valor e Frequência nunca mudam
+// o saldo diário, e os títulos/indicadores financeiros também permanecem intactos.
+function saldoPorDia(baseVisual = null) {
+    if (baseVisual) {
+        const abat = abatimentosDaBase(baseVisual);
+        return saldoPorDiaDaBase(baseVisual, abat, ajusteDoCicloParaSaldoDiario(baseVisual, abat));
+    }
+    const { base, abat } = baseEAbatContaUnica();
+    return saldoPorDiaDaBase(base, abat, ajusteDoCicloContaUnica);
 }
 
 
