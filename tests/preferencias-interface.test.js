@@ -125,6 +125,10 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.match(estilosPainel, /\.variacaoIndicador\.vm\s*\{\s*color:\s*var\(--vm\)/);
     assert.match(graficos, /variacaoValorIndicador\(reserva\.guardado, reservaAnterior\.guardado, true\)/);
     assert.match(graficos, /variacaoValorIndicador\(comprometido\.valor, comprometidosAnterior\.limites\[0\]\.valor, false\)/);
+    assert.match(graficos, /atualizarLinhaVariacao\(\s*'variacaoReserva'/);
+    assert.match(graficos, /atualizarLinhaVariacao\(\s*'variacaoComprometido'/);
+    assert.doesNotMatch(graficos, /da meta\$\{htmlVariacaoIndicador/);
+    assert.doesNotMatch(graficos, /do mês\$\{htmlVariacaoIndicador/);
     const blocoIndicadores = estilosPainel.slice(
         estilosPainel.indexOf('#indicadoresFinanceiros'), estilosPainel.indexOf('/* Reserva e Comprometido')
     );
