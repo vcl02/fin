@@ -106,6 +106,7 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=flimpar'));
     assert.ok(acoes.indexOf('id=flimpar') < acoes.indexOf('id=indicadoresFinanceiros'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
+    assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('class=indicadorPipe'));
     assert.ok(acoes.indexOf('class=indicadorPipe') < acoes.indexOf('id=indicadorComprometido'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
@@ -121,6 +122,7 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.match(estilosPainel, /\.indicadorPercentual\s*\{[\s\S]*width:\s*6ch[\s\S]*font-variant-numeric:\s*tabular-nums/);
     assert.match(graficos, /Reserva: <span class=indicadorPercentual>/);
     assert.match(graficos, /Comprometido: <span class=indicadorPercentual>/);
+    assert.match(graficos, /Gastos: Reserva <span class=indicadorPercentual>/);
     assert.match(estilosPainel, /\.variacaoIndicador\.vd\s*\{\s*color:\s*var\(--vd\)/);
     assert.match(estilosPainel, /\.variacaoIndicador\.vm\s*\{\s*color:\s*var\(--vm\)/);
     assert.match(graficos, /variacaoValorIndicador\(reserva\.guardado, reservaAnterior\.guardado, true\)/);
@@ -135,6 +137,7 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.match(blocoIndicadores, /grid-template-rows:\s*auto auto/);
     assert.match(estilosPainel, /#variacaoReserva\s*\{\s*grid-column:\s*1;\s*grid-row:\s*2/);
     assert.match(estilosPainel, /#variacaoComprometido\s*\{\s*grid-column:\s*3;\s*grid-row:\s*2/);
+    assert.match(estilosPainel, /#indicadorProporcaoReserva\s*\{\s*grid-column:\s*5;\s*grid-row:\s*1/);
     assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
     assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
     assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);

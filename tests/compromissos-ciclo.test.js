@@ -16,6 +16,7 @@ const contexto = {
 vm.createContext(contexto);
 vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
     calcular: dadosCompromissosDoCiclo,
+    proporcaoReserva: dadosProporcaoReservaDoCiclo,
     classeReserva: classeIndicadorReserva,
     classeComprometido: classeIndicadorComprometido,
     variacao: variacaoPercentualIndicador,
@@ -44,6 +45,19 @@ test('sem faturamento o limite permanece zerado', () => {
     assert.equal(d.limites[0].valor, 200);
     assert.equal(d.limites[0].teto, 0);
     assert.equal(d.limites[0].excedido, true);
+});
+
+test('proporção de Reserva separa o gasto inteiro dos demais sem duplicar categoria composta', () => {
+    const d = contexto.regras.proporcaoReserva([
+        { nome: 'Casa', categ: 'Casa, Reserva', v: -300, cred: false },
+        { nome: 'Mercado', categ: 'Alimentação', v: -500, cred: false },
+        { nome: 'Compra', categ: 'Reserva', v: -200, cred: true },
+        { nome: 'Antecipação', categ: 'Reserva', v: -100, _transferencia: true },
+    ]);
+    assert.deepEqual({ ...d }, {
+        total: 1000, reserva: 500, demais: 500,
+        percentualReserva: 50, percentualDemais: 50,
+    });
 });
 
 test('indicadores usam faixas verde, âmbar e vermelha conforme suas regras', () => {

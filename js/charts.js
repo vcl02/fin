@@ -213,6 +213,23 @@ function dadosCompromissosCiclo(idxPeriodo) {
     return { periodo, ...dadosCompromissosDoCiclo(linhas) };
 }
 
+// A proporção não mede a meta de reserva: ela só revela quanto das despesas reais do
+// próprio ciclo foi classificado como Reserva. Cada lançamento entra uma única vez, mesmo
+// com categorias compostas; antecipação é transferência, portanto não é gasto nesta leitura.
+function dadosProporcaoReservaDoCiclo(linhas) {
+    const gastos = linhas.filter(r => r.v < 0 && !r._transferencia);
+    const total = gastos.reduce((soma, r) => soma + -r.v, 0);
+    const reserva = gastos
+        .filter(r => categoriaContemCompromisso(r.categ, 'Reserva'))
+        .reduce((soma, r) => soma + -r.v, 0);
+    const demais = total - reserva;
+    return {
+        total, reserva, demais,
+        percentualReserva: total ? reserva / total * 100 : 0,
+        percentualDemais: total ? demais / total * 100 : 0,
+    };
+}
+
 // Os textos da barra não são botões: resumem a distância até a reserva de nove meses
 // e a parcela do faturamento já comprometida no ciclo escolhido. As faixas são visuais:
 // reserva <50% vermelha, 50–99,9% âmbar, completa verde; comprometido até 40% verde,
@@ -278,6 +295,11 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     const comprometidos = dadosCompromissosCiclo(idxPeriodo);
     const comprometido = comprometidos.limites[0];
+    const proporcaoReserva = dadosProporcaoReservaDoCiclo(
+        Estado.lancamentos
+            .filter(r => r.periodoIdx == idxPeriodo)
+            .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }))
+    );
     const reservaAnterior = idxPeriodo > 0 ? dadosMetaReservaEmergenciaCiclo(idxPeriodo - 1) : null;
     const comprometidosAnterior = idxPeriodo > 0 ? dadosCompromissosCiclo(idxPeriodo - 1) : null;
     const variacaoReserva = reserva.meta > TOLERANCIA_FINANCEIRA
@@ -328,6 +350,15 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
         'variacaoComprometido', variacaoComprometido, variacaoValorComprometido,
         'Variação do valor comprometido sobre o ciclo anterior'
     );
+
+    const indicadorProporcaoReserva = el('indicadorProporcaoReserva');
+    indicadorProporcaoReserva.className = 'indicadorRegra neutro';
+    indicadorProporcaoReserva.innerHTML = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
+        ? `Gastos: Reserva <span class=indicadorPercentual>${pct1(proporcaoReserva.percentualReserva)}</span> · Demais <span class=indicadorPercentual>${pct1(proporcaoReserva.percentualDemais)}</span>`
+        : 'Gastos: Reserva <span class=indicadorPercentual>—</span> · Demais <span class=indicadorPercentual>—</span>';
+    indicadorProporcaoReserva.title = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
+        ? `Reserva ${brl(proporcaoReserva.reserva)} de ${brl(proporcaoReserva.total)} em gastos; demais ${brl(proporcaoReserva.demais)}`
+        : 'Sem gastos no ciclo';
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
