@@ -111,8 +111,9 @@
           <option value="">Visualizações</option>
         </select>
         <button type=button id=btGrafico class=btFiltro>Gráfico</button>
-        <button type=button id=btMetaReservaEmergencia class=btFiltro title="Meta de 9 meses">Reserva emergência</button>
-        <button type=button id=btCompromissos class=btFiltro title="Limite de gastos comprometidos">Comprometido</button>
+        <!-- Indicadores calculados do ciclo Até; o JS atualiza texto, cor e explicação. -->
+        <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
+        <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
         <div id=flimpar>
           <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
         </div>
@@ -246,33 +247,6 @@
           aria-label="Gastos por categoria"></canvas>
       </div>
       <p class=empty id=graficoVazio hidden>Sem gastos neste ciclo.</p>
-    </dialog>
-
-    <dialog id=modalMetaReservaEmergencia>
-      <div class=modalHead>
-        <h2>Reserva de emergência</h2>
-        <button type=button id=fechaMetaReservaEmergencia aria-label="Fechar">×</button>
-      </div>
-      <p class=meta id=metaReservaEmergenciaSubtitulo></p>
-      <div class=metaReservaLayout>
-        <div class=metaReservaGrafico>
-          <canvas id=canvasMetaReservaEmergencia role=img
-            aria-label="Progresso da reserva"></canvas>
-        </div>
-        <div id=metaReservaEmergenciaResumo></div>
-      </div>
-      <p class=empty id=metaReservaEmergenciaVazio hidden>Sem gastos marcados nos próximos 9 ciclos.</p>
-    </dialog>
-
-    <!-- Resumo calculado no navegador dos compromissos especiais do ciclo selecionado. -->
-    <dialog id=modalCompromissos>
-      <div class=modalHead>
-        <h2>Comprometido</h2>
-        <button type=button id=fechaCompromissos aria-label="Fechar">×</button>
-      </div>
-      <p class=meta id=compromissosSubtitulo></p>
-      <div id=compromissosResumo></div>
-      <p class=empty id=compromissosVazio hidden>Sem faturamento PJ neste ciclo.</p>
     </dialog>
 
     <dialog id=modalComparativo>

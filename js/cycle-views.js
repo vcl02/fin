@@ -217,8 +217,8 @@ function vCiclo() {
     // Fora do ciclo atual, o valor visível é conservador e só exibe centenas completas.
     // O ciclo atual, o teto e o Livre mantêm a garantia exata, sem perder centavos no cálculo.
     const garantiaExibida = i === Estado.idxHoje ? garantia : Math.floor(garantia / 100) * 100;
-    // O teto total é somente leitura no "de"; o campo discreto dentro dos parênteses edita
-    // a parte aprovada/contratada sem misturá-la com a garantia variável do ciclo.
+    // O teto total é somente leitura no "de"; o campo discreto ao lado edita a parte
+    // aprovada/contratada sem misturá-la com a garantia variável do ciclo.
     const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
@@ -231,10 +231,10 @@ function vCiclo() {
         (Math.abs(totalCreditoHoje) > limiteTotal || (exibeFuturoCredito && limiteLivreFuturo < -TOLERANCIA_FINANCEIRA));
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
-    const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} (` +
+    const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} ` +
         `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
         `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"><span class=limiteCartaoRotulo>Aprovado</span></span>` +
-        `${garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''})</span>`;
+        `${garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''}</span>`;
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :

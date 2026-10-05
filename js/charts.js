@@ -116,7 +116,6 @@ el('modalVisualizacao').addEventListener('click', e => {
 // mais de uma categoria continua valendo uma vez só; o seletor decide em qual recorte ela entra.
 let graficoChart = null;
 let excluidasDoGrafico = [];
-let metaReservaEmergenciaChart = null;
 const MESES_META_RESERVA_EMERGENCIA = 9;
 const PERCENTUAL_MINIMO_PIZZA = 2;
 const LIMITES_COMPROMISSOS = [
@@ -212,6 +211,47 @@ function dadosCompromissosCiclo(idxPeriodo) {
         .filter(r => r.periodoIdx == idxPeriodo)
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
     return { periodo, ...dadosCompromissosDoCiclo(linhas) };
+}
+
+// Os textos da barra não são botões: resumem a distância até a reserva de nove meses
+// e a parcela do faturamento já comprometida no ciclo escolhido. As faixas são visuais:
+// reserva <50% vermelha, 50–99,9% âmbar, completa verde; comprometido até 40% verde,
+// 40–50% âmbar e acima do teto de 50% vermelho.
+function classeIndicadorReserva(dados) {
+    if (dados.meta <= TOLERANCIA_FINANCEIRA) return 'neutro';
+    if (dados.percentual >= 100) return 'vd';
+    return dados.percentual >= 50 ? 'am' : 'vm';
+}
+
+function classeIndicadorComprometido(dados) {
+    const limite = dados.limites[0];
+    if (dados.faturamento <= TOLERANCIA_FINANCEIRA) return 'neutro';
+    if (limite.percentualFaturamento <= 40) return 'vd';
+    return limite.percentualFaturamento <= limite.percentual ? 'am' : 'vm';
+}
+
+function atualizarIndicadoresFinanceiros(idxPeriodo) {
+    const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
+    const comprometidos = dadosCompromissosCiclo(idxPeriodo);
+    const comprometido = comprometidos.limites[0];
+
+    const indicadorReserva = el('indicadorReserva');
+    indicadorReserva.className = `indicadorRegra ${classeIndicadorReserva(reserva)}`;
+    indicadorReserva.textContent = reserva.meta > TOLERANCIA_FINANCEIRA
+        ? `Reserva ${pct1(reserva.percentual)} da meta`
+        : 'Reserva sem meta';
+    indicadorReserva.title = reserva.meta > TOLERANCIA_FINANCEIRA
+        ? `${brl(reserva.guardado)} de ${brl(reserva.meta)} para 9 meses`
+        : 'Sem gastos marcados para a reserva nos próximos 9 ciclos';
+
+    const indicadorComprometido = el('indicadorComprometido');
+    indicadorComprometido.className = `indicadorRegra ${classeIndicadorComprometido(comprometidos)}`;
+    indicadorComprometido.textContent = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
+        ? `Comprometido ${pct1(comprometido.percentualFaturamento)} do mês`
+        : 'Comprometido sem faturamento';
+    indicadorComprometido.title = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
+        ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}`
+        : 'Sem Faturamento PJ no ciclo';
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
@@ -338,54 +378,6 @@ window.abrirGraficoGastos = idxPeriodo => {
     el('modalGrafico').showModal();
 };
 
-window.abrirMetaReservaEmergencia = idxPeriodo => {
-    if (!Estado.ciclos[idxPeriodo]) return;
-    const d = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
-    el('metaReservaEmergenciaSubtitulo').textContent =
-        `${nomePeriodo(d.periodo)} · despesas previstas para ${MESES_META_RESERVA_EMERGENCIA} ciclos`;
-    desenhaMetaReservaEmergencia(idxPeriodo);
-    el('modalMetaReservaEmergencia').showModal();
-};
-
-window.abrirCompromissos = idxPeriodo => {
-    if (!Estado.ciclos[idxPeriodo]) return;
-    const d = dadosCompromissosCiclo(idxPeriodo);
-    el('modalCompromissos').dataset.periodoIdx = idxPeriodo;
-    const temFaturamento = d.faturamento > TOLERANCIA_FINANCEIRA;
-    el('compromissosSubtitulo').textContent = temFaturamento
-        ? `${nomePeriodo(d.periodo)} · Faturamento PJ: ${brl(d.faturamento)}`
-        : nomePeriodo(d.periodo);
-    el('compromissosVazio').hidden = temFaturamento;
-    el('compromissosResumo').innerHTML = !temFaturamento ? '' :
-        `<div class=compromissosLista>${d.limites.map(limite => {
-            const consumo = Math.min(100, limite.percentualDoTeto);
-            return `<button type=button class="compromissoItem ${limite.excedido ? 'excedido' : ''}" data-compromisso="${limite.chave}" title="Ver lançamentos">
-              <div class=compromissoTopo><b>${limite.rotulo}</b><strong class="${limite.excedido ? 'vm' : 'vd'}">${brl(limite.valor)}</strong></div>
-              <div class=compromissoMeta><span>${pct1(limite.percentualFaturamento)} do faturamento</span><span>de ${pct1(limite.percentual)} · ${brl(limite.teto)}</span></div>
-              <div class=compromissoBarra><span style="width:${consumo.toFixed(2)}%"></span></div>
-              <div class=compromissoMeta><span>${pct1(limite.percentualDoTeto)} do limite</span><span>${limite.excedido ? `Excedeu ${brl(limite.valor - limite.teto)}` : `Restam ${brl(limite.teto - limite.valor)}`}</span></div>
-            </button>`;
-        }).join('')}</div>`;
-    el('modalCompromissos').showModal();
-};
-
-// O card do resumo abre as linhas já usadas no cálculo; não recalcula com filtros visuais.
-function abrirDetalheCompromisso(idxPeriodo, chave) {
-    const limite = dadosCompromissosCiclo(idxPeriodo).limites.find(item => item.chave == chave);
-    if (!limite) return;
-    Estado._detalheAtual = {
-        categoria: limite.rotulo, periodoIdx: idxPeriodo, linhas: limite.linhas, ord: { k: 'valor', d: 2 },
-    };
-    renderizaDetalheCel();
-    el('modalDetalheCel').showModal();
-}
-
-el('compromissosResumo').addEventListener('click', e => {
-    const card = e.target.closest('[data-compromisso]');
-    if (!card) return;
-    abrirDetalheCompromisso(+el('modalCompromissos').dataset.periodoIdx, card.dataset.compromisso);
-});
-
 function montaExcluirCatDrop(categorias, categoriasCompartilhadas) {
     const todasIncluidas = categorias.every(c => !excluidasDoGrafico.includes(c));
     el('excluirCatDrop').innerHTML =
@@ -493,56 +485,9 @@ function abrirDetalheFatiaGrafico(categoria, idxPeriodo, linhas) {
     el('modalDetalheCel').showModal();
 }
 
-function desenhaMetaReservaEmergencia(idxPeriodo) {
-    const d = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
-    const temMeta = d.meta > 0.005;
-    el('metaReservaEmergenciaVazio').hidden = temMeta;
-    el('canvasMetaReservaEmergencia').style.display = temMeta ? 'block' : 'none';
-    el('metaReservaEmergenciaResumo').innerHTML = !temMeta ? '' :
-        `<div class="metaReservaResumo">
-          <div class="metaReservaPct ${d.percentual >= 100 ? 'vd' : 'vm'}">${pct1(d.percentual)}</div>
-          <p class=meta>da meta já guardada</p>
-          <table><tbody>
-            <tr><td>Gasto neste ciclo<td class=n>${brl(d.gastoMensal)}
-            <tr><td>Meta dos próximos ${MESES_META_RESERVA_EMERGENCIA} ciclos<td class=n>${brl(d.meta)}
-            <tr><td>Guardado até este ciclo<td class="n vd">${brl(d.guardado)}
-            <tr class=tot><td>${d.excedente ? 'Acima da meta' : 'Falta guardar'}<td class="n ${d.excedente ? 'vd' : 'vm'}">${brl(d.excedente || d.restante)}
-          </tbody></table>
-          ${d.mesesComEstimativa ? `<p class=meta>${d.mesesComEstimativa} de ${MESES_META_RESERVA_EMERGENCIA} ciclos incluem valores estimados pelo último lançamento de cada gasto.</p>` : ''}
-        </div>`;
-    if (!temMeta) {
-        if (metaReservaEmergenciaChart) { metaReservaEmergenciaChart.destroy(); metaReservaEmergenciaChart = null; }
-        return;
-    }
-    if (metaReservaEmergenciaChart) metaReservaEmergenciaChart.destroy();
-    metaReservaEmergenciaChart = new Chart(el('canvasMetaReservaEmergencia'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Guardado', 'Falta guardar'],
-            datasets: [{ data: [d.guardadoNaMeta, d.restante], backgroundColor: ['#35B982', '#363C42'], borderColor: '#FFF', borderWidth: 2 }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '68%',
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
-                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${brl(ctx.parsed)}` } }
-            }
-        }
-    });
-}
-
 el('fechaGrafico').onclick = () => el('modalGrafico').close();
 el('modalGrafico').addEventListener('click', e => {
     if (e.target == el('modalGrafico')) el('modalGrafico').close();
-});
-
-el('fechaMetaReservaEmergencia').onclick = () => el('modalMetaReservaEmergencia').close();
-el('modalMetaReservaEmergencia').addEventListener('click', e => {
-    if (e.target == el('modalMetaReservaEmergencia')) el('modalMetaReservaEmergencia').close();
-});
-el('fechaCompromissos').onclick = () => el('modalCompromissos').close();
-el('modalCompromissos').addEventListener('click', e => {
-    if (e.target == el('modalCompromissos')) el('modalCompromissos').close();
 });
 
 // ===================================================================

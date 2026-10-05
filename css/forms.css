@@ -9,7 +9,6 @@
   dialog#modalVisualizacoes,
   dialog#modalVisualizacao,
   dialog#modalGrafico,
-  dialog#modalCompromissos,
   dialog#modalComparativo,
   dialog#modalDetalheCel {
       color: var(--fg);
@@ -145,7 +144,6 @@
   dialog#modalNovo::backdrop,
   dialog#modalCalc::backdrop,
   dialog#modalGrafico::backdrop,
-  dialog#modalCompromissos::backdrop,
   dialog#modalComparativo::backdrop,
   dialog#modalDetalheCel::backdrop {
       background: rgba(0, 0, 0, .68);

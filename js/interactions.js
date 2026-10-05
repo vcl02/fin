@@ -81,12 +81,12 @@ function desenhar() {
     // no lugar e só fica desabilitado quando não existe período válido (Backlog).
     el('btGrafico').dataset.idx = el('ciclo').value;
     el('btGrafico').disabled = simples || (modoBlocos ? noBacklog : !el('compDe').value || !el('compAte').value);
-    // A Reserva pode acompanhar tanto um ciclo quanto uma comparação; na comparação,
-    // usa sempre o último ciclo escolhido (Até). Backlog não tem ciclo final válido.
-    el('btMetaReservaEmergencia').dataset.idx = el('compAte').value;
-    el('btMetaReservaEmergencia').disabled = simples || noBacklog || !el('compAte').value;
-    el('btCompromissos').dataset.idx = el('compAte').value;
-    el('btCompromissos').disabled = simples || noBacklog || !el('compAte').value;
+    // Reserva e Comprometido são leituras do ciclo final (Até), inclusive quando há
+    // comparação. No Backlog e no modo simples não há uma referência financeira válida.
+    const temCicloParaIndicadores = !simples && !noBacklog && !!el('compAte').value;
+    el('indicadorReserva').hidden = !temCicloParaIndicadores;
+    el('indicadorComprometido').hidden = !temCicloParaIndicadores;
+    if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
     // (ex: digitar num filtro de texto), senao a tela piscaria a cada tecla
@@ -505,9 +505,6 @@ el('btGrafico').onclick = () => {
     if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
     else abrirGraficoEvolucao(+de, +ate);
 };
-el('btMetaReservaEmergencia').onclick = () => abrirMetaReservaEmergencia(+el('btMetaReservaEmergencia').dataset.idx);
-el('btCompromissos').onclick = () => abrirCompromissos(+el('btCompromissos').dataset.idx);
-
 // volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
 // desabilitado quando hoje nao cai em periodo nenhum.
 function atualizaBtCicloHoje() {

@@ -103,15 +103,17 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
 test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
     assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=btGrafico'));
-    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btMetaReservaEmergencia'));
-    assert.ok(acoes.indexOf('id=btMetaReservaEmergencia') < acoes.indexOf('id=flimpar'));
+    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=indicadorReserva'));
+    assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
+    assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=flimpar'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
     assert.doesNotMatch(pagina, /id=fpago|id=origem|id=fsit|id=forigem/);
     assert.match(pagina, /id=rowVis[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<div id=out>/);
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
     assert.match(estilosPainel, /#rowVis\s*\{[\s\S]*display:\s*flex/);
-    assert.match(interacoes, /btMetaReservaEmergencia'\)\.dataset\.idx = el\('compAte'\)\.value/);
+    assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
+    assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
     assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);
     assert.match(interacoes, /else abrirGraficoEvolucao/);
     assert.doesNotMatch(interacoes, /mostraComFade\('(fgraf|fevol|fReserva)'/);

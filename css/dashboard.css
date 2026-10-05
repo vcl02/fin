@@ -47,6 +47,19 @@
       gap: .55rem;
   }
 
+  /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto
+     compacto e colorido para não competir com os controles reais da barra. */
+  .indicadorRegra {
+      font-size: .84rem;
+      font-weight: 700;
+      white-space: nowrap;
+  }
+
+  .indicadorRegra.neutro { color: var(--mu); }
+  .indicadorRegra.vd { color: var(--vd); }
+  .indicadorRegra.am { color: #F0A83A; }
+  .indicadorRegra.vm { color: var(--vm); }
+
   select {
       font: inherit;
       color: var(--fg);

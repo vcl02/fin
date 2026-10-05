@@ -14,10 +14,14 @@ const contexto = {
     semAcento: valor => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
 };
 vm.createContext(contexto);
-vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.calcular = dadosCompromissosDoCiclo;`, contexto);
+vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
+    calcular: dadosCompromissosDoCiclo,
+    classeReserva: classeIndicadorReserva,
+    classeComprometido: classeIndicadorComprometido,
+};`, contexto);
 
 test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', () => {
-    const d = contexto.calcular([
+    const d = contexto.regras.calcular([
         { nome: 'Faturamento PJ', categ: 'Évora', v: 10000 },
         { nome: 'Curso', categ: 'Casa, Comprometido', v: -900, cred: true },
         { nome: 'Aluguel', categ: 'Comprometido', v: -3500, cred: false },
@@ -33,16 +37,24 @@ test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', (
 });
 
 test('sem faturamento o limite permanece zerado', () => {
-    const d = contexto.calcular([{ nome: 'Conta', categ: 'Comprometido', v: -200 }]);
+    const d = contexto.regras.calcular([{ nome: 'Conta', categ: 'Comprometido', v: -200 }]);
     assert.equal(d.faturamento, 0);
     assert.equal(d.limites[0].valor, 200);
     assert.equal(d.limites[0].teto, 0);
     assert.equal(d.limites[0].excedido, true);
 });
 
-test('card de Comprometido abre o detalhamento das próprias linhas calculadas', () => {
-    assert.match(fonte, /data-compromisso="\$\{limite\.chave\}"/);
-    assert.match(fonte, /function abrirDetalheCompromisso\(idxPeriodo, chave\)/);
-    assert.match(fonte, /linhas: limite\.linhas/);
-    assert.match(fonte, /el\('compromissosResumo'\)\.addEventListener\('click'/);
+test('indicadores usam faixas verde, âmbar e vermelha conforme suas regras', () => {
+    assert.equal(contexto.regras.classeReserva({ meta: 900, percentual: 40 }), 'vm');
+    assert.equal(contexto.regras.classeReserva({ meta: 900, percentual: 50 }), 'am');
+    assert.equal(contexto.regras.classeReserva({ meta: 900, percentual: 100 }), 'vd');
+    assert.equal(contexto.regras.classeComprometido({
+        faturamento: 1000, limites: [{ percentualFaturamento: 40, percentual: 50 }],
+    }), 'vd');
+    assert.equal(contexto.regras.classeComprometido({
+        faturamento: 1000, limites: [{ percentualFaturamento: 45, percentual: 50 }],
+    }), 'am');
+    assert.equal(contexto.regras.classeComprometido({
+        faturamento: 1000, limites: [{ percentualFaturamento: 51, percentual: 50 }],
+    }), 'vm');
 });
