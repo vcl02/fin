@@ -19,6 +19,7 @@ vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
     proporcaoReserva: dadosProporcaoReservaDoCiclo,
     classeReserva: classeIndicadorReserva,
     classeComprometido: classeIndicadorComprometido,
+    classeProporcaoReserva: classeIndicadorProporcaoReserva,
     variacao: variacaoPercentualIndicador,
     variacaoValor: variacaoValorIndicador,
 };`, contexto);
@@ -73,6 +74,9 @@ test('indicadores usam faixas verde, âmbar e vermelha conforme suas regras', ()
     assert.equal(contexto.regras.classeComprometido({
         faturamento: 1000, limites: [{ percentualFaturamento: 51, percentual: 50 }],
     }), 'vm');
+    assert.equal(contexto.regras.classeProporcaoReserva({ total: 1000, percentualReserva: 40 }), 'vd');
+    assert.equal(contexto.regras.classeProporcaoReserva({ total: 1000, percentualReserva: 45 }), 'am');
+    assert.equal(contexto.regras.classeProporcaoReserva({ total: 1000, percentualReserva: 51 }), 'vm');
 });
 
 test('variação usa sentidos opostos para Reserva e Comprometido', () => {

@@ -247,6 +247,14 @@ function classeIndicadorComprometido(dados) {
     return limite.percentualFaturamento <= limite.percentual ? 'am' : 'vm';
 }
 
+// Reserva é patrimônio, não padrão de consumo. Esta leitura usa as mesmas faixas do
+// Comprometido, mas no sentido oposto: menos de 40% dos gastos em Reserva é saudável.
+function classeIndicadorProporcaoReserva(dados) {
+    if (dados.total <= TOLERANCIA_FINANCEIRA) return 'neutro';
+    if (dados.percentualReserva <= 40) return 'vd';
+    return dados.percentualReserva <= 50 ? 'am' : 'vm';
+}
+
 // Compara os percentuais já arredondados como aparecem na tela. Reserva crescendo é boa;
 // Comprometido crescendo é ruim. A direção fica separada da cor atual do indicador.
 function variacaoPercentualIndicador(atual, anterior, subirEhPositivo) {
@@ -352,7 +360,7 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     );
 
     const indicadorProporcaoReserva = el('indicadorProporcaoReserva');
-    indicadorProporcaoReserva.className = 'indicadorRegra neutro';
+    indicadorProporcaoReserva.className = `indicadorRegra ${classeIndicadorProporcaoReserva(proporcaoReserva)}`;
     indicadorProporcaoReserva.innerHTML = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
         ? `Gastos: Reserva <span class=indicadorPercentual>${pct1(proporcaoReserva.percentualReserva)}</span> · Demais <span class=indicadorPercentual>${pct1(proporcaoReserva.percentualDemais)}</span>`
         : 'Gastos: Reserva <span class=indicadorPercentual>—</span> · Demais <span class=indicadorPercentual>—</span>';
