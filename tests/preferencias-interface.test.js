@@ -114,6 +114,9 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
     assert.match(pagina, /class=indicadorPipe aria-hidden=true>\|/);
+    assert.match(pagina, /id=indicadoresResumo[\s\S]*id=indicadoresVariacao/);
+    assert.match(pagina, /id=variacaoReserva class=variacaoLinha hidden/);
+    assert.match(pagina, /id=variacaoComprometido class=variacaoLinha hidden/);
     assert.match(estilosPainel, /\.indicadorRegra\s*\{[\s\S]*font-weight:\s*400/);
     assert.match(estilosPainel, /\.indicadorPercentual\s*\{[\s\S]*width:\s*6ch[\s\S]*font-variant-numeric:\s*tabular-nums/);
     assert.match(graficos, /Reserva: <span class=indicadorPercentual>/);
@@ -125,7 +128,9 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     const blocoIndicadores = estilosPainel.slice(
         estilosPainel.indexOf('#indicadoresFinanceiros'), estilosPainel.indexOf('/* Reserva e Comprometido')
     );
-    assert.doesNotMatch(blocoIndicadores, /flex-direction:\s*column/);
+    assert.match(blocoIndicadores, /grid-template-rows:\s*auto auto/);
+    assert.match(estilosPainel, /#variacaoReserva\s*\{\s*grid-column:\s*1;\s*grid-row:\s*2/);
+    assert.match(estilosPainel, /#variacaoComprometido\s*\{\s*grid-column:\s*3;\s*grid-row:\s*2/);
     assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
     assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
     assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);

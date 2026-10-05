@@ -268,6 +268,12 @@ function htmlVariacaoIndicador(percentual, valor, tituloValor) {
     return ` <span class="variacaoIndicador ${percentual.classe}" title="Variação sobre o ciclo anterior">${percentual.seta}${pontos} p.p.</span><span class=separadorVariacao aria-hidden=true> · </span><span class="variacaoIndicador ${valor.classe}" title="${tituloValor}">${valor.seta}${brl(valor.diferenca)}</span>`;
 }
 
+function atualizarLinhaVariacao(id, percentual, valor, tituloValor) {
+    const linha = el(id);
+    linha.innerHTML = htmlVariacaoIndicador(percentual, valor, tituloValor);
+    linha.hidden = !percentual || !valor;
+}
+
 function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     const comprometidos = dadosCompromissosCiclo(idxPeriodo);
@@ -305,6 +311,10 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     indicadorReserva.title = reserva.meta > TOLERANCIA_FINANCEIRA
         ? `${brl(reserva.guardado)} de ${brl(reserva.meta)} para 9 meses`
         : 'Sem gastos marcados para a reserva nos próximos 9 ciclos';
+    atualizarLinhaVariacao(
+        'variacaoReserva', variacaoReserva, variacaoGuardado,
+        'Variação do Guardado sobre o ciclo anterior'
+    );
 
     const indicadorComprometido = el('indicadorComprometido');
     indicadorComprometido.className = `indicadorRegra ${classeIndicadorComprometido(comprometidos)}`;
@@ -314,6 +324,10 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     indicadorComprometido.title = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
         ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}`
         : 'Sem Faturamento PJ no ciclo';
+    atualizarLinhaVariacao(
+        'variacaoComprometido', variacaoComprometido, variacaoValorComprometido,
+        'Variação do valor comprometido sobre o ciclo anterior'
+    );
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {

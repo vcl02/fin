@@ -54,10 +54,23 @@
   }
 
   #indicadoresFinanceiros {
-      display: flex;
+      display: grid;
+      grid-template-columns: max-content min-content max-content;
+      grid-template-rows: auto auto;
       align-items: center;
-      gap: .45rem;
+      column-gap: .45rem;
+      row-gap: .1rem;
   }
+
+  /* Os wrappers não ocupam célula: resumo e respectivas variações compartilham colunas. */
+  #indicadoresResumo,
+  #indicadoresVariacao { display: contents; }
+
+  #indicadorReserva { grid-column: 1; grid-row: 1; }
+  .indicadorPipe { grid-column: 2; grid-row: 1; }
+  #indicadorComprometido { grid-column: 3; grid-row: 1; }
+  #variacaoReserva { grid-column: 1; grid-row: 2; }
+  #variacaoComprometido { grid-column: 3; grid-row: 2; }
 
   /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto
      compacto e colorido para não competir com os controles reais da barra. */
@@ -86,6 +99,7 @@
   .variacaoIndicador.vd { color: var(--vd); }
   .variacaoIndicador.vm { color: var(--vm); }
   .separadorVariacao { color: var(--mu); }
+  .variacaoLinha { white-space: nowrap; }
 
   .indicadorPipe { color: var(--mu); }
 

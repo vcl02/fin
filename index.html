@@ -115,11 +115,17 @@
           <div id=flimpar>
             <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
           </div>
-          <!-- Indicadores calculados do ciclo Até; o JS atualiza texto, cor e explicação. -->
+          <!-- Indicadores calculados do ciclo Até; o JS atualiza resumo, cor e variação abaixo. -->
           <div id=indicadoresFinanceiros>
-            <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
-            <span class=indicadorPipe aria-hidden=true>|</span>
-            <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
+            <div id=indicadoresResumo>
+              <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
+              <span class=indicadorPipe aria-hidden=true>|</span>
+              <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
+            </div>
+            <div id=indicadoresVariacao>
+              <span id=variacaoReserva class=variacaoLinha hidden></span>
+              <span id=variacaoComprometido class=variacaoLinha hidden></span>
+            </div>
           </div>
         </div>
       </div>
