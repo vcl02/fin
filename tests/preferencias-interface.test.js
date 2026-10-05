@@ -106,6 +106,8 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=flimpar'));
     assert.ok(acoes.indexOf('id=flimpar') < acoes.indexOf('id=indicadoresFinanceiros'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
+    assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('class=indicadorPipe'));
+    assert.ok(acoes.indexOf('class=indicadorPipe') < acoes.indexOf('id=indicadorComprometido'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
     assert.doesNotMatch(pagina, /id=fpago|id=origem|id=fsit|id=forigem/);
     assert.match(pagina, /id=rowVis[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<div id=out>/);
