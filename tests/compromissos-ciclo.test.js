@@ -12,11 +12,16 @@ if (inicio < 0 || fim < 0) throw Error('Não encontrou o cálculo de compromisso
 const contexto = {
     NOME_ANCORA_CICLO: 'Faturamento PJ', TOLERANCIA_FINANCEIRA: 0.005,
     semAcento: valor => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+    MESES_MEDIA_LIBERDADE_FINANCEIRA: 12,
+    TAXA_RETIRADA_LIBERDADE_FINANCEIRA: 0.035,
+    ehCategoria: (categ, procurada) => String(categ || '').split(',')
+        .some(categoria => categoria.trim().toLowerCase() == procurada.toLowerCase()),
 };
 vm.createContext(contexto);
 vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
     calcular: dadosCompromissosDoCiclo,
     proporcaoReserva: dadosProporcaoReservaDoCiclo,
+    liberdade: dadosLiberdadeFinanceira,
     classeReserva: classeIndicadorReserva,
     classeComprometido: classeIndicadorComprometido,
     classeProporcaoReserva: classeIndicadorProporcaoReserva,
@@ -59,6 +64,21 @@ test('proporção de Reserva separa o gasto inteiro dos demais sem duplicar cate
         total: 1000, reserva: 500, demais: 500,
         percentualReserva: 50, percentualDemais: 50,
     });
+});
+
+test('liberdade usa média de gastos, taxa de 3,5% e só capital acima da reserva', () => {
+    const d = contexto.regras.liberdade([
+        { periodoIdx: 0, categ: 'Casa', v: -1000 },
+        { periodoIdx: 1, categ: 'Lazer', v: -2000 },
+        { periodoIdx: 1, categ: 'Investimento', inv: true, v: -900 },
+        { periodoIdx: 1, categ: 'Reembolso', v: -100 },
+        { periodoIdx: 1, categ: 'Casa', v: -300, _transferencia: true },
+    ], 1, 10000, 3000);
+    assert.equal(d.mesesObservados, 2);
+    assert.equal(d.gastoMensal, 1500);
+    assert.equal(d.meta, 1500 * 12 / 0.035);
+    assert.equal(d.patrimonioLivre, 7000);
+    assert.equal(d.percentual, 7000 / d.meta * 100);
 });
 
 test('indicadores usam faixas verde, âmbar e vermelha conforme suas regras', () => {

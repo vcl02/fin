@@ -117,6 +117,8 @@ el('modalVisualizacao').addEventListener('click', e => {
 let graficoChart = null;
 let excluidasDoGrafico = [];
 const MESES_META_RESERVA_EMERGENCIA = 9;
+const MESES_MEDIA_LIBERDADE_FINANCEIRA = 12;
+const TAXA_RETIRADA_LIBERDADE_FINANCEIRA = 0.035;
 const PERCENTUAL_MINIMO_PIZZA = 2;
 const LIMITES_COMPROMISSOS = [
     { chave: 'comprometido', rotulo: 'Comprometido', categoria: 'Comprometido', percentual: 50 },
@@ -230,6 +232,26 @@ function dadosProporcaoReservaDoCiclo(linhas) {
     };
 }
 
+// Liberdade financeira usa somente patrimônio realmente investido acima da reserva. A meta
+// parte da média recente do custo de vida: investimento, transferência e compensação não são
+// despesas de sustento. A meta não promete retorno; aplica a taxa escolhida de retirada anual.
+function dadosLiberdadeFinanceira(linhas, idxPeriodo, patrimonioInvestido, reservaNecessaria) {
+    const inicio = Math.max(0, idxPeriodo - MESES_MEDIA_LIBERDADE_FINANCEIRA + 1);
+    const mesesObservados = Math.max(0, idxPeriodo - inicio + 1);
+    const gastos = linhas.filter(r => r.periodoIdx >= inicio && r.periodoIdx <= idxPeriodo &&
+        r.v < 0 && !r.inv && !r._transferencia &&
+        !ehCategoria(r.categ, 'Reembolso') && !ehCategoria(r.categ, 'Rendimento'));
+    const gastoTotal = gastos.reduce((soma, r) => soma + -r.v, 0);
+    const gastoMensal = mesesObservados ? gastoTotal / mesesObservados : 0;
+    const meta = gastoMensal ? gastoMensal * 12 / TAXA_RETIRADA_LIBERDADE_FINANCEIRA : 0;
+    const patrimonioLivre = Math.max(0, (patrimonioInvestido || 0) - Math.max(0, reservaNecessaria || 0));
+    return {
+        gastoMensal, mesesObservados, meta, patrimonioLivre,
+        restante: Math.max(0, meta - patrimonioLivre),
+        percentual: meta ? Math.min(100, patrimonioLivre / meta * 100) : 0,
+    };
+}
+
 // Os textos da barra não são botões: resumem a distância até a reserva de nove meses
 // e a parcela do faturamento já comprometida no ciclo escolhido. As faixas são visuais:
 // reserva <50% vermelha, 50–99,9% âmbar, completa verde; comprometido até 40% verde,
@@ -308,6 +330,12 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
             .filter(r => r.periodoIdx == idxPeriodo)
             .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }))
     );
+    const liberdade = dadosLiberdadeFinanceira(
+        Estado.lancamentos.map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) })),
+        idxPeriodo,
+        guardadoGarantidoAte(Estado.lancamentos, idxPeriodo),
+        reserva.meta
+    );
     const reservaAnterior = idxPeriodo > 0 ? dadosMetaReservaEmergenciaCiclo(idxPeriodo - 1) : null;
     const comprometidosAnterior = idxPeriodo > 0 ? dadosCompromissosCiclo(idxPeriodo - 1) : null;
     const variacaoReserva = reserva.meta > TOLERANCIA_FINANCEIRA
@@ -367,6 +395,15 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     indicadorProporcaoReserva.title = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
         ? `Reserva ${brl(proporcaoReserva.reserva)} de ${brl(proporcaoReserva.total)} em gastos; demais ${brl(proporcaoReserva.demais)}`
         : 'Sem gastos no ciclo';
+
+    const indicadorLiberdade = el('indicadorLiberdade');
+    indicadorLiberdade.className = 'indicadorRegra neutro';
+    indicadorLiberdade.innerHTML = liberdade.meta > TOLERANCIA_FINANCEIRA
+        ? `Liberdade: <span class=indicadorPercentual>${pct1(liberdade.percentual)}</span>`
+        : 'Liberdade: <span class=indicadorPercentual>—</span>';
+    indicadorLiberdade.title = liberdade.meta > TOLERANCIA_FINANCEIRA
+        ? `${brl(liberdade.patrimonioLivre)} de ${brl(liberdade.meta)}; média ${brl(liberdade.gastoMensal)}/mês em ${liberdade.mesesObservados} ciclos; retirada de 3,5% ao ano`
+        : 'Sem gastos suficientes para calcular a meta';
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
