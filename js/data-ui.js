@@ -41,6 +41,41 @@ function atualizarCombos(lancamentosCrus) {
     el('compAte').innerHTML = opcoesPeriodo;
     el('compDe').value = deAnterior == '-1' || usadosNaveg.includes(+deAnterior) ? deAnterior : '';
     el('compAte').value = usadosNaveg.includes(+ateAnterior) ? ateAnterior : '';
+
+    // A URL só restaura uma consulta de ciclo único; comparações não viram estado compartilhável.
+    aplicarCicloDaUrl();
+}
+
+// Identificador estável para compartilhar o ciclo, sem expor o índice interno que pode mudar
+// quando novos Faturamentos PJ são incluídos. O nome do ciclo já é definido pelo mês do início.
+function chaveCicloNaUrl(idx) {
+    const ciclo = Estado.ciclos[+idx];
+    return ciclo?.ini ? dataISO(ciclo.ini).slice(0, 7) : '';
+}
+
+function aplicarCicloDaUrl() {
+    const chave = new URLSearchParams(window.location.search).get('ciclo');
+    if (!/^\d{4}-\d{2}$/.test(chave || '')) return;
+
+    const idx = Estado.ciclos.findIndex((_, i) => chaveCicloNaUrl(i) === chave);
+    // Um ciclo sem opção navegável não é imposto à tela; ela mantém o ciclo padrão seguro.
+    if (idx < 0 || ![...el('compDe').options].some(opcao => +opcao.value === idx)) return;
+    el('compDe').value = idx;
+    el('compAte').value = idx;
+}
+
+// Mantém o link copiável somente para De=Até em ciclos reais. replaceState não cria uma entrada
+// de histórico para cada filtro/redesenho nem interfere no botão Voltar do navegador.
+function sincronizarCicloNaUrl() {
+    const de = el('compDe').value, ate = el('compAte').value;
+    const chave = de && de == ate && +de >= 0 ? chaveCicloNaUrl(de) : '';
+    const url = new URL(window.location.href);
+    if (chave) url.searchParams.set('ciclo', chave);
+    else url.searchParams.delete('ciclo');
+    const destino = url.pathname + url.search + url.hash;
+    if (destino !== window.location.pathname + window.location.search + window.location.hash) {
+        window.history.replaceState(window.history.state, '', destino);
+    }
 }
 
 // Fluxo completo de carga: busca dados, atualiza os combos, mostra o contador e desenha a tela.

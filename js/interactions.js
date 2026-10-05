@@ -73,6 +73,7 @@ function desenhar() {
     // enquanto o De for Backlog (nao da' pra escolher um Ate junto com Backlog).
     el('compAte').disabled = ehBacklog;
     if (modoBlocos) el('ciclo').value = ehBacklog ? -1 : el('compDe').value;   // vCiclo() le o combo interno
+    sincronizarCicloNaUrl();
 
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
