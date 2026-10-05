@@ -75,6 +75,17 @@
       font-variant-numeric: tabular-nums;
   }
 
+  /* A variação possui cor semântica própria, independente da situação atual do indicador. */
+  .variacaoIndicador {
+      margin-left: .25rem;
+      font-size: .76rem;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .variacaoIndicador.neutro { color: var(--mu); }
+  .variacaoIndicador.vd { color: var(--vd); }
+  .variacaoIndicador.vm { color: var(--vm); }
+
   .indicadorPipe { color: var(--mu); }
 
   .indicadorRegra.neutro { color: var(--mu); }

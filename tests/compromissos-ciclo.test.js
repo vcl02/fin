@@ -18,6 +18,7 @@ vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
     calcular: dadosCompromissosDoCiclo,
     classeReserva: classeIndicadorReserva,
     classeComprometido: classeIndicadorComprometido,
+    variacao: variacaoPercentualIndicador,
 };`, contexto);
 
 test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', () => {
@@ -57,4 +58,17 @@ test('indicadores usam faixas verde, âmbar e vermelha conforme suas regras', ()
     assert.equal(contexto.regras.classeComprometido({
         faturamento: 1000, limites: [{ percentualFaturamento: 51, percentual: 50 }],
     }), 'vm');
+});
+
+test('variação usa sentidos opostos para Reserva e Comprometido', () => {
+    assert.deepEqual({ ...contexto.regras.variacao(12.34, 10.01, true) }, {
+        diferenca: 2.3, seta: '↑', classe: 'vd',
+    });
+    assert.deepEqual({ ...contexto.regras.variacao(42.04, 45.02, false) }, {
+        diferenca: 3, seta: '↓', classe: 'vd',
+    });
+    assert.deepEqual({ ...contexto.regras.variacao(50.01, 50.04, false) }, {
+        diferenca: 0, seta: '→', classe: 'neutro',
+    });
+    assert.equal(contexto.regras.variacao(NaN, 20, true), null);
 });

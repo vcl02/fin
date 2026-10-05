@@ -230,17 +230,55 @@ function classeIndicadorComprometido(dados) {
     return limite.percentualFaturamento <= limite.percentual ? 'am' : 'vm';
 }
 
+// Compara os percentuais já arredondados como aparecem na tela. Reserva crescendo é boa;
+// Comprometido crescendo é ruim. A direção fica separada da cor atual do indicador.
+function variacaoPercentualIndicador(atual, anterior, subirEhPositivo) {
+    if (!Number.isFinite(atual) || !Number.isFinite(anterior)) return null;
+    const atualExibido = Math.round(atual * 10) / 10;
+    const anteriorExibido = Math.round(anterior * 10) / 10;
+    const diferenca = atualExibido - anteriorExibido;
+    if (Math.abs(diferenca) < 0.05) return { diferenca: 0, seta: '→', classe: 'neutro' };
+    const subiu = diferenca > 0;
+    return {
+        diferenca: Math.round(Math.abs(diferenca) * 10) / 10,
+        seta: subiu ? '↑' : '↓',
+        classe: subiu === subirEhPositivo ? 'vd' : 'vm',
+    };
+}
+
+function htmlVariacaoIndicador(variacao) {
+    if (!variacao) return '';
+    const pontos = variacao.diferenca.toLocaleString('pt-BR', {
+        minimumFractionDigits: 1, maximumFractionDigits: 1,
+    });
+    return ` <span class="variacaoIndicador ${variacao.classe}" title="Variação sobre o ciclo anterior">${variacao.seta}${pontos} p.p.</span>`;
+}
+
 function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     const comprometidos = dadosCompromissosCiclo(idxPeriodo);
     const comprometido = comprometidos.limites[0];
+    const reservaAnterior = idxPeriodo > 0 ? dadosMetaReservaEmergenciaCiclo(idxPeriodo - 1) : null;
+    const comprometidosAnterior = idxPeriodo > 0 ? dadosCompromissosCiclo(idxPeriodo - 1) : null;
+    const variacaoReserva = reserva.meta > TOLERANCIA_FINANCEIRA
+        && reservaAnterior?.meta > TOLERANCIA_FINANCEIRA
+        ? variacaoPercentualIndicador(reserva.percentual, reservaAnterior.percentual, true)
+        : null;
+    const variacaoComprometido = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
+        && comprometidosAnterior?.faturamento > TOLERANCIA_FINANCEIRA
+        ? variacaoPercentualIndicador(
+            comprometido.percentualFaturamento,
+            comprometidosAnterior.limites[0].percentualFaturamento,
+            false
+        )
+        : null;
 
     const indicadorReserva = el('indicadorReserva');
     indicadorReserva.className = `indicadorRegra ${classeIndicadorReserva(reserva)}`;
     // O percentual tem slot próprio de largura fixa: mudanças de 1,3% para 100,0%
     // não deslocam o rótulo nem o indicador de Comprometido ao redesenhar a tela.
     indicadorReserva.innerHTML = reserva.meta > TOLERANCIA_FINANCEIRA
-        ? `Reserva: <span class=indicadorPercentual>${pct1(reserva.percentual)}</span> da meta`
+        ? `Reserva: <span class=indicadorPercentual>${pct1(reserva.percentual)}</span> da meta${htmlVariacaoIndicador(variacaoReserva)}`
         : 'Reserva: <span class=indicadorPercentual>—</span> sem meta';
     indicadorReserva.title = reserva.meta > TOLERANCIA_FINANCEIRA
         ? `${brl(reserva.guardado)} de ${brl(reserva.meta)} para 9 meses`
@@ -249,7 +287,7 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const indicadorComprometido = el('indicadorComprometido');
     indicadorComprometido.className = `indicadorRegra ${classeIndicadorComprometido(comprometidos)}`;
     indicadorComprometido.innerHTML = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
-        ? `Comprometido: <span class=indicadorPercentual>${pct1(comprometido.percentualFaturamento)}</span> do mês`
+        ? `Comprometido: <span class=indicadorPercentual>${pct1(comprometido.percentualFaturamento)}</span> do mês${htmlVariacaoIndicador(variacaoComprometido)}`
         : 'Comprometido: <span class=indicadorPercentual>—</span> sem faturamento';
     indicadorComprometido.title = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
         ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}`
