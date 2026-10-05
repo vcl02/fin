@@ -85,6 +85,7 @@
   .variacaoIndicador.neutro { color: var(--mu); }
   .variacaoIndicador.vd { color: var(--vd); }
   .variacaoIndicador.vm { color: var(--vm); }
+  .separadorVariacao { color: var(--mu); }
 
   .indicadorPipe { color: var(--mu); }
 

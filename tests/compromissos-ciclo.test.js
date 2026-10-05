@@ -19,6 +19,7 @@ vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
     classeReserva: classeIndicadorReserva,
     classeComprometido: classeIndicadorComprometido,
     variacao: variacaoPercentualIndicador,
+    variacaoValor: variacaoValorIndicador,
 };`, contexto);
 
 test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', () => {
@@ -71,4 +72,16 @@ test('variação usa sentidos opostos para Reserva e Comprometido', () => {
         diferenca: 0, seta: '→', classe: 'neutro',
     });
     assert.equal(contexto.regras.variacao(NaN, 20, true), null);
+});
+
+test('variação em reais usa Guardado ou valor comprometido sem perder os centavos', () => {
+    assert.deepEqual({ ...contexto.regras.variacaoValor(620, 500, true) }, {
+        diferenca: 120, seta: '↑', classe: 'vd',
+    });
+    assert.deepEqual({ ...contexto.regras.variacaoValor(900, 1000, false) }, {
+        diferenca: 100, seta: '↓', classe: 'vd',
+    });
+    assert.deepEqual({ ...contexto.regras.variacaoValor(100, 100.004, false) }, {
+        diferenca: 0, seta: '→', classe: 'neutro',
+    });
 });

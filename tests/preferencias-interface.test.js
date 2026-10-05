@@ -120,6 +120,8 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.match(graficos, /Comprometido: <span class=indicadorPercentual>/);
     assert.match(estilosPainel, /\.variacaoIndicador\.vd\s*\{\s*color:\s*var\(--vd\)/);
     assert.match(estilosPainel, /\.variacaoIndicador\.vm\s*\{\s*color:\s*var\(--vm\)/);
+    assert.match(graficos, /variacaoValorIndicador\(reserva\.guardado, reservaAnterior\.guardado, true\)/);
+    assert.match(graficos, /variacaoValorIndicador\(comprometido\.valor, comprometidosAnterior\.limites\[0\]\.valor, false\)/);
     const blocoIndicadores = estilosPainel.slice(
         estilosPainel.indexOf('#indicadoresFinanceiros'), estilosPainel.indexOf('/* Reserva e Comprometido')
     );
