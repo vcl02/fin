@@ -1,0 +1,19 @@
+/* Aparência mínima da rota de transição; o produto visual só será definido junto da primeira tela real. */
+.fin-home {
+  max-width: 42rem;
+  margin: 5rem auto;
+  padding: 2rem;
+}
+
+.fin-home__eyebrow {
+  margin-bottom: .5rem;
+  color: var(--lpx-brand, #4a70d1);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.fin-home__note {
+  color: var(--lpx-content-text-muted, #6c757d);
+}

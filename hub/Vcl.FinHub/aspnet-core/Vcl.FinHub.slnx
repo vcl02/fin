@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Vcl.FinHub.Application.Contracts/Vcl.FinHub.Application.Contracts.csproj" />
+    <Project Path="src/Vcl.FinHub.Application/Vcl.FinHub.Application.csproj" />
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Project Path="src/Vcl.FinHub.DbMigrator/Vcl.FinHub.DbMigrator.csproj" />
+    <Project Path="src/Vcl.FinHub.Domain.Shared/Vcl.FinHub.Domain.Shared.csproj" />
+    <Project Path="src/Vcl.FinHub.Domain/Vcl.FinHub.Domain.csproj" />
+    <Project Path="src/Vcl.FinHub.EntityFrameworkCore/Vcl.FinHub.EntityFrameworkCore.csproj" />
+    <Project Path="src/Vcl.FinHub.HttpApi.Client/Vcl.FinHub.HttpApi.Client.csproj" />
+    
+    <Project Path="src/Vcl.FinHub.HttpApi.Host/Vcl.FinHub.HttpApi.Host.csproj" />
+    <Project Path="src/Vcl.FinHub.HttpApi/Vcl.FinHub.HttpApi.csproj" />
+    
+    
+    
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Vcl.FinHub.Application.Tests/Vcl.FinHub.Application.Tests.csproj" />
+    <Project Path="test/Vcl.FinHub.Domain.Tests/Vcl.FinHub.Domain.Tests.csproj" />
+    <Project Path="test/Vcl.FinHub.EntityFrameworkCore.Tests/Vcl.FinHub.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="test/Vcl.FinHub.HttpApi.Client.ConsoleTestApp/Vcl.FinHub.HttpApi.Client.ConsoleTestApp.csproj" />
+    
+    <Project Path="test/Vcl.FinHub.TestBase/Vcl.FinHub.TestBase.csproj" />
+    
+  </Folder>
+</Solution>

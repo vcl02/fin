@@ -35,3 +35,7 @@ Supabase é a fonte de dados. O frontend não executa migrations nem cria dados 
 ## Documentação de produto
 
 As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checklist de publicação. O `AGENTS.md` na raiz continua curto e operacional, para orientar manutenção e automação.
+
+## Fundação paralela do Hub
+
+Enquanto o Fin estático continuar publicado, `hub/Vcl.FinHub` é uma fundação isolada em .NET 10, ABP, Angular 21.2 e PostgreSQL futuro. Ela existe para validar as camadas e contratos do próximo produto sem arriscar os cálculos, os dados ou o deploy atual. O Hub não acessa Supabase, não recebe credenciais de produção e não executa migrations nesta fase. A rota `/fin` é somente um marcador de transição; a aplicação estática e `docs/REGRAS.md` seguem como fonte de verdade até cada caso de uso ser migrado deliberadamente.
