@@ -39,13 +39,12 @@
       padding-bottom: .1rem;
   }
 
-  /* Os comandos ficam juntos; os indicadores financeiros ocupam as duas linhas abaixo. */
+  /* Os comandos e os indicadores ficam em uma faixa compacta. */
   #rowVis {
       display: flex;
       flex: 0 0 auto;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: .35rem;
+      align-items: center;
+      gap: .55rem;
   }
 
   #acoesAcompanhamento {
@@ -56,18 +55,19 @@
 
   #indicadoresFinanceiros {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: .12rem;
+      align-items: center;
+      gap: .45rem;
   }
 
   /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto
      compacto e colorido para não competir com os controles reais da barra. */
   .indicadorRegra {
       font-size: .84rem;
-      font-weight: 700;
+      font-weight: 400;
       white-space: nowrap;
   }
+
+  .indicadorPipe { color: var(--mu); }
 
   .indicadorRegra.neutro { color: var(--mu); }
   .indicadorRegra.vd { color: var(--vd); }

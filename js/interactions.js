@@ -84,8 +84,7 @@ function desenhar() {
     // Reserva e Comprometido são leituras do ciclo final (Até), inclusive quando há
     // comparação. No Backlog e no modo simples não há uma referência financeira válida.
     const temCicloParaIndicadores = !simples && !noBacklog && !!el('compAte').value;
-    el('indicadorReserva').hidden = !temCicloParaIndicadores;
-    el('indicadorComprometido').hidden = !temCicloParaIndicadores;
+    el('indicadoresFinanceiros').hidden = !temCicloParaIndicadores;
     if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);
 
     // fade suave SO' quando muda de modo (blocos <-> matriz) — nao em todo redesenho
