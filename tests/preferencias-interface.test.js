@@ -100,18 +100,19 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
-test('ações de acompanhamento ficam na mesma linha em qualquer visão', () => {
+test('indicadores financeiros ficam abaixo das ações, um por linha', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
     assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=btGrafico'));
-    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=indicadorReserva'));
+    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=flimpar'));
+    assert.ok(acoes.indexOf('id=flimpar') < acoes.indexOf('id=indicadorReserva'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
-    assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=flimpar'));
     assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
     assert.doesNotMatch(pagina, /id=fpago|id=origem|id=fsit|id=forigem/);
     assert.match(pagina, /id=rowVis[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<div id=out>/);
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
-    assert.match(estilosPainel, /#rowVis\s*\{[\s\S]*display:\s*flex/);
+    assert.match(estilosPainel, /#rowVis\s*\{[\s\S]*flex-direction:\s*column/);
+    assert.match(estilosPainel, /#indicadoresFinanceiros\s*\{[\s\S]*flex-direction:\s*column/);
     assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
     assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
     assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);

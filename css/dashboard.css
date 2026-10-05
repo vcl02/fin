@@ -39,12 +39,26 @@
       padding-bottom: .1rem;
   }
 
-  /* Os comandos variam conforme a visão, mas nunca formam uma segunda linha própria. */
+  /* Os comandos ficam juntos; os indicadores financeiros ocupam as duas linhas abaixo. */
   #rowVis {
       display: flex;
       flex: 0 0 auto;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .35rem;
+  }
+
+  #acoesAcompanhamento {
+      display: flex;
       align-items: center;
       gap: .55rem;
+  }
+
+  #indicadoresFinanceiros {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .12rem;
   }
 
   /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto

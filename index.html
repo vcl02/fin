@@ -107,15 +107,19 @@
           </select>
         </label>
       <div id=rowVis>
-        <select id=visAlvo class=btFiltro aria-label="Visualizações">
-          <option value="">Visualizações</option>
-        </select>
-        <button type=button id=btGrafico class=btFiltro>Gráfico</button>
+        <div id=acoesAcompanhamento>
+          <select id=visAlvo class=btFiltro aria-label="Visualizações">
+            <option value="">Visualizações</option>
+          </select>
+          <button type=button id=btGrafico class=btFiltro>Gráfico</button>
+          <div id=flimpar>
+            <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
+          </div>
+        </div>
         <!-- Indicadores calculados do ciclo Até; o JS atualiza texto, cor e explicação. -->
-        <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
-        <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
-        <div id=flimpar>
-          <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
+        <div id=indicadoresFinanceiros>
+          <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
+          <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
         </div>
       </div>
     </div>
