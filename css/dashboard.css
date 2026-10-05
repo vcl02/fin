@@ -67,10 +67,10 @@
       white-space: nowrap;
   }
 
-  /* Reserva um espaço estável inclusive para 100,0%; números usam a mesma largura. */
+  /* Reserva seis caracteres para 100,0%; números usam a mesma largura. */
   .indicadorPercentual {
       display: inline-block;
-      width: 4.2ch;
+      width: 6ch;
       text-align: right;
       font-variant-numeric: tabular-nums;
   }
