@@ -1,16 +1,16 @@
 <!-- Consulta por ciclo dinâmica: dados vêm exclusivamente do snapshot local pela API do Hub. -->
 <main class="fin-home" aria-labelledby="fin-title">
   <header class="fin-home__header">
-    <div>
-      <p class="fin-home__eyebrow">Hub pessoal · consulta local</p>
-      <h1 id="fin-title">fin</h1>
+    <div class="fin-home__title">
+      <a class="icon-button home-button" routerLink="/" title="Voltar ao Hub" aria-label="Voltar ao Hub">⌂</a>
+      <div>
+        <p class="fin-home__eyebrow">Hub pessoal · consulta local</p>
+        <h1 id="fin-title">fin</h1>
+      </div>
     </div>
-    <div class="fin-home__actions">
-      <p class="fin-home__import" *ngIf="cycle">
-        {{ cycle.sourceRowCount }} registros · importado {{ formatImportedAt(cycle.lastImportAtUtc) }}
-      </p>
-      <a class="icon-button" routerLink="/" title="Voltar ao Hub" aria-label="Voltar ao Hub">⌂</a>
-    </div>
+    <p class="fin-home__import" *ngIf="cycle">
+      {{ cycle.sourceRowCount }} registros · importado {{ formatImportedAt(cycle.lastImportAtUtc) }}
+    </p>
   </header>
 
   <nav class="cycle-nav" aria-label="Navegação entre ciclos">

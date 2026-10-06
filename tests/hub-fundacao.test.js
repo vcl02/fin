@@ -28,7 +28,7 @@ test('a fundação do Hub fixa .NET 10, home inicial e módulo Fin', () => {
     assert.match(rotas, /title: 'fin'/);
     assert.match(index, /<title>Hub pessoal<\/title>/);
     assert.match(home, /routerLink="\/fin"/);
-    assert.match(fin, /routerLink="\/" title="Voltar ao Hub"/);
+    assert.match(fin, /class="icon-button home-button" routerLink="\/" title="Voltar ao Hub"/);
 });
 
 test('o Hub não expõe Supabase ao Angular e limita a ponte legada ao importador manual', () => {
