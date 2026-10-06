@@ -2,7 +2,7 @@
 :host { display: block; min-height: 100vh; background: #1a1d20; color: #edf0f2; }
 .fin-home { max-width: 1400px; margin: 0 auto; padding: 2rem clamp(1rem, 3vw, 2.5rem) 4rem; }
 .fin-home__header, .cycle-nav, .cycle-block__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.fin-home__title { display: flex; align-items: center; gap: .75rem; }
+.fin-home__title-row { display: flex; align-items: center; gap: .75rem; }
 .fin-home__eyebrow { margin: 0 0 .35rem; color: #9eacff; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 h1, h2, p { margin-top: 0; } h1 { margin-bottom: 0; font-size: 1.8rem; } h2 { margin-bottom: 0; font-size: 1.1rem; }
 .fin-home__import, .fin-home__explanation, .cycle-block__header span { color: #aeb7c0; font-size: .82rem; }
