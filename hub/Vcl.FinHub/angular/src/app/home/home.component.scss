@@ -9,7 +9,7 @@ h1, h2, p { margin-top: 0; } h1 { margin-bottom: 0; font-size: 1.8rem; } h2 { ma
 .cycle-nav { justify-content: flex-start; margin: 2rem 0 .75rem; }
 button, select, a.icon-button { min-height: 2.45rem; border: 1px solid #3d454d; border-radius: .55rem; background: #282e34; color: #edf0f2; font: inherit; }
 button { cursor: pointer; } button:disabled, select:disabled { cursor: not-allowed; opacity: .45; }
-.icon-button { display: inline-grid; width: 2.45rem; place-items: center; box-sizing: border-box; font-size: 1.2rem; line-height: 1; text-decoration: none; }.home-button { padding: 0 0 .12rem; }.today-button { padding: 0 .85rem; }.cycle-nav select { min-width: 11rem; padding: 0 .7rem; }
+.icon-button { display: inline-grid; width: 2.45rem; place-items: center; box-sizing: border-box; font-size: 1.2rem; line-height: 1; text-decoration: none; }.home-button { width: 2.1rem; min-height: 2.1rem; padding: 0 0 .12rem; font-size: 1rem; }.today-button { padding: 0 .85rem; }.cycle-nav select { min-width: 11rem; padding: 0 .7rem; }
 .fin-home__explanation { margin: 0 0 1.5rem; }.state { margin: 3rem 0; color: #aeb7c0; text-align: center; }.state--error { color: #ff7777; }
 .today-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem 1rem; margin: 1.25rem 0; padding: .8rem 1rem; border: 1px solid #39434d; border-radius: .65rem; background: #20262b; }
 .today-summary span { color: #aeb7c0; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.today-summary strong { color: #edf0f2; }
