@@ -1,4 +1,4 @@
-<!-- Consulta mensal dinâmica: dados vêm exclusivamente do snapshot local pela API do Hub. -->
+<!-- Consulta por ciclo dinâmica: dados vêm exclusivamente do snapshot local pela API do Hub. -->
 <main class="fin-home" aria-labelledby="fin-title">
   <header class="fin-home__header">
     <div>
@@ -10,19 +10,19 @@
     </p>
   </header>
 
-  <nav class="cycle-nav" aria-label="Navegação mensal">
+  <nav class="cycle-nav" aria-label="Navegação entre ciclos">
     <button type="button" class="icon-button" title="Mês anterior" aria-label="Mês anterior"
-      [disabled]="!hasPreviousMonth() || loading" (click)="moveMonth(-1)">‹</button>
-    <select aria-label="Ciclo" [ngModel]="selectedMonth" (ngModelChange)="selectMonth($event)" [disabled]="loading">
-      <option *ngFor="let month of cycle?.availableMonths ?? []" [value]="month">{{ monthLabel(month) }}</option>
-      <option *ngIf="!(cycle?.availableMonths?.length)" [value]="selectedMonth">{{ monthLabel(selectedMonth) }}</option>
+      [disabled]="!hasPreviousCycle() || loading" (click)="moveCycle(-1)">‹</button>
+    <select aria-label="Ciclo" [ngModel]="selectedCycle" (ngModelChange)="selectCycle($event)" [disabled]="loading">
+      <option *ngFor="let cycleStart of cycle?.availableCycles ?? []" [value]="cycleStart">{{ cycleLabel(cycleStart) }}</option>
+      <option *ngIf="!(cycle?.availableCycles?.length)" [value]="selectedCycle">{{ cycleLabel(selectedCycle) }}</option>
     </select>
     <button type="button" class="icon-button" title="Próximo mês" aria-label="Próximo mês"
-      [disabled]="!hasNextMonth() || loading" (click)="moveMonth(1)">›</button>
-    <button type="button" class="today-button" [disabled]="loading" (click)="showCurrentMonth()">Atual</button>
+      [disabled]="!hasNextCycle() || loading" (click)="moveCycle(1)">›</button>
+    <button type="button" class="today-button" [disabled]="loading" (click)="showCurrentCycle()">Atual</button>
   </nav>
 
-  <p class="fin-home__explanation">Consulta do snapshot local. Totais brutos; saldo, limite e antecipações continuam no Fin atual.</p>
+  <p class="fin-home__explanation">Consulta do snapshot local por ciclo. Totais brutos; saldo, limite e antecipações continuam no Fin atual.</p>
   <p class="state" *ngIf="loading">Carregando ciclo…</p>
   <p class="state state--error" *ngIf="error">{{ error }} Inicie a API local e confira o snapshot.</p>
 
@@ -36,7 +36,7 @@
       <header class="cycle-block__header"><h2 id="debit-title">Débito</h2><span>{{ formatDate(cycle.cycleStart) }} até {{ formatDate(cycle.cycleEnd) }}</span></header>
       <div class="table-wrap"><table><thead><tr><th>Data</th><th>Nome</th><th class="number">Valor</th><th>Categoria</th><th>Frequência</th><th>Pago</th><th class="number">ID</th></tr></thead><tbody>
         <tr *ngFor="let item of cycle.debitItems; trackBy: trackById"><td>{{ formatDate(item.competenceDate) }}</td><td>{{ item.nome || '—' }}</td><td class="number" [class.is-positive]="(item.valor ?? 0) > 0" [class.is-negative]="(item.valor ?? 0) < 0">{{ formatMoney(item.valor) }}</td><td>{{ item.categ || '—' }}</td><td>{{ item.freq || '—' }}</td><td [class.paid]="item.pago">{{ item.pago ? 'Pago' : 'Aberto' }}</td><td class="number">{{ item.id }}</td></tr>
-        <tr *ngIf="!cycle.debitItems.length"><td colspan="7" class="empty">Nenhum débito com data neste mês.</td></tr>
+        <tr *ngIf="!cycle.debitItems.length"><td colspan="7" class="empty">Nenhum débito neste ciclo.</td></tr>
       </tbody></table></div>
     </section>
 

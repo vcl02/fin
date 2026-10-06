@@ -15,6 +15,6 @@
 
 ## Estado atual
 
-- A rota `/fin` consulta somente leitura do snapshot local por um contrato HTTP tipado. Ela separa Débito por `data` e Crédito por `fatura`, mostra totais brutos e não reproduz saldo, limite, antecipações, gráficos ou qualquer regra financeira do Fin estático.
+- A rota `/` é a home mínima do Hub e lista apenas módulos existentes. A rota `/fin` consulta somente leitura do snapshot local por um contrato HTTP tipado. Ela usa a fronteira de ciclos ancorada em `Faturamento PJ`, separa Débito por `data` e Crédito por `fatura`, mostra totais brutos e não reproduz saldo, limite, antecipações, gráficos ou qualquer outra regra financeira do Fin estático.
 - O PostgreSQL de desenvolvimento é o container local `finhub-postgres-local`, na porta `54329`. A migration `AddLegacyFinSnapshot` cria somente um staging local do legado e sua auditoria; ela não transforma essas linhas no modelo financeiro do Hub.
 - A primeira tabela de domínio financeiro deve surgir em uma migration posterior, revisada junto de seu contrato e regra em `docs/REGRAS.md`.

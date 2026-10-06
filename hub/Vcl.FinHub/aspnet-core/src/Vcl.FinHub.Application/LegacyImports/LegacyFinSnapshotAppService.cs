@@ -1,4 +1,4 @@
-// Caso de uso local: apresenta um mês do staging legado sem alterar dados ou recalcular regras financeiras.
+// Caso de uso local: apresenta um ciclo do staging legado sem alterar dados ou recalcular regras financeiras.
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,31 +24,33 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
 
     public async Task<LegacyFinCycleDto> GetCycleAsync(DateOnly cycleStart)
     {
-        var normalizedStart = new DateOnly(cycleStart.Year, cycleStart.Month, 1);
-        var normalizedEnd = normalizedStart.AddMonths(1).AddDays(-1);
         var snapshots = await _snapshotRepository.GetListAsync();
         var lastRun = (await _runRepository.GetListAsync())
             .OrderByDescending(run => run.ImportedAtUtc)
             .FirstOrDefault();
 
-        // Crédito pertence à competência da fatura; Débito, à data que movimentou a conta.
-        // A tela não adiciona faturas sintéticas, antecipações, saldo ou qualquer regra do Fin legado.
-        var rows = snapshots.Select(snapshot => new { Snapshot = snapshot, Competence = CompetenceOf(snapshot) }).ToList();
-        var months = rows
-            .Where(row => row.Competence.HasValue)
-            .Select(row => new DateOnly(row.Competence!.Value.Year, row.Competence.Value.Month, 1))
-            .Distinct()
-            .OrderBy(month => month)
+        var cycles = LegacyFinCycles.FromSnapshots(snapshots);
+        var selectedCycle = LegacyFinCycles.FindContaining(cycles, cycleStart);
+        // Sem âncora não existe ciclo financeiro. Mantemos a resposta vazia, em vez de inventar um mês-calendário.
+        var cycle = selectedCycle ?? new LegacyFinCycleRange(cycleStart, cycleStart);
+
+        // Crédito pertence ao ciclo que contém o vencimento da fatura; sem fatura ele fica fora,
+        // como ocorre no Fin. Débito entra pela data que movimentou a conta.
+        // A tela não cria faturas sintéticas, antecipações, saldo, limite ou outras regras legadas.
+        var debit = snapshots
+            .Where(snapshot => snapshot.Cred != true && LegacyFinCycles.Contains(cycle, snapshot.Data))
+            .Select(snapshot => ToItem(snapshot, snapshot.Data))
             .ToList();
-        var selected = rows.Where(row => row.Competence >= normalizedStart && row.Competence <= normalizedEnd).ToList();
-        var debit = selected.Where(row => row.Snapshot.Cred != true).Select(row => ToItem(row.Snapshot, row.Competence)).ToList();
-        var credit = selected.Where(row => row.Snapshot.Cred == true).Select(row => ToItem(row.Snapshot, row.Competence)).ToList();
+        var credit = snapshots
+            .Where(snapshot => snapshot.Cred == true && LegacyFinCycles.Contains(cycle, snapshot.Fatura))
+            .Select(snapshot => ToItem(snapshot, snapshot.Fatura))
+            .ToList();
 
         return new LegacyFinCycleDto
         {
-            CycleStart = normalizedStart,
-            CycleEnd = normalizedEnd,
-            AvailableMonths = months,
+            CycleStart = cycle.Start,
+            CycleEnd = cycle.End,
+            AvailableCycles = cycles.Select(item => item.Start).ToList(),
             LastImportAtUtc = lastRun?.ImportedAtUtc,
             SourceRowCount = lastRun?.SourceRowCount ?? 0,
             DebitTotal = debit.Sum(item => item.Valor ?? 0m),
@@ -57,10 +59,6 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
             CreditItems = credit,
         };
     }
-
-    private static DateOnly? CompetenceOf(LegacyFinSnapshot snapshot) => snapshot.Cred == true
-        ? snapshot.Fatura ?? snapshot.Data
-        : snapshot.Data;
 
     private static LegacyFinSnapshotItemDto ToItem(LegacyFinSnapshot snapshot, DateOnly? competence) => new()
     {

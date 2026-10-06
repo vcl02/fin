@@ -15,13 +15,18 @@ function lerRaiz(...partes) {
     return fs.readFileSync(path.join(raizHub, ...partes), 'utf8');
 }
 
-test('a fundação do Hub fixa .NET 10 e a rota inicial do Fin', () => {
+test('a fundação do Hub fixa .NET 10, home inicial e módulo Fin', () => {
     const projetoHost = ler('aspnet-core', 'src', 'Vcl.FinHub.HttpApi.Host', 'Vcl.FinHub.HttpApi.Host.csproj');
     const rotas = ler('angular', 'src', 'app', 'app.routes.ts');
+    const index = ler('angular', 'src', 'index.html');
+    const home = ler('angular', 'src', 'app', 'hub-home', 'hub-home.component.html');
 
     assert.match(projetoHost, /<TargetFramework>net10\.0<\/TargetFramework>/);
+    assert.match(rotas, /title: 'Hub pessoal'/);
     assert.match(rotas, /path: 'fin'/);
-    assert.match(rotas, /redirectTo: 'fin'/);
+    assert.match(rotas, /title: 'fin'/);
+    assert.match(index, /<title>Hub pessoal<\/title>/);
+    assert.match(home, /routerLink="\/fin"/);
 });
 
 test('o Hub não expõe Supabase ao Angular e limita a ponte legada ao importador manual', () => {
@@ -96,9 +101,23 @@ test('o staging legado é uma migration local versionada e possui somente consul
     assert.match(appService, /\[AllowAnonymous\]/);
     assert.match(appService, /public class LegacyFinSnapshotAppService/);
     assert.doesNotMatch(appService, /sealed class LegacyFinSnapshotAppService/);
-    assert.match(appService, /Crédito pertence à competência da fatura/);
+    assert.match(appService, /Crédito pertence ao ciclo que contém o vencimento da fatura/);
     assert.doesNotMatch(appService, /InsertAsync|UpdateAsync|DeleteAsync/);
     assert.match(clienteAngular, /api\/app\/legacy-fin-snapshot\/cycle/);
     assert.match(clienteAngular, /timeout\(\{ first: 8_000 \}\)/);
     assert.doesNotMatch(clienteAngular.replace(/^\/\/.*$/m, ''), /supabase/i);
+});
+
+test('a consulta local usa ciclos reais ancorados em Faturamento PJ, sem voltar a meses-calendário', () => {
+    const ciclos = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'LegacyImports', 'LegacyFinCycles.cs');
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'LegacyImports', 'LegacyFinSnapshotAppService.cs');
+    const clienteAngular = ler('angular', 'src', 'app', 'home', 'legacy-fin-snapshot.service.ts');
+
+    assert.match(ciclos, /AnchorName = "Faturamento PJ"/);
+    assert.match(ciclos, /DateOnly\.MaxValue/);
+    assert.match(appService, /LegacyFinCycles\.FromSnapshots/);
+    assert.match(appService, /LegacyFinCycles\.Contains\(cycle, snapshot\.Fatura\)/);
+    assert.match(appService, /AvailableCycles/);
+    assert.match(clienteAngular, /availableCycles/);
+    assert.doesNotMatch(appService, /AddMonths\(1\)\.AddDays\(-1\)/);
 });

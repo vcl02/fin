@@ -8,7 +8,7 @@ public sealed class LegacyFinCycleDto
 {
     public DateOnly CycleStart { get; init; }
     public DateOnly CycleEnd { get; init; }
-    public IReadOnlyList<DateOnly> AvailableMonths { get; init; } = Array.Empty<DateOnly>();
+    public IReadOnlyList<DateOnly> AvailableCycles { get; init; } = Array.Empty<DateOnly>();
     public DateTime? LastImportAtUtc { get; init; }
     public int SourceRowCount { get; init; }
     public decimal DebitTotal { get; init; }

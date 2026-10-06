@@ -3,8 +3,8 @@ import { Routes } from '@angular/router';
 export const appRoutes: Routes = [
   {
     path: '',
-    pathMatch: 'full',
-    redirectTo: 'fin',
+    title: 'Hub pessoal',
+    loadComponent: () => import('./hub-home/hub-home.component').then(m => m.HubHomeComponent),
   },
   {
     path: 'fin',

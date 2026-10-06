@@ -1,4 +1,4 @@
-// Consulta mensal do snapshot local: mantém a visualização próxima do Fin sem alterar dados ou regras legadas.
+// Consulta por ciclo do snapshot local: mantém a visualização próxima do Fin sem alterar dados ou regras legadas.
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -16,39 +16,39 @@ export class HomeComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   cycle: LegacyFinCycle | null = null;
-  selectedMonth = this.currentMonth();
+  selectedCycle = this.currentDate();
   loading = true;
   error = '';
 
   async ngOnInit(): Promise<void> {
-    await this.load(this.selectedMonth);
+    await this.load(this.selectedCycle);
   }
 
-  async selectMonth(month: string): Promise<void> {
-    await this.load(month);
+  async selectCycle(cycle: string): Promise<void> {
+    await this.load(cycle);
   }
 
-  async moveMonth(direction: -1 | 1): Promise<void> {
-    const months = this.cycle?.availableMonths ?? [];
-    const next = months[months.indexOf(this.selectedMonth) + direction];
+  async moveCycle(direction: -1 | 1): Promise<void> {
+    const cycles = this.cycle?.availableCycles ?? [];
+    const next = cycles[cycles.indexOf(this.selectedCycle) + direction];
     if (next) await this.load(next);
   }
 
-  async showCurrentMonth(): Promise<void> {
-    await this.load(this.currentMonth());
+  async showCurrentCycle(): Promise<void> {
+    await this.load(this.currentDate());
   }
 
-  hasPreviousMonth(): boolean {
-    return (this.cycle?.availableMonths.indexOf(this.selectedMonth) ?? -1) > 0;
+  hasPreviousCycle(): boolean {
+    return (this.cycle?.availableCycles.indexOf(this.selectedCycle) ?? -1) > 0;
   }
 
-  hasNextMonth(): boolean {
-    const months = this.cycle?.availableMonths ?? [];
-    return (months.indexOf(this.selectedMonth) ?? -1) < months.length - 1;
+  hasNextCycle(): boolean {
+    const cycles = this.cycle?.availableCycles ?? [];
+    return (cycles.indexOf(this.selectedCycle) ?? -1) < cycles.length - 1;
   }
 
-  monthLabel(month: string): string {
-    const [year, value] = month.slice(0, 10).split('-').map(Number);
+  cycleLabel(cycle: string): string {
+    const [year, value] = cycle.slice(0, 10).split('-').map(Number);
     return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
       .format(new Date(year, value - 1, 1));
   }
@@ -77,7 +77,7 @@ export class HomeComponent implements OnInit {
     this.error = '';
     try {
       this.cycle = await this.snapshots.getCycle(month);
-      this.selectedMonth = this.cycle.cycleStart;
+      this.selectedCycle = this.cycle.cycleStart;
     } catch (error) {
       // A tela não deve congelar se a API local, CORS ou o certificado de desenvolvimento falharem.
       console.error('Falha ao consultar o ciclo local.', error);
@@ -88,8 +88,8 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  private currentMonth(): string {
+  private currentDate(): string {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }
 }

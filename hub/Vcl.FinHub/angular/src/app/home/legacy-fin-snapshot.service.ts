@@ -18,7 +18,7 @@ export interface LegacyFinSnapshotItem {
 export interface LegacyFinCycle {
   cycleStart: string;
   cycleEnd: string;
-  availableMonths: string[];
+  availableCycles: string[];
   lastImportAtUtc: string | null;
   sourceRowCount: number;
   debitTotal: number;
