@@ -121,3 +121,17 @@ test('a consulta local usa ciclos reais ancorados em Faturamento PJ, sem voltar 
     assert.match(clienteAngular, /availableCycles/);
     assert.doesNotMatch(appService, /AddMonths\(1\)\.AddDays\(-1\)/);
 });
+
+test('o retrato Hoje do Hub recebe a data local do navegador e não antecipa saldo futuro', () => {
+    const calculadora = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'LegacyImports', 'LegacyFinDebitTodaySummary.cs');
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'LegacyImports', 'LegacyFinSnapshotAppService.cs');
+    const clienteAngular = ler('angular', 'src', 'app', 'home', 'legacy-fin-snapshot.service.ts');
+    const telaAngular = ler('angular', 'src', 'app', 'home', 'home.component.ts');
+
+    assert.match(calculadora, /snapshot\.Pago == true/);
+    assert.match(calculadora, /snapshot\.Cred != true/);
+    assert.match(calculadora, /BalanceSince/);
+    assert.match(appService, /LegacyFinDebitTodayCalculator\.Calculate/);
+    assert.match(clienteAngular, /\.set\('asOf', asOf\)/);
+    assert.match(telaAngular, /getCycle\(month, this\.currentDate\(\)\)/);
+});

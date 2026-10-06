@@ -22,7 +22,7 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
         _runRepository = runRepository;
     }
 
-    public async Task<LegacyFinCycleDto> GetCycleAsync(DateOnly cycleStart)
+    public async Task<LegacyFinCycleDto> GetCycleAsync(DateOnly cycleStart, DateOnly? asOf = null)
     {
         var snapshots = await _snapshotRepository.GetListAsync();
         var lastRun = (await _runRepository.GetListAsync())
@@ -31,6 +31,7 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
 
         var cycles = LegacyFinCycles.FromSnapshots(snapshots);
         var selectedCycle = LegacyFinCycles.FindContaining(cycles, cycleStart);
+        var debitToday = LegacyFinDebitTodayCalculator.Calculate(snapshots, asOf ?? DateOnly.FromDateTime(DateTime.Today));
         // Sem âncora não existe ciclo financeiro. Mantemos a resposta vazia, em vez de inventar um mês-calendário.
         var cycle = selectedCycle ?? new LegacyFinCycleRange(cycleStart, cycleStart);
 
@@ -55,6 +56,8 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
             SourceRowCount = lastRun?.SourceRowCount ?? 0,
             DebitTotal = debit.Sum(item => item.Valor ?? 0m),
             CreditTotal = credit.Sum(item => item.Valor ?? 0m),
+            DebitTodayBalance = debitToday.Balance,
+            DebitTodaySaved = debitToday.Saved,
             DebitItems = debit,
             CreditItems = credit,
         };

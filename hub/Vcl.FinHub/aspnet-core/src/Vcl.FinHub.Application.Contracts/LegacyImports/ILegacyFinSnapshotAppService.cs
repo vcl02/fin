@@ -7,5 +7,5 @@ namespace Vcl.FinHub.LegacyImports;
 
 public interface ILegacyFinSnapshotAppService : IApplicationService
 {
-    Task<LegacyFinCycleDto> GetCycleAsync(DateOnly cycleStart);
+    Task<LegacyFinCycleDto> GetCycleAsync(DateOnly cycleStart, DateOnly? asOf = null);
 }

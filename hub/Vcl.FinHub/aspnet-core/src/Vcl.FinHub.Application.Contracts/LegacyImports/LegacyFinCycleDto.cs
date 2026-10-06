@@ -13,6 +13,8 @@ public sealed class LegacyFinCycleDto
     public int SourceRowCount { get; init; }
     public decimal DebitTotal { get; init; }
     public decimal CreditTotal { get; init; }
+    public decimal DebitTodayBalance { get; init; }
+    public decimal DebitTodaySaved { get; init; }
     public IReadOnlyList<LegacyFinSnapshotItemDto> DebitItems { get; init; } = Array.Empty<LegacyFinSnapshotItemDto>();
     public IReadOnlyList<LegacyFinSnapshotItemDto> CreditItems { get; init; } = Array.Empty<LegacyFinSnapshotItemDto>();
 }

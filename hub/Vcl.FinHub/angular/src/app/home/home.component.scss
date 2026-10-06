@@ -10,6 +10,8 @@ button, select { min-height: 2.45rem; border: 1px solid #3d454d; border-radius: 
 button { cursor: pointer; } button:disabled, select:disabled { cursor: not-allowed; opacity: .45; }
 .icon-button { width: 2.45rem; font-size: 1.45rem; line-height: 1; }.today-button { padding: 0 .85rem; }.cycle-nav select { min-width: 11rem; padding: 0 .7rem; }
 .fin-home__explanation { margin: 0 0 1.5rem; }.state { margin: 3rem 0; color: #aeb7c0; text-align: center; }.state--error { color: #ff7777; }
+.today-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem 1rem; margin: 1.25rem 0; padding: .8rem 1rem; border: 1px solid #39434d; border-radius: .65rem; background: #20262b; }
+.today-summary span { color: #aeb7c0; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.today-summary strong { color: #edf0f2; }
 .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .summary-card, .cycle-block { border: 1px solid #3a424a; border-radius: .7rem; background: #22272c; }.summary-card { padding: 1rem 1.15rem; }.summary-card p, .summary-card span { margin: 0; color: #aeb7c0; font-size: .8rem; }.summary-card strong { display: block; margin: .3rem 0; font-size: 1.35rem; }
 .cycle-block { margin-top: 1rem; overflow: hidden; }.cycle-block__header { padding: .8rem 1rem; border-bottom: 1px solid #3a424a; }

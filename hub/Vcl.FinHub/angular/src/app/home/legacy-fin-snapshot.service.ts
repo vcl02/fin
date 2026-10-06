@@ -23,6 +23,8 @@ export interface LegacyFinCycle {
   sourceRowCount: number;
   debitTotal: number;
   creditTotal: number;
+  debitTodayBalance: number;
+  debitTodaySaved: number;
   debitItems: LegacyFinSnapshotItem[];
   creditItems: LegacyFinSnapshotItem[];
 }
@@ -31,8 +33,8 @@ export interface LegacyFinCycle {
 export class LegacyFinSnapshotService {
   private readonly http = inject(HttpClient);
 
-  getCycle(cycleStart: string): Promise<LegacyFinCycle> {
-    const params = new HttpParams().set('cycleStart', cycleStart);
+  getCycle(cycleStart: string, asOf: string): Promise<LegacyFinCycle> {
+    const params = new HttpParams().set('cycleStart', cycleStart).set('asOf', asOf);
     return firstValueFrom(this.http.get<LegacyFinCycle>(
       `${environment.apis.default.url}/api/app/legacy-fin-snapshot/cycle`,
       { params },

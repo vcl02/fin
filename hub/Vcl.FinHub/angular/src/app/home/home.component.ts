@@ -76,7 +76,8 @@ export class HomeComponent implements OnInit {
     this.loading = true;
     this.error = '';
     try {
-      this.cycle = await this.snapshots.getCycle(month);
+      // A data local vem do navegador para o retrato Hoje não herdar fuso horário do servidor.
+      this.cycle = await this.snapshots.getCycle(month, this.currentDate());
       this.selectedCycle = this.cycle.cycleStart;
     } catch (error) {
       // A tela não deve congelar se a API local, CORS ou o certificado de desenvolvimento falharem.
