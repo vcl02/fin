@@ -63,6 +63,14 @@ test('o banco do Hub é um PostgreSQL local isolado e nunca aponta para a produ�
     assert.doesNotMatch(configuracoes, /supabase\.co|postgres\.supabase/i);
 });
 
+test('a consulta do Hub elimina a margem e a fonte serifada herdadas do template', () => {
+    const estilosGlobais = ler('angular', 'src', 'styles.scss');
+
+    assert.match(estilosGlobais, /font-family: "Segoe UI", system-ui/);
+    assert.match(estilosGlobais, /body[\s\S]*margin: 0/);
+    assert.match(estilosGlobais, /background: #1a1d20/);
+});
+
 test('a infraestrutura técnica local tem uma migration inicial sem modelo financeiro prematuro', () => {
     const pastaMigrations = path.join(solucaoHub, 'aspnet-core', 'src', 'Vcl.FinHub.EntityFrameworkCore', 'Migrations');
     const arquivos = fs.readdirSync(pastaMigrations);
