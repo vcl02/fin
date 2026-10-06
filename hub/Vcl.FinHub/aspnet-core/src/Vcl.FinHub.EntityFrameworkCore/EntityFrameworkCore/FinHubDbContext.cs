@@ -31,6 +31,8 @@ public class FinHubDbContext :
     public DbSet<LegacyFinSnapshotRun> LegacyFinSnapshotRuns { get; set; }
     // Modelo nativo, inicialmente vazio e paralelo ao snapshot: nenhuma importação o alimenta.
     public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
+    // Fronteiras explícitas para futuros ciclos nativos; lançamentos não carregam uma cópia desta chave.
+    public DbSet<FinancialCycle> FinancialCycles { get; set; }
 
     #region Entities from the modules
 
@@ -111,13 +113,22 @@ public class FinHubDbContext :
                 table.HasCheckConstraint("CK_FinancialTransactions_Status", "\"Status\" IN ('Open', 'Paid')");
             });
             b.ConfigureByConvention();
-            b.Property(x => x.OccurredOn).HasColumnType("date");
+            b.Property(x => x.OccurredOn).HasColumnType("date").IsRequired(false);
             b.Property(x => x.Amount).HasPrecision(14, 2);
-            b.Property(x => x.Name).HasMaxLength(FinancialTransaction.MaxNameLength).IsRequired();
-            b.Property(x => x.Categories).HasMaxLength(FinancialTransaction.MaxCategoriesLength).IsRequired();
+            b.Property(x => x.Name).HasMaxLength(FinancialTransactionRules.MaxNameLength).IsRequired();
+            b.Property(x => x.Categories).HasMaxLength(FinancialTransactionRules.MaxCategoriesLength).IsRequired();
             b.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
             b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
             b.HasIndex(x => x.OccurredOn);
+        });
+
+        builder.Entity<FinancialCycle>(b =>
+        {
+            b.ToTable("FinancialCycles", FinHubConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.StartsOn).HasColumnType("date").IsRequired();
+            // Uma única fronteira por dia impede ciclos ambíguos; o fim vem da próxima fronteira cronológica.
+            b.HasIndex(x => x.StartsOn).IsUnique();
         });
 
         //builder.Entity<YourEntity>(b =>

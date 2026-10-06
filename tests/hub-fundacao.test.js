@@ -29,6 +29,10 @@ test('a fundação do Hub fixa .NET 10, home inicial e módulo Fin', () => {
     assert.match(index, /<title>Hub pessoal<\/title>/);
     assert.match(home, /routerLink="\/fin"/);
     assert.match(fin, /class="icon-button home-button" routerLink="\/" title="Voltar ao Hub"/);
+    assert.match(fin, /class="fin-home__header-side"/);
+    assert.match(fin, /class="fin-home__actions" aria-label="Ações do Fin"/);
+    assert.match(fin, /class="icon-button native-link" routerLink="\/fin"/);
+    assert.match(fin, /fin-home__import[\s\S]*fin-home__actions/);
 });
 
 test('o Hub não expõe Supabase ao Angular e limita a ponte legada ao importador manual', () => {
@@ -177,10 +181,75 @@ test('o primeiro agregado financeiro nativo é isolado do snapshot legado', () =
 
     assert.match(entidade, /Entity<Guid>/);
     assert.match(entidade, /Amount/);
+    assert.match(entidade, /decimal\? Amount/);
     assert.match(entidade, /FinancialTransactionKind/);
     assert.match(entidade, /FinancialTransactionStatus/);
     assert.match(contexto, /DbSet<FinancialTransaction> FinancialTransactions/);
     assert.ok(migration, 'o agregado nativo precisa de migration versionada, ainda não aplicada');
     assert.match(fs.readFileSync(path.join(pastaMigrations, migration), 'utf8'), /CreateTable[\s\S]*FinancialTransactions/);
     assert.doesNotMatch(importer, /FinancialTransaction/);
+});
+
+test('o fluxo nativo local consulta e cadastra somente FinancialTransactions', () => {
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'Finance', 'FinancialTransactionAppService.cs');
+    const contrato = ler('aspnet-core', 'src', 'Vcl.FinHub.Application.Contracts', 'Finance', 'IFinancialTransactionAppService.cs');
+    const cliente = ler('angular', 'src', 'app', 'native-transactions', 'financial-transaction.service.ts');
+    const tela = ler('angular', 'src', 'app', 'native-transactions', 'native-transactions.component.html');
+    const rotas = ler('angular', 'src', 'app', 'home', 'home.routes.ts');
+
+    assert.match(contrato, /GetListAsync/);
+    assert.match(contrato, /CreateAsync/);
+    assert.match(appService, /IRepository<FinancialTransaction, Guid>/);
+    assert.match(appService, /InsertAsync/);
+    assert.doesNotMatch(appService, /LegacyFinSnapshot/);
+    assert.match(cliente, /api\/app\/financial-transaction/);
+    assert.match(tela, /\(ngSubmit\)="save\(\)"/);
+    assert.match(rotas, /path: 'conferencia'/);
+});
+
+test('o formulário nativo começa em despesa e envia somente a magnitude com sinal escolhido', () => {
+    const componente = ler('angular', 'src', 'app', 'native-transactions', 'native-transactions.component.ts');
+    const tela = ler('angular', 'src', 'app', 'native-transactions', 'native-transactions.component.html');
+
+    assert.match(componente, /isExpense = true/);
+    assert.match(componente, /amount: this\.signedAmount\(\)/);
+    assert.match(componente, /this\.isExpense \? -Math\.abs\(this\.amountMagnitude\) : Math\.abs\(this\.amountMagnitude\)/);
+    assert.match(tela, /class="sign-button"/);
+    assert.match(tela, /toggleAmountSign\(\)/);
+});
+
+test('movimento nativo usa data opcional para backlog e permite manutenção local', () => {
+    const entidade = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'Finance', 'FinancialTransaction.cs');
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'Finance', 'FinancialTransactionAppService.cs');
+    const cliente = ler('angular', 'src', 'app', 'native-transactions', 'financial-transaction.service.ts');
+    const componente = ler('angular', 'src', 'app', 'native-transactions', 'native-transactions.component.ts');
+    const tela = ler('angular', 'src', 'app', 'native-transactions', 'native-transactions.component.html');
+
+    assert.match(entidade, /DateOnly\? OccurredOn/);
+    assert.match(appService, /UpdateAsync/);
+    assert.match(appService, /DeleteAsync/);
+    assert.match(cliente, /http\.put/);
+    assert.match(cliente, /http\.delete/);
+    assert.doesNotMatch(tela, /Sem data: Backlog/);
+    assert.match(tela, /\(click\)="edit\(item\)"/);
+    assert.match(tela, /\(click\)="remove\(item\)"/);
+    assert.match(componente, /if \(this\.editingId\(\) === transaction\.id\)/);
+    assert.doesNotMatch(tela, /cancelEdit/);
+    assert.match(componente, /signal<FinancialTransaction\[\]>/);
+    assert.match(componente, /this\.transactions\.update/);
+});
+
+test('ciclo nativo usa fronteira explícita e não depende de nomes do legado', () => {
+    const entidade = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'Finance', 'FinancialCycle.cs');
+    const contexto = ler('aspnet-core', 'src', 'Vcl.FinHub.EntityFrameworkCore', 'EntityFrameworkCore', 'FinHubDbContext.cs');
+    const contrato = ler('aspnet-core', 'src', 'Vcl.FinHub.Application.Contracts', 'Finance', 'IFinancialCycleAppService.cs');
+    const regras = fs.readFileSync(path.join('docs', 'REGRAS.md'), 'utf8');
+
+    assert.match(entidade, /DateOnly StartsOn/);
+    assert.match(contexto, /DbSet<FinancialCycle> FinancialCycles/);
+    assert.match(contexto, /HasIndex\(x => x\.StartsOn\)\.IsUnique/);
+    assert.match(contrato, /CreateAsync/);
+    assert.match(contrato, /UpdateAsync/);
+    assert.match(regras, /ciclo nativo é um registro explícito/i);
+    assert.match(regras, /seletor oferece Todos, Backlog/i);
 });

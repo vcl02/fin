@@ -24,12 +24,28 @@ namespace Vcl.FinHub.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Vcl.FinHub.Finance.FinancialCycle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("StartsOn")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartsOn")
+                        .IsUnique();
+
+                    b.ToTable("FinancialCycles", (string)null);
+                });
+
             modelBuilder.Entity("Vcl.FinHub.Finance.FinancialTransaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal?>("Amount")
                         .HasPrecision(14, 2)
                         .HasColumnType("numeric(14,2)");
 
@@ -48,7 +64,7 @@ namespace Vcl.FinHub.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<DateOnly>("OccurredOn")
+                    b.Property<DateOnly?>("OccurredOn")
                         .HasColumnType("date");
 
                     b.Property<string>("Status")

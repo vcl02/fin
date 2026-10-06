@@ -4,13 +4,18 @@
     <div class="fin-home__title">
       <p class="fin-home__eyebrow">Hub pessoal · consulta local</p>
       <div class="fin-home__title-row">
-        <a class="icon-button home-button" routerLink="/" title="Voltar ao Hub" aria-label="Voltar ao Hub">⌂</a>
         <h1 id="fin-title">fin</h1>
       </div>
     </div>
-    <p class="fin-home__import" *ngIf="cycle">
-      {{ cycle.sourceRowCount }} registros · importado {{ formatImportedAt(cycle.lastImportAtUtc) }}
-    </p>
+    <div class="fin-home__header-side">
+      <p class="fin-home__import" *ngIf="cycle">
+        {{ cycle.sourceRowCount }} registros · importado {{ formatImportedAt(cycle.lastImportAtUtc) }}
+      </p>
+      <nav class="fin-home__actions" aria-label="Ações do Fin">
+        <a class="icon-button home-button" routerLink="/" title="Voltar ao Hub" aria-label="Voltar ao Hub">⌂</a>
+        <a class="icon-button native-link" routerLink="/fin" title="Abrir Fin nativo" aria-label="Abrir Fin nativo">＋</a>
+      </nav>
+    </div>
   </header>
 
   <nav class="cycle-nav" aria-label="Navegação entre ciclos">
