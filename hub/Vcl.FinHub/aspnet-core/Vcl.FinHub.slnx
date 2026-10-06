@@ -12,6 +12,7 @@
     
     
     <Project Path="src/Vcl.FinHub.DbMigrator/Vcl.FinHub.DbMigrator.csproj" />
+    <Project Path="src/Vcl.FinHub.LegacyImport/Vcl.FinHub.LegacyImport.csproj" />
     <Project Path="src/Vcl.FinHub.Domain.Shared/Vcl.FinHub.Domain.Shared.csproj" />
     <Project Path="src/Vcl.FinHub.Domain/Vcl.FinHub.Domain.csproj" />
     <Project Path="src/Vcl.FinHub.EntityFrameworkCore/Vcl.FinHub.EntityFrameworkCore.csproj" />

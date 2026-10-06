@@ -4,6 +4,7 @@ using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
+using Volo.Abp.EntityFrameworkCore.Modeling;
 using Volo.Abp.FeatureManagement.EntityFrameworkCore;
 using Volo.Abp.Identity;
 using Volo.Abp.Identity.EntityFrameworkCore;
@@ -12,6 +13,7 @@ using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.TenantManagement.EntityFrameworkCore;
+using Vcl.FinHub.LegacyImports;
 
 namespace Vcl.FinHub.EntityFrameworkCore;
 
@@ -23,7 +25,9 @@ public class FinHubDbContext :
     IIdentityDbContext,
     ITenantManagementDbContext
 {
-    /* Add DbSet properties for your Aggregate Roots / Entities here. */
+    // Este staging e a fronteira entre o Fin legado e o Hub; nao e ainda o modelo financeiro do Hub.
+    public DbSet<LegacyFinSnapshot> LegacyFinSnapshots { get; set; }
+    public DbSet<LegacyFinSnapshotRun> LegacyFinSnapshotRuns { get; set; }
 
     #region Entities from the modules
 
@@ -75,6 +79,24 @@ public class FinHubDbContext :
         builder.ConfigureTenantManagement();
 
         /* Configure your own tables/entities inside here */
+
+        builder.Entity<LegacyFinSnapshot>(b =>
+        {
+            b.ToTable("LegacyFinSnapshots", FinHubConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.Nome).HasMaxLength(255);
+            b.Property(x => x.Categ).HasMaxLength(500);
+            b.Property(x => x.Freq).HasMaxLength(100);
+            // Preserva futuras colunas do legado sem fazer delas parte do contrato do Hub ainda.
+            b.Property(x => x.RegistroOriginal).HasColumnType("jsonb");
+        });
+
+        builder.Entity<LegacyFinSnapshotRun>(b =>
+        {
+            b.ToTable("LegacyFinSnapshotRuns", FinHubConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.ContentHash).HasMaxLength(64);
+        });
 
         //builder.Entity<YourEntity>(b =>
         //{

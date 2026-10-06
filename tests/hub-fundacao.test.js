@@ -24,13 +24,73 @@ test('a fundação do Hub fixa .NET 10 e a rota inicial do Fin', () => {
     assert.match(rotas, /redirectTo: 'fin'/);
 });
 
-test('o Hub permanece isolado do Supabase até uma migração aprovada', () => {
+test('o Hub não expõe Supabase ao Angular e limita a ponte legada ao importador manual', () => {
     const documentos = [
         lerRaiz('README.md'),
         lerRaiz('AGENTS.md'),
         ler('angular', 'src', 'app', 'home', 'home.component.html'),
     ].join('\n');
 
-    assert.match(documentos, /não acessa Supabase|Nenhum dado financeiro, Supabase/i);
-    assert.doesNotMatch(ler('angular', 'package.json'), /@supabase\//i);
+    assert.match(documentos, /não acessa Supabase|Nenhum dado financeiro ou Supabase/i);
+    const packageAngular = ler('angular', 'package.json');
+    const importer = ler('aspnet-core', 'src', 'Vcl.FinHub.LegacyImport', 'LegacyFinSnapshotImporter.cs');
+    const configExemplo = ler('aspnet-core', 'src', 'Vcl.FinHub.LegacyImport', 'appsettings.local.example.json');
+    assert.doesNotMatch(packageAngular, /@supabase\//i);
+    assert.doesNotMatch(packageAngular, /@abp\/ng\.theme/i);
+    assert.match(importer, /GetAsync/);
+    assert.doesNotMatch(importer, /client\.(Post|Put|Patch|Delete)Async/);
+    assert.match(importer, /BeginTransactionAsync/);
+    assert.match(importer, /ExecuteDeleteAsync/);
+    assert.match(importer, /GetStatusAsync/);
+    assert.match(importer, /IsAuthenticatedSessionToken/);
+    assert.match(importer, /papel authenticated/);
+    assert.match(importer, /linhas hist.ricas incompletas/);
+    assert.doesNotMatch(importer, /string\.IsNullOrWhiteSpace\(snapshot\.Nome\)/);
+    assert.match(configExemplo, /SupabaseAccessToken/);
+    assert.doesNotMatch(configExemplo, /sb_publishable_|eyJ/);
+});
+
+test('o banco do Hub é um PostgreSQL local isolado e nunca aponta para a produção', () => {
+    const compose = ler('docker-compose.yml');
+    const configuracoes = [
+        ler('aspnet-core', 'src', 'Vcl.FinHub.HttpApi.Host', 'appsettings.json'),
+        ler('aspnet-core', 'src', 'Vcl.FinHub.DbMigrator', 'appsettings.json'),
+    ].join('\n');
+
+    assert.match(compose, /postgres:16-alpine/);
+    assert.match(compose, /127\.0\.0\.1:54329:5432/);
+    assert.match(configuracoes, /Host=localhost;Port=54329;Database=finhub/);
+    assert.doesNotMatch(configuracoes, /supabase\.co|postgres\.supabase/i);
+});
+
+test('a infraestrutura técnica local tem uma migration inicial sem modelo financeiro prematuro', () => {
+    const pastaMigrations = path.join(solucaoHub, 'aspnet-core', 'src', 'Vcl.FinHub.EntityFrameworkCore', 'Migrations');
+    const arquivos = fs.readdirSync(pastaMigrations);
+    const migrationInicial = arquivos.find(arquivo => /_Initial\.cs$/.test(arquivo));
+
+    assert.ok(migrationInicial, 'a migration inicial do ABP deve ser versionada');
+    assert.doesNotMatch(fs.readFileSync(path.join(pastaMigrations, migrationInicial), 'utf8'), /FinLancamento|Supabase/i);
+});
+
+test('o staging legado é uma migration local versionada e possui somente consulta HTTP local', () => {
+    const pastaMigrations = path.join(solucaoHub, 'aspnet-core', 'src', 'Vcl.FinHub.EntityFrameworkCore', 'Migrations');
+    const arquivos = fs.readdirSync(pastaMigrations);
+    const migrationSnapshot = arquivos.find(arquivo => /_AddLegacyFinSnapshot\.cs$/.test(arquivo));
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'LegacyImports', 'LegacyFinSnapshotAppService.cs');
+    const contrato = ler('aspnet-core', 'src', 'Vcl.FinHub.Application.Contracts', 'LegacyImports', 'ILegacyFinSnapshotAppService.cs');
+    const clienteAngular = ler('angular', 'src', 'app', 'home', 'legacy-fin-snapshot.service.ts');
+
+    assert.ok(migrationSnapshot, 'o staging local precisa de migration versionada');
+    const migration = fs.readFileSync(path.join(pastaMigrations, migrationSnapshot), 'utf8');
+    assert.match(migration, /LegacyFinSnapshots/);
+    assert.match(migration, /LegacyFinSnapshotRuns/);
+    assert.match(contrato, /GetCycleAsync/);
+    assert.match(appService, /\[AllowAnonymous\]/);
+    assert.match(appService, /public class LegacyFinSnapshotAppService/);
+    assert.doesNotMatch(appService, /sealed class LegacyFinSnapshotAppService/);
+    assert.match(appService, /Crédito pertence à competência da fatura/);
+    assert.doesNotMatch(appService, /InsertAsync|UpdateAsync|DeleteAsync/);
+    assert.match(clienteAngular, /api\/app\/legacy-fin-snapshot\/cycle/);
+    assert.match(clienteAngular, /timeout\(\{ first: 8_000 \}\)/);
+    assert.doesNotMatch(clienteAngular.replace(/^\/\/.*$/m, ''), /supabase/i);
 });

@@ -252,6 +252,7 @@ paket-files/
 *.sln.iml
 
 # FinHub
+src/Vcl.FinHub.LegacyImport/appsettings.local.json
 src/Vcl.FinHub.Web/Logs/*
 src/Vcl.FinHub.Web.Host/Logs/*
 src/Vcl.FinHub.AuthServer/Logs/*
