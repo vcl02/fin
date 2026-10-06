@@ -22,6 +22,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Erros operacionais usam toast, sem interromper a tela com `alert()`. Cada toast tenta tocar um tom curto e baixo, sem arquivo externo; bloqueio de autoplay do navegador nunca impede o aviso visual. A única caixa nativa permitida é a confirmação antes de excluir um lançamento real ou simulado, porque essa ação não pode ser desfeita.
 - Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos; detalhes financeiros ficam nas telas e modais próprios, não no hover.
 
+## Modelo nativo do Hub (em preparação)
+
+- `FinancialTransaction` é o primeiro agregado próprio do Hub e permanece vazio nesta fase: o importador continua escrevendo apenas no snapshot local do legado, e o Fin estático continua sendo a fonte de verdade.
+- Um movimento nativo tem data de ocorrência, valor assinado não zero, nome, categorias textuais, situação (`Open` ou `Paid`) e natureza (`Debit` ou `Credit`). O valor preserva a convenção geral: entrada positiva e saída negativa.
+- Esta tabela ainda não tenta representar fatura, cartão, limite, recorrência, antecipação ou sugestões. Esses conceitos só entram depois de uma decisão explícita de modelagem e migration própria; não serão inferidos de nomes ou categorias.
+
 ## Escopo e exclusões das visões
 
 - **Comparar:** usa registros com ciclo válido e ainda inclui as linhas sintéticas `Saldo do mês anterior`, `Aporte sugerido` e `Resgate necessário`, salvo as exclusões abaixo. `Reserva` é removida da classificação: em `Casa, Reserva` sobra `Casa`; uma linha somente `Reserva` é ignorada. A linha inteira sai se sua categoria contiver uma destas categorias, mesmo combinada com outra: `Rendimento`, `Reembolso`, `Teste`, `Alimentação`, `Transporte`, `Besteira`, `Presente` (também aceita a grafia `Presemte`) ou `Saldo`. As três primeiras são entrada/compensação/dado técnico; as demais são recortes escolhidos para não participar dessa análise. Portanto, a linha sintética `Saldo do mês anterior` também sai. **Antecipação Fatura** sai se estiver no nome ou na categoria, mesmo em cadastro legado marcado como Crédito. Não há abatimento sintético de fatura na matriz. Essas exclusões são somente de Comparar; não mudam pizza, evolução, Visualizações, ciclos, saldo nem dados no banco.

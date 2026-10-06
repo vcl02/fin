@@ -24,6 +24,52 @@ namespace Vcl.FinHub.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Vcl.FinHub.Finance.FinancialTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)");
+
+                    b.Property<string>("Categories")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateOnly>("OccurredOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredOn");
+
+                    b.ToTable("FinancialTransactions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FinancialTransactions_AmountNonZero", "\"Amount\" <> 0");
+
+                            t.HasCheckConstraint("CK_FinancialTransactions_Kind", "\"Kind\" IN ('Debit', 'Credit')");
+
+                            t.HasCheckConstraint("CK_FinancialTransactions_Status", "\"Status\" IN ('Open', 'Paid')");
+                        });
+                });
+
             modelBuilder.Entity("Vcl.FinHub.LegacyImports.LegacyFinSnapshot", b =>
                 {
                     b.Property<long>("Id")

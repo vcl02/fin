@@ -13,6 +13,7 @@ using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.TenantManagement.EntityFrameworkCore;
+using Vcl.FinHub.Finance;
 using Vcl.FinHub.LegacyImports;
 
 namespace Vcl.FinHub.EntityFrameworkCore;
@@ -28,6 +29,8 @@ public class FinHubDbContext :
     // Este staging e a fronteira entre o Fin legado e o Hub; nao e ainda o modelo financeiro do Hub.
     public DbSet<LegacyFinSnapshot> LegacyFinSnapshots { get; set; }
     public DbSet<LegacyFinSnapshotRun> LegacyFinSnapshotRuns { get; set; }
+    // Modelo nativo, inicialmente vazio e paralelo ao snapshot: nenhuma importação o alimenta.
+    public DbSet<FinancialTransaction> FinancialTransactions { get; set; }
 
     #region Entities from the modules
 
@@ -96,6 +99,25 @@ public class FinHubDbContext :
             b.ToTable("LegacyFinSnapshotRuns", FinHubConsts.DbSchema);
             b.ConfigureByConvention();
             b.Property(x => x.ContentHash).HasMaxLength(64);
+        });
+
+        builder.Entity<FinancialTransaction>(b =>
+        {
+            b.ToTable("FinancialTransactions", FinHubConsts.DbSchema, table =>
+            {
+                // As mesmas invariantes vivem no banco para que SQL direto não crie um movimento impossível.
+                table.HasCheckConstraint("CK_FinancialTransactions_AmountNonZero", "\"Amount\" <> 0");
+                table.HasCheckConstraint("CK_FinancialTransactions_Kind", "\"Kind\" IN ('Debit', 'Credit')");
+                table.HasCheckConstraint("CK_FinancialTransactions_Status", "\"Status\" IN ('Open', 'Paid')");
+            });
+            b.ConfigureByConvention();
+            b.Property(x => x.OccurredOn).HasColumnType("date");
+            b.Property(x => x.Amount).HasPrecision(14, 2);
+            b.Property(x => x.Name).HasMaxLength(FinancialTransaction.MaxNameLength).IsRequired();
+            b.Property(x => x.Categories).HasMaxLength(FinancialTransaction.MaxCategoriesLength).IsRequired();
+            b.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
+            b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            b.HasIndex(x => x.OccurredOn);
         });
 
         //builder.Entity<YourEntity>(b =>

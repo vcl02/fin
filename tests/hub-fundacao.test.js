@@ -167,3 +167,20 @@ test('a prévia de Crédito do Hub usa o próximo ciclo e separa Hoje de Futuro'
     assert.match(tela, /Hoje \{\{ formatMoney\(cycle\.creditTodayTotal\) \}\}/);
     assert.match(tela, /Futuro \{\{ formatMoney\(cycle\.creditFutureTotal\) \}\}/);
 });
+
+test('o primeiro agregado financeiro nativo é isolado do snapshot legado', () => {
+    const entidade = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'Finance', 'FinancialTransaction.cs');
+    const contexto = ler('aspnet-core', 'src', 'Vcl.FinHub.EntityFrameworkCore', 'EntityFrameworkCore', 'FinHubDbContext.cs');
+    const importer = ler('aspnet-core', 'src', 'Vcl.FinHub.LegacyImport', 'LegacyFinSnapshotImporter.cs');
+    const pastaMigrations = path.join(solucaoHub, 'aspnet-core', 'src', 'Vcl.FinHub.EntityFrameworkCore', 'Migrations');
+    const migration = fs.readdirSync(pastaMigrations).find(file => /_AddFinancialTransactions\.cs$/.test(file));
+
+    assert.match(entidade, /Entity<Guid>/);
+    assert.match(entidade, /Amount/);
+    assert.match(entidade, /FinancialTransactionKind/);
+    assert.match(entidade, /FinancialTransactionStatus/);
+    assert.match(contexto, /DbSet<FinancialTransaction> FinancialTransactions/);
+    assert.ok(migration, 'o agregado nativo precisa de migration versionada, ainda não aplicada');
+    assert.match(fs.readFileSync(path.join(pastaMigrations, migration), 'utf8'), /CreateTable[\s\S]*FinancialTransactions/);
+    assert.doesNotMatch(importer, /FinancialTransaction/);
+});
