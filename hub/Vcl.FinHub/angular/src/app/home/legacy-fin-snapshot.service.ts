@@ -25,6 +25,8 @@ export interface LegacyFinCycle {
   creditTotal: number;
   debitTodayBalance: number;
   debitTodaySaved: number;
+  debitFutureBalance: number;
+  debitFutureSaved: number;
   debitItems: LegacyFinSnapshotItem[];
   creditItems: LegacyFinSnapshotItem[];
 }

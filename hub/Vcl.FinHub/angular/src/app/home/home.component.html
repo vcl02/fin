@@ -5,9 +5,12 @@
       <p class="fin-home__eyebrow">Hub pessoal · consulta local</p>
       <h1 id="fin-title">fin</h1>
     </div>
-    <p class="fin-home__import" *ngIf="cycle">
-      {{ cycle.sourceRowCount }} registros · importado {{ formatImportedAt(cycle.lastImportAtUtc) }}
-    </p>
+    <div class="fin-home__actions">
+      <p class="fin-home__import" *ngIf="cycle">
+        {{ cycle.sourceRowCount }} registros · importado {{ formatImportedAt(cycle.lastImportAtUtc) }}
+      </p>
+      <a class="icon-button" routerLink="/" title="Voltar ao Hub" aria-label="Voltar ao Hub">⌂</a>
+    </div>
   </header>
 
   <nav class="cycle-nav" aria-label="Navegação entre ciclos">
@@ -31,6 +34,11 @@
       <span>Hoje</span>
       <strong [class.is-positive]="cycle.debitTodayBalance > 0" [class.is-negative]="cycle.debitTodayBalance < 0">Saldo {{ formatMoney(cycle.debitTodayBalance) }}</strong>
       <strong [class.is-positive]="cycle.debitTodaySaved > 0" [class.is-negative]="cycle.debitTodaySaved < 0">Guardado {{ formatMoney(cycle.debitTodaySaved) }}</strong>
+    </section>
+    <section class="today-summary future-summary" aria-label="Débito futuro">
+      <span>Futuro</span>
+      <strong [class.is-positive]="cycle.debitFutureBalance > 0" [class.is-negative]="cycle.debitFutureBalance < 0">Saldo {{ formatMoney(cycle.debitFutureBalance) }}</strong>
+      <strong [class.is-positive]="cycle.debitFutureSaved > 0" [class.is-negative]="cycle.debitFutureSaved < 0">Guardado {{ formatMoney(cycle.debitFutureSaved) }}</strong>
     </section>
     <section class="summary-grid" aria-label="Resumo do ciclo">
       <article class="summary-card"><p>Débito</p><strong [class.is-positive]="cycle.debitTotal > 0" [class.is-negative]="cycle.debitTotal < 0">{{ formatMoney(cycle.debitTotal) }}</strong><span>{{ cycle.debitItems.length }} lançamentos</span></article>

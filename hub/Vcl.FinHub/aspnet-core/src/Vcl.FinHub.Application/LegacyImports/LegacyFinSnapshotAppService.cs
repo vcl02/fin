@@ -34,6 +34,7 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
         var debitToday = LegacyFinDebitTodayCalculator.Calculate(snapshots, asOf ?? DateOnly.FromDateTime(DateTime.Today));
         // Sem âncora não existe ciclo financeiro. Mantemos a resposta vazia, em vez de inventar um mês-calendário.
         var cycle = selectedCycle ?? new LegacyFinCycleRange(cycleStart, cycleStart);
+        var debitFuture = LegacyFinFutureDebitCalculator.Calculate(snapshots, cycles, cycle);
 
         // Crédito pertence ao ciclo que contém o vencimento da fatura; sem fatura ele fica fora,
         // como ocorre no Fin. Débito entra pela data que movimentou a conta.
@@ -58,6 +59,8 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
             CreditTotal = credit.Sum(item => item.Valor ?? 0m),
             DebitTodayBalance = debitToday.Balance,
             DebitTodaySaved = debitToday.Saved,
+            DebitFutureBalance = debitFuture.Balance,
+            DebitFutureSaved = debitFuture.Saved,
             DebitItems = debit,
             CreditItems = credit,
         };

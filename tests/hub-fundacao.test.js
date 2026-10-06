@@ -20,6 +20,7 @@ test('a fundação do Hub fixa .NET 10, home inicial e módulo Fin', () => {
     const rotas = ler('angular', 'src', 'app', 'app.routes.ts');
     const index = ler('angular', 'src', 'index.html');
     const home = ler('angular', 'src', 'app', 'hub-home', 'hub-home.component.html');
+    const fin = ler('angular', 'src', 'app', 'home', 'home.component.html');
 
     assert.match(projetoHost, /<TargetFramework>net10\.0<\/TargetFramework>/);
     assert.match(rotas, /title: 'Hub pessoal'/);
@@ -27,6 +28,7 @@ test('a fundação do Hub fixa .NET 10, home inicial e módulo Fin', () => {
     assert.match(rotas, /title: 'fin'/);
     assert.match(index, /<title>Hub pessoal<\/title>/);
     assert.match(home, /routerLink="\/fin"/);
+    assert.match(fin, /routerLink="\/" title="Voltar ao Hub"/);
 });
 
 test('o Hub não expõe Supabase ao Angular e limita a ponte legada ao importador manual', () => {
@@ -134,4 +136,17 @@ test('o retrato Hoje do Hub recebe a data local do navegador e não antecipa sal
     assert.match(appService, /LegacyFinDebitTodayCalculator\.Calculate/);
     assert.match(clienteAngular, /\.set\('asOf', asOf\)/);
     assert.match(telaAngular, /getCycle\(month, this\.currentDate\(\)\)/);
+});
+
+test('o Futuro do Hub calcula fatura líquida e ajuste de investimento sem persistir linhas sintéticas', () => {
+    const calculadora = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'LegacyImports', 'LegacyFinFutureDebitCalculator.cs');
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'LegacyImports', 'LegacyFinSnapshotAppService.cs');
+    const contrato = ler('aspnet-core', 'src', 'Vcl.FinHub.Application.Contracts', 'LegacyImports', 'LegacyFinCycleDto.cs');
+
+    assert.match(calculadora, /AllocateInvoicePrepayments/);
+    assert.match(calculadora, /InvestmentAdjustment/);
+    assert.match(calculadora, /LegacyFinDebitTodayCalculator\.BalanceSince/);
+    assert.match(appService, /LegacyFinFutureDebitCalculator\.Calculate/);
+    assert.match(contrato, /DebitFutureBalance/);
+    assert.doesNotMatch(calculadora, /InsertAsync|UpdateAsync|DeleteAsync/);
 });

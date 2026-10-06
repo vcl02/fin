@@ -7,7 +7,7 @@ Esta pasta é uma fundação paralela para o futuro Hub pessoal. Ela **não subs
 - Backend em .NET 10 LTS com ABP e PostgreSQL como provedor de dados futuro.
 - Frontend Angular 22, com a home `/` e o módulo `/fin`. A home lista somente opções existentes; `fin` consulta por HTTP o snapshot local e oferece uma visão de Débito e Crédito pelos ciclos ancorados em `Faturamento PJ`. O backend segue ABP; a casca não carrega o tema Angular do ABP antes de existir autenticação real para ele consumir.
 - Camadas separadas pelo template ABP: `Domain.Shared`, `Domain`, `Application.Contracts`, `Application`, `EntityFrameworkCore`, `HttpApi` e `HttpApi.Host`.
-- O módulo Fin possui somente um contrato de consulta local. Ele não grava, não acessa Supabase pelo Angular e, além dos totais brutos, migra somente o retrato Hoje de Saldo/Guardado do Débito. Saldo futuro, limite e antecipações continuam exclusivamente no Fin estático.
+- O módulo Fin possui somente um contrato de consulta local. Ele não grava, não acessa Supabase pelo Angular e, além dos totais brutos, migra os retratos Hoje e Futuro de Saldo/Guardado do Débito. Futuro incorpora a fatura líquida de antecipações e ajustes sintéticos somente em memória; limite e resumo de Crédito continuam exclusivamente no Fin estático.
 
 ## Limites deliberados
 
