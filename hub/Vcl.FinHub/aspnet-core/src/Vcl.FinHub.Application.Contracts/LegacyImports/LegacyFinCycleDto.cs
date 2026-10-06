@@ -13,6 +13,10 @@ public sealed class LegacyFinCycleDto
     public int SourceRowCount { get; init; }
     public decimal DebitTotal { get; init; }
     public decimal CreditTotal { get; init; }
+    public decimal CreditTodayTotal { get; init; }
+    public decimal CreditFutureTotal { get; init; }
+    public DateOnly? CreditPreviewStart { get; init; }
+    public DateOnly? CreditPreviewEnd { get; init; }
     public decimal DebitTodayBalance { get; init; }
     public decimal DebitTodaySaved { get; init; }
     public decimal DebitFutureBalance { get; init; }

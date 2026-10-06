@@ -23,6 +23,10 @@ export interface LegacyFinCycle {
   sourceRowCount: number;
   debitTotal: number;
   creditTotal: number;
+  creditTodayTotal: number;
+  creditFutureTotal: number;
+  creditPreviewStart: string | null;
+  creditPreviewEnd: string | null;
   debitTodayBalance: number;
   debitTodaySaved: number;
   debitFutureBalance: number;

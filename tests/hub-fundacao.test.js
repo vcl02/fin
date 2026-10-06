@@ -118,7 +118,7 @@ test('a consulta local usa ciclos reais ancorados em Faturamento PJ, sem voltar 
     assert.match(ciclos, /AnchorName = "Faturamento PJ"/);
     assert.match(ciclos, /DateOnly\.MaxValue/);
     assert.match(appService, /LegacyFinCycles\.FromSnapshots/);
-    assert.match(appService, /LegacyFinCycles\.Contains\(cycle, snapshot\.Fatura\)/);
+    assert.match(appService, /LegacyFinCycles\.Contains\(creditPreview\.PreviewCycle, snapshot\.Fatura\)/);
     assert.match(appService, /AvailableCycles/);
     assert.match(clienteAngular, /availableCycles/);
     assert.doesNotMatch(appService, /AddMonths\(1\)\.AddDays\(-1\)/);
@@ -140,13 +140,30 @@ test('o retrato Hoje do Hub recebe a data local do navegador e não antecipa sal
 
 test('o Futuro do Hub calcula fatura líquida e ajuste de investimento sem persistir linhas sintéticas', () => {
     const calculadora = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'LegacyImports', 'LegacyFinFutureDebitCalculator.cs');
+    const antecipacoes = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'LegacyImports', 'LegacyFinInvoicePrepaymentCalculator.cs');
     const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'LegacyImports', 'LegacyFinSnapshotAppService.cs');
     const contrato = ler('aspnet-core', 'src', 'Vcl.FinHub.Application.Contracts', 'LegacyImports', 'LegacyFinCycleDto.cs');
 
-    assert.match(calculadora, /AllocateInvoicePrepayments/);
+    assert.match(antecipacoes, /Allocate\(/);
     assert.match(calculadora, /InvestmentAdjustment/);
     assert.match(calculadora, /LegacyFinDebitTodayCalculator\.BalanceSince/);
     assert.match(appService, /LegacyFinFutureDebitCalculator\.Calculate/);
     assert.match(contrato, /DebitFutureBalance/);
     assert.doesNotMatch(calculadora, /InsertAsync|UpdateAsync|DeleteAsync/);
+});
+
+test('a prévia de Crédito do Hub usa o próximo ciclo e separa Hoje de Futuro', () => {
+    const calculadora = ler('aspnet-core', 'src', 'Vcl.FinHub.Domain', 'LegacyImports', 'LegacyFinCreditPreviewCalculator.cs');
+    const appService = ler('aspnet-core', 'src', 'Vcl.FinHub.Application', 'LegacyImports', 'LegacyFinSnapshotAppService.cs');
+    const contrato = ler('aspnet-core', 'src', 'Vcl.FinHub.Application.Contracts', 'LegacyImports', 'LegacyFinCycleDto.cs');
+    const tela = ler('angular', 'src', 'app', 'home', 'home.component.html');
+
+    assert.match(calculadora, /previewIndex = selectedIndex \+ 1/);
+    assert.match(calculadora, /snapshot\.Pago == true/);
+    assert.match(calculadora, /LegacyFinInvoicePrepaymentCalculator\.Allocate/);
+    assert.match(appService, /LegacyFinCreditPreviewCalculator\.Calculate/);
+    assert.match(contrato, /CreditTodayTotal/);
+    assert.match(contrato, /CreditFutureTotal/);
+    assert.match(tela, /Hoje \{\{ formatMoney\(cycle\.creditTodayTotal\) \}\}/);
+    assert.match(tela, /Futuro \{\{ formatMoney\(cycle\.creditFutureTotal\) \}\}/);
 });

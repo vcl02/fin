@@ -35,6 +35,8 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
         // Sem âncora não existe ciclo financeiro. Mantemos a resposta vazia, em vez de inventar um mês-calendário.
         var cycle = selectedCycle ?? new LegacyFinCycleRange(cycleStart, cycleStart);
         var debitFuture = LegacyFinFutureDebitCalculator.Calculate(snapshots, cycles, cycle);
+        var creditPreview = LegacyFinCreditPreviewCalculator.Calculate(
+            snapshots, cycles, cycle, asOf ?? DateOnly.FromDateTime(DateTime.Today));
 
         // Crédito pertence ao ciclo que contém o vencimento da fatura; sem fatura ele fica fora,
         // como ocorre no Fin. Débito entra pela data que movimentou a conta.
@@ -43,8 +45,10 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
             .Where(snapshot => snapshot.Cred != true && LegacyFinCycles.Contains(cycle, snapshot.Data))
             .Select(snapshot => ToItem(snapshot, snapshot.Data))
             .ToList();
+        // Crédito é propositalmente uma prévia: ciclo N lista a fatura que vencerá na competência N+1.
         var credit = snapshots
-            .Where(snapshot => snapshot.Cred == true && LegacyFinCycles.Contains(cycle, snapshot.Fatura))
+            .Where(snapshot => snapshot.Cred == true && creditPreview.PreviewCycle is not null
+                && LegacyFinCycles.Contains(creditPreview.PreviewCycle, snapshot.Fatura))
             .Select(snapshot => ToItem(snapshot, snapshot.Fatura))
             .ToList();
 
@@ -56,7 +60,11 @@ public class LegacyFinSnapshotAppService : FinHubAppService, ILegacyFinSnapshotA
             LastImportAtUtc = lastRun?.ImportedAtUtc,
             SourceRowCount = lastRun?.SourceRowCount ?? 0,
             DebitTotal = debit.Sum(item => item.Valor ?? 0m),
-            CreditTotal = credit.Sum(item => item.Valor ?? 0m),
+            CreditTotal = creditPreview.FutureTotal,
+            CreditTodayTotal = creditPreview.TodayTotal,
+            CreditFutureTotal = creditPreview.FutureTotal,
+            CreditPreviewStart = creditPreview.PreviewCycle?.Start,
+            CreditPreviewEnd = creditPreview.PreviewCycle?.End,
             DebitTodayBalance = debitToday.Balance,
             DebitTodaySaved = debitToday.Saved,
             DebitFutureBalance = debitFuture.Balance,
