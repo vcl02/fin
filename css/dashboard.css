@@ -520,6 +520,22 @@
       white-space: nowrap;
   }
 
+  /* Célula de Valor editável (botão de sinal + texto): texto corrido com text-align:right
+     empacota botão+valor como um bloco só e alinha o bloco inteiro à direita — como o
+     valor muda de largura a cada linha, o botão "andava" de posição (efeito escadinha).
+     Em flex, o botão fica fixo numa borda e o valor ocupa o espaço restante, sempre
+     alinhado à outra borda, nas duas pontas, independente da largura do número. */
+  .n:has(.sinalBt.compacto) {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+  }
+
+  .n:has(.sinalBt.compacto) .togValor {
+      flex: 1;
+      text-align: right;
+  }
+
   /* Colunas de estado confirmado na comparação de dois ciclos; o texto pode quebrar, mas
      as células ficam compactas porque levam somente um check. */
   .colDif {
