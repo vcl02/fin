@@ -30,16 +30,6 @@
   <!-- Painel único estático: os módulos JS montam apenas o conteúdo dinâmico em #out. -->
   <div id=app>
     <div class=head>
-      <!-- Só aparece em telas estreitas (ver mobile.css): abre/fecha a barra de filtros e
-           ações (.tool) que no desktop já fica sempre visível abaixo do cabeçalho. -->
-      <button id=btMenuMobile title="Menu" aria-label="Abrir menu" aria-expanded=false aria-controls=tool>
-        <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-          stroke-linejoin=round>
-          <line x1=4 y1=7 x2=20 y2=7 />
-          <line x1=4 y1=12 x2=20 y2=12 />
-          <line x1=4 y1=17 x2=20 y2=17 />
-        </svg>
-      </button>
       <div class=f id=fciclNav>
         <div id=navComparar>
           <button type=button id=cicloAnterior class=btNavCiclo title="Ciclo anterior"
@@ -105,7 +95,7 @@
     </div>
     <p class=sub><span id=st></span></p>
 
-    <div class=tool id=tool>
+    <div class=tool>
       <div class=row>
         <label class=f id=fciclo><span>Ciclo</span>
           <select id=ciclo></select>

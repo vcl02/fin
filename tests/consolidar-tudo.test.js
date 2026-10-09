@@ -11,11 +11,12 @@ const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 
-test('botão fica na toolbar de desktop, com título explicando o alcance', () => {
+test('botão fica na toolbar, com título explicando o alcance', () => {
     assert.match(pagina, /id=btConsolidarTudo class=btFiltro title="[^"]*hoje até o último ciclo com lançamentos[^"]*"/);
-    // .tool inteiro some no mobile (mesma regra de btGrafico/Limpar filtros ao lado), sem
-    // precisar de uma regra de visibilidade própria pra este botão.
-    assert.match(estilosMobile, /\.tool\s*\{\s*display:\s*none;/);
+    // .tool tem paridade total com o desktop: fica sempre visível, em qualquer largura —
+    // sem regra própria escondendo este botão no mobile (só a conta restrita o esconde,
+    // junto com o resto de #rowVis, testado em preferencias-interface.test.js).
+    assert.doesNotMatch(estilosMobile, /\.tool\s*\{\s*display:\s*none;/);
 });
 
 test('materializar/consolidar foi extraído pra uma função única, reaproveitada pelas duas ações', () => {

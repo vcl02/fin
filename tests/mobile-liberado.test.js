@@ -1,5 +1,6 @@
 // Contrato de paridade mobile/desktop: a única restrição de interface é por conta (Isabella),
-// nunca por largura de tela. Cobre o botão hambúrguer e a liberação do mobile.css.
+// nunca por largura de tela. Cobre o encolhimento da navegação de ciclo (sem estourar a
+// tela) e a ausência de qualquer menu escondendo a .tool.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -10,29 +11,27 @@ const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-test('botão hambúrguer existe, aponta pra #tool e começa fechado', () => {
-    assert.match(pagina, /<button id=btMenuMobile title="Menu" aria-label="Abrir menu" aria-expanded=false aria-controls=tool>/);
-    assert.match(pagina, /<div class=tool id=tool>/);
+test('não existe menu hambúrguer nem gaveta escondendo a .tool', () => {
+    assert.doesNotMatch(pagina, /btMenuMobile/);
+    assert.doesNotMatch(estilosBase, /btMenuMobile/);
+    assert.doesNotMatch(estilosMobile, /btMenuMobile|\.tool\.aberto|\.tool\s*\{\s*display:\s*none/);
+    assert.doesNotMatch(bootstrap, /btMenuMobile/);
+    assert.doesNotMatch(regras, /hambúrguer/);
 });
 
-test('hambúrguer fica escondido no desktop e só aparece dentro do @media mobile', () => {
-    assert.match(estilosBase, /#btMenuMobile\s*\{[\s\S]*?display:\s*none;/);
+test('navegação de ciclo (setas, De/Até, Atual) encolhe e quebra em vez de estourar a tela', () => {
     const inicioMedia = estilosMobile.indexOf('@media (max-width: 640px)');
-    const fimMedia = estilosMobile.indexOf('\n  }', estilosMobile.indexOf('.tool.aberto'));
-    const blocoMedia = estilosMobile.slice(inicioMedia, fimMedia);
-    assert.match(blocoMedia, /#btMenuMobile\s*\{\s*display:\s*flex;/);
-    assert.match(blocoMedia, /\.tool\s*\{\s*display:\s*none;/);
-    assert.match(blocoMedia, /\.tool\.aberto\s*\{\s*display:\s*block;/);
-});
-
-test('clique no hambúrguer alterna a classe aberto e aria-expanded', () => {
-    assert.match(bootstrap, /el\('btMenuMobile'\)\.onclick = \(\) => \{\s*\n\s*const aberto = el\('tool'\)\.classList\.toggle\('aberto'\);\s*\n\s*el\('btMenuMobile'\)\.setAttribute\('aria-expanded', String\(aberto\)\);\s*\n\s*\};/);
+    assert.ok(inicioMedia >= 0, 'não achou o media query mobile');
+    const blocoMedia = estilosMobile.slice(inicioMedia);
+    assert.match(blocoMedia, /#fciclNav\s*\{[\s\S]*?flex:\s*1 1 100%;[\s\S]*?min-width:\s*0;/);
+    assert.match(blocoMedia, /#navComparar\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
+    assert.match(blocoMedia, /#fde,\s*\n\s*#fate\s*\{[\s\S]*?min-width:\s*0;/);
 });
 
 test('mobile.css não esconde mais nada por largura de tela, só o que genuinamente não cabe', () => {
     // As restrições antigas (navegação De/Até, Atual, simulação, Duplicar/Excluir na barra)
-    // saíram inteiramente: a paridade com o desktop é total, só a .tool vira gaveta.
-    assert.doesNotMatch(estilosMobile, /#fde,|#navCompararAte,|#fate,|#cicloHoje,/);
+    // saíram inteiramente: a paridade com o desktop é total.
+    assert.doesNotMatch(estilosMobile, /#fde,\s*\n\s*#navCompararAte,|#navCompararAte,\s*\n\s*#fate,|#cicloHoje,\s*\n\s*#toggleSimulacao/);
     assert.doesNotMatch(estilosMobile, /#selbar #seldup|#selbar #seldel/);
     assert.doesNotMatch(estilosMobile, /display:\s*none\s*!important/);
     assert.match(estilosMobile, /\.head\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
@@ -42,4 +41,5 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /## Conta restrita \(Isabella\)/);
     assert.match(regras, /identificada pelo e-mail da sessão/);
     assert.match(regras, /não uma política de banco: a segurança de dados de fato continua sendo responsabilidade do RLS/);
+    assert.match(regras, /fica sempre visível, em qualquer largura — sem menu pra abrir\/fechar/);
 });

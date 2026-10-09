@@ -79,9 +79,6 @@ function desenhar() {
     el('rowVis').hidden = simples;
     el('abreNovo').hidden = simples;
     el('toggleSimulacao').hidden = simples;
-    // Sem Visualizações/Gráfico/filtros/Consolidar tudo, a .tool fica vazia pra essa conta —
-    // o botão que abre ela não faz sentido continuar visível.
-    el('btMenuMobile').hidden = simples;
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
 
     // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece

@@ -16,25 +16,28 @@
           flex-wrap: wrap;
       }
 
+      /* fciclNav (as setas + De/Até + Atual) ganha a linha inteira pra si; min-width:0
+         deixa os filhos flex encolherem de verdade em vez de forçar a linha a estourar
+         pra fora da tela. */
       #fciclNav {
           flex: 1 1 100%;
-          order: 1;
+          min-width: 0;
       }
 
-      /* Botão hambúrguer liga/desliga a .tool (filtros, Visualizações, Gráfico, Consolidar
-         tudo, indicadores) — no desktop ela já fica sempre visível abaixo do cabeçalho;
-         aqui ela começa fechada pra não ocupar a tela toda antes do usuário pedir. */
-      #btMenuMobile {
-          display: flex;
+      #navComparar {
+          flex-wrap: wrap;
+          row-gap: .5rem;
+          min-width: 0;
       }
 
-      .tool {
-          display: none;
+      #fde,
+      #fate {
+          flex: 1 1 auto;
+          min-width: 0;
       }
 
-      .tool.aberto {
-          display: block;
-      }
+      /* .tool (filtros, Visualizações, Gráfico, Consolidar tudo, indicadores) fica sempre
+         visível, igual ao desktop — sem menu pra abrir/fechar. */
 
       /* Barra flutuante de seleção some atrás do teclado em formulários altos; mantém a
          mesma largura confortável do resto da tela. */

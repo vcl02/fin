@@ -76,8 +76,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Mobile
 
 - O mobile tem paridade total com o desktop: mesmas colunas (`colunasAtivas()` não recorta mais nada; a rolagem horizontal própria de `.wrap` já resolvia telas estreitas), mesma edição inline (Valor, Data, Pago por toque), mesmo Duplicar/Excluir na barra de seleção, mesmo Crédito, Comparar, Visualizações, gráficos, Consolidar tudo, simulação e cadastro. Nenhuma dessas ações é reduzida por tamanho de tela.
-- Acima de 640px de largura, a barra de filtros e ações (`.tool`: Linhas, Visualizações, Gráfico, Limpar filtros, Consolidar tudo, indicadores) fica sempre visível, como já era. Abaixo disso, ela só aparece ao abrir o botão hambúrguer (`#btMenuMobile`) no cabeçalho — puramente uma questão de caber na tela, não de permissão; tocar de novo fecha.
-- O cabeçalho (navegação De/Até, Atual, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
+- A barra de filtros e ações (`.tool`: Linhas, Visualizações, Gráfico, Limpar filtros, Consolidar tudo, indicadores) fica sempre visível, em qualquer largura — sem menu pra abrir/fechar.
+- O cabeçalho (navegação De/Até, Atual, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte. A navegação de ciclo (setas, De/Até, Atual) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.
 
 ## Conta restrita (Isabella)
 
