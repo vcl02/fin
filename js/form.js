@@ -308,7 +308,7 @@ el('fParcelas').addEventListener('change', () => {
     atualizarFaturasDoFormulario();
 });
 
-function abreModalNovo(prefill) {
+function abreModalNovo(prefill, modoEdicao) {
     el('formNovo').reset();
     popularCategoriasNoForm();
     popularNomesNoForm();
@@ -322,8 +322,14 @@ function abreModalNovo(prefill) {
     el('avisoSimulando').hidden = !Estado.simulando;
     el('tituloNovo').textContent = Estado.simulando
         ? 'Simular compra'
-        : (prefill ? 'Duplicar lançamento' : 'Novo lançamento');
+        : (modoEdicao ? 'Editar lançamento' : (prefill ? 'Duplicar lançamento' : 'Novo lançamento'));
     el('salvaNovo').textContent = Estado.simulando ? 'Simular' : 'Salvar';
+
+    // Editar e' sempre a PROPRIA linha, nunca gera parcela nova — Vezes/Dividir so' fazem
+    // sentido pra criar lancamentos (ver submeteEdicaoLancamento, que ignora os dois campos).
+    el('parcelasLinha').hidden = !!modoEdicao;
+    if (modoEdicao) { el('fParcelas').value = 1; modalNovo.dataset.editandoId = String(prefill.id); }
+    else delete modalNovo.dataset.editandoId;
 
     if (prefill) {
         // copia tudo, inclusive data e valor: e' um ponto de partida, voce edita o que quiser
@@ -603,6 +609,16 @@ el('fechaNovo').onclick = () => modalNovo.close();
 el('salvaNovo').onclick = () => submeteNovoLancamento();
 modalNovo.addEventListener('click', e => { if (e.target == modalNovo) modalNovo.close(); });
 
+// Editar: mesmo modal de sempre, pré-preenchido com a linha selecionada (igual Duplicar),
+// mas em modo "transformar" — troca Crédito/Débito e escolhe a fatura/data sem precisar
+// excluir e recadastrar. Só pra lançamento com id de verdade (real ou simulado); ver guarda
+// em atualizaBarraSelecao.
+el('seledit').onclick = () => {
+    const chave = [...Estado.selecionados.keys()][0];
+    const r = Estado.lancamentos.find(x => String(x.id) == chave);
+    if (r) abreModalNovo(r, true);
+};
+
 // Guia de categorias (Besteira/Isabella/Lazer/Presentes): abre por cima do cadastro, sem
 // fechá-lo — é só consulta, não precisa perder o que já foi digitado no formulário.
 el('ajudaCategorias').onclick = () => el('modalAjudaCategorias').showModal();
@@ -615,8 +631,9 @@ el('modalAjudaCategorias').addEventListener('click', e => {
 // aberto pelo "Duplicar", desmarca a linha que originou o duplicado — senao ela ficava
 // selecionada na tabela depois de fechar, o que nao faz mais sentido.
 modalNovo.addEventListener('close', () => {
-    if (modalNovo.dataset.viaDuplicar) { Estado.selecionados.clear(); desenhar(); }
+    if (modalNovo.dataset.viaDuplicar || modalNovo.dataset.editandoId) { Estado.selecionados.clear(); desenhar(); }
     delete modalNovo.dataset.viaDuplicar;
+    delete modalNovo.dataset.editandoId;
 });
 
 // Núcleo de "materializar/consolidar" um Aporte sugerido ou Resgate necessário de um ciclo
@@ -821,6 +838,12 @@ function valorDasParcelas(valorTotal, parcelas) {
 // pra lancar de uma vez uma conta recorrente de valor fixo (ex: assinatura, mensalidade)
 // que ainda nao foi cadastrada.
 async function submeteNovoLancamento() {
+    if (modalNovo.dataset.editandoId) {
+        const r = Estado.lancamentos.find(x => String(x.id) == modalNovo.dataset.editandoId);
+        if (r) await submeteEdicaoLancamento(r);
+        return;
+    }
+
     el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
 
     const nome = el('fNome').value.trim();
@@ -880,6 +903,63 @@ async function submeteNovoLancamento() {
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
         desenhar();
         el('fNome').focus();
+    } catch (err) {
+        el('erroNovo').textContent = 'Falhou ao salvar: ' + err.message;
+    } finally {
+        el('salvaNovo').disabled = false;
+        el('salvaNovo').textContent = Estado.simulando ? 'Simular' : 'Salvar';
+    }
+}
+
+// Editar (ver el('seledit')): a MESMA linha, nunca gera lançamento novo. Principal uso é
+// transformar Débito <-> Crédito (escolhendo a fatura ao virar Crédito, ou uma nova data —
+// que decide o ciclo — ao virar Débito) sem precisar excluir e recadastrar do zero; os
+// demais campos (Nome, Categoria, Valor...) ficam editáveis juntos por já estarem no mesmo
+// formulário, mas cada um já tem edição própria mais rápida direto na célula da tabela.
+// `fatura` é sempre reenviado explicitamente — inclusive `null` ao desmarcar Crédito — pra
+// realmente apagar uma fatura antiga em vez de deixá-la esquecida no banco.
+async function submeteEdicaoLancamento(r) {
+    el('erroNovo').textContent = ''; el('erroNovo').classList.remove('ok');
+
+    const nome = el('fNome').value.trim();
+    if (!nome) { el('erroNovo').textContent = 'Preencha o nome.'; el('fNome').focus(); return; }
+    const categ = el('fCateg').value || null;
+    if (!categ) { el('erroNovo').textContent = 'Escolha uma categoria.'; el('fCateg').focus(); return; }
+
+    const data = el('fData').value || null;
+    const valorDigitado = el('fValor').value.trim();
+    const valorTotal = valorDigitado ? valorMascaraParaNumero(valorDigitado) : 0;
+    const cred = el('fCred').checked;
+    const ehAntecip = ehAntecipacaoFatura(categ || '');
+    const faturaIds = (cred || ehAntecip) ? idsFaturasDoFormulario() : [];
+    const pago = el('fPago').checked;
+    const freq = el('fFreq').value || null;
+
+    if ((cred || ehAntecip) && (faturaIds.length !== 1 || !faturaIds[0])) {
+        el('erroNovo').textContent = cred
+            ? 'Escolha a fatura dessa compra.'
+            : 'Escolha a fatura que esta antecipação está quitando.';
+        el('fFaturasWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        return;
+    }
+
+    if (el('salvaNovo').disabled) return;
+    el('salvaNovo').disabled = true;
+    el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
+
+    const campos = {
+        nome, categ: normalizaCategorias(categ), freq, data, cred, pago,
+        valor: valorTotal ? valorTotal * (sinalPositivo ? 1 : -1) : null,
+        fatura: (cred || ehAntecip) ? dataISO(faturaIds[0]) : null,
+    };
+
+    try {
+        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, campos);
+        Object.assign(r, campos);
+        r.v = campos.valor || 0;
+        r.inv = /^investimento$/i.test(String(r.categ || '').trim());
+        reclassificaPeriodo(r);
+        modalNovo.close();   // o close listener ja' limpa a selecao e redesenha
     } catch (err) {
         el('erroNovo').textContent = 'Falhou ao salvar: ' + err.message;
     } finally {

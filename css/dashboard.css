@@ -922,17 +922,20 @@
       background: #FFFFFF;
   }
 
+  #selbar #seledit,
   #selbar #seldup {
       color: var(--fg);
       background: var(--field);
       border: 1px solid var(--line-strong);
   }
 
+  #selbar #seledit:hover,
   #selbar #seldup:hover {
       background: var(--field-hover);
       border-color: var(--fg);
   }
 
+  #selbar #seledit:disabled,
   #selbar #seldup:disabled {
       opacity: .6;
       cursor: default;

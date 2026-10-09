@@ -154,9 +154,13 @@ function atualizaBarraSelecao() {
     // só pra soma). Duplicar continua exigindo exatamente uma linha real.
     const chavesReaisSelecionadas = chaves.filter(c => !ehSintetica(c));
 
-    // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
-    // pra somar e selecionar/limpar. Na conta restrita, a barra nunca oferece ações que
-    // alteram dados: fica somente a soma e o botão Limpar.
+    // uma linha real: a barra e' so pra editar/duplicar. Varias (ou uma sintetica sozinha):
+    // e' pra somar e selecionar/limpar. Na conta restrita, a barra nunca oferece ações que
+    // alteram dados: fica somente a soma e o botão Limpar. Editar nunca se aplica a um
+    // ajuste sintetico (sug:/res:) nem a uma linha de fatura (fat:) — so' lancamento com id
+    // de verdade, real ou simulado, que da' pra transformar Debito <-> Credito e escolher
+    // a fatura/data sem precisar excluir e recadastrar.
+    el('seledit').hidden = restrito || !chaveUnicaReal;
     el('seldup').hidden = restrito || (!chaveUnicaReal && !ehAjusteMaterializavel);
     el('seldup').textContent = ehAjusteMaterializavel
         ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
@@ -464,10 +468,13 @@ el('out').addEventListener('change', e => {
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial
 // (carregarDados) — mudar a data pode jogar a linha pra outro periodo, ou pro Backlog
-// quando a data e' apagada / cai fora de todos os periodos cadastrados.
+// quando a data e' apagada / cai fora de todos os periodos cadastrados. Um Credito sem
+// 'data' (ex.: veio do Backlog e ganhou uma fatura na transformacao Debito -> Credito)
+// ainda classifica certo pelo vencimento — so' cai no Backlog quando faltam as DUAS coisas.
 function reclassificaPeriodo(r) {
-    const idx = !r.data ? null
-        : r.cred ? periodoDaFatura(r.fatura || r.fatura_id)
+    const faturaRef = r.fatura || r.fatura_id;
+    const idx = !r.data && !faturaRef ? null
+        : r.cred ? periodoDaFatura(faturaRef)
             : periodoDoDebito(dataISO(r.data));
     r.periodoIdx = idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
 }
