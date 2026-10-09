@@ -112,8 +112,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /class=resumoDados/);
     assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
     assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);
-    assert.match(interacoes, /const voltouDoAtualParaHistorico = direcao < 0 && \+deAtual === Estado\.idxHoje && \+novoValor < Estado\.idxHoje/);
-    assert.match(interacoes, /\['db', 'cr'\]\.forEach\(recolherBloco\)/);
+    assert.doesNotMatch(interacoes, /voltouDoAtualParaHistorico/);
     assert.match(interacoes, /if \(direcao > 0 && \+novoValor >= Estado\.idxHoje\) abrirBlocosFinanceiros\(\)/);
     assert.match(interacoes, /el\('cicloHoje'\)\.onclick = \(\) => \{[\s\S]*abrirBlocosFinanceiros\(\)/);
 });
@@ -124,6 +123,16 @@ test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura venc
     const inicioHoje = visoes.indexOf('const linhaHojeCredito');
     const fimHoje = visoes.indexOf('const resumoCredito');
     assert.doesNotMatch(visoes.slice(inicioHoje, fimHoje), /Pago <b/);
+});
+
+test('ciclo anterior ao atual nunca recolhe automaticamente ao navegar para o histórico', () => {
+    // Antes, voltar do ciclo atual pra um ciclo passado (Anterior) recolhia Débito e
+    // Crédito de propósito; a regra mudou para manter o histórico sempre aberto e
+    // detalhado, deixando o recolhimento só no toggle manual do usuário.
+    assert.doesNotMatch(interacoes, /voltouDoAtualParaHistorico/);
+    assert.doesNotMatch(interacoes, /histórico abre com Débito e Crédito recolhidos/);
+    assert.match(regras, /Ciclos anteriores ao atual sempre ficam abertos e detalhados/);
+    assert.match(regras, /navegar para o histórico, com Anterior ou selecionando o ciclo diretamente, nunca recolhe Débito nem Crédito/);
 });
 
 test('resumos iguais no ciclo atual recolhem apenas o bloco repetido e ocultam seu Futuro', () => {

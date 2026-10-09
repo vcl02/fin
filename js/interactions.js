@@ -563,10 +563,8 @@ function navegaCiclo(direcao) {
     const novaPos = posDeAtual < 0 ? (direcao > 0 ? 0 : -1) : posDeAtual + direcao;
     if (novaPos < 0 || novaPos >= opcoes.length) return;
     const novoValor = opcoes[novaPos];
-    // Voltar do ciclo atual para o histórico começa recolhido: os detalhes continuam
-    // disponíveis no toque, mas não ocupam a tela antes de o usuário pedi-los.
-    const voltouDoAtualParaHistorico = direcao < 0 && +deAtual === Estado.idxHoje && +novoValor < Estado.idxHoje;
-    if (voltouDoAtualParaHistorico) ['db', 'cr'].forEach(recolherBloco);
+    // Ciclo anterior ao atual sempre fica aberto e detalhado: a navegação nunca recolhe
+    // Débito nem Crédito do histórico, só o toggle manual do usuário faz isso.
     // Ao chegar no ciclo atual ou avançar além dele, os resumos financeiros voltam a abrir.
     if (direcao > 0 && +novoValor >= Estado.idxHoje) abrirBlocosFinanceiros();
     el('compDe').value = novoValor;
