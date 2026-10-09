@@ -454,12 +454,23 @@ el('out').addEventListener('click', e => {
     }
     function cancela() { concluido = true; desenhar(); }
 
-    input.addEventListener('keydown', ev => {
-        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
-        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    // O input nativo dispara 'change' assim que o valor fica completo — inclusive no meio
+    // da digitacao, pois o dia e' ambiguo com um so digito (ex.: "1" ja e' um valor
+    // completo antes do "9" do "19" ser digitado). Por isso o 'change' so agenda a
+    // confirmacao; se mais um 'input' chegar logo em seguida (segundo digito do segmento),
+    // o agendamento e' cancelado e so' o valor final confirma. Enter e blur continuam
+    // confirmando na hora.
+    let timerConfirma = null;
+    input.addEventListener('input', () => clearTimeout(timerConfirma));
+    input.addEventListener('change', () => {
+        clearTimeout(timerConfirma);
+        timerConfirma = setTimeout(confirma, 200);
     });
-    input.addEventListener('change', () => confirma());   // escolheu no calendario nativo
-    input.addEventListener('blur', () => confirma());
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); clearTimeout(timerConfirma); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); clearTimeout(timerConfirma); cancela(); }
+    });
+    input.addEventListener('blur', () => { clearTimeout(timerConfirma); confirma(); });
     // clique dentro do proprio input (inclusive no icone do calendario) nao pode vazar
     // pro listener de selecao de linha, que esta no mesmo #out
     input.addEventListener('click', ev => ev.stopImmediatePropagation());

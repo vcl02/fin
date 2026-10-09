@@ -148,6 +148,16 @@ test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pip
     assert.doesNotMatch(interacoes, /mostraComFade\('(fgraf|fevol|fReserva)'/);
 });
 
+test('edição inline de data no desktop não confirma a cada dígito antes do segundo dígito do segmento', () => {
+    // input type=date dispara 'change' assim que o valor fica completo, mesmo com um só
+    // dígito do dia (ambíguo: "1" já é valor válido antes do "9" de "19" chegar). O
+    // commit precisa esperar um instante e ser cancelado se outro 'input' chegar logo
+    // depois, senão "19" vira "1" sem esperar Enter.
+    assert.match(interacoes, /input\.addEventListener\('input', \(\) => clearTimeout\(timerConfirma\)\);/);
+    assert.match(interacoes, /input\.addEventListener\('change', \(\) => \{\s*clearTimeout\(timerConfirma\);\s*timerConfirma = setTimeout\(confirma, \d+\);\s*\}\);/);
+    assert.match(interacoes, /ev\.key == 'Enter'.*clearTimeout\(timerConfirma\); confirma\(\);/);
+});
+
 test('comparar mantém apenas todas ou diferentes confirmados sem recorrência duplicada', () => {
     assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
