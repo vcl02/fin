@@ -12,7 +12,9 @@ test('simulação mantém update e exclusão de linhas reais somente em memória
     assert.match(formulario, /if \(!exclusaoEhSimulada\(r\)\) await excluirLancamento\(r\.id\);/);
     assert.match(formulario, /Ocultar .* só nesta simulação/);
     assert.match(formulario, /Volta ao recarregar ou sair da simulação/);
-    assert.equal((interacoes.match(/!Estado\.simulando && !r\._sim\) await atualizarLancamento/g) || []).length, 3);
+    // Pago, Valor (texto), sinal (botão +/-) e Data: 4 pontos de edição inline, todos
+    // passando pela mesma guarda antes de chamar o Supabase.
+    assert.equal((interacoes.match(/!Estado\.simulando && !r\._sim\) await atualizarLancamento/g) || []).length, 4);
     assert.doesNotMatch(graficos, /atualizarLancamento|inserirLancamento|excluirLancamento/);
 });
 

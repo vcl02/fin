@@ -47,8 +47,12 @@ const corValor = v => valorMonetarioExibivel(v) < 0 ? 'vm' : valorMonetarioExibi
 const celValor = v => `<td class="n ${corValor(v)}">${brl(v)}`;                             // celula <td> ja formatada em R$
 // mesma celValor, mas clicavel pra edicao inline — so' pra lancamentos REAIS (id numerico
 // vindo do banco; linhas sinteticas tem id negativo fixo -1..-6, e simuladas tem id tipo
-// "sim-N-P", nenhum dos dois casos existe na tabela lancamentos pra dar PATCH).
-const celValorEditavel = r => `<td class="n ${corValor(r.v)}"><span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span>`;
+// "sim-N-P", nenhum dos dois casos existe na tabela lancamentos pra dar PATCH). O botao de
+// sinal inverte +/- na hora (mesmo esquema do toggle Pago), sem precisar abrir o campo de
+// valor pra so' trocar o sinal.
+const celValorEditavel = r => `<td class="n ${corValor(r.v)}">` +
+    `<button type=button class="sinalBt compacto${r.v < 0 ? '' : ' pos'}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${r.v < 0 ? '−' : '+'}</button>` +
+    `<span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span>`;
 
 // Zona morta pra SOMAS/TOTAIS (nunca pra valor de lancamento individual): entre -R$50 e +R$50 (inclusive) fica cinza,
 // porque uma diferenca tao pequena nao muda decisao nenhuma — so pinta vermelho/verde quando o total realmente sai desse intervalo.

@@ -323,6 +323,34 @@ el('out').addEventListener('click', async e => {
     }
 });
 
+// clique no botao +/- inverte o sinal na hora, sem abrir o campo de valor — mesmo esquema
+// do toggle Pago acima (stopImmediatePropagation pra nao vazar pra selecao da linha).
+el('out').addEventListener('click', async e => {
+    const botao = e.target.closest('[data-tog-sinal]');
+    if (!botao) return;
+    if (modoRestrito()) return;
+    e.stopImmediatePropagation();
+
+    const id = botao.dataset.togSinal;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const novoValor = -(r.v || 0);
+    botao.classList.toggle('pos', novoValor >= 0);
+    botao.textContent = novoValor < 0 ? '−' : '+';
+    botao.disabled = true;   // feedback imediato enquanto o PATCH esta no ar
+
+    try {
+        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { valor: novoValor });
+        r.valor = novoValor;
+        r.v = novoValor;
+        desenhar();
+    } catch (err) {
+        mostrarToast('Falhou ao atualizar', err.message);
+        desenhar();   // redesenha pra garantir que o botao volta a refletir o estado real
+    }
+});
+
 // clique no Valor troca o <span> por um <input> mascarado (mesma mascara do form de
 // lancamento), focado e com o texto ja selecionado. Enter ou blur confirma; Escape
 // cancela sem salvar. Mesmo esquema do toggle Pago acima: stopImmediatePropagation pra
