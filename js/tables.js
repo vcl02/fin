@@ -176,8 +176,19 @@ const celNome = r => {
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
         ? ` <span class="tagFatura" title="Abate fatura">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
         : '';
-    return `${sim}${nome}${badgeFatura}`;
+    const texto = `${nome}${badgeFatura}`;
+    return ehLinhaReal(r) && !modoRestrito()
+        ? `${sim}<span class="togNome" data-tog-nome="${escapeHtml(String(r.id))}" title="Editar nome">${texto}</span>`
+        : `${sim}${texto}`;
 };
+// Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
+// clique-pra-editar do Nome/Data, só pra linha REAL e fora da conta restrita.
+const celCateg = r => ehLinhaReal(r) && !modoRestrito()
+    ? `<span class="togCateg" data-tog-categ="${escapeHtml(String(r.id))}" title="Editar categoria">${escapeHtml(textoOuTraco(r.categ))}</span>`
+    : textoOuTraco(r.categ);
+const celFreq = r => ehLinhaReal(r) && !modoRestrito()
+    ? `<span class="togFreq" data-tog-freq="${escapeHtml(String(r.id))}" title="Editar frequência">${escapeHtml(textoOuTraco(r.freq))}</span>`
+    : textoOuTraco(r.freq);
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
 // clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; só a conta restrita
@@ -192,7 +203,9 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
     : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
-            : (chave == 'nome' ? celNome(r) : textoOuTraco(r[chave]))}`
+            : (chave == 'nome' ? celNome(r)
+                : (chave == 'categ' ? celCateg(r)
+                    : (chave == 'freq' ? celFreq(r) : textoOuTraco(r[chave]))))}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {

@@ -613,13 +613,14 @@
   }
 
   /* Data clicavel na tabela: mesma ideia do Valor, edicao inline com <input type=date>
-     (ver listener em #out no script.js). */
-  .togData {
+     (ver listener em #out no script.js). Nome/Categoria/Frequencia (togNome/togCateg/
+     togFreq) usam exatamente o mesmo esquema visual, cada um com seu input/select proprio. */
+  .togData, .togNome, .togCateg, .togFreq {
       cursor: pointer;
       transition: opacity .15s ease;
   }
 
-  .togData:hover {
+  .togData:hover, .togNome:hover, .togCateg:hover, .togFreq:hover {
       text-decoration: underline dotted;
       text-underline-offset: .2em;
   }
@@ -646,7 +647,7 @@
       cursor: pointer;
   }
 
-  .inpValor {
+  .inpValor, .inpNome, .inpCateg, .inpFreq {
       width: 6.5rem;
       font: inherit;
       font-variant-numeric: tabular-nums;
@@ -657,7 +658,14 @@
       padding: .15rem .4rem;
   }
 
-  .inpValor:focus {
+  /* Nome e Categoria sao texto livre mais longo que o Valor: largura minima maior,
+     mas ainda flexivel pra nao quebrar o layout da celula. */
+  .inpNome, .inpCateg {
+      width: 100%;
+      min-width: 9rem;
+  }
+
+  .inpValor:focus, .inpNome:focus, .inpCateg:focus, .inpFreq:focus {
       outline: 2px solid var(--fg);
       outline-offset: -1px;
   }

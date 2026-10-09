@@ -514,6 +514,152 @@ el('out').addEventListener('click', e => {
     input.focus();
 });
 
+// clique no Nome troca o <span> por um <input> de texto livre. Mesmo esquema de
+// stopImmediatePropagation dos demais togs, pra nao vazar pra selecao da linha.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-nome]');
+    if (!span) return;
+    if (modoRestrito()) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togNome;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = String(r.nome || '');
+    span.classList.add('editando');
+    span.innerHTML = `<input type=text class=inpNome value="${escapeHtml(original)}">`;
+    const input = span.querySelector('input');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const novo = input.value.trim();
+        if (!novo || novo === original) { desenhar(); return; }
+        input.disabled = true;
+        try {
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { nome: novo });
+            r.nome = novo;
+            desenhar();
+        } catch (err) {
+            mostrarToast('Falhou ao atualizar', err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    input.addEventListener('blur', () => confirma());
+    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    input.focus();
+    input.select();
+});
+
+// clique na Categoria troca o <span> por um <input> de texto livre (mesma lista separada por
+// vírgula do cadastro). A normalização (trim, dedupe, acento/caixa) acontece no PATCH
+// (normalizarCategoriasNoPayload) — espelha aqui pra Estado.lancamentos nao ficar com o
+// texto bruto divergente do que foi realmente persistido.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-categ]');
+    if (!span) return;
+    if (modoRestrito()) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togCateg;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = String(r.categ || '');
+    span.classList.add('editando');
+    span.innerHTML = `<input type=text class=inpCateg value="${escapeHtml(original)}" placeholder="Ex.: Casa, Mercado">`;
+    const input = span.querySelector('input');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const novo = normalizaCategorias(input.value);
+        if (novo === original) { desenhar(); return; }
+        input.disabled = true;
+        try {
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { categ: novo });
+            r.categ = novo || null;
+            desenhar();
+        } catch (err) {
+            mostrarToast('Falhou ao atualizar', err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    input.addEventListener('blur', () => confirma());
+    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    input.focus();
+    input.select();
+});
+
+// clique na Frequência troca o <span> por um <select> com o MESMO vocabulário controlado
+// do formulário de cadastro (RECORRENCIAS, em shared.js) — nunca texto livre, pra nao
+// persistir um valor que dataDaOcorrencia nao reconheceria depois.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-freq]');
+    if (!span) return;
+    if (modoRestrito()) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togFreq;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = String(r.freq || '');
+    span.classList.add('editando');
+    const opcoes = ['', ...Object.keys(RECORRENCIAS)];
+    span.innerHTML = `<select class=inpFreq>${opcoes.map(op =>
+        `<option value="${escapeHtml(op)}" ${op === original ? 'selected' : ''}>${op || '— Sem recorrência'}</option>`
+    ).join('')}</select>`;
+    const select = span.querySelector('select');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const novo = select.value;
+        if (novo === original) { desenhar(); return; }
+        select.disabled = true;
+        try {
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { freq: novo || null });
+            r.freq = novo || null;
+            desenhar();
+        } catch (err) {
+            mostrarToast('Falhou ao atualizar', err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    select.addEventListener('change', confirma);
+    select.addEventListener('keydown', ev => {
+        if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    select.addEventListener('blur', () => confirma());
+    select.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    select.focus();
+});
+
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;
