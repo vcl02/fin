@@ -135,6 +135,17 @@ test('ciclo anterior ao atual nunca recolhe automaticamente ao navegar para o hi
     assert.match(regras, /navegar para o histórico, com Anterior ou selecionando o ciclo diretamente, nunca recolhe Débito nem Crédito/);
 });
 
+test('igualdade de valores não recolhe débito ou crédito com lançamento real ainda aberto', () => {
+    // Um débito aberto pode compensar outro em valor (ex.: +100 e -100 abertos) e zerar
+    // a diferença entre Hoje e Futuro por coincidência, sem que o ciclo esteja quitado.
+    // A mesma fatura do cartão pendente (linhasFatura não vazia) também não pode sumir.
+    assert.match(visoes, /const debitoTemPendencia = debitos\.some\(r => r\.pago === false\) \|\| linhasFatura\.length > 0;/);
+    assert.match(visoes, /const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&/);
+    assert.match(visoes, /const creditoTemPendencia = creditosExibidos\.some\(r => r\.pago === false\);/);
+    assert.match(visoes, /const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo && !creditoTemPendencia &&/);
+    assert.match(regras, /A igualdade de valores sozinha nunca basta: um lançamento aberto pode compensar outro e zerar a diferença por coincidência/);
+});
+
 test('resumos iguais no ciclo atual recolhem apenas o bloco repetido e ocultam seu Futuro', () => {
     assert.match(visoes, /const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo/);
     assert.match(visoes, /Math\.abs\(debitoHoje\.saldo - totalDebito\) <= TOLERANCIA_FINANCEIRA/);

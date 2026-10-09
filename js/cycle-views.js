@@ -126,8 +126,12 @@ function vCiclo() {
         : `<span class="alertaTitulo ${classe} vazio" aria-hidden=true>⚠</span>`;
     // Esta é uma decisão de layout: se Hoje e Futuro dizem a mesma coisa, a segunda
     // linha não acrescenta informação. A tolerância evita diferença falsa de centavos.
+    // A igualdade de valores sozinha não basta: um débito aberto pode compensar outro e
+    // zerar a diferença por coincidência, mesmo havendo lançamento ainda por pagar. Por
+    // isso também exige nenhum débito real aberto nem fatura do cartão ainda pendente.
     const cicloAtual = i === Estado.idxHoje;
-    const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo &&
+    const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
+    const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
         Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&
         Math.abs(debitoHoje.guardado - guardado) <= TOLERANCIA_FINANCEIRA;
     // A mesma casca de Débito atende ao mobile e ao desktop; só a decisão de exibir
@@ -184,7 +188,10 @@ function vCiclo() {
     const totalCreditoHoje = totalCreditoExibidoAposAntecipacoes(
         creditosExibidosNoCiclo(pagosAteHoje, i), abatidoAteHoje[idxCreditoExibido] || 0
     );
-    const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo &&
+    // Mesmo raciocínio do Débito: uma compra aberta pode coincidir em valor com uma
+    // antecipação e zerar a diferença sem que a fatura esteja realmente fechada.
+    const creditoTemPendencia = creditosExibidos.some(r => r.pago === false);
+    const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo && !creditoTemPendencia &&
         Math.abs(totalCreditoHoje - totalCreditoExibido) <= TOLERANCIA_FINANCEIRA;
     // Cada bloco é independente: um pode estar igual e recolhido sem esconder a projeção
     // útil do outro. A marca evita recolher de novo depois de o usuário abrir para auditar.
