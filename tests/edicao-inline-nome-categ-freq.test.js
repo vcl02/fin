@@ -51,8 +51,8 @@ test('cada novo handler para a propagação pra não vazar pra seleção da linh
 });
 
 test('estilos cobrem os três novos togs e inputs, reaproveitando o padrão visual existente', () => {
-    assert.match(estilos, /\.togData, \.togNome, \.togCateg, \.togFreq \{/);
-    assert.match(estilos, /\.inpValor, \.inpNome, \.inpCateg, \.inpFreq \{/);
+    assert.match(estilos, /\.togData, \.togNome, \.togCateg, \.togFreq, \.togPrio \{/);
+    assert.match(estilos, /\.inpValor, \.inpNome, \.inpCateg, \.inpFreq, \.inpPrio \{/);
 });
 
 test('regra documentada em REGRAS.md', () => {

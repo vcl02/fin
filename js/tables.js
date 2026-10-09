@@ -13,9 +13,13 @@ function ordenarLinhas(linhas, idTabela) {
     const copia = [...linhas];
     copia.sort((a, b) => {
         const A = a[coluna], B = b[coluna];
-        const cmp = tipo == 'n' || tipo == 'b' || tipo == 'r' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
-            : tipo == 'd' ? (timestamp(A) - timestamp(B))
-                : String(A ?? '').localeCompare(String(B ?? ''), 'pt');
+        // prio sem valor preenchido equivale a "sem prioridade nenhuma" — nao a zero, que
+        // seria a MAIOR prioridade; fica atras de qualquer numero real, em qualquer sentido
+        // de ordenacao (ex.: pior que 999).
+        const cmp = coluna == 'prio' ? ((A == null ? Infinity : +A) - (B == null ? Infinity : +B))
+            : tipo == 'n' || tipo == 'b' || tipo == 'r' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
+                : tipo == 'd' ? (timestamp(A) - timestamp(B))
+                    : String(A ?? '').localeCompare(String(B ?? ''), 'pt');
         const ordenado = direcao == 1 ? cmp : -cmp;
         if (ordenado) return ordenado;
         // saldo anterior sempre encabeca o dia: ele e' o ponto de partida, nao um evento
@@ -189,6 +193,12 @@ const celCateg = r => ehLinhaReal(r) && !modoRestrito()
 const celFreq = r => ehLinhaReal(r) && !modoRestrito()
     ? `<span class="togFreq" data-tog-freq="${escapeHtml(String(r.id))}" title="Editar frequência">${escapeHtml(textoOuTraco(r.freq))}</span>`
     : textoOuTraco(r.freq);
+// Prioridade de elevação do Backlog pra um ciclo: numero livre que o usuario preenche na
+// mao (1 = mais provavel, quanto maior menos chance, ex.: 999) — mesmo esquema de clique-
+// pra-editar das demais colunas de texto/numero livre.
+const celPrio = r => ehLinhaReal(r) && !modoRestrito()
+    ? `<span class="togPrio" data-tog-prio="${escapeHtml(String(r.id))}" title="Editar prioridade de elevação">${escapeHtml(textoOuTraco(r.prio))}</span>`
+    : textoOuTraco(r.prio);
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
 // clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; só a conta restrita
@@ -205,7 +215,8 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
             ? celData(r)
             : (chave == 'nome' ? celNome(r)
                 : (chave == 'categ' ? celCateg(r)
-                    : (chave == 'freq' ? celFreq(r) : textoOuTraco(r[chave]))))}`
+                    : (chave == 'freq' ? celFreq(r)
+                        : (chave == 'prio' ? celPrio(r) : textoOuTraco(r[chave])))))}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {

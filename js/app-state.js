@@ -15,7 +15,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['id', 'ID', 'n'],
+    ['prio', 'Prio', 'n'], ['id', 'ID', 'n'],
 ];
 // Mesmas colunas do desktop no mobile: a tabela já tinha rolagem horizontal própria
 // (.wrap) pra telas estreitas, então não precisa de um recorte de colunas à parte.
@@ -42,5 +42,7 @@ const modoRestrito = () => String(Estado.emailSessao || '').trim().toLowerCase()
 // antes ela também entrava no mobile por largura de tela — agora o mobile tem paridade total
 // com o desktop, e só a conta restrita continua vendo essa casca, em qualquer dispositivo.
 const modoSimples = () => modoRestrito();
-const estadoOrdenacao = id => Estado.ordenacaoPorTabela[id] || (Estado.ordenacaoPorTabela[id] = { k: 'data', d: 1 });
+// Backlog ordena por padrão pela prioridade de elevação (1 = mais provável de entrar num
+// ciclo, maior = menos chance); as demais tabelas continuam por data, como sempre.
+const estadoOrdenacao = id => Estado.ordenacaoPorTabela[id] || (Estado.ordenacaoPorTabela[id] = { k: id === 'bk' ? 'prio' : 'data', d: 1 });
 const estadoFiltroTexto = id => Estado.filtroTexto[id] || (Estado.filtroTexto[id] = {});

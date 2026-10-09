@@ -698,6 +698,61 @@ el('out').addEventListener('click', e => {
     select.focus();
 });
 
+// clique na Prioridade (coluna "prio") troca o <span> por um <input type=number> — numero
+// livre que o usuario preenche na mao pra decidir a fila de elevacao do Backlog (1 = mais
+// provavel de entrar num ciclo; quanto maior, menos chance, ex.: 999). Mesmo esquema de
+// confirma/cancela das demais colunas de edicao inline.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-prio]');
+    if (!span) return;
+    if (modoRestrito()) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togPrio;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = r.prio ?? null;
+    span.classList.add('editando');
+    span.innerHTML = `<input type=number class=inpPrio inputmode=numeric step=1 value="${escapeHtml(original != null ? String(original) : '')}" placeholder="—">`;
+    const input = span.querySelector('input');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const bruto = input.value.trim();
+        let novo = null;
+        if (bruto !== '') {
+            const n = Math.trunc(Number(bruto));
+            if (!Number.isFinite(n)) { desenhar(); return; }   // entrada invalida: cancela sem salvar
+            novo = n;
+        }
+        if (novo === original) { desenhar(); return; }
+        input.disabled = true;
+        try {
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { prio: novo });
+            r.prio = novo;
+            desenhar();
+        } catch (err) {
+            mostrarToast('Falhou ao atualizar', err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    input.addEventListener('blur', () => confirma());
+    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    input.focus();
+    input.select();
+});
+
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;

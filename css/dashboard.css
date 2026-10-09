@@ -634,14 +634,15 @@
   }
 
   /* Data clicavel na tabela: mesma ideia do Valor, edicao inline com <input type=date>
-     (ver listener em #out no script.js). Nome/Categoria/Frequencia (togNome/togCateg/
-     togFreq) usam exatamente o mesmo esquema visual, cada um com seu input/select proprio. */
-  .togData, .togNome, .togCateg, .togFreq {
+     (ver listener em #out no script.js). Nome/Categoria/Frequencia/Prio (togNome/togCateg/
+     togFreq/togPrio) usam exatamente o mesmo esquema visual, cada um com seu input/select
+     proprio. */
+  .togData, .togNome, .togCateg, .togFreq, .togPrio {
       cursor: pointer;
       transition: opacity .15s ease;
   }
 
-  .togData:hover, .togNome:hover, .togCateg:hover, .togFreq:hover {
+  .togData:hover, .togNome:hover, .togCateg:hover, .togFreq:hover, .togPrio:hover {
       text-decoration: underline dotted;
       text-underline-offset: .2em;
   }
@@ -668,7 +669,7 @@
       cursor: pointer;
   }
 
-  .inpValor, .inpNome, .inpCateg, .inpFreq {
+  .inpValor, .inpNome, .inpCateg, .inpFreq, .inpPrio {
       width: 6.5rem;
       font: inherit;
       font-variant-numeric: tabular-nums;
@@ -686,7 +687,12 @@
       min-width: 9rem;
   }
 
-  .inpValor:focus, .inpNome:focus, .inpCateg:focus, .inpFreq:focus {
+  /* Prio e' so' um numero curto (1 a 3 digitos, tipicamente) — nao precisa da largura do Valor. */
+  .inpPrio {
+      width: 3.5rem;
+  }
+
+  .inpValor:focus, .inpNome:focus, .inpCateg:focus, .inpFreq:focus, .inpPrio:focus {
       outline: 2px solid var(--fg);
       outline-offset: -1px;
   }
