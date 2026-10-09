@@ -212,9 +212,7 @@ function dadosCompromissosDoCiclo(linhas) {
 // não só passeio), OU "Presentes" junto com "Isabella" — nunca "Lazer"/"Presentes" nem
 // "Isabella" sozinhos, porque Lazer e Presentes podem ser com qualquer outra pessoa, e
 // "Isabella" sozinha é a categoria do lançamento real da fatura detalhada do cartão dela
-// (ver Faturas em docs/REGRAS.md). A categoria "Besteira Isabella" foi descontinuada: o que
-// antes era só "Besteira Isabella" agora entra como "Lazer"+"Isabella" (ver
-// CATEGORIA_BESTEIRA_ISABELLA em js/domain.js pra lançamentos antigos ainda não retaggeados).
+// (ver Faturas em docs/REGRAS.md).
 const ehGastoIsabella = r => (categoriaContemCompromisso(r.categ, 'Lazer') && categoriaContemCompromisso(r.categ, 'Isabella')) ||
     (categoriaContemCompromisso(r.categ, 'Presentes') && categoriaContemCompromisso(r.categ, 'Isabella'));
 
@@ -223,15 +221,10 @@ const ehGastoIsabella = r => (categoriaContemCompromisso(r.categ, 'Lazer') && ca
 // está pago; Futuro considera tudo (pago + aberto), porque é quanto o usuário planeja gastar
 // no ciclo, não só o que já aconteceu. `categoria` aceita um texto (substring, via
 // categoriaContemCompromisso) OU uma função que recebe a linha inteira e decide sozinha
-// (ex.: ehGastoIsabella, que combina mais de uma categoria). `excluirCategoria` evita contar
-// duas vezes quando uma categoria é substring da outra (ex.: a categoria descontinuada
-// "Besteira Isabella" contém "Besteira" — sem isso, um lançamento antigo ainda não
-// retaggeado entraria nos dois limites ao mesmo tempo).
-function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite, excluirCategoria) {
+// (ex.: ehGastoIsabella, que combina mais de uma categoria).
+function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite) {
     const combina = typeof categoria === 'function' ? categoria : r => categoriaContemCompromisso(r.categ, categoria);
-    const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) &&
-        combina(r) &&
-        (!excluirCategoria || !categoriaContemCompromisso(r.categ, excluirCategoria)));
+    const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) && combina(r));
     const valorPago = gastos.filter(r => r.pago).reduce((soma, r) => soma + -r.v, 0);
     const valorTotal = gastos.reduce((soma, r) => soma + -r.v, 0);
     return {

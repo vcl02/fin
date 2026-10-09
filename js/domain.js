@@ -19,10 +19,10 @@ const NOME_ANCORA_CICLO = 'Faturamento PJ';
 const CATEGORIA_INVESTIMENTO = 'Investimento';
 // Teto mensal de "besteira" SOZINHO (cafés, milkshakes, lanches/doces comendo só, Uber não
 // essencial) — mesmo capricho, mas feito sozinho, por isso desconta daqui e não do teto da
-// Isabella. Quando é junto com ela, vira "Lazer"+"Isabella" (ver LIMITE_BESTEIRA_ISABELLA
-// e o guia de categorias no cadastro). Soma Débito e Crédito do mesmo ciclo — um único
-// limite pros dois blocos, não um por bloco. Fixo em código de propósito: é uma meta
-// pessoal, não dado editável na tela.
+// Isabella (LIMITE_ISABELLA). Quando é junto com ela, vira "Lazer"+"Isabella" (ver o guia de
+// categorias no cadastro). Soma Débito e Crédito do mesmo ciclo — um único limite pros dois
+// blocos, não um por bloco. Fixo em código de propósito: é uma meta pessoal, não dado
+// editável na tela.
 const CATEGORIA_BESTEIRA = 'Besteira';
 const LIMITE_BESTEIRA = 250;
 // Mesma ideia, outro teto, exibido no front com o rótulo "Isabella". "Lazer" e "Presentes"
@@ -35,10 +35,7 @@ const LIMITE_BESTEIRA = 250;
 //   - "Presentes" + "Isabella": algo comprado especificamente pra ela.
 // "Isabella" sozinha nunca entra nesse teto — é a categoria distinta do lançamento real da
 // fatura detalhada do cartão dela (ver Faturas).
-const CATEGORIA_BESTEIRA_ISABELLA = 'Besteira Isabella';   // legado: categoria descontinuada,
-// mantida só como excluirCategoria pro teto Besteira solo (ver chamada em js/cycle-views.js),
-// cobrindo lançamentos antigos que ainda não foram retaggeados pra "Lazer"+"Isabella".
-const LIMITE_BESTEIRA_ISABELLA = 700;
+const LIMITE_ISABELLA = 700;
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
 // garantia positiva do ciclo é somada separadamente, sem alterar este valor-base.
 let LIMITE_CARTAO = 3350;
