@@ -207,15 +207,27 @@ function dadosCompromissosDoCiclo(linhas) {
     return { faturamento, limites: LIMITES_COMPROMISSOS.map(resumo) };
 }
 
-// Regra única pros indicadores de limite por categoria (Besteira, Besteira Isabella, ...):
-// soma Débito e Crédito do MESMO ciclo contra um teto fixo em código. Hoje considera só o
-// que já está pago; Futuro considera tudo (pago + aberto), porque é quanto o usuário
-// planeja gastar no ciclo, não só o que já aconteceu. `excluirCategoria` evita contar duas
-// vezes quando uma categoria é substring da outra (ex.: "Besteira Isabella" contém
+// Indicador "Isabella" (rótulo exibido no título — ver cycle-views.js): conta a linha
+// quando ela tem a categoria "Besteira Isabella" sozinha, OU "Lazer" junto com "Isabella"
+// na mesma linha, OU "Presentes" junto com "Isabella" — nunca "Isabella" sozinha, que é a
+// categoria do lançamento real da fatura detalhada do cartão dela (ver Faturas em
+// docs/REGRAS.md), não um gasto categorizado como besteira/lazer/presente COM ela.
+const ehGastoIsabella = r => categoriaContemCompromisso(r.categ, CATEGORIA_BESTEIRA_ISABELLA) ||
+    (categoriaContemCompromisso(r.categ, 'Lazer') && categoriaContemCompromisso(r.categ, 'Isabella')) ||
+    (categoriaContemCompromisso(r.categ, 'Presentes') && categoriaContemCompromisso(r.categ, 'Isabella'));
+
+// Regra única pros indicadores de limite por categoria (Besteira, Isabella, ...): soma
+// Débito e Crédito do MESMO ciclo contra um teto fixo em código. Hoje considera só o que já
+// está pago; Futuro considera tudo (pago + aberto), porque é quanto o usuário planeja gastar
+// no ciclo, não só o que já aconteceu. `categoria` aceita um texto (substring, via
+// categoriaContemCompromisso) OU uma função que recebe a linha inteira e decide sozinha
+// (ex.: ehGastoIsabella, que combina mais de uma categoria). `excluirCategoria` evita contar
+// duas vezes quando uma categoria é substring da outra (ex.: "Besteira Isabella" contém
 // "Besteira" — sem isso, entraria nos dois limites ao mesmo tempo).
 function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite, excluirCategoria) {
+    const combina = typeof categoria === 'function' ? categoria : r => categoriaContemCompromisso(r.categ, categoria);
     const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) &&
-        categoriaContemCompromisso(r.categ, categoria) &&
+        combina(r) &&
         (!excluirCategoria || !categoriaContemCompromisso(r.categ, excluirCategoria)));
     const valorPago = gastos.filter(r => r.pago).reduce((soma, r) => soma + -r.v, 0);
     const valorTotal = gastos.reduce((soma, r) => soma + -r.v, 0);

@@ -22,8 +22,10 @@ const CATEGORIA_INVESTIMENTO = 'Investimento';
 // por bloco. Fixo em código de propósito: é uma meta pessoal, não dado editável na tela.
 const CATEGORIA_BESTEIRA = 'Besteira';
 const LIMITE_BESTEIRA = 250;
-// Mesma ideia, outro teto: gastos categorizados "Besteira Isabella" (distinto da categoria
-// "Isabella" usada pelo lançamento real da fatura detalhada do cartão dela — ver Faturas).
+// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella": soma a categoria
+// "Besteira Isabella" sozinha, ou "Lazer"/"Presentes" junto com "Isabella" na mesma linha
+// (regra completa em ehGastoIsabella, js/charts.js) — nunca "Isabella" sozinha, que é a
+// categoria distinta do lançamento real da fatura detalhada do cartão dela (ver Faturas).
 const CATEGORIA_BESTEIRA_ISABELLA = 'Besteira Isabella';
 const LIMITE_BESTEIRA_ISABELLA = 700;
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
