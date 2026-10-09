@@ -47,6 +47,9 @@ function validarLancamentosCarregados(lancamentos) {
     const avisos = [];
     if (!Array.isArray(lancamentos)) return { inconsistencias: ['Supabase não retornou uma lista de lançamentos.'], avisos };
     const categorias = new Map();
+    // Vencimento de fatura deve ter um único dia por mês: o mesmo cartão não fecha duas
+    // vezes no mesmo mês. Agrupa por "AAAA-MM" -> dia -> lançamentos que usaram aquele dia.
+    const faturasPorMes = new Map();
 
     lancamentos.forEach((lancamento, indice) => {
         const prefixo = `Lançamento ${indice + 1}${lancamento?.id != null ? ` (id ${lancamento.id})` : ''}`;
@@ -74,6 +77,16 @@ function validarLancamentosCarregados(lancamentos) {
             });
             categorias.set(chave, grupo);
         });
+
+        if (lancamento.fatura && ehDataIso(lancamento.fatura)) {
+            const [ano, mes, dia] = String(lancamento.fatura).slice(0, 10).split('-');
+            const chaveMes = `${ano}-${mes}`;
+            const porDia = faturasPorMes.get(chaveMes) || new Map();
+            const itensDoDia = porDia.get(dia) || [];
+            itensDoDia.push({ id: lancamento.id ?? indice + 1, nome: String(lancamento.nome || '').trim() || 'sem nome' });
+            porDia.set(dia, itensDoDia);
+            faturasPorMes.set(chaveMes, porDia);
+        }
     });
     categorias.forEach(({ nome, lancamentos: itens }) => {
         if (itens.length === 1) {
@@ -81,5 +94,43 @@ function validarLancamentosCarregados(lancamentos) {
             avisos.push(`Categoria "${nome}" aparece em apenas um lançamento: "${nomeLancamento}" (id ${id}).`);
         }
     });
+    faturasPorMes.forEach((porDia, chaveMes) => {
+        if (porDia.size <= 1) return;
+        const dias = [...porDia.keys()].sort();
+        const exemplos = dias.map(dia => {
+            const [{ id, nome: nomeLancamento }] = porDia.get(dia);
+            return `dia ${dia} (ex.: "${nomeLancamento}", id ${id})`;
+        }).join(', ');
+        avisos.push(`Fatura de ${chaveMes} tem vencimento em mais de um dia: ${exemplos}. Cada mês deveria ter um único dia de fatura.`);
+    });
+
+    // "Hoje" do Débito e do Crédito (ver finance.js: lancamentosPagos) conta qualquer
+    // lançamento com pago = true sem olhar a data, então um pago no ciclo ERRADO (futuro)
+    // de verdade conta no retrato de agora. O dado em si é válido — não é inconsistência de
+    // contrato —, mas é um sinal forte de revisão: normalmente uma recorrência nasceu paga
+    // sem querer (o cadastro grava o mesmo Pago em todas as parcelas, inclusive futuras).
+    if (typeof hojeISO === 'function') {
+        const ancorasOrdenadas = lancamentos
+            .filter(r => r && !r.cred && String(r.nome || '').trim() === NOME_ANCORA_CICLO && ehDataIso(r.data) && r.data)
+            .map(r => String(r.data).slice(0, 10))
+            .sort();
+        const hoje = hojeISO();
+        const idxHoje = ancorasOrdenadas.reduce((achado, data, i) => data <= hoje ? i : achado, -1);
+        const inicioProximoCiclo = idxHoje >= 0 ? ancorasOrdenadas[idxHoje + 1] : null;
+        if (inicioProximoCiclo) {
+            lancamentos.forEach((lancamento, indice) => {
+                if (!lancamento || lancamento.pago !== true) return;
+                // A própria âncora do próximo ciclo sempre data exatamente nesse início —
+                // ela não é uma despesa pré-paga por engano, é o marcador estrutural do ciclo.
+                if (!lancamento.cred && String(lancamento.nome || '').trim() === NOME_ANCORA_CICLO) return;
+                const dataRelevante = lancamento.cred ? lancamento.fatura : lancamento.data;
+                if (!dataRelevante || !ehDataIso(dataRelevante)) return;
+                if (String(dataRelevante).slice(0, 10) < inicioProximoCiclo) return;
+                const prefixo = `Lançamento ${indice + 1}${lancamento.id != null ? ` (id ${lancamento.id})` : ''}`;
+                const rotuloData = lancamento.cred ? 'vencimento de fatura' : 'data';
+                avisos.push(`${prefixo}: marcado como pago com ${rotuloData} em ${String(dataRelevante).slice(0, 10)} — cai num ciclo futuro, fora do atual.`);
+            });
+        }
+    }
     return { inconsistencias, avisos };
 }
