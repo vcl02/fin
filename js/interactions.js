@@ -39,11 +39,7 @@ restaurarLimiteCartaoLocal();
 // redesenha a tela conforme o modo ativo (blocos Debito/Credito vs matriz de comparacao),
 // escondendo/mostrando os filtros que fazem sentido em cada um
 function desenhar() {
-    Object.keys(_cacheSaldo).forEach(k => delete _cacheSaldo[k]);
-    Object.keys(_cacheAjuste).forEach(k => delete _cacheAjuste[k]);
-    Object.keys(_cacheSaldoUnico).forEach(k => delete _cacheSaldoUnico[k]);
-    Object.keys(_cacheAjusteUnico).forEach(k => delete _cacheAjusteUnico[k]);
-    _baseFiltrada = _abatFiltrada = _baseUnica = _abatUnica = null;   // recalcula 1x neste render
+    limparCachesFinanceiros();   // recalcula 1x neste render
     const simples = modoSimples();
 
     el('fciclo').hidden = true;   // #ciclo e' so' a fonte de verdade interna que vCiclo() le, nunca aparece

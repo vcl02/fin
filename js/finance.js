@@ -124,6 +124,18 @@ function ajusteDoCicloContaUnica(idx) {
     return _cacheAjusteUnico[idx] || null;
 }
 
+// Zera as 4 memoizações acima (saldo/ajuste, filtrado e conta única). desenhar() chama isso
+// a cada redesenho; consolidar tudo também chama entre um ciclo e o próximo, pois materializar
+// o ajuste de um ciclo muda Estado.lancamentos e o guardado disponível do ciclo seguinte
+// (guardadoAte) precisa recalcular em cima do lançamento recém-criado, não do cache antigo.
+function limparCachesFinanceiros() {
+    Object.keys(_cacheSaldo).forEach(k => delete _cacheSaldo[k]);
+    Object.keys(_cacheAjuste).forEach(k => delete _cacheAjuste[k]);
+    Object.keys(_cacheSaldoUnico).forEach(k => delete _cacheSaldoUnico[k]);
+    Object.keys(_cacheAjusteUnico).forEach(k => delete _cacheAjusteUnico[k]);
+    _baseFiltrada = _abatFiltrada = _baseUnica = _abatUnica = null;
+}
+
 // Saldo em conta ao fim de cada dia, acumulado desde SALDO_INICIAL. Considera o que
 // de fato passa pela conta: os debitos (inclusive antecipação/pagamento de fatura) mais as
 // linhas sinteticas de fatura, que representam apenas o restante a sair no vencimento, mais

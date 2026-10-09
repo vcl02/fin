@@ -611,6 +611,59 @@ modalNovo.addEventListener('close', () => {
     delete modalNovo.dataset.viaDuplicar;
 });
 
+// Núcleo de "materializar/consolidar" um Aporte sugerido ou Resgate necessário de um ciclo
+// `idx`: sem movimento real no ciclo, INSERT (ou push local em simulação); com movimento
+// real, UPDATE consolidando os valores. Compartilhado entre o clique de uma linha só
+// (seldup) e "Consolidar tudo" (btConsolidarTudo), que repete isso ciclo a ciclo.
+async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
+    const data = dataISO(Estado.ciclos[idx].fat) || null;
+    const existente = movimentoAporteOuResgateDoCiclo(idx);
+    if (existente) {
+        const consolidado = consolidarAjusteExistente(existente, valorAjuste);
+        if (Estado.simulando) {
+            Object.assign(existente, {
+                nome: consolidado.nome,
+                valor: consolidado.valor,
+                v: consolidado.valor,
+            });
+        } else {
+            const linhaAtualizada = await atualizarLancamento(existente.id, {
+                nome: consolidado.nome,
+                valor: consolidado.valor,
+            });
+            Object.assign(existente, linhaAtualizada, {
+                v: +linhaAtualizada.valor || 0,
+                inv: /^investimento$/i.test(String(linhaAtualizada.categ || '').trim()),
+            });
+        }
+    } else {
+        if (Estado.simulando) {
+            simulaLancamentoParcelado({
+                nome: ehAporte ? 'Aporte' : 'Resgate', categ, freq: null, data,
+                cred: false, pago: false,
+                parcelas: 1, valores: [valorAjuste],
+            });
+        } else {
+            const linhaCriada = await inserirLancamento({
+                data,
+                freq: null,
+                cred: false,
+                pago: false,
+                nome: ehAporte ? 'Aporte' : 'Resgate',
+                categ,
+                valor: valorAjuste,
+            });
+            const periodoIdx = data ? periodoDoDebito(data) : null;
+            Estado.lancamentos.push({
+                ...linhaCriada,
+                v: +linhaCriada.valor || 0,
+                inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
+                periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+            });
+        }
+    }
+}
+
 // A mesma posicao da barra tem duas acoes mutuamente exclusivas:
 // - lancamento real: Duplicar abre o modal pre-preenchido;
 // - Aporte sugerido/Resgate necessario: cria o ajuste real quando ainda nao existe um
@@ -625,53 +678,8 @@ el('seldup').onclick = async () => {
         el('seldup').textContent = 'Salvando…';
         try {
             const ehAporte = chave.startsWith('sug:');
-            const data = dataISO(ajuste.data) || null;
             const valorAjuste = ajuste._sug != null ? ajuste._sug : ajuste.v;
-            const existente = movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
-            if (existente) {
-                const consolidado = consolidarAjusteExistente(existente, valorAjuste);
-                if (Estado.simulando) {
-                    Object.assign(existente, {
-                        nome: consolidado.nome,
-                        valor: consolidado.valor,
-                        v: consolidado.valor,
-                    });
-                } else {
-                    const linhaAtualizada = await atualizarLancamento(existente.id, {
-                        nome: consolidado.nome,
-                        valor: consolidado.valor,
-                    });
-                    Object.assign(existente, linhaAtualizada, {
-                        v: +linhaAtualizada.valor || 0,
-                        inv: /^investimento$/i.test(String(linhaAtualizada.categ || '').trim()),
-                    });
-                }
-            } else {
-                if (Estado.simulando) {
-                    simulaLancamentoParcelado({
-                        nome: ehAporte ? 'Aporte' : 'Resgate', categ: ajuste.categ, freq: null, data,
-                        cred: false, pago: false,
-                        parcelas: 1, valores: [valorAjuste],
-                    });
-                } else {
-                    const linhaCriada = await inserirLancamento({
-                        data,
-                        freq: null,
-                        cred: false,
-                        pago: false,
-                        nome: ehAporte ? 'Aporte' : 'Resgate',
-                        categ: ajuste.categ,
-                        valor: valorAjuste,
-                    });
-                    const periodoIdx = data ? periodoDoDebito(data) : null;
-                    Estado.lancamentos.push({
-                        ...linhaCriada,
-                        v: +linhaCriada.valor || 0,
-                        inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
-                        periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
-                    });
-                }
-            }
+            await materializaOuConsolidaAjuste(indiceDoAjuste(chave), ehAporte, ajuste.categ, valorAjuste);
             Estado.selecionados.clear();
             desenhar();
         } catch (err) {
@@ -688,6 +696,34 @@ el('seldup').onclick = async () => {
 
     const r = Estado.lancamentos.find(x => String(x.id) == chave);
     if (r) { modalNovo.dataset.viaDuplicar = '1'; abreModalNovo(r); }
+};
+
+// "Consolidar tudo": repete materializaOuConsolidaAjuste ciclo a ciclo, de hoje até o
+// último ciclo que tem algum lançamento, pra não exigir abrir um por um manualmente.
+// Cada escrita muda Estado.lancamentos (logo o guardado disponível do ciclo seguinte), por
+// isso limpa os caches financeiros entre uma iteração e a próxima, não só no fim.
+el('btConsolidarTudo').onclick = async () => {
+    if (el('btConsolidarTudo').disabled || Estado.idxHoje < 0) return;
+    el('btConsolidarTudo').disabled = true;
+    try {
+        const ultimoCicloComDados = Estado.lancamentos.reduce(
+            (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
+            Estado.idxHoje
+        );
+        for (let idx = Estado.idxHoje; idx <= ultimoCicloComDados; idx++) {
+            const ajuste = ajusteDoCiclo(idx);
+            if (!ajuste) continue;
+            await materializaOuConsolidaAjuste(idx, ajuste.tipo == 'aporte', ajuste.categ, ajuste.v);
+            limparCachesFinanceiros();
+        }
+        Estado.selecionados.clear();
+        desenhar();
+    } catch (err) {
+        mostrarToast('Falhou ao consolidar tudo', err.message);
+        desenhar();
+    } finally {
+        el('btConsolidarTudo').disabled = false;
+    }
 };
 
 // A confirmação explica se a remoção é real ou somente parte da simulação atual.
