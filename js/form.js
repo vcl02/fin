@@ -614,7 +614,8 @@ modalNovo.addEventListener('close', () => {
 // Núcleo de "materializar/consolidar" um Aporte sugerido ou Resgate necessário de um ciclo
 // `idx`: sem movimento real no ciclo, INSERT (ou push local em simulação); com movimento
 // real, UPDATE consolidando os valores. Compartilhado entre o clique de uma linha só
-// (seldup) e "Consolidar tudo" (btConsolidarTudo), que repete isso ciclo a ciclo.
+// (seldup) e "Consolidar tudo" (btConsolidarTudo), que repete isso ciclo a ciclo. O retorno
+// ('consolidado'/'materializado') é só pro resumo de "Consolidar tudo" contar cada tipo.
 async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
     const data = dataISO(Estado.ciclos[idx].fat) || null;
     const existente = movimentoAporteOuResgateDoCiclo(idx);
@@ -662,6 +663,7 @@ async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
             });
         }
     }
+    return existente ? 'consolidado' : 'materializado';
 }
 
 // A mesma posicao da barra tem duas acoes mutuamente exclusivas:
@@ -710,14 +712,21 @@ el('btConsolidarTudo').onclick = async () => {
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
             Estado.idxHoje
         );
+        let materializados = 0, consolidados = 0;
         for (let idx = Estado.idxHoje; idx <= ultimoCicloComDados; idx++) {
             const ajuste = ajusteDoCiclo(idx);
             if (!ajuste) continue;
-            await materializaOuConsolidaAjuste(idx, ajuste.tipo == 'aporte', ajuste.categ, ajuste.v);
+            const resultado = await materializaOuConsolidaAjuste(idx, ajuste.tipo == 'aporte', ajuste.categ, ajuste.v);
+            if (resultado == 'consolidado') consolidados++; else materializados++;
             limparCachesFinanceiros();
         }
         Estado.selecionados.clear();
         desenhar();
+        // Nada aparece na tela pros ciclos fora do atual (não estão renderizados), então o
+        // toast é o único retorno de que a varredura rodou e o que ela de fato mudou.
+        mostrarToast('Consolidar tudo', materializados || consolidados
+            ? `${materializados} materializado(s), ${consolidados} consolidado(s).`
+            : 'Nenhum ciclo com Aporte sugerido ou Resgate necessário pendente.');
     } catch (err) {
         mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();

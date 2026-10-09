@@ -36,7 +36,8 @@ test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca
 });
 
 test('cada ciclo limpa os caches financeiros antes do próximo, pois o guardado disponível muda', () => {
-    assert.match(formulario, /await materializaOuConsolidaAjuste\(idx, ajuste\.tipo == 'aporte', ajuste\.categ, ajuste\.v\);\s*\n\s*limparCachesFinanceiros\(\);/);
+    assert.match(formulario, /const resultado = await materializaOuConsolidaAjuste\(idx, ajuste\.tipo == 'aporte', ajuste\.categ, ajuste\.v\);/);
+    assert.match(formulario, /if \(resultado == 'consolidado'\) consolidados\+\+; else materializados\+\+;\s*\n\s*limparCachesFinanceiros\(\);/);
     assert.match(financeiro, /function limparCachesFinanceiros\(\) \{/);
     assert.match(financeiro, /Object\.keys\(_cacheSaldo\)\.forEach\(k => delete _cacheSaldo\[k\]\);/);
     assert.match(financeiro, /_baseFiltrada = _abatFiltrada = _baseUnica = _abatUnica = null;/);
@@ -44,13 +45,19 @@ test('cada ciclo limpa os caches financeiros antes do próximo, pois o guardado 
     assert.match(interacoes, /function desenhar\(\) \{\s*limparCachesFinanceiros\(\);/);
 });
 
-test('falha no meio da varredura avisa por toast e redesenha com o progresso já feito', () => {
+test('núcleo retorna consolidado/materializado pro resumo contar cada tipo separadamente', () => {
+    assert.match(formulario, /return existente \? 'consolidado' : 'materializado';/);
+});
+
+test('conclusão sempre aparece em toast, já que a maioria dos ciclos varridos não é a tela aberta', () => {
     const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
+    assert.match(trecho, /mostrarToast\('Consolidar tudo', materializados \|\| consolidados\s*\n\s*\? `\$\{materializados\} materializado\(s\), \$\{consolidados\} consolidado\(s\)\.`\s*\n\s*: 'Nenhum ciclo com Aporte sugerido ou Resgate necessário pendente\.'\);/);
     assert.match(trecho, /catch \(err\) \{\s*mostrarToast\('Falhou ao consolidar tudo', err\.message\);\s*desenhar\(\);/);
 });
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /\*\*Consolidar tudo\*\* repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
     assert.match(regras, /Ciclos anteriores ao atual nunca entram nessa varredura\./);
+    assert.match(regras, /a conclusão sempre aparece em toast contando quantos foram materializados e quantos foram consolidados/);
 });
