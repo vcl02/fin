@@ -139,8 +139,8 @@ function vCiclo() {
     // (o que está planejado gastar).
     const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)];
     const limitesCategoria = cicloAtual ? [
-        // "Besteira Isabella" contém "Besteira" como substring — exclui daqui, senão
-        // contaria nos dois limites ao mesmo tempo.
+        // CATEGORIA_BESTEIRA_ISABELLA é legado (contém "Besteira" como substring): exclui
+        // daqui só pra não contar lançamento antigo ainda não retaggeado nos dois limites.
         { rotulo: 'Besteira', ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA, CATEGORIA_BESTEIRA_ISABELLA) },
         { rotulo: 'Isabella', ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_BESTEIRA_ISABELLA) },
     ] : [];

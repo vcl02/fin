@@ -31,7 +31,6 @@ function carregaDadosLimiteCategoriaDoCiclo() {
     const contexto = {
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
         ehTransferenciaFatura: r => String(r.categ || '').toLowerCase().includes('antecipação fatura'),
-        CATEGORIA_BESTEIRA_ISABELLA: 'Besteira Isabella',
     };
     vm.createContext(contexto);
     vm.runInContext(`${graficos.slice(inicio, fim)}
@@ -56,25 +55,25 @@ test('soma Débito e Crédito do mesmo ciclo contra o teto da categoria, separan
     assert.equal(Math.round(resultado.percentualTotal * 10) / 10, 68);
 });
 
-test('cada categoria usa o próprio limite, sem misturar com outra', () => {
+test('Besteira solo e Isabella usam cada um o próprio limite, sem misturar com outro', () => {
     const { dadosLimiteCategoriaDoCiclo, ehGastoIsabella } = carregaDadosLimiteCategoriaDoCiclo();
     const linhas = [
-        { v: -350, categ: 'Besteira Isabella', pago: true, cred: false },
+        { v: -350, categ: 'Besteira Isabella', pago: true, cred: false },  // legado: exclusão ainda evita dobrar no Besteira solo
         { v: -50, categ: 'Besteira', pago: true, cred: false },
+        { v: -120, categ: 'Lazer, Isabella', pago: true, cred: false },
     ];
-    // "Besteira Isabella" contém "Besteira" (busca por substring): sem o 4º parâmetro de
-    // exclusão, a linha de 350 contaria nos dois limites ao mesmo tempo.
     const besteira = dadosLimiteCategoriaDoCiclo(linhas, 'Besteira', 250, 'Besteira Isabella');
     const isabella = dadosLimiteCategoriaDoCiclo(linhas, ehGastoIsabella, 700);
     assert.equal(besteira.valorPago, 50);
     assert.equal(besteira.percentualPago, 20);
-    assert.equal(isabella.valorPago, 350);
-    assert.equal(isabella.percentualPago, 50);
+    assert.equal(isabella.valorPago, 120);
+    assert.ok(Math.abs(isabella.percentualPago - 120 / 700 * 100) < 1e-9);
 });
 
-test('sem o parâmetro de exclusão, a sobreposição de substring realmente ocorreria', () => {
+test('sem o parâmetro de exclusão, a sobreposição de substring de um lançamento legado realmente ocorreria', () => {
     // Confirma a premissa do bug que o 4º parâmetro evita: chamado sem ele, "Besteira
-    // Isabella" cai dentro de "Besteira" por conter o texto, então contaria nos dois.
+    // Isabella" (categoria descontinuada, mas que pode sobrar em dado antigo) cai dentro de
+    // "Besteira" por conter o texto, então contaria no teto solo também.
     const { dadosLimiteCategoriaDoCiclo } = carregaDadosLimiteCategoriaDoCiclo();
     const resultado = dadosLimiteCategoriaDoCiclo([
         { v: -350, categ: 'Besteira Isabella', pago: true, cred: false },
@@ -92,20 +91,20 @@ test('exclui antecipação de fatura, igual às demais leituras de orçamento', 
     assert.equal(resultado.valorTotal, 0);
 });
 
-test('indicador Isabella soma "Besteira Isabella" sozinha, "Lazer"+"Isabella" juntas e "Presentes"+"Isabella" juntas — nunca "Isabella" sozinha', () => {
+test('indicador Isabella soma só "Lazer"+"Isabella" e "Presentes"+"Isabella" juntas — "Besteira Isabella" sozinha (categoria descontinuada) não conta mais', () => {
     const { dadosLimiteCategoriaDoCiclo, ehGastoIsabella } = carregaDadosLimiteCategoriaDoCiclo();
     const linhas = [
-        { v: -100, categ: 'Besteira Isabella', pago: true, cred: false },
-        { v: -80, categ: 'Lazer, Isabella', pago: true, cred: false },
-        { v: -60, categ: 'Presentes, Isabella', pago: false, cred: true },
-        { v: -40, categ: 'Isabella', pago: true, cred: false },         // sozinha: fatura do cartão dela, não conta
-        { v: -30, categ: 'Lazer', pago: true, cred: false },            // sem "Isabella" junto: não conta
-        { v: -20, categ: 'Presentes', pago: true, cred: false },        // sem "Isabella" junto: não conta
-        { v: -10, categ: 'Lazer, Presentes', pago: true, cred: false }, // nenhuma com "Isabella": não conta
+        { v: -80, categ: 'Lazer, Isabella', pago: true, cred: false },     // comeram/saíram juntos
+        { v: -60, categ: 'Presentes, Isabella', pago: false, cred: true }, // presente pra ela
+        { v: -100, categ: 'Besteira Isabella', pago: true, cred: false },  // categoria descontinuada: não conta mais
+        { v: -40, categ: 'Isabella', pago: true, cred: false },            // sozinha: fatura do cartão dela, não conta
+        { v: -30, categ: 'Lazer', pago: true, cred: false },               // sem "Isabella" junto: não conta
+        { v: -20, categ: 'Presentes', pago: true, cred: false },           // sem "Isabella" junto: não conta
+        { v: -10, categ: 'Lazer, Presentes', pago: true, cred: false },    // nenhuma com "Isabella": não conta
     ];
     const resultado = dadosLimiteCategoriaDoCiclo(linhas, ehGastoIsabella, 700);
-    assert.equal(resultado.valorPago, 180);    // 100 (Besteira Isabella) + 80 (Lazer+Isabella, pago)
-    assert.equal(resultado.valorTotal, 240);   // + 60 (Presentes+Isabella, ainda aberto)
+    assert.equal(resultado.valorPago, 80);     // só Lazer+Isabella, pago
+    assert.equal(resultado.valorTotal, 140);   // + 60 (Presentes+Isabella, ainda aberto)
 });
 
 test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', () => {
@@ -130,21 +129,21 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`creditosExibidosNoCiclo`, fatura de `i\+1`/);
     assert.match(regras, /ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro/);
     assert.match(regras, /o rótulo `Isabella` contra `LIMITE_BESTEIRA_ISABELLA`, R\$ 700/);
+    assert.match(regras, /`Besteira Isabella`.*foi descontinuada e substituída por `Lazer`\+`Isabella`/);
     assert.match(regras, /`Lazer` e `Presentes` sozinhos não contam pro teto `Isabella`/);
     assert.match(regras, /precisam vir combinados com a categoria `Isabella` na mesma linha/);
-    assert.match(regras, /`Besteira Isabella` sozinha é comer ou lanchar junto/);
-    assert.match(regras, /`Lazer` \+ `Isabella` é qualquer outro custo de sair junto/);
+    assert.match(regras, /`Lazer` \+ `Isabella` é qualquer coisa feita junto, inclusive comer ou lanchar juntos/);
     assert.match(regras, /`Presentes` \+ `Isabella` é algo comprado especificamente para ela/);
     assert.match(regras, /categoria distinta usada pelo lançamento real da fatura detalhada do cartão dela/);
     assert.match(regras, /#ajudaCategorias.*abre `#modalAjudaCategorias`/);
 });
 
-test('botão de ajuda ao lado de Categorias abre um guia com as 4 regras de categorização', () => {
+test('botão de ajuda ao lado de Categorias abre um guia com as 3 regras de categorização (Besteira solo, Lazer+Isabella, Presentes+Isabella)', () => {
     assert.match(html, /<button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer, Presentes"/);
     assert.match(html, /aria-label="Abrir guia de categorias Besteira, Isabella, Lazer e Presentes"/);
     assert.match(html, /<dialog id=modalAjudaCategorias>/);
     assert.match(html, /<dt>Besteira<\/dt>/);
-    assert.match(html, /<dt>Besteira Isabella<\/dt>/);
+    assert.doesNotMatch(html, /<dt>Besteira Isabella<\/dt>/);
     assert.match(html, /<dt>Presentes \+ Isabella<\/dt>/);
     assert.match(html, /<dt>Lazer \+ Isabella<\/dt>/);
     assert.match(html, /"Isabella" sozinha, sem nenhuma das combinações acima, nunca entra nesse teto/);

@@ -208,12 +208,14 @@ function dadosCompromissosDoCiclo(linhas) {
 }
 
 // Indicador "Isabella" (rótulo exibido no título — ver cycle-views.js): conta a linha
-// quando ela tem a categoria "Besteira Isabella" sozinha, OU "Lazer" junto com "Isabella"
-// na mesma linha, OU "Presentes" junto com "Isabella" — nunca "Isabella" sozinha, que é a
-// categoria do lançamento real da fatura detalhada do cartão dela (ver Faturas em
-// docs/REGRAS.md), não um gasto categorizado como besteira/lazer/presente COM ela.
-const ehGastoIsabella = r => categoriaContemCompromisso(r.categ, CATEGORIA_BESTEIRA_ISABELLA) ||
-    (categoriaContemCompromisso(r.categ, 'Lazer') && categoriaContemCompromisso(r.categ, 'Isabella')) ||
+// quando ela tem "Lazer" junto com "Isabella" na mesma linha (inclui comer/sair juntos,
+// não só passeio), OU "Presentes" junto com "Isabella" — nunca "Lazer"/"Presentes" nem
+// "Isabella" sozinhos, porque Lazer e Presentes podem ser com qualquer outra pessoa, e
+// "Isabella" sozinha é a categoria do lançamento real da fatura detalhada do cartão dela
+// (ver Faturas em docs/REGRAS.md). A categoria "Besteira Isabella" foi descontinuada: o que
+// antes era só "Besteira Isabella" agora entra como "Lazer"+"Isabella" (ver
+// CATEGORIA_BESTEIRA_ISABELLA em js/domain.js pra lançamentos antigos ainda não retaggeados).
+const ehGastoIsabella = r => (categoriaContemCompromisso(r.categ, 'Lazer') && categoriaContemCompromisso(r.categ, 'Isabella')) ||
     (categoriaContemCompromisso(r.categ, 'Presentes') && categoriaContemCompromisso(r.categ, 'Isabella'));
 
 // Regra única pros indicadores de limite por categoria (Besteira, Isabella, ...): soma
@@ -222,8 +224,9 @@ const ehGastoIsabella = r => categoriaContemCompromisso(r.categ, CATEGORIA_BESTE
 // no ciclo, não só o que já aconteceu. `categoria` aceita um texto (substring, via
 // categoriaContemCompromisso) OU uma função que recebe a linha inteira e decide sozinha
 // (ex.: ehGastoIsabella, que combina mais de uma categoria). `excluirCategoria` evita contar
-// duas vezes quando uma categoria é substring da outra (ex.: "Besteira Isabella" contém
-// "Besteira" — sem isso, entraria nos dois limites ao mesmo tempo).
+// duas vezes quando uma categoria é substring da outra (ex.: a categoria descontinuada
+// "Besteira Isabella" contém "Besteira" — sem isso, um lançamento antigo ainda não
+// retaggeado entraria nos dois limites ao mesmo tempo).
 function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite, excluirCategoria) {
     const combina = typeof categoria === 'function' ? categoria : r => categoriaContemCompromisso(r.categ, categoria);
     const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) &&
