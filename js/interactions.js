@@ -144,6 +144,10 @@ function atualizaBarraSelecao() {
         ? movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chaveUnica))
         : null;
     const chaveUnicaReal = chaveUnica && !ehSintetica(chaveUnica) ? chaveUnica : null;
+    // Excluir aceita qualquer quantidade de linhas reais selecionadas, ignorando linhas
+    // sintéticas misturadas na mesma seleção (elas não existem no banco e a barra as usa
+    // só pra soma). Duplicar continua exigindo exatamente uma linha real.
+    const chavesReaisSelecionadas = chaves.filter(c => !ehSintetica(c));
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
     // pra somar e selecionar/limpar. No mobile, a barra nunca oferece ações que alteram
@@ -152,8 +156,8 @@ function atualizaBarraSelecao() {
     el('seldup').textContent = ehAjusteMaterializavel
         ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
         : 'Duplicar';
-    el('seldel').hidden = mobile || !chaveUnicaReal;
-    el('seldel').textContent = Estado.simulando && chaveUnicaReal ? 'Ocultar' : 'Excluir';
+    el('seldel').hidden = mobile || !chavesReaisSelecionadas.length;
+    el('seldel').textContent = Estado.simulando && chavesReaisSelecionadas.length ? 'Ocultar' : 'Excluir';
     el('selacao').hidden = !mobile && (!!chaveUnicaReal || ehAjusteMaterializavel);
 
     if (chaveUnica && !mobile) {

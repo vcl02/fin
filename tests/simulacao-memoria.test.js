@@ -9,7 +9,7 @@ const graficos = fs.readFileSync('js/charts.js', 'utf8');
 
 test('simulação mantém update e exclusão de linhas reais somente em memória', () => {
     assert.match(formulario, /const exclusaoEhSimulada = r => Estado\.simulando \|\| r\._sim;/);
-    assert.match(formulario, /if \(!simulada\) await excluirLancamento\(r\.id\);/);
+    assert.match(formulario, /if \(!exclusaoEhSimulada\(r\)\) await excluirLancamento\(r\.id\);/);
     assert.match(formulario, /Ocultar .* só nesta simulação/);
     assert.match(formulario, /Volta ao recarregar ou sair da simulação/);
     assert.equal((interacoes.match(/!Estado\.simulando && !r\._sim\) await atualizarLancamento/g) || []).length, 3);

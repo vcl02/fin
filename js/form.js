@@ -694,28 +694,53 @@ el('seldup').onclick = async () => {
 // Simulação altera somente Estado.lancamentos: nunca chama DELETE para uma linha real.
 const exclusaoEhSimulada = r => Estado.simulando || r._sim;
 
+// Aceita quantas linhas reais estiverem selecionadas (uma ou várias); linhas sintéticas
+// misturadas na mesma seleção são ignoradas aqui, pois não existem no banco. A confirmação
+// lista cada lançamento por nome e valor para o usuário auditar antes de uma ação
+// irreversível, inclusive quando a seleção mistura linha real (DELETE) com linha só desta
+// simulação (oculta em memória).
 el('seldel').onclick = async () => {
-    const chave = [...Estado.selecionados.keys()][0];
-    const i = Estado.lancamentos.findIndex(x => String(x.id) == chave);
-    if (i < 0) return;
+    const linhas = [...Estado.selecionados.keys()]
+        .map(chave => Estado.lancamentos.find(x => String(x.id) == chave))
+        .filter(Boolean);
+    if (!linhas.length) return;
 
-    const r = Estado.lancamentos[i];
-    const simulada = exclusaoEhSimulada(r);
-    const pergunta = simulada
-        ? `Ocultar "${r.nome ?? ''}" só nesta simulação?\n\nVolta ao recarregar ou sair da simulação.`
-        : `Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`;
+    const todasSimuladas = linhas.every(exclusaoEhSimulada);
+    const nenhumaSimulada = linhas.every(r => !exclusaoEhSimulada(r));
+    const total = linhas.reduce((s, r) => s + (r.v || 0), 0);
+
+    let pergunta;
+    if (linhas.length == 1) {
+        const r = linhas[0];
+        pergunta = exclusaoEhSimulada(r)
+            ? `Ocultar "${r.nome ?? ''}" só nesta simulação?\n\nVolta ao recarregar ou sair da simulação.`
+            : `Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`;
+    } else {
+        const lista = linhas.map(r => `- ${r.nome ?? ''} (${brl(r.v || 0)})`).join('\n');
+        const acao = todasSimuladas ? 'Ocultar' : 'Excluir';
+        const aviso = todasSimuladas
+            ? 'Volta ao recarregar ou sair da simulação.'
+            : nenhumaSimulada
+                ? 'Não dá pra desfazer.'
+                : 'Os marcados só desta simulação voltam ao recarregar; os demais não dá pra desfazer.';
+        pergunta = `${acao} estes ${linhas.length} lançamentos (${brl(total)} no total)?\n\n${lista}\n\n${aviso}`;
+    }
     if (!confirm(pergunta)) return;
 
     if (el('seldel').disabled) return;   // trava clique duplo enquanto o DELETE esta no ar
     el('seldel').disabled = true;
-    el('seldel').textContent = simulada ? 'Ocultando…' : 'Excluindo…';
+    el('seldel').textContent = todasSimuladas ? 'Ocultando…' : 'Excluindo…';
     try {
-        if (!simulada) await excluirLancamento(r.id);
-        Estado.lancamentos.splice(i, 1);
-        Estado.selecionados.clear();
+        for (const r of linhas) {
+            if (!exclusaoEhSimulada(r)) await excluirLancamento(r.id);
+            const i = Estado.lancamentos.findIndex(x => String(x.id) == String(r.id));
+            if (i >= 0) Estado.lancamentos.splice(i, 1);
+            Estado.selecionados.delete(String(r.id));
+        }
         desenhar();
     } catch (err) {
         mostrarToast('Falhou ao excluir', err.message);
+        desenhar();   // redesenha pra refletir o que ja foi removido antes da falha
     } finally {
         el('seldel').disabled = false;
         el('seldel').textContent = Estado.simulando ? 'Ocultar' : 'Excluir';

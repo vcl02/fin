@@ -165,6 +165,19 @@ test('edição inline de data não apaga a data ao perder o foco com dígito inc
     assert.match(interacoes, /if \(input\.validity && input\.validity\.badInput\) \{ desenhar\(\); return; \}/);
 });
 
+test('botão Excluir aceita várias linhas reais selecionadas, ignorando sintéticas misturadas', () => {
+    // Antes só existia excluir UMA linha ([...Estado.selecionados.keys()][0]); agora o botão
+    // fica visível com qualquer quantidade de linhas reais marcadas, e linhas sintéticas (ex.:
+    // Saldo do mês anterior) na mesma seleção são ignoradas, pois não existem no banco.
+    assert.match(interacoes, /const chavesReaisSelecionadas = chaves\.filter\(c => !ehSintetica\(c\)\);/);
+    assert.match(interacoes, /el\('seldel'\)\.hidden = mobile \|\| !chavesReaisSelecionadas\.length;/);
+    assert.doesNotMatch(formulario, /const chave = \[\.\.\.Estado\.selecionados\.keys\(\)\]\[0\];\s*\n\s*const i = Estado\.lancamentos\.findIndex\(x => String\(x\.id\) == chave\);\s*\n\s*if \(i < 0\) return;/);
+    assert.match(formulario, /const linhas = \[\.\.\.Estado\.selecionados\.keys\(\)\]/);
+    assert.match(formulario, /for \(const r of linhas\) \{/);
+    assert.match(formulario, /lista = linhas\.map\(r => `- \$\{r\.nome \?\? ''\}/);
+    assert.match(regras, /o botão Excluir da barra de seleção aceita quantas linhas reais estiverem marcadas/);
+});
+
 test('comparar mantém apenas todas ou diferentes confirmados sem recorrência duplicada', () => {
     assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
