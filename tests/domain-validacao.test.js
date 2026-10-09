@@ -107,23 +107,27 @@ test('não avisa de fatura com dia duplicado quando fatura_id legado não é dat
     assert.deepEqual(Array.from(diagnostico.avisos), []);
 });
 
-test('avisa pago com data fora do ciclo atual, tanto em débito quanto em crédito', () => {
+test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos à frente (a prévia normal é 1)', () => {
     const diagnostico = dominioComHoje.validarLancamentosCarregados([
         { id: 1, data: '2026-08-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
         { id: 2, data: '2026-09-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
         { id: 3, data: '2026-10-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
+        { id: 4, data: '2026-11-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
         // dentro do ciclo atual (01/09 a 30/09): não deve avisar
         { id: 50, data: '2026-09-20', valor: -100, nome: 'Mercado', categ: 'Casa', cred: false, pago: true },
         // débito pago com data no ciclo seguinte (a partir de 01/10): deve avisar
         { id: 51, data: '2026-10-10', valor: -250, nome: 'Água', categ: 'Casa', cred: false, pago: true },
         // débito aberto no futuro: não deve avisar (não está pago)
         { id: 52, data: '2026-10-12', valor: -250, nome: 'Água', categ: 'Casa', cred: false, pago: false },
-        // crédito confirmado com fatura vencendo no ciclo seguinte: deve avisar
+        // crédito confirmado com fatura no ciclo seguinte (N+1): é a prévia normal, não avisa
         { id: 53, data: '2026-09-25', valor: -80, nome: 'Compra cartão', categ: 'Casa', cred: true, pago: true, fatura: '2026-10-12' },
+        // crédito confirmado com fatura dois ciclos à frente (N+2): foge da prévia, deve avisar
+        { id: 54, data: '2026-09-26', valor: -60, nome: 'Compra cartão 2', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-12' },
     ]);
-    assert.equal(diagnostico.avisos.filter(a => a.includes('ciclo futuro')).length, 2);
-    assert.ok(diagnostico.avisos.some(a => a.includes('id 51') && a.includes('data em 2026-10-10') && a.includes('ciclo futuro')));
-    assert.ok(diagnostico.avisos.some(a => a.includes('id 53') && a.includes('vencimento de fatura em 2026-10-12') && a.includes('ciclo futuro')));
+    assert.equal(diagnostico.avisos.filter(a => a.includes('marcado como pago')).length, 2);
+    assert.ok(diagnostico.avisos.some(a => a.includes('id 51') && a.includes('data em 2026-10-10') && a.includes('um ciclo futuro, fora do atual')));
+    assert.ok(diagnostico.avisos.some(a => a.includes('id 54') && a.includes('vencimento de fatura em 2026-11-12') && a.includes('dois ciclos à frente')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 50')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 52')));
+    assert.ok(!diagnostico.avisos.some(a => a.includes('id 53')));
 });

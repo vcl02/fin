@@ -105,10 +105,12 @@ function validarLancamentosCarregados(lancamentos) {
     });
 
     // "Hoje" do Débito e do Crédito (ver finance.js: lancamentosPagos) conta qualquer
-    // lançamento com pago = true sem olhar a data, então um pago no ciclo ERRADO (futuro)
-    // de verdade conta no retrato de agora. O dado em si é válido — não é inconsistência de
-    // contrato —, mas é um sinal forte de revisão: normalmente uma recorrência nasceu paga
-    // sem querer (o cadastro grava o mesmo Pago em todas as parcelas, inclusive futuras).
+    // lançamento com pago = true sem olhar a data. No Débito isso é direto: pago no ciclo
+    // seguinte (ou além) já é cedo demais. No Crédito, pago = true é "compra confirmada",
+    // não "fatura paga" — e a própria prévia do Crédito mostra por design os créditos da
+    // competência N+1 no ciclo N (ver REGRAS.md), então fatura no PRÓXIMO ciclo é o
+    // normal esperado. Só fatura dois ciclos ou mais à frente foge dessa prévia e é sinal
+    // de revisão (ex.: mesma falha de recorrência nascer paga, só que do lado do Crédito).
     if (typeof hojeISO === 'function') {
         const ancorasOrdenadas = lancamentos
             .filter(r => r && !r.cred && String(r.nome || '').trim() === NOME_ANCORA_CICLO && ehDataIso(r.data) && r.data)
@@ -117,18 +119,22 @@ function validarLancamentosCarregados(lancamentos) {
         const hoje = hojeISO();
         const idxHoje = ancorasOrdenadas.reduce((achado, data, i) => data <= hoje ? i : achado, -1);
         const inicioProximoCiclo = idxHoje >= 0 ? ancorasOrdenadas[idxHoje + 1] : null;
-        if (inicioProximoCiclo) {
+        const inicioDoisCiclosAFrente = idxHoje >= 0 ? ancorasOrdenadas[idxHoje + 2] : null;
+        if (inicioProximoCiclo || inicioDoisCiclosAFrente) {
             lancamentos.forEach((lancamento, indice) => {
                 if (!lancamento || lancamento.pago !== true) return;
                 // A própria âncora do próximo ciclo sempre data exatamente nesse início —
                 // ela não é uma despesa pré-paga por engano, é o marcador estrutural do ciclo.
                 if (!lancamento.cred && String(lancamento.nome || '').trim() === NOME_ANCORA_CICLO) return;
+                const fronteira = lancamento.cred ? inicioDoisCiclosAFrente : inicioProximoCiclo;
+                if (!fronteira) return;
                 const dataRelevante = lancamento.cred ? lancamento.fatura : lancamento.data;
                 if (!dataRelevante || !ehDataIso(dataRelevante)) return;
-                if (String(dataRelevante).slice(0, 10) < inicioProximoCiclo) return;
+                if (String(dataRelevante).slice(0, 10) < fronteira) return;
                 const prefixo = `Lançamento ${indice + 1}${lancamento.id != null ? ` (id ${lancamento.id})` : ''}`;
                 const rotuloData = lancamento.cred ? 'vencimento de fatura' : 'data';
-                avisos.push(`${prefixo}: marcado como pago com ${rotuloData} em ${String(dataRelevante).slice(0, 10)} — cai num ciclo futuro, fora do atual.`);
+                const alemDe = lancamento.cred ? 'dois ciclos à frente (além da prévia normal de 1 ciclo)' : 'um ciclo futuro, fora do atual';
+                avisos.push(`${prefixo}: marcado como pago com ${rotuloData} em ${String(dataRelevante).slice(0, 10)} — cai ${alemDe}.`);
             });
         }
     }
