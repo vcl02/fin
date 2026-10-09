@@ -196,7 +196,7 @@ const celFreq = r => ehLinhaReal(r) && !modoRestrito()
 const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
-        : (ehLinhaReal(r) && !modoRestrito() ? celValorEditavel(r) : celValor(r.v))).replace(/$/,
+        : (ehLinhaReal(r) && !modoRestrito() ? celValorEditavel(r) : celValorLancamento(r))).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (modoRestrito() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`

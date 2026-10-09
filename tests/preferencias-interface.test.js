@@ -211,7 +211,7 @@ test('mobile tem paridade total: mesmas colunas, edição e ações do desktop',
     assert.match(estado, /const colunasAtivas = \(\) => COLS;/);
     assert.doesNotMatch(estado, /COLS_MOBILE/);
     assert.match(tabelas, /const celData = r => ehLinhaReal\(r\) && !modoRestrito\(\)/);
-    assert.match(tabelas, /\? celValorEditavel\(r\) : celValor\(r\.v\)/);
+    assert.match(tabelas, /\? celValorEditavel\(r\) : celValorLancamento\(r\)/);
     assert.doesNotMatch(tabelas, /celValorMobile/);
     assert.match(tabelas, /const podeSelecionar = selecionavel;/);
     assert.doesNotMatch(interacoes, /const linha = e\.target\.closest\('tr\[data-sid\]'\);[\s\S]*?if \(isMobile\(\)\) return;/);

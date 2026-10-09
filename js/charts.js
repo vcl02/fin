@@ -528,7 +528,7 @@ function renderizaDetalheCel() {
         `<th onclick="sortDetalheCel('nome')">Nome${seta('nome')}` +
         `<th class=n onclick="sortDetalheCel('valor')">Valor${seta('valor')}` +
         `</thead><tbody>` +
-        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${celNome(r)}${celValor(r.v)}`).join('') +
+        ordenadas.map(r => `<tr><td>${r.data ? dataBR(r.data) : '—'}<td>${celNome(r)}${celValorLancamento(r)}`).join('') +
         `<tr class=tot><td colspan=2>Total${celSoma(total)}</tbody></table>`;
 }
 

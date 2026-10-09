@@ -44,19 +44,30 @@ function mostraComFade(id, mostrar) {
 const valorMonetarioExibivel = v => Math.abs(Number(v) || 0) < 0.005 ? 0 : Number(v);
 const brl = v => valorMonetarioExibivel(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const corValor = v => valorMonetarioExibivel(v) < 0 ? 'vm' : valorMonetarioExibivel(v) > 0 ? 'vd' : ''; // classe css: vermelho/verde conforme o valor mostrado
-const celValor = v => `<td class="n ${corValor(v)}">${brl(v)}`;                             // celula <td> ja formatada em R$
-// mesma celValor, mas clicavel pra edicao inline — so' pra lancamentos REAIS (id numerico
-// vindo do banco; linhas sinteticas tem id negativo fixo -1..-6, e simuladas tem id tipo
-// "sim-N-P", nenhum dos dois casos existe na tabela lancamentos pra dar PATCH). O botao de
-// sinal inverte +/- na hora (mesmo esquema do toggle Pago), sem precisar abrir o campo de
-// valor pra so' trocar o sinal.
+// Lancamento sem valor definido ainda grava NULL no banco (ex.: assinatura de preco
+// variavel ainda sem numero) — ".v" ja vira 0 ali pras somas funcionarem, mas aos olhos um
+// zero sem cor nenhuma parecia "positivo". Pedido explicito: ESSE zero (valor==null) conta
+// como negativo, so' na aparencia — nunca um total que por coincidencia deu zero (corSoma
+// ja trata isso a parte) nem um zero de verdade gravado explicitamente pelo usuario.
+const corValorLancamento = r => (!r._sid && r.valor == null) ? 'vm' : corValor(r.v);
+// celula <td> ja formatada em R$, pra uma linha de lancamento de verdade (nunca
+// sintetica/preview): usa corValorLancamento em vez de corValor, pelo motivo acima.
+const celValorLancamento = r => `<td class="n ${corValorLancamento(r)}">${brl(r.v)}`;
+// mesma celValorLancamento, mas clicavel pra edicao inline — so' pra lancamentos REAIS (id
+// numerico vindo do banco; linhas sinteticas tem id negativo fixo -1..-6, e simuladas tem
+// id tipo "sim-N-P", nenhum dos dois casos existe na tabela lancamentos pra dar PATCH). O
+// botao de sinal inverte +/- na hora (mesmo esquema do toggle Pago), sem precisar abrir o
+// campo de valor pra so' trocar o sinal.
 // botao+valor ficam num wrapper flex proprio (.valorLinha), em vez de no <td> direto: o
 // saldo do dia (.sd, ver celulasDaLinha) e' anexado DEPOIS, como outro filho do <td>, e
 // precisa continuar em 'display:block' empilhando por baixo — se o <td> virasse flex ele
 // tambem, o saldo entraria na mesma linha do botao/valor em vez de ficar abaixo.
-const celValorEditavel = r => `<td class="n ${corValor(r.v)}"><span class=valorLinha>` +
-    `<button type=button class="sinalBt compacto${r.v < 0 ? '' : ' pos'}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${r.v < 0 ? '−' : '+'}</button>` +
-    `<span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span></span>`;
+const celValorEditavel = r => {
+    const positivoVisual = r.valor != null && r.v >= 0;
+    return `<td class="n ${corValorLancamento(r)}"><span class=valorLinha>` +
+        `<button type=button class="sinalBt compacto${positivoVisual ? ' pos' : ''}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${positivoVisual ? '+' : '−'}</button>` +
+        `<span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span></span>`;
+};
 
 // Zona morta pra SOMAS/TOTAIS (nunca pra valor de lancamento individual): entre -R$50 e +R$50 (inclusive) fica cinza,
 // porque uma diferenca tao pequena nao muda decisao nenhuma — so pinta vermelho/verde quando o total realmente sai desse intervalo.
