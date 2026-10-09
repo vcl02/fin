@@ -397,7 +397,11 @@ el('out').addEventListener('click', e => {
     if (!r) return;
 
     const bruto = Math.abs(r.v || 0);
-    const negativo = (r.v || 0) < 0;
+    // Mesma regra visual de corValorLancamento/celValorEditavel: so' estritamente POSITIVO
+    // mantem o sinal "+"; negativo OU zero (inclusive vindo de valor nulo, ex.: Backlog sem
+    // valor ainda) assume negativo — senao digitar um numero num lancamento que a tela ja
+    // mostrava "vermelho" entraria como positivo, contradizendo o que acabou de aparecer.
+    const negativo = !(valorMonetarioExibivel(r.v) > 0);
     span.classList.add('editando');
     // O sinal não se edita mais por aqui: o clique perdia o foco do input antes do clique
     // no +/− terminar de registrar (blur disparava confirma() com o sinal antigo primeiro),

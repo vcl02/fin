@@ -44,12 +44,12 @@ function mostraComFade(id, mostrar) {
 const valorMonetarioExibivel = v => Math.abs(Number(v) || 0) < 0.005 ? 0 : Number(v);
 const brl = v => valorMonetarioExibivel(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const corValor = v => valorMonetarioExibivel(v) < 0 ? 'vm' : valorMonetarioExibivel(v) > 0 ? 'vd' : ''; // classe css: vermelho/verde conforme o valor mostrado
-// Lancamento sem valor definido ainda grava NULL no banco (ex.: assinatura de preco
-// variavel ainda sem numero) — ".v" ja vira 0 ali pras somas funcionarem, mas aos olhos um
-// zero sem cor nenhuma parecia "positivo". Pedido explicito: ESSE zero (valor==null) conta
-// como negativo, so' na aparencia — nunca um total que por coincidencia deu zero (corSoma
-// ja trata isso a parte) nem um zero de verdade gravado explicitamente pelo usuario.
-const corValorLancamento = r => (!r._sid && r.valor == null) ? 'vm' : corValor(r.v);
+// Pedido explicito: pra um lancamento de verdade (nunca uma linha sintetica/preview, que
+// mantem as 3 cores normais de corValor), zero conta como negativo na aparencia — tanto o
+// "sem valor ainda" (NULL no banco, ex.: assinatura de preco variavel) quanto um zero
+// gravado de proposito. So' estritamente POSITIVO (> 0) e' que pinta de verde; o resto
+// (negativo ou zero) fica vermelho. Nunca afeta total/soma (corSoma ja' trata isso a parte).
+const corValorLancamento = r => r._sid ? corValor(r.v) : (valorMonetarioExibivel(r.v) > 0 ? 'vd' : 'vm');
 // celula <td> ja formatada em R$, pra uma linha de lancamento de verdade (nunca
 // sintetica/preview): usa corValorLancamento em vez de corValor, pelo motivo acima.
 const celValorLancamento = r => `<td class="n ${corValorLancamento(r)}">${brl(r.v)}`;
@@ -63,7 +63,7 @@ const celValorLancamento = r => `<td class="n ${corValorLancamento(r)}">${brl(r.
 // precisa continuar em 'display:block' empilhando por baixo — se o <td> virasse flex ele
 // tambem, o saldo entraria na mesma linha do botao/valor em vez de ficar abaixo.
 const celValorEditavel = r => {
-    const positivoVisual = r.valor != null && r.v >= 0;
+    const positivoVisual = valorMonetarioExibivel(r.v) > 0;
     return `<td class="n ${corValorLancamento(r)}"><span class=valorLinha>` +
         `<button type=button class="sinalBt compacto${positivoVisual ? ' pos' : ''}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${positivoVisual ? '+' : '−'}</button>` +
         `<span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span></span>`;

@@ -1,12 +1,14 @@
-// Regressão: lançamento sem valor definido (NULL no banco) deve parecer NEGATIVO na tela,
-// nunca neutro/positivo — mesmo pedido valendo pro Backlog e pro resto do sistema. É só
-// aparência: o valor gravado continua null até o usuário escolher um número de verdade.
+// Regressão: pra um lançamento de verdade, zero conta como NEGATIVO na tela — tanto o "sem
+// valor ainda" (NULL no banco) quanto um zero gravado de propósito. Só estritamente
+// positivo pinta de verde. Cobre também o bug seguinte: editar o Valor de uma linha que a
+// tela já mostrava vermelha (negativa ou zero) não pode salvar como positivo por engano.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
+const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -30,7 +32,7 @@ globalThis.celValorEditavel = celValorEditavel;`, contexto);
     };
 }
 
-test('valor NULO (nunca definido) conta como negativo na célula não editável (Backlog incluso, via modoRestrito/linha não real)', () => {
+test('valor NULO (nunca definido) conta como negativo na célula não editável (Backlog incluso)', () => {
     const { corValorLancamento, celValorLancamento } = carregaCelulasDeValor();
     const semValor = { valor: null, v: 0 };
     assert.equal(corValorLancamento(semValor), 'vm');
@@ -38,14 +40,16 @@ test('valor NULO (nunca definido) conta como negativo na célula não editável 
     assert.match(celValorLancamento(semValor), />R\$\s?0,00$/);
 });
 
-test('valor realmente zero (não null, gravado assim de propósito) continua neutro, não vira negativo', () => {
+test('valor realmente zero (gravado assim de propósito, não null) TAMBÉM conta como negativo', () => {
     const { corValorLancamento } = carregaCelulasDeValor();
-    assert.equal(corValorLancamento({ valor: 0, v: 0 }), '');
+    assert.equal(corValorLancamento({ valor: 0, v: 0 }), 'vm');
 });
 
-test('linha sintética (fat:/sal:/res:/sug:/abt:, sem coluna valor de verdade) nunca é forçada a negativo só por não ter "valor"', () => {
+test('linha sintética (fat:/sal:/res:/sug:/abt:) mantém as 3 cores normais (corValor), não é forçada a negativo', () => {
     const { corValorLancamento } = carregaCelulasDeValor();
     assert.equal(corValorLancamento({ _sid: 'sal:0', v: 0 }), '');
+    assert.equal(corValorLancamento({ _sid: 'sal:0', v: 50 }), 'vd');
+    assert.equal(corValorLancamento({ _sid: 'sal:0', v: -50 }), 'vm');
 });
 
 test('valor negativo/positivo de verdade continuam vm/vd normalmente', () => {
@@ -54,13 +58,15 @@ test('valor negativo/positivo de verdade continuam vm/vd normalmente', () => {
     assert.equal(corValorLancamento({ valor: 50, v: 50 }), 'vd');
 });
 
-test('célula editável (Débito/Crédito normais): sem valor mostra "−" vermelho, nunca "+" verde', () => {
+test('célula editável: sem valor (null) ou zero de verdade mostram "−" vermelho, nunca "+" verde', () => {
     const { celValorEditavel } = carregaCelulasDeValor();
-    const html = celValorEditavel({ id: 7, valor: null, v: 0 });
-    assert.match(html, /class="n vm"/);
-    assert.match(html, /class="sinalBt compacto"/);   // sem ' pos': fica vermelho/negativo
-    assert.doesNotMatch(html, /class="sinalBt compacto pos"/);
-    assert.match(html, />−</);
+    for (const r of [{ id: 7, valor: null, v: 0 }, { id: 7, valor: 0, v: 0 }]) {
+        const html = celValorEditavel(r);
+        assert.match(html, /class="n vm"/);
+        assert.match(html, /class="sinalBt compacto"/);   // sem ' pos': fica vermelho/negativo
+        assert.doesNotMatch(html, /class="sinalBt compacto pos"/);
+        assert.match(html, />−</);
+    }
 });
 
 test('célula editável: valor positivo de verdade continua mostrando "+" verde normalmente', () => {
@@ -76,7 +82,27 @@ test('Débito/Crédito (linha não editável) e o detalhamento de categoria do g
     assert.doesNotMatch(compartilhado, /const celValor = /);
 });
 
+// Extrai só a decisão de sinal (sem tocar DOM/Estado real) do handler de clique no Valor:
+// dado r.v, "negativo" decide se o número digitado entra como negativo ao confirmar.
+function decideSinalEdicaoValor(v) {
+    const inicio = interacoes.indexOf('    const bruto = Math.abs(r.v || 0);');
+    const fim = interacoes.indexOf("span.classList.add('editando');", inicio);
+    if (inicio < 0 || fim < 0) throw Error('Não encontrou o cálculo de "negativo" no toggle de Valor.');
+    const corpo = interacoes.slice(inicio, fim);
+    const contexto = { valorMonetarioExibivel: x => (Math.abs(Number(x) || 0) < 0.005 ? 0 : Number(x)) };
+    vm.createContext(contexto);
+    vm.runInContext(`function decide(r) {\n${corpo}\n    return negativo;\n}\nglobalThis.decide = decide;`, contexto);
+    return contexto.decide({ v });
+}
+
+test('editar o Valor de uma linha negativa ou zero/nula (tela já vermelha) mantém negativo ao confirmar, sem usar o botão de sinal', () => {
+    assert.equal(decideSinalEdicaoValor(0), true);     // zero/nulo (r.v já virou 0 nos dois casos)
+    assert.equal(decideSinalEdicaoValor(-50), true);   // já negativo
+    assert.equal(decideSinalEdicaoValor(50), false);   // estritamente positivo: continua positivo
+});
+
 test('regra documentada em REGRAS.md', () => {
-    assert.match(regras, /esse zero conta como negativo na aparência \(texto vermelho, botão de sinal com `−`\), nunca neutro ou verde/);
-    assert.match(regras, /Um valor realmente gravado como zero \(não `NULL`\) continua neutro normalmente/);
+    assert.match(regras, /zero conta como negativo na aparência/);
+    assert.match(regras, /só estritamente positivo \(`> 0`\) pinta de verde; negativo ou zero ficam vermelhos/);
+    assert.match(regras, /confirmar sem usar o botão de sinal mantém negativo, nunca vira positivo por engano/);
 });
