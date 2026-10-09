@@ -464,7 +464,7 @@ el('out').addEventListener('click', e => {
     input.addEventListener('input', () => clearTimeout(timerConfirma));
     input.addEventListener('change', () => {
         clearTimeout(timerConfirma);
-        timerConfirma = setTimeout(confirma, 200);
+        timerConfirma = setTimeout(confirma, 450);
     });
     input.addEventListener('keydown', ev => {
         if (ev.key == 'Enter') { ev.preventDefault(); clearTimeout(timerConfirma); confirma(); }
