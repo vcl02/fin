@@ -15,11 +15,17 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['prio', 'Prio', 'n'], ['id', 'ID', 'n'],
+    ['prio', 'Prio', 'n'], ['obs', 'Obs', 't'], ['canal', 'Canal', 't'], ['id', 'ID', 'n'],
 ];
 // Mesmas colunas do desktop no mobile: a tabela já tinha rolagem horizontal própria
-// (.wrap) pra telas estreitas, então não precisa de um recorte de colunas à parte.
-const colunasAtivas = () => COLS;
+// (.wrap) pra telas estreitas, então não precisa de um recorte de colunas à parte. Prio é a
+// única exceção de tabela: só faz sentido na fila de elevação do Backlog (ver
+// estadoOrdenacao), então some nas demais (Débito, Crédito), onde a linha já tem ciclo — e,
+// no Backlog, vem na FRENTE de tudo (inclusive Data), já que é o primeiro critério que
+// importa ali: decidir o que elevar primeiro pra um ciclo.
+const colunasAtivas = idTabela => idTabela === 'bk'
+    ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio')]
+    : COLS.filter(([chave]) => chave !== 'prio');
 const isMobile = () => matchMedia('(max-width: 640px)').matches;
 
 // Único estado mutável da tela. Dados vindos do banco são normalizados em carregarDados;

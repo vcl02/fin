@@ -634,17 +634,32 @@
   }
 
   /* Data clicavel na tabela: mesma ideia do Valor, edicao inline com <input type=date>
-     (ver listener em #out no script.js). Nome/Categoria/Frequencia/Prio (togNome/togCateg/
-     togFreq/togPrio) usam exatamente o mesmo esquema visual, cada um com seu input/select
-     proprio. */
-  .togData, .togNome, .togCateg, .togFreq, .togPrio {
+     (ver listener em #out no script.js). Nome/Categoria/Frequencia/Prio/Obs/Canal
+     (togNome/togCateg/togFreq/togPrio/togObs/togCanal) usam exatamente o mesmo esquema
+     visual, cada um com seu input/select proprio. */
+  .togData, .togNome, .togCateg, .togFreq, .togPrio, .togObs, .togCanal {
       cursor: pointer;
       transition: opacity .15s ease;
   }
 
-  .togData:hover, .togNome:hover, .togCateg:hover, .togFreq:hover, .togPrio:hover {
+  .togData:hover, .togNome:hover, .togCateg:hover, .togFreq:hover, .togPrio:hover,
+  .togObs:hover, .togCanal:hover {
       text-decoration: underline dotted;
       text-underline-offset: .2em;
+  }
+
+  /* Icone de abrir link ao lado do Canal, so' quando o texto e' uma URL http(s) (ver
+     celCanal em tables.js). Fica discreto e nao herda o sublinhado do texto ao lado. */
+  .linkCanal {
+      display: inline-flex;
+      align-items: center;
+      margin-left: .3rem;
+      color: var(--mu);
+      vertical-align: middle;
+  }
+
+  .linkCanal:hover {
+      color: var(--fg);
   }
 
   .inpData {
@@ -669,7 +684,7 @@
       cursor: pointer;
   }
 
-  .inpValor, .inpNome, .inpCateg, .inpFreq, .inpPrio {
+  .inpValor, .inpNome, .inpCateg, .inpFreq, .inpPrio, .inpObs, .inpCanal {
       width: 6.5rem;
       font: inherit;
       font-variant-numeric: tabular-nums;
@@ -680,9 +695,9 @@
       padding: .15rem .4rem;
   }
 
-  /* Nome e Categoria sao texto livre mais longo que o Valor: largura minima maior,
-     mas ainda flexivel pra nao quebrar o layout da celula. */
-  .inpNome, .inpCateg {
+  /* Nome, Categoria, Obs e Canal sao texto livre mais longo que o Valor: largura minima
+     maior, mas ainda flexivel pra nao quebrar o layout da celula. */
+  .inpNome, .inpCateg, .inpObs, .inpCanal {
       width: 100%;
       min-width: 9rem;
   }
@@ -692,7 +707,8 @@
       width: 3.5rem;
   }
 
-  .inpValor:focus, .inpNome:focus, .inpCateg:focus, .inpFreq:focus, .inpPrio:focus {
+  .inpValor:focus, .inpNome:focus, .inpCateg:focus, .inpFreq:focus, .inpPrio:focus,
+  .inpObs:focus, .inpCanal:focus {
       outline: 2px solid var(--fg);
       outline-offset: -1px;
   }

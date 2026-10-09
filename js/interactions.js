@@ -753,6 +753,102 @@ el('out').addEventListener('click', e => {
     input.select();
 });
 
+// clique na Observação troca o <span> por um <input> de texto livre — mesmo esquema do
+// Nome/Categoria.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-obs]');
+    if (!span) return;
+    if (modoRestrito()) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togObs;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = String(r.obs || '');
+    span.classList.add('editando');
+    span.innerHTML = `<input type=text class=inpObs value="${escapeHtml(original)}">`;
+    const input = span.querySelector('input');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const novo = input.value.trim();
+        if (novo === original) { desenhar(); return; }
+        input.disabled = true;
+        try {
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { obs: novo || null });
+            r.obs = novo || null;
+            desenhar();
+        } catch (err) {
+            mostrarToast('Falhou ao atualizar', err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    input.addEventListener('blur', () => confirma());
+    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    input.focus();
+    input.select();
+});
+
+// clique no Canal troca o <span> por um <input> de texto livre — mesmo esquema do Nome/
+// Categoria/Observação. O valor digitado pode ser qualquer texto, mas quando é uma URL
+// http(s) ganha o ícone de abrir link ao lado (ver celCanal em tables.js), sem precisar
+// re-clicar pra editar de novo.
+el('out').addEventListener('click', e => {
+    const span = e.target.closest('[data-tog-canal]');
+    if (!span) return;
+    if (modoRestrito()) return;
+    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+    e.stopImmediatePropagation();
+
+    const id = span.dataset.togCanal;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r) return;
+
+    const original = String(r.canal || '');
+    span.classList.add('editando');
+    span.innerHTML = `<input type=text class=inpCanal value="${escapeHtml(original)}" placeholder="Ex.: https://...">`;
+    const input = span.querySelector('input');
+
+    let concluido = false;
+    async function confirma() {
+        if (concluido) return;
+        concluido = true;
+        const novo = input.value.trim();
+        if (novo === original) { desenhar(); return; }
+        input.disabled = true;
+        try {
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { canal: novo || null });
+            r.canal = novo || null;
+            desenhar();
+        } catch (err) {
+            mostrarToast('Falhou ao atualizar', err.message);
+            desenhar();
+        }
+    }
+    function cancela() { concluido = true; desenhar(); }
+
+    input.addEventListener('keydown', ev => {
+        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
+        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+    });
+    input.addEventListener('blur', () => confirma());
+    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+    input.focus();
+    input.select();
+});
+
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;

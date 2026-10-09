@@ -36,7 +36,7 @@ function atualizaAvisoFronteira() {
 
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
-    const cols = colunasAtivas();
+    const cols = colunasAtivas(idTabela);
     const { k: colunaAtiva, d: direcao } = estadoOrdenacao(idTabela);
     const linhaTitulos = cols.map(([chave, rotulo, tipo]) => {
         const seta = colunaAtiva == chave ? (direcao == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
@@ -199,11 +199,32 @@ const celFreq = r => ehLinhaReal(r) && !modoRestrito()
 const celPrio = r => ehLinhaReal(r) && !modoRestrito()
     ? `<span class="togPrio" data-tog-prio="${escapeHtml(String(r.id))}" title="Editar prioridade de elevação">${escapeHtml(textoOuTraco(r.prio))}</span>`
     : textoOuTraco(r.prio);
+// Observação (texto livre, qualquer anotação) e Canal (de onde a conta e' paga/consultada —
+// ex.: o link do site da concessionária): mesmo esquema de clique-pra-editar das demais
+// colunas livres. Canal ganha um ícone extra pra abrir o link numa aba nova quando o texto
+// e' uma URL http(s) — clicar nele não entra em edição nem seleciona a linha (mesmo truque
+// de stopPropagation de abrirDetalheCelComparar em cycle-views.js).
+const celObs = r => ehLinhaReal(r) && !modoRestrito()
+    ? `<span class="togObs" data-tog-obs="${escapeHtml(String(r.id))}" title="Editar observação">${escapeHtml(textoOuTraco(r.obs))}</span>`
+    : textoOuTraco(r.obs);
+const ehUrlHttp = texto => /^https?:\/\//i.test(String(texto ?? '').trim());
+const celCanal = r => {
+    const bruto = String(r.canal ?? '').trim();
+    const texto = ehLinhaReal(r) && !modoRestrito()
+        ? `<span class="togCanal" data-tog-canal="${escapeHtml(String(r.id))}" title="Editar canal">${escapeHtml(textoOuTraco(r.canal))}</span>`
+        : escapeHtml(textoOuTraco(r.canal));
+    const link = ehUrlHttp(bruto)
+        ? ` <a class=linkCanal href="${escapeHtml(bruto)}" target=_blank rel="noopener noreferrer" title="Abrir link" aria-label="Abrir link" onclick="event.stopPropagation()">` +
+            `<svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>` +
+            `<path d="M10 14 21 3" /><path d="M15 3h6v6" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg></a>`
+        : '';
+    return `${texto}${link}`;
+};
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
 // clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; só a conta restrita
 // (modoRestrito) vê tudo como texto simples, nunca editável.
-const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
+const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
         : (ehLinhaReal(r) && !modoRestrito() ? celValorEditavel(r) : celValorLancamento(r))).replace(/$/,
@@ -216,7 +237,9 @@ const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'v
             : (chave == 'nome' ? celNome(r)
                 : (chave == 'categ' ? celCateg(r)
                     : (chave == 'freq' ? celFreq(r)
-                        : (chave == 'prio' ? celPrio(r) : textoOuTraco(r[chave])))))}`
+                        : (chave == 'prio' ? celPrio(r)
+                            : (chave == 'obs' ? celObs(r)
+                                : (chave == 'canal' ? celCanal(r) : textoOuTraco(r[chave])))))))}`
 ).join('');
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
@@ -249,7 +272,7 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
             const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);
-            return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._sim ? 'sim ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r);
+            return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._sim ? 'sim ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r, idTabela);
         }).join('') + '</tbody></table></div>';
 };
 

@@ -22,6 +22,29 @@ test('Backlog ("bk") ordena por prio por padrão; as demais tabelas continuam po
     assert.match(estado, /const estadoOrdenacao = id => Estado\.ordenacaoPorTabela\[id\] \|\| \(Estado\.ordenacaoPorTabela\[id\] = \{ k: id === 'bk' \? 'prio' : 'data', d: 1 \}\);/);
 });
 
+// Extrai COLS/colunasAtivas do arquivo real e roda num contexto isolado.
+function carregaColunasAtivas() {
+    const inicio = estado.indexOf('const COLS = [');
+    const fim = estado.indexOf('\nconst isMobile');
+    if (inicio < 0 || fim < 0) throw Error('Não encontrou COLS/colunasAtivas em app-state.js.');
+    const contexto = {};
+    vm.createContext(contexto);
+    vm.runInContext(`${estado.slice(inicio, fim)}\nglobalThis.colunasAtivas = colunasAtivas;`, contexto);
+    return contexto.colunasAtivas;
+}
+
+test('Prio é a PRIMEIRA coluna no Backlog, mas nem aparece em Débito/Crédito', () => {
+    const colunasAtivas = carregaColunasAtivas();
+    const colsBacklog = colunasAtivas('bk').map(([chave]) => chave);
+    assert.equal(colsBacklog[0], 'prio');
+    assert.ok(colsBacklog.includes('data') && colsBacklog.includes('nome'));   // nada se perde, só reordena
+
+    const colsDebito = colunasAtivas('db').map(([chave]) => chave);
+    const colsCredito = colunasAtivas('cr').map(([chave]) => chave);
+    assert.ok(!colsDebito.includes('prio'));
+    assert.ok(!colsCredito.includes('prio'));
+});
+
 // Extrai ordenarLinhas do arquivo real e roda num contexto isolado, com estadoOrdenacao/COLS
 // e timestamp simulados.
 function criaOrdenarLinhas(colunaOrdenada) {
@@ -59,7 +82,7 @@ test('outras tabelas continuam ordenando por data normalmente, ignorando a regra
 
 test('célula Prio só é clicável pra linha real fora da conta restrita, igual às demais colunas livres', () => {
     assert.match(tabelas, /const celPrio = r => ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togPrio" data-tog-prio=/);
-    assert.match(tabelas, /chave == 'prio' \? celPrio\(r\) : textoOuTraco\(r\[chave\]\)/);
+    assert.match(tabelas, /chave == 'prio' \? celPrio\(r\)/);
 });
 
 test('clique em Prio abre um <input type=number>, aceita limpar (volta a null) e ignora entrada inválida sem salvar', () => {
@@ -72,8 +95,8 @@ test('clique em Prio abre um <input type=number>, aceita limpar (volta a null) e
 });
 
 test('estilos cobrem .togPrio/.inpPrio reaproveitando o padrão visual das demais colunas livres', () => {
-    assert.match(estilos, /\.togData, \.togNome, \.togCateg, \.togFreq, \.togPrio \{/);
-    assert.match(estilos, /\.inpValor, \.inpNome, \.inpCateg, \.inpFreq, \.inpPrio \{/);
+    assert.match(estilos, /\.togData, \.togNome, \.togCateg, \.togFreq, \.togPrio, \.togObs, \.togCanal \{/);
+    assert.match(estilos, /\.inpValor, \.inpNome, \.inpCateg, \.inpFreq, \.inpPrio, \.inpObs, \.inpCanal \{/);
 });
 
 test('migration versionada adiciona a coluna, não aplicada automaticamente (mantenedor roda manualmente)', () => {

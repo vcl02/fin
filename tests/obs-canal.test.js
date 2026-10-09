@@ -1,0 +1,83 @@
+// Regressão: colunas Obs (texto livre) e Canal (de onde a conta é paga/consultada), com
+// edição inline igual às demais colunas livres. Canal ganha um ícone de abrir link quando o
+// valor é uma URL http(s), sem entrar em edição nem selecionar a linha ao clicar nele.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const estado = fs.readFileSync('js/app-state.js', 'utf8');
+const tabelas = fs.readFileSync('js/tables.js', 'utf8');
+const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
+const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+const migracao = fs.readFileSync('migrations/19-obs-canal-lancamentos.sql', 'utf8');
+
+test('colunas obs e canal existem em COLS, como texto', () => {
+    assert.match(estado, /\['obs', 'Obs', 't'\]/);
+    assert.match(estado, /\['canal', 'Canal', 't'\]/);
+});
+
+test('célula Obs só é clicável pra linha real fora da conta restrita', () => {
+    assert.match(tabelas, /const celObs = r => ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togObs" data-tog-obs=/);
+    assert.match(tabelas, /chave == 'obs' \? celObs\(r\)/);
+});
+
+test('célula Canal é clicável igual às demais, e ganha ícone de link quando o valor é http(s)', () => {
+    assert.match(tabelas, /const ehUrlHttp = texto => \/\^https\?:\\\/\\\/\/i\.test/);
+    assert.match(tabelas, /class="togCanal" data-tog-canal=/);
+    assert.match(tabelas, /class=linkCanal href="\$\{escapeHtml\(bruto\)\}" target=_blank rel="noopener noreferrer"/);
+    assert.match(tabelas, /onclick="event\.stopPropagation\(\)"/);
+    assert.match(tabelas, /chave == 'canal' \? celCanal\(r\)/);
+});
+
+// Extrai celCanal (e sua dependência ehUrlHttp) do arquivo real e roda isolada, com
+// ehLinhaReal/modoRestrito/escapeHtml/textoOuTraco simulados.
+function carregaCelCanal() {
+    const inicio = tabelas.indexOf('const ehUrlHttp = texto =>');
+    const fim = tabelas.indexOf('\n};', tabelas.indexOf('const celCanal = r =>')) + 3;
+    if (inicio < 0 || fim < 3) throw Error('Não encontrou celCanal em tables.js.');
+    const contexto = {
+        ehLinhaReal: r => r.id > 0,
+        modoRestrito: () => false,
+        escapeHtml: v => String(v),
+        textoOuTraco: v => (v == null || v === '' ? '—' : v),
+    };
+    vm.createContext(contexto);
+    vm.runInContext(`${tabelas.slice(inicio, fim)}\nglobalThis.celCanal = celCanal;`, contexto);
+    return contexto.celCanal;
+}
+
+test('Canal com URL http(s) mostra o ícone de link; texto comum não mostra', () => {
+    const celCanal = carregaCelCanal();
+    const comLink = celCanal({ id: 9, canal: 'https://www.enel.com.br/minha-conta' });
+    assert.match(comLink, /class=linkCanal/);
+    assert.match(comLink, /href="https:\/\/www\.enel\.com\.br\/minha-conta"/);
+
+    const semLink = celCanal({ id: 9, canal: 'Ligação telefônica' });
+    assert.doesNotMatch(semLink, /class=linkCanal/);
+
+    const vazio = celCanal({ id: 9, canal: null });
+    assert.doesNotMatch(vazio, /class=linkCanal/);
+});
+
+test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', () => {
+    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-obs\]'\);/);
+    assert.match(interacoes, /<input type=text class=inpObs/);
+    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ obs: novo \|\| null \}\);/);
+
+    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-canal\]'\);/);
+    assert.match(interacoes, /<input type=text class=inpCanal value="\$\{escapeHtml\(original\)\}" placeholder="Ex\.: https:\/\/\.\.\."/);
+    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ canal: novo \|\| null \}\);/);
+});
+
+test('migration já aplicada pelo mantenedor, documentada no repo', () => {
+    assert.match(migracao, /^-- /);
+    assert.match(migracao, /add column obs varchar\(255\);/);
+    assert.match(migracao, /add column canal varchar\(255\);/);
+});
+
+test('regra documentada em REGRAS.md', () => {
+    assert.match(regras, /`fin\.obs` \(observação livre\) e `fin\.canal`/);
+    assert.match(regras, /ganha um ícone de abrir link numa aba nova ao lado do texto/);
+    assert.match(regras, /Nenhum dos dois participa de cálculo financeiro/);
+});

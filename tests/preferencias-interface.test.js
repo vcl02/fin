@@ -208,7 +208,7 @@ test('conta restrita (Isabella) é identificada por e-mail, não a interface ger
 });
 
 test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', () => {
-    assert.match(estado, /const colunasAtivas = \(\) => COLS;/);
+    assert.match(estado, /const colunasAtivas = idTabela => idTabela === 'bk'\s*\n\s*\? \[COLS\.find\(\(\[chave\]\) => chave === 'prio'\), \.\.\.COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\)\]\s*\n\s*: COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\);/);
     assert.doesNotMatch(estado, /COLS_MOBILE/);
     assert.match(tabelas, /const celData = r => ehLinhaReal\(r\) && !modoRestrito\(\)/);
     assert.match(tabelas, /\? celValorEditavel\(r\) : celValorLancamento\(r\)/);
