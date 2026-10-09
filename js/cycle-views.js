@@ -113,8 +113,8 @@ function vCiclo() {
     // O título passa a dizer o que já ocorreu hoje, separado da previsão do ciclo. O
     // recorte de hoje não acompanha filtros da tela: ele é um retrato financeiro real.
     // Um ciclo que ainda não começou só tem futuro; repetir o saldo atual nele seria falso.
-    // O passado é histórico: mantém apenas o retrato de Hoje, sem uma projeção futura redundante.
-    const debitoHoje = resumoDebitoPagoAte(Estado.lancamentos);
+    // O passado é histórico: mantém apenas esse retrato, sem uma projeção futura redundante.
+    const debitoHoje = resumoDebitoPago(Estado.lancamentos);
     const cicloDebitoFuturo = dataISO(periodo.ini) > hojeISO();
     const cicloDebitoPassado = dataISO(periodo.fat) < hojeISO();
     const classeSaldoHoje = corValor(debitoHoje.saldo);
@@ -140,8 +140,10 @@ function vCiclo() {
         const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' || (exibeFuturo && classeSaldoFuturo == 'vm');
         const alertaTituloDebito = alertaTitulo('alertaSaldo', debitoTemSaldoVermelho,
             'Saldo negativo', 'Saldo negativo após usar o guardado');
+        // Ciclo passado não é "agora": mesmo cálculo (pago = true), só o rótulo muda pra
+        // não chamar de "Hoje" um retrato de um ciclo que já fechou.
         const linhaHojeDebito = cicloDebitoFuturo ? '' :
-            `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
+            `<span class=resumoLinha><span class=resumoRotulo>${cicloDebitoPassado ? 'Passado' : 'Hoje'}</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoHoje}">${brl(debitoHoje.saldo)}</b></span>` +
             `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span></span>`;
         const linhaFuturoDebito = exibeFuturo ?
@@ -179,11 +181,12 @@ function vCiclo() {
     // compacto mostra as compras brutas daquela fatura, inclusive as já quitadas.
     const totalCreditoHistorico = creditosExibidos.reduce((soma, r) => soma + r.v, 0);
     const totalTituloCredito = cicloDebitoPassado ? totalCreditoHistorico : totalCreditoExibido;
-    // A linha "Hoje" considera só compras confirmadas até a data local atual e
-    // antecipações já registradas. A prévia de Crédito do ciclo atual continua tendo
-    // "Hoje", ainda que sua fatura vença no ciclo seguinte; só a navegação para um ciclo
-    // futuro remove essa linha, junto com o retrato atual do Débito.
-    const pagosAteHoje = lancamentosPagosAte(Estado.lancamentos);
+    // A linha "Hoje" considera só compras confirmadas (`pago = true`) e antecipações já
+    // registradas, qualquer que seja a data do lançamento.
+    // A prévia de Crédito do ciclo atual continua tendo "Hoje", ainda que sua fatura vença
+    // no ciclo seguinte; só a navegação para um ciclo futuro remove essa linha, junto com
+    // o retrato atual do Débito.
+    const pagosAteHoje = lancamentosPagos(Estado.lancamentos);
     const abatidoAteHoje = alocacaoAntecipacoes(pagosAteHoje);
     const totalCreditoHoje = totalCreditoExibidoAposAntecipacoes(
         creditosExibidosNoCiclo(pagosAteHoje, i), abatidoAteHoje[idxCreditoExibido] || 0

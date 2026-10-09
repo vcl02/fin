@@ -82,8 +82,8 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
 });
 
 test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
-    assert.match(visoes, /const debitoHoje = resumoDebitoPagoAte\(Estado\.lancamentos\)/);
-    assert.match(visoes, /const pagosAteHoje = lancamentosPagosAte\(Estado\.lancamentos\)/);
+    assert.match(visoes, /const debitoHoje = resumoDebitoPago\(Estado\.lancamentos\)/);
+    assert.match(visoes, /const pagosAteHoje = lancamentosPagos\(Estado\.lancamentos\)/);
     assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
     assert.match(visoes, /const cicloDebitoPassado = dataISO\(periodo\.fat\) < hojeISO\(\)/);
     assert.match(visoes, /const linhaFuturoDebito = exibeFuturo \?/);
@@ -123,6 +123,12 @@ test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura venc
     const inicioHoje = visoes.indexOf('const linhaHojeCredito');
     const fimHoje = visoes.indexOf('const resumoCredito');
     assert.doesNotMatch(visoes.slice(inicioHoje, fimHoje), /Pago <b/);
+});
+
+test('ciclo anterior ao atual troca o rótulo Hoje do Débito por Passado', () => {
+    // Mesmo cálculo de sempre (pago = true); só o texto muda, porque um ciclo que já
+    // fechou não é "agora".
+    assert.match(visoes, /resumoRotulo>\$\{cicloDebitoPassado \? 'Passado' : 'Hoje'\}<\/span>/);
 });
 
 test('ciclo anterior ao atual nunca recolhe automaticamente ao navegar para o histórico', () => {

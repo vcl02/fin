@@ -302,10 +302,12 @@ function totalCreditoExibidoAposAntecipacoes(creditos, valorAntecipado = 0) {
 }
 
 // "Hoje" é um retrato de caixa, não uma previsão: só movimentos reais já marcados como
-// pagos e cuja data já chegou podem compô-lo. Compras no crédito continuam fora do saldo
-// de caixa, pois ainda não saíram da conta; antecipações reais entram como qualquer débito.
-function lancamentosPagosAte(linhas, dataLimite = hojeISO()) {
-    return linhas.filter(r => r.pago && r.data && dataISO(r.data) <= dataLimite);
+// pagos entram, qualquer que seja a data do lançamento — pago é a ÚNICA coluna que decide.
+// Quem antecipa um pagamento ajusta a data depois se quiser; isso nunca atrasa o retrato.
+// Compras no crédito continuam fora do saldo de caixa, pois ainda não saíram da conta;
+// antecipações reais entram como qualquer débito.
+function lancamentosPagos(linhas) {
+    return linhas.filter(r => r.pago && r.data);
 }
 
 // Separa explicitamente o dinheiro disponível do patrimônio guardado no instante atual.
@@ -313,8 +315,8 @@ function lancamentosPagosAte(linhas, dataLimite = hojeISO()) {
 // confiável e os registros históricos não podem contaminar o retrato de hoje. Saldo inclui
 // aporte/resgate porque o dinheiro efetivamente sai/volta para a conta; guardado mostra essa
 // parcela separada e nunca conta sugestões sintéticas de futuro.
-function resumoDebitoPagoAte(linhas, dataLimite = hojeISO()) {
-    const pagos = lancamentosPagosAte(linhas, dataLimite)
+function resumoDebitoPago(linhas) {
+    const pagos = lancamentosPagos(linhas)
         .filter(r => !r.cred && dataISO(r.data) >= SALDO_DESDE);
     return {
         saldo: pagos.reduce((soma, r) => soma + (+r.v || 0), 0),
