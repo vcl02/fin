@@ -130,17 +130,22 @@ function vCiclo() {
     // zerar a diferença por coincidência, mesmo havendo lançamento ainda por pagar. Por
     // isso também exige nenhum débito real aberto nem fatura do cartão ainda pendente.
     const cicloAtual = i === Estado.idxHoje;
-    // Besteira combina Débito e Crédito do MESMO ciclo contra um único teto — mas "do mesmo
-    // ciclo" aqui é pela DATA da compra, não pelo periodoIdx (que pro Crédito segue o
-    // vencimento da fatura, N+1). Diferente do resto do app: aqui o que importa é quando a
-    // besteira foi de fato comprada, não quando a fatura dela vai vencer. Só aparece no
-    // ciclo atual mesmo, nunca no histórico nem num ciclo futuro ainda não iniciado. Hoje
-    // usa só o pago; Futuro usa pago + aberto (o que está planejado gastar).
-    const creditosBesteiraDoCiclo = visiveis.filter(r => r.cred && r.data && periodoDoDebito(dataISO(r.data)) === i);
-    const besteiraDoCiclo = cicloAtual ? dadosLimiteBesteiraDoCiclo([...debitos, ...creditosBesteiraDoCiclo]) : null;
-    const spanBesteira = percentual => besteiraDoCiclo
-        ? `<span class=besteiraIndicador>Besteira <b class="${percentual > 100 ? 'vm' : 'vd'}">${Math.round(percentual)}%</b></span>`
-        : '';
+    // Indicadores de limite por categoria (Besteira, Fatura Isabella, ...): combinam Débito
+    // e Crédito do MESMO ciclo contra um teto único — mas "do mesmo ciclo" aqui é pela DATA
+    // da compra, não pelo periodoIdx (que pro Crédito segue o vencimento da fatura, N+1).
+    // Diferente do resto do app: o que importa aqui é quando a compra foi de fato feita, não
+    // quando a fatura dela vai vencer. Só aparecem no ciclo atual mesmo, nunca no histórico
+    // nem num ciclo futuro ainda não iniciado. Hoje usa só o pago; Futuro usa pago + aberto
+    // (o que está planejado gastar).
+    const creditosPorDataNoCiclo = visiveis.filter(r => r.cred && r.data && periodoDoDebito(dataISO(r.data)) === i);
+    const linhasPorDataNoCiclo = [...debitos, ...creditosPorDataNoCiclo];
+    const limitesCategoria = cicloAtual ? [
+        { rotulo: 'Besteira', ...dadosLimiteCategoriaDoCiclo(linhasPorDataNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA) },
+        { rotulo: 'Fatura Isabella', ...dadosLimiteCategoriaDoCiclo(linhasPorDataNoCiclo, CATEGORIA_FATURA_ISABELLA, LIMITE_FATURA_ISABELLA) },
+    ] : [];
+    const spansLimitesCategoria = chave => limitesCategoria.map(limite =>
+        `<span class=besteiraIndicador>${limite.rotulo} <b class="${limite[chave] > 100 ? 'vm' : 'vd'}">${Math.round(limite[chave])}%</b></span>`
+    ).join('');
     const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
         Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&
@@ -163,12 +168,12 @@ function vCiclo() {
             `<span class=resumoLinha><span class=resumoRotulo>${cicloDebitoPassado ? 'Passado' : 'Hoje'}</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoNaLinhaUnica}">${brl(saldoExibidoNaLinhaUnica)}</b></span>` +
             `<span>Guardado <b class="${corValor(guardadoExibidoNaLinhaUnica)}">${brl(guardadoExibidoNaLinhaUnica)}</b></span>` +
-            spanBesteira(besteiraDoCiclo?.percentualPago) + `</span></span>`;
+            spansLimitesCategoria('percentualPago') + `</span></span>`;
         const linhaFuturoDebito = exibeFuturo ?
             `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +
             `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span>` +
-            spanBesteira(besteiraDoCiclo?.percentualTotal) + `</span></span>` : '';
+            spansLimitesCategoria('percentualTotal') + `</span></span>` : '';
         const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito + linhaFuturoDebito + `</span>`;
         return renderBloco(
             `Débito${alertaTituloDebito}`, totalDebito,

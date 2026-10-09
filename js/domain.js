@@ -22,6 +22,10 @@ const CATEGORIA_INVESTIMENTO = 'Investimento';
 // por bloco. Fixo em código de propósito: é uma meta pessoal, não dado editável na tela.
 const CATEGORIA_BESTEIRA = 'Besteira';
 const LIMITE_BESTEIRA = 250;
+// Mesma ideia, outro teto: gastos categorizados "Fatura Isabella" (distinto da categoria
+// "Isabella" usada pelo lançamento real da fatura detalhada do cartão dela — ver Faturas).
+const CATEGORIA_FATURA_ISABELLA = 'Fatura Isabella';
+const LIMITE_FATURA_ISABELLA = 700;
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
 // garantia positiva do ciclo é somada separadamente, sem alterar este valor-base.
 let LIMITE_CARTAO = 3350;
