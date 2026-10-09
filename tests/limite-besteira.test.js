@@ -55,8 +55,12 @@ test('exclui antecipação de fatura, igual às demais leituras de orçamento', 
     assert.equal(resultado.valorTotal, 0);
 });
 
-test('aparece no título Débito só no ciclo atual, combinando debitos e creditosDaFatura', () => {
-    assert.match(visoes, /const besteiraDoCiclo = cicloAtual \? dadosLimiteBesteiraDoCiclo\(\[\.\.\.debitos, \.\.\.creditosDaFatura\]\) : null;/);
+test('aparece no título Débito só no ciclo atual, combinando debitos com o Crédito pela DATA da compra', () => {
+    // Diferente do resto do app: aqui o Crédito entra pela data da compra (periodoDoDebito),
+    // não pelo periodoIdx dele (que segue o vencimento da fatura, N+1) — pedido explícito
+    // pra refletir quando a besteira foi comprada, não quando a fatura vence.
+    assert.match(visoes, /const creditosBesteiraDoCiclo = visiveis\.filter\(r => r\.cred && r\.data && periodoDoDebito\(dataISO\(r\.data\)\) === i\);/);
+    assert.match(visoes, /const besteiraDoCiclo = cicloAtual \? dadosLimiteBesteiraDoCiclo\(\[\.\.\.debitos, \.\.\.creditosBesteiraDoCiclo\]\) : null;/);
     assert.match(visoes, /spanBesteira\(besteiraDoCiclo\?\.percentualPago\)/);
     assert.match(visoes, /spanBesteira\(besteiraDoCiclo\?\.percentualTotal\)/);
     assert.match(visoes, /percentual > 100 \? 'vm' : 'vd'/);

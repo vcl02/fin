@@ -130,10 +130,14 @@ function vCiclo() {
     // zerar a diferença por coincidência, mesmo havendo lançamento ainda por pagar. Por
     // isso também exige nenhum débito real aberto nem fatura do cartão ainda pendente.
     const cicloAtual = i === Estado.idxHoje;
-    // Besteira combina Débito e Crédito do MESMO ciclo (periodoIdx) contra um único teto —
-    // só aparece no ciclo atual mesmo, nunca no histórico nem num ciclo futuro ainda não
-    // iniciado. Hoje usa só o pago; Futuro usa pago + aberto (o que está planejado gastar).
-    const besteiraDoCiclo = cicloAtual ? dadosLimiteBesteiraDoCiclo([...debitos, ...creditosDaFatura]) : null;
+    // Besteira combina Débito e Crédito do MESMO ciclo contra um único teto — mas "do mesmo
+    // ciclo" aqui é pela DATA da compra, não pelo periodoIdx (que pro Crédito segue o
+    // vencimento da fatura, N+1). Diferente do resto do app: aqui o que importa é quando a
+    // besteira foi de fato comprada, não quando a fatura dela vai vencer. Só aparece no
+    // ciclo atual mesmo, nunca no histórico nem num ciclo futuro ainda não iniciado. Hoje
+    // usa só o pago; Futuro usa pago + aberto (o que está planejado gastar).
+    const creditosBesteiraDoCiclo = visiveis.filter(r => r.cred && r.data && periodoDoDebito(dataISO(r.data)) === i);
+    const besteiraDoCiclo = cicloAtual ? dadosLimiteBesteiraDoCiclo([...debitos, ...creditosBesteiraDoCiclo]) : null;
     const spanBesteira = percentual => besteiraDoCiclo
         ? `<span class=besteiraIndicador>Besteira <b class="${percentual > 100 ? 'vm' : 'vd'}">${Math.round(percentual)}%</b></span>`
         : '';
