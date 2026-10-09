@@ -1,4 +1,4 @@
-// Regressão: indicadores de limite por categoria (Besteira, Fatura Isabella) no título
+// Regressão: indicadores de limite por categoria (Besteira, Besteira Isabella) no título
 // Débito do ciclo atual — somam Débito e Crédito do mesmo ciclo (pela DATA da compra)
 // contra um teto fixo em código, cada categoria com o seu.
 const assert = require('node:assert/strict');
@@ -15,8 +15,8 @@ const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 test('cada categoria tem seu teto fixo em código, não editável pela tela', () => {
     assert.match(dominio, /const CATEGORIA_BESTEIRA = 'Besteira';/);
     assert.match(dominio, /const LIMITE_BESTEIRA = 250;/);
-    assert.match(dominio, /const CATEGORIA_FATURA_ISABELLA = 'Fatura Isabella';/);
-    assert.match(dominio, /const LIMITE_FATURA_ISABELLA = 700;/);
+    assert.match(dominio, /const CATEGORIA_BESTEIRA_ISABELLA = 'Besteira Isabella';/);
+    assert.match(dominio, /const LIMITE_BESTEIRA_ISABELLA = 700;/);
 });
 
 function carregaDadosLimiteCategoriaDoCiclo() {
@@ -51,15 +51,28 @@ test('soma Débito e Crédito do mesmo ciclo contra o teto da categoria, separan
 test('cada categoria usa o próprio limite, sem misturar com outra', () => {
     const dadosLimiteCategoriaDoCiclo = carregaDadosLimiteCategoriaDoCiclo();
     const linhas = [
-        { v: -350, categ: 'Fatura Isabella', pago: true, cred: false },
+        { v: -350, categ: 'Besteira Isabella', pago: true, cred: false },
         { v: -50, categ: 'Besteira', pago: true, cred: false },
     ];
-    const besteira = dadosLimiteCategoriaDoCiclo(linhas, 'Besteira', 250);
-    const faturaIsabella = dadosLimiteCategoriaDoCiclo(linhas, 'Fatura Isabella', 700);
+    // "Besteira Isabella" contém "Besteira" (busca por substring): sem o 4º parâmetro de
+    // exclusão, a linha de 350 contaria nos dois limites ao mesmo tempo.
+    const besteira = dadosLimiteCategoriaDoCiclo(linhas, 'Besteira', 250, 'Besteira Isabella');
+    const besteiraIsabella = dadosLimiteCategoriaDoCiclo(linhas, 'Besteira Isabella', 700);
     assert.equal(besteira.valorPago, 50);
     assert.equal(besteira.percentualPago, 20);
-    assert.equal(faturaIsabella.valorPago, 350);
-    assert.equal(faturaIsabella.percentualPago, 50);
+    assert.equal(besteiraIsabella.valorPago, 350);
+    assert.equal(besteiraIsabella.percentualPago, 50);
+});
+
+test('sem o parâmetro de exclusão, a sobreposição de substring realmente ocorreria', () => {
+    // Confirma a premissa do bug que o 4º parâmetro evita: chamado sem ele, "Besteira
+    // Isabella" cai dentro de "Besteira" por conter o texto, então contaria nos dois.
+    const dadosLimiteCategoriaDoCiclo = carregaDadosLimiteCategoriaDoCiclo();
+    const resultado = dadosLimiteCategoriaDoCiclo([
+        { v: -350, categ: 'Besteira Isabella', pago: true, cred: false },
+        { v: -50, categ: 'Besteira', pago: true, cred: false },
+    ], 'Besteira', 250);
+    assert.equal(resultado.valorPago, 400);
 });
 
 test('exclui antecipação de fatura, igual às demais leituras de orçamento', () => {
@@ -76,8 +89,8 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
     assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\];/);
-    assert.match(visoes, /rotulo: 'Besteira', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA\)/);
-    assert.match(visoes, /rotulo: 'Fatura Isabella', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_FATURA_ISABELLA, LIMITE_FATURA_ISABELLA\)/);
+    assert.match(visoes, /rotulo: 'Besteira', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA, CATEGORIA_BESTEIRA_ISABELLA\)/);
+    assert.match(visoes, /rotulo: 'Besteira Isabella', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA_ISABELLA, LIMITE_BESTEIRA_ISABELLA\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualPago'\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
     assert.match(visoes, /limite\[chave\] > 100 \? 'vm' : 'vd'/);
@@ -92,6 +105,6 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /nunca no histórico nem num ciclo futuro ainda não iniciado/);
     assert.match(regras, /`creditosExibidosNoCiclo`, fatura de `i\+1`/);
     assert.match(regras, /ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro/);
-    assert.match(regras, /`Fatura Isabella` contra `LIMITE_FATURA_ISABELLA`, R\$ 700/);
+    assert.match(regras, /`Besteira Isabella` contra `LIMITE_BESTEIRA_ISABELLA`, R\$ 700/);
     assert.match(regras, /categoria distinta da categoria `Isabella` usada pelo lançamento real da fatura detalhada do cartão dela/);
 });
