@@ -130,18 +130,17 @@ function vCiclo() {
     // zerar a diferença por coincidência, mesmo havendo lançamento ainda por pagar. Por
     // isso também exige nenhum débito real aberto nem fatura do cartão ainda pendente.
     const cicloAtual = i === Estado.idxHoje;
-    // Indicadores de limite por categoria (Besteira, Fatura Isabella, ...): combinam Débito
-    // e Crédito do MESMO ciclo contra um teto único — mas "do mesmo ciclo" aqui é pela DATA
-    // da compra, não pelo periodoIdx (que pro Crédito segue o vencimento da fatura, N+1).
-    // Diferente do resto do app: o que importa aqui é quando a compra foi de fato feita, não
-    // quando a fatura dela vai vencer. Só aparecem no ciclo atual mesmo, nunca no histórico
+    // Indicadores de limite por categoria (Besteira, Fatura Isabella, ...): Débito do próprio
+    // ciclo (periodoIdx == i) + Crédito da MESMA prévia que a tabela Crédito já mostra pra
+    // esse ciclo (creditosExibidosNoCiclo: fatura de i+1 — ciclo que começa em outubro conta,
+    // no Crédito, o que vai entrar na fatura de novembro). Não é pela data da compra nem
+    // pelo periodoIdx cru do Crédito. Só aparecem no ciclo atual mesmo, nunca no histórico
     // nem num ciclo futuro ainda não iniciado. Hoje usa só o pago; Futuro usa pago + aberto
     // (o que está planejado gastar).
-    const creditosPorDataNoCiclo = visiveis.filter(r => r.cred && r.data && periodoDoDebito(dataISO(r.data)) === i);
-    const linhasPorDataNoCiclo = [...debitos, ...creditosPorDataNoCiclo];
+    const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)];
     const limitesCategoria = cicloAtual ? [
-        { rotulo: 'Besteira', ...dadosLimiteCategoriaDoCiclo(linhasPorDataNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA) },
-        { rotulo: 'Fatura Isabella', ...dadosLimiteCategoriaDoCiclo(linhasPorDataNoCiclo, CATEGORIA_FATURA_ISABELLA, LIMITE_FATURA_ISABELLA) },
+        { rotulo: 'Besteira', ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA) },
+        { rotulo: 'Fatura Isabella', ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_FATURA_ISABELLA, LIMITE_FATURA_ISABELLA) },
     ] : [];
     const spansLimitesCategoria = chave => limitesCategoria.map(limite =>
         `<span class=besteiraIndicador>${limite.rotulo} <b class="${limite[chave] > 100 ? 'vm' : 'vd'}">${Math.round(limite[chave])}%</b></span>`

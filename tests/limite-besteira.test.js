@@ -71,14 +71,13 @@ test('exclui antecipação de fatura, igual às demais leituras de orçamento', 
     assert.equal(resultado.valorTotal, 0);
 });
 
-test('aparece no título Débito só no ciclo atual, combinando debitos com o Crédito pela DATA da compra', () => {
-    // Diferente do resto do app: aqui o Crédito entra pela data da compra (periodoDoDebito),
-    // não pelo periodoIdx dele (que segue o vencimento da fatura, N+1) — pedido explícito
-    // pra refletir quando a compra foi feita, não quando a fatura vence.
-    assert.match(visoes, /const creditosPorDataNoCiclo = visiveis\.filter\(r => r\.cred && r\.data && periodoDoDebito\(dataISO\(r\.data\)\) === i\);/);
-    assert.match(visoes, /const linhasPorDataNoCiclo = \[\.\.\.debitos, \.\.\.creditosPorDataNoCiclo\];/);
-    assert.match(visoes, /rotulo: 'Besteira', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasPorDataNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA\)/);
-    assert.match(visoes, /rotulo: 'Fatura Isabella', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasPorDataNoCiclo, CATEGORIA_FATURA_ISABELLA, LIMITE_FATURA_ISABELLA\)/);
+test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', () => {
+    // Igual à regra geral de Crédito ("no ciclo N ela mostra os créditos da competência
+    // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
+    // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
+    assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\];/);
+    assert.match(visoes, /rotulo: 'Besteira', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA\)/);
+    assert.match(visoes, /rotulo: 'Fatura Isabella', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_FATURA_ISABELLA, LIMITE_FATURA_ISABELLA\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualPago'\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
     assert.match(visoes, /limite\[chave\] > 100 \? 'vm' : 'vd'/);
@@ -91,6 +90,8 @@ test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /cada uma com seu próprio teto fixo em código \(`js\/domain\.js`, não editável pela tela\)/);
     assert.match(regras, /nunca no histórico nem num ciclo futuro ainda não iniciado/);
+    assert.match(regras, /`creditosExibidosNoCiclo`, fatura de `i\+1`/);
+    assert.match(regras, /ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro/);
     assert.match(regras, /`Fatura Isabella` contra `LIMITE_FATURA_ISABELLA`, R\$ 700/);
     assert.match(regras, /categoria distinta da categoria `Isabella` usada pelo lançamento real da fatura detalhada do cartão dela/);
 });
