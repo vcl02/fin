@@ -74,9 +74,18 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Mobile
 
-- No mobile, as tabelas são somente leitura. Tocar uma linha seleciona ou desmarca para somar valores na barra flutuante; edição inline, alternância de status, duplicação, exclusão e atualização por toque continuam indisponíveis.
-- No mobile, `modoSimples` mostra um ciclo por vez e não exibe o bloco Crédito. A fatura líquida permanece no cálculo do Débito.
-- O cadastro de novo lançamento permanece disponível; a tela compacta mantém apenas navegação, consulta e esse cadastro como fluxos de trabalho.
+- O mobile tem paridade total com o desktop: mesmas colunas (`colunasAtivas()` não recorta mais nada; a rolagem horizontal própria de `.wrap` já resolvia telas estreitas), mesma edição inline (Valor, Data, Pago por toque), mesmo Duplicar/Excluir na barra de seleção, mesmo Crédito, Comparar, Visualizações, gráficos, Consolidar tudo, simulação e cadastro. Nenhuma dessas ações é reduzida por tamanho de tela.
+- Acima de 640px de largura, a barra de filtros e ações (`.tool`: Linhas, Visualizações, Gráfico, Limpar filtros, Consolidar tudo, indicadores) fica sempre visível, como já era. Abaixo disso, ela só aparece ao abrir o botão hambúrguer (`#btMenuMobile`) no cabeçalho — puramente uma questão de caber na tela, não de permissão; tocar de novo fecha.
+- O cabeçalho (navegação De/Até, Atual, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
+
+## Conta restrita (Isabella)
+
+- Existe uma única conta com a interface restrita, identificada pelo e-mail da sessão (`EMAIL_ISABELLA`, checado por `modoRestrito()` em `js/app-state.js`) — não por tamanho de tela. `modoSimples()` é sinônimo de `modoRestrito()`: em qualquer dispositivo, essa conta sempre vê a casca simplificada.
+- Essa conta só vê o bloco Débito (sem Crédito), e só navega entre o ciclo atual e o próximo (sem Backlog, sem ciclos mais antigos ou mais distantes, sem Comparar por intervalo — `atualizarCombos()` em `js/data-ui.js` nem oferece essas opções nos seletores).
+- A interface fica somente leitura: tabelas sem edição inline, sem Duplicar/Excluir/Materializar na barra de seleção (só soma e Limpar), sem cadastro de novo lançamento (`#abreNovo` escondido) e sem simulação (`#toggleSimulacao` escondido). Tocar uma linha ainda seleciona/desmarca pra somar valores — isso não grava nada.
+- Visualizações, Gráfico, Limpar filtros, Consolidar tudo e os indicadores financeiros (`#rowVis` inteiro) ficam escondidos; não há filtro por coluna nas tabelas.
+- Essa é uma restrição de interface, não uma política de banco: a segurança de dados de fato continua sendo responsabilidade do RLS do Supabase para essa conta, que é uma decisão separada (ver "Regras de dados e segurança" no `AGENTS.md`).
+- A categoria textual `Isabella` (fatura detalhada do cartão, ver "Faturas") é um conceito totalmente diferente: continua sendo só uma categoria em lançamentos, sem relação com a conta/e-mail restrita.
 
 ## Migrations
 

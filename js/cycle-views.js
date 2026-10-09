@@ -164,7 +164,8 @@ function vCiclo() {
         );
     };
 
-    // Mobile não exibe Crédito; nele basta comparar as duas linhas do Débito.
+    // Conta restrita (modoSimples) não exibe Crédito; nela basta comparar as duas linhas
+    // do Débito. Não depende de tamanho de tela — mobile normal mostra Crédito como sempre.
     let blocoDebito;
     if (modoSimples()) {
         if (resumoDebitoIgual && Estado.cicloQuitadoRecolhido !== `${i}:db`) {

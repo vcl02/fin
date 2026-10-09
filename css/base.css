@@ -153,6 +153,32 @@
       background: var(--vm);
   }
 
+  /* Só visível em telas estreitas (mobile.css liga o display): no desktop a .tool já fica
+     sempre à mostra, sem precisar de um botão pra abrir/fechar. */
+  #btMenuMobile {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--mu);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #btMenuMobile:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  #btMenuMobile[aria-expanded=true] {
+      color: var(--fg);
+      border-color: var(--line-strong);
+  }
+
   #toggleSimulacao {
       display: flex;
       align-items: center;

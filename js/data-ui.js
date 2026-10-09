@@ -6,11 +6,16 @@ function atualizarCombos(lancamentosCrus) {
     const selecaoAnterior = el('ciclo').value;
     const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
     const idxAtual = Estado.ciclos.findIndex(per => hoje >= per.ini && hoje <= dataISO(per.fat));
-    const usados = [...new Set(Estado.lancamentos.map(r => r.periodoIdx).filter(p => p != null))];
+    // Conta restrita só navega entre o ciclo atual e o próximo, mesmo vazios: nunca Backlog,
+    // nunca um ciclo mais antigo ou mais distante no futuro.
+    const usados = modoRestrito()
+        ? [idxAtual, idxAtual + 1].filter(i => i >= 0 && i < Estado.ciclos.length)
+        : [...new Set(Estado.lancamentos.map(r => r.periodoIdx).filter(p => p != null))];
 
-    if (idxAtual >= 0 && !usados.includes(idxAtual)) usados.push(idxAtual);
+    if (!modoRestrito() && idxAtual >= 0 && !usados.includes(idxAtual)) usados.push(idxAtual);
     usados.sort((a, b) => a - b);
-    const opcoesCiclo = '<option value=-1>Backlog' + usados.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
+    const opcoesCiclo = (modoRestrito() ? '' : '<option value=-1>Backlog') +
+        usados.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
     el('ciclo').innerHTML = opcoesCiclo;
 
     // preserva a selecao anterior se ainda for valida; senao cai no periodo atual (ou no mais recente usado)
@@ -28,13 +33,16 @@ function atualizarCombos(lancamentosCrus) {
     // Categoria do formulario e' populada por popularCategoriasNoForm() (ordenada por uso
     // recente), chamada toda vez que o modal abre — nao precisa duplicar aqui.
 
-    // Os combos conservam todos os ciclos usados. No mobile, modoSimples() limita apenas
-    // a visualização a um ciclo por vez, sem uma regra paralela de navegação. "Todos"
+    // Os combos conservam todos os ciclos usados. modoSimples() (conta restrita) limita
+    // apenas a visualização a um ciclo por vez, sem uma regra paralela de navegação. "Todos"
     // (value vazio) é a opção padrão.
-    // Backlog só existe no De, pois não faz sentido compará-lo com outro período.
+    // Backlog só existe no De, pois não faz sentido compará-lo com outro período. Conta
+    // restrita nunca vê "Todos" (Comparar) nem Backlog — só os ciclos de usadosNaveg.
     const usadosNaveg = usados;
-    const opcoesPeriodo = '<option value="">Todos</option>' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
-    const opcoesPeriodoDe = '<option value="">Todos</option><option value=-1>Backlog' + usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
+    const opcoesPeriodo = (modoRestrito() ? '' : '<option value="">Todos</option>') +
+        usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
+    const opcoesPeriodoDe = (modoRestrito() ? '' : '<option value="">Todos</option><option value=-1>Backlog') +
+        usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
     const deAnterior = el('compDe').value, ateAnterior = el('compAte').value;
 
     el('compDe').innerHTML = opcoesPeriodoDe;

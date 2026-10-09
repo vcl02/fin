@@ -52,8 +52,8 @@ function desenhar() {
         el('compAte').value = Estado.idxHoje;
     }
 
-    // "modo blocos" (De==Ate, De=Backlog, ou modo simples — mobile/Isabella sempre
-    // navegam ciclo a ciclo) delega a tela pra vCiclo() (via vComp()); fora disso e'
+    // "modo blocos" (De==Ate, De=Backlog, ou modo simples — a conta restrita sempre
+    // navega ciclo a ciclo) delega a tela pra vCiclo() (via vComp()); fora disso e'
     // "modo matriz". So' existe esse UM criterio — a antiga visao "Ciclo"/"Comparar"
     // separada foi removida, unificada dentro do fluxo Comparar (De==Ate cobre
     // exatamente o que a visao Ciclo cobria), e o navegador ‹›Atual tambem saiu — De/Ate
@@ -72,6 +72,16 @@ function desenhar() {
     sincronizarCicloNaUrl();
 
     el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
+    // Conta restrita (modo simples) não tem Visualizações, Gráfico, Limpar filtros,
+    // Consolidar tudo nem indicadores — e nenhum fluxo de alteração, nem cadastro nem
+    // simulação. Nada disso depende de largura de tela: continua assim em qualquer
+    // dispositivo, inclusive desktop.
+    el('rowVis').hidden = simples;
+    el('abreNovo').hidden = simples;
+    el('toggleSimulacao').hidden = simples;
+    // Sem Visualizações/Gráfico/filtros/Consolidar tudo, a .tool fica vazia pra essa conta —
+    // o botão que abre ela não faz sentido continuar visível.
+    el('btMenuMobile').hidden = simples;
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
 
     // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece
@@ -128,7 +138,9 @@ function desenhar() {
 function atualizaBarraSelecao() {
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
 
-    const mobile = isMobile();
+    // A restrição de "sem ações que alteram dados" é da conta (modoRestrito), não do
+    // tamanho da tela — o mobile normal tem as mesmas ações do desktop.
+    const restrito = modoRestrito();
     const chaves = [...Estado.selecionados.keys()];
     // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
     // excluidas. As excecoes de ACAO sao os ajustes "sug:" e "res:": Aporte sugerido
@@ -146,17 +158,17 @@ function atualizaBarraSelecao() {
     const chavesReaisSelecionadas = chaves.filter(c => !ehSintetica(c));
 
     // uma linha real: a barra e' so pra duplicar. Varias (ou uma sintetica sozinha): e'
-    // pra somar e selecionar/limpar. No mobile, a barra nunca oferece ações que alteram
-    // dados: fica somente a soma e o botão Limpar.
-    el('seldup').hidden = mobile || (!chaveUnicaReal && !ehAjusteMaterializavel);
+    // pra somar e selecionar/limpar. Na conta restrita, a barra nunca oferece ações que
+    // alteram dados: fica somente a soma e o botão Limpar.
+    el('seldup').hidden = restrito || (!chaveUnicaReal && !ehAjusteMaterializavel);
     el('seldup').textContent = ehAjusteMaterializavel
         ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
         : 'Duplicar';
-    el('seldel').hidden = mobile || !chavesReaisSelecionadas.length;
+    el('seldel').hidden = restrito || !chavesReaisSelecionadas.length;
     el('seldel').textContent = Estado.simulando && chavesReaisSelecionadas.length ? 'Ocultar' : 'Excluir';
-    el('selacao').hidden = !mobile && (!!chaveUnicaReal || ehAjusteMaterializavel);
+    el('selacao').hidden = !restrito && (!!chaveUnicaReal || ehAjusteMaterializavel);
 
-    if (chaveUnica && !mobile) {
+    if (chaveUnica && !restrito) {
         const r = linhaDaChaveSelecao(chaveUnica);
         el('selinfo').innerHTML =
             `<span class=cnt>Selecionado</span>` +
@@ -283,7 +295,7 @@ window.alternarBloco = idTabela => {
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-pago]');
     if (!badge) return;
-    if (isMobile()) return;
+    if (modoRestrito()) return;
     // stopPropagation NAO basta aqui: os dois listeners estao no MESMO elemento (#out),
     // entao ambos disparam na mesma fase de bubbling nao importa o que este pare de
     // propagar — precisa de stopImmediatePropagation pra impedir o listener de selecao
@@ -318,7 +330,7 @@ el('out').addEventListener('click', async e => {
 el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-valor]');
     if (!span) return;
-    if (isMobile()) return;
+    if (modoRestrito()) return;
     // ja esta em edicao (input aberto): so' impede o clique de vazar pra selecao de
     // linha por baixo — o proprio <input> cuida do cursor/foco nativamente.
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
@@ -422,7 +434,7 @@ function reclassificaPeriodo(r) {
 el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-data]');
     if (!span) return;
-    if (isMobile()) return;
+    if (modoRestrito()) return;
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
     e.stopImmediatePropagation();
 

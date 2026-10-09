@@ -39,7 +39,7 @@ function cabecalhoTabela(idTabela) {
         return `<th class="${tipo == 'n' ? 'n' : ''}" onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
     }).join('');
     // 2a linha do header: campo de busca por coluna, so nas colunas de texto (tipo 't').
-    // Modo simples no mobile não tem busca — só ordenar pelo cabeçalho.
+    // Conta restrita (modo simples) não tem busca — só ordenar pelo cabeçalho.
     if (modoSimples()) return linhaTitulos;
     const filtroAtual = estadoFiltroTexto(idTabela);
     // colunas de texto + Valor tem campo de busca. Valor compara numero (ver
@@ -148,11 +148,6 @@ el('fNome').addEventListener('input', atualizaAvisoFronteira);
 // ===================================================================
 // chave de selecao de uma linha: usa o _sid sintetico (linha de fatura) ou o id real
 const chaveSelecao = r => r._sid ? r._sid : (r.id != null ? String(r.id) : '');
-// no mobile a cor do Valor muda de sentido: nao e' mais sinal (saida/entrada), e' status de
-// pagamento (pago = verde, em aberto = vermelho). No desktop continua sendo o sinal (celValor).
-// a linha sintetica "Fatura do cartao" nao tem 'pago' (nao vem do banco) -> cai em vermelho
-// por padrao, o que e' aceitavel: ela representa uma saida que ainda vai vencer
-const celValorMobile = r => `<td class="n ${r.pago ? 'vd' : 'vm'}">${brl(r.v)}`;
 // texto de uma celula "vazia": trata null/undefined/"" E a string literal "null"/"undefined"
 // que pode ter ficado gravada no banco por engano em alguma insercao anterior
 // mesma logica de limpeza do valorValido: reconhece "null", "<null>", "n/a" etc como vazio
@@ -169,9 +164,9 @@ const ehLinhaReal = r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._
 // portanto nao existe mais marca de fechamento/D+1.
 const textoData = r => r.data ? dataBR(r.data) : '—';
 // mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
-// lancamentos REAIS (id do banco, da' pra dar PATCH) e so' no desktop — no mobile a
-// celula continua sendo so' texto, igual o Valor.
-const celData = r => ehLinhaReal(r) && !isMobile()
+// lancamentos REAIS (id do banco, da' pra dar PATCH); a conta restrita (modoRestrito)
+// continua vendo so' texto, igual o Valor — qualquer outro dispositivo edita normalmente.
+const celData = r => ehLinhaReal(r) && !modoRestrito()
     ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Editar data">${textoData(r)}</span>`
     : textoData(r);
 const celNome = r => {
@@ -184,14 +179,16 @@ const celNome = r => {
     return `${sim}${nome}${badgeFatura}`;
 };
 
-// monta as celulas <td> de uma linha, conforme o tipo de cada coluna
+// monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
+// clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; só a conta restrita
+// (modoRestrito) vê tudo como texto simples, nunca editável.
 const celulasDaLinha = r => colunasAtivas().map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
-        : (isMobile() ? celValorMobile(r) : (ehLinhaReal(r) ? celValorEditavel(r) : celValor(r.v)))).replace(/$/,
+        : (ehLinhaReal(r) && !modoRestrito() ? celValorEditavel(r) : celValor(r.v))).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
-        : (isMobile() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
+        : (modoRestrito() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
     : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
@@ -222,8 +219,8 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
         });
     }
 
-    // Tanto no desktop quanto no mobile, o toque/clique na linha serve para somar valores.
-    // No mobile a barra mostra apenas a soma e Limpar; ações que mudam dados ficam ocultas.
+    // O toque/clique na linha sempre serve para somar valores, em qualquer dispositivo.
+    // Só a conta restrita (modoRestrito) tem a barra limitada a soma e Limpar.
     const podeSelecionar = selecionavel;
     return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {

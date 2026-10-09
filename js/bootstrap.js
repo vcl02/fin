@@ -16,6 +16,7 @@ const mostraTela = logado => {
 async function boot() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
+        Estado.emailSessao = session.user?.email || null;
         mostraTela(1); load();
     } else {
         mostraTela(0);
@@ -34,6 +35,7 @@ async function entrar() {
         return;
     }
 
+    Estado.emailSessao = data.user?.email || null;
     mostraTela(1);
     load();
 }
@@ -46,7 +48,14 @@ el('senha').onkeydown = e => {
     if (e.key == 'Enter') entrar();
 };
 
-el('sair').onclick = async () => { await sb.auth.signOut(); el('senha').value = ''; mostraTela(0); };
+el('sair').onclick = async () => { await sb.auth.signOut(); Estado.emailSessao = null; el('senha').value = ''; mostraTela(0); };
+
+// Só existe (visualmente) em telas estreitas — ver mobile.css. No desktop a .tool já fica
+// sempre visível, então alternar essa classe não muda nada lá.
+el('btMenuMobile').onclick = () => {
+    const aberto = el('tool').classList.toggle('aberto');
+    el('btMenuMobile').setAttribute('aria-expanded', String(aberto));
+};
 el('modalDiagnostico').addEventListener('click', e => {
     if (e.target == el('modalDiagnostico')) el('modalDiagnostico').close();
 });

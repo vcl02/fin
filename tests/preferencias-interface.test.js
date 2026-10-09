@@ -170,7 +170,7 @@ test('botão Excluir aceita várias linhas reais selecionadas, ignorando sintét
     // fica visível com qualquer quantidade de linhas reais marcadas, e linhas sintéticas (ex.:
     // Saldo do mês anterior) na mesma seleção são ignoradas, pois não existem no banco.
     assert.match(interacoes, /const chavesReaisSelecionadas = chaves\.filter\(c => !ehSintetica\(c\)\);/);
-    assert.match(interacoes, /el\('seldel'\)\.hidden = mobile \|\| !chavesReaisSelecionadas\.length;/);
+    assert.match(interacoes, /el\('seldel'\)\.hidden = restrito \|\| !chavesReaisSelecionadas\.length;/);
     assert.doesNotMatch(formulario, /const chave = \[\.\.\.Estado\.selecionados\.keys\(\)\]\[0\];\s*\n\s*const i = Estado\.lancamentos\.findIndex\(x => String\(x\.id\) == chave\);\s*\n\s*if \(i < 0\) return;/);
     assert.match(formulario, /const linhas = \[\.\.\.Estado\.selecionados\.keys\(\)\]/);
     assert.match(formulario, /for \(const r of linhas\) \{/);
@@ -189,22 +189,44 @@ test('comparar mantém apenas todas ou diferentes confirmados sem recorrência d
     assert.match(regras, /dois ciclos seguintes/);
 });
 
-test('não há modo Isabella e mobile mantém modo simples sem ações nem bloco Crédito', () => {
-    assert.match(regras, /No mobile, as tabelas são somente leitura/);
-    assert.match(regras, /ela não muda a interface conforme o e-mail da sessão/);
-    assert.match(estado, /const modoSimples = \(\) => matchMedia/);
-    assert.doesNotMatch(estado, /restrito|EMAIL_ISABELLA/);
-    assert.doesNotMatch(bootstrap, /restrito|EMAIL_ISABELLA|aplicaPerfil/);
+test('conta restrita (Isabella) é identificada por e-mail, não a interface geral', () => {
+    // Reintroduzido por pedido explícito do mantenedor: modoSimples volta a significar
+    // "conta restrita", não mais "tela estreita" — mobile normal tem paridade total.
+    assert.match(estado, /const EMAIL_ISABELLA = 'isabella\.251200@gmail\.com';/);
+    assert.match(estado, /const modoRestrito = \(\) => String\(Estado\.emailSessao \|\| ''\)\.trim\(\)\.toLowerCase\(\) === EMAIL_ISABELLA;/);
+    assert.match(estado, /const modoSimples = \(\) => modoRestrito\(\);/);
+    assert.match(bootstrap, /Estado\.emailSessao = session\.user\?\.email \|\| null;/);
+    assert.match(bootstrap, /Estado\.emailSessao = data\.user\?\.email \|\| null;/);
+    // Flags antigas de modo restrito (form com checkbox fIsa/reserva) continuam fora —
+    // essa reintrodução é só a checagem de e-mail, não aquele mecanismo antigo.
     assert.doesNotMatch(pagina, /id=fIsa|id=fReservaEmergencia/);
     assert.doesNotMatch(formulario, /\bisa\b|\breserva\b/);
-    assert.doesNotMatch(dadosUi, /modoRestrito/);
-    assert.match(dadosUi, /const usadosNaveg = usados;/);
-    assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
-    assert.ok(visoes.indexOf('if (modoSimples()) return blocoDebito;') < visoes.indexOf('const creditosExibidos = creditosExibidosNoCiclo'));
+    assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
+    // A categoria textual "Isabella" (fatura do cartão) é outro conceito: a nota de que
+    // "ela" (a categoria) não muda a interface continua valendo, sem relação com a conta.
+    assert.match(regras, /A categoria `Isabella` identifica esses lançamentos/);
+});
+
+test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', () => {
+    assert.match(estado, /const colunasAtivas = \(\) => COLS;/);
+    assert.doesNotMatch(estado, /COLS_MOBILE/);
+    assert.match(tabelas, /const celData = r => ehLinhaReal\(r\) && !modoRestrito\(\)/);
+    assert.match(tabelas, /\? celValorEditavel\(r\) : celValor\(r\.v\)/);
+    assert.doesNotMatch(tabelas, /celValorMobile/);
     assert.match(tabelas, /const podeSelecionar = selecionavel;/);
     assert.doesNotMatch(interacoes, /const linha = e\.target\.closest\('tr\[data-sid\]'\);[\s\S]*?if \(isMobile\(\)\) return;/);
-    assert.match(interacoes, /el\('seldup'\)\.hidden = mobile/);
-    assert.match(interacoes, /el\('seldel'\)\.hidden = mobile/);
-    assert.match(regras, /Tocar uma linha seleciona ou desmarca para somar valores/);
-    assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
+    assert.match(interacoes, /el\('seldup'\)\.hidden = restrito/);
+    assert.match(interacoes, /el\('seldel'\)\.hidden = restrito/);
+    assert.match(regras, /O mobile tem paridade total com o desktop/);
+});
+
+test('conta restrita fica só no Débito, ciclo atual/próximo, somente leitura e sem toolbar', () => {
+    assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
+    assert.ok(visoes.indexOf('if (modoSimples()) return blocoDebito;') < visoes.indexOf('const creditosExibidos = creditosExibidosNoCiclo'));
+    assert.match(dadosUi, /const usados = modoRestrito\(\)\s*\n\s*\? \[idxAtual, idxAtual \+ 1\]\.filter\(i => i >= 0 && i < Estado\.ciclos\.length\)/);
+    assert.match(dadosUi, /opcoesPeriodoDe = \(modoRestrito\(\) \? '' : '<option value="">Todos<\/option><option value=-1>Backlog'\)/);
+    assert.match(interacoes, /el\('rowVis'\)\.hidden = simples;/);
+    assert.match(interacoes, /el\('abreNovo'\)\.hidden = simples;/);
+    assert.match(interacoes, /el\('toggleSimulacao'\)\.hidden = simples;/);
+    assert.match(regras, /só vê o bloco Débito \(sem Crédito\), e só navega entre o ciclo atual e o próximo/);
 });
