@@ -137,15 +137,21 @@ function vCiclo() {
     // A mesma casca de Débito atende ao mobile e ao desktop; só a decisão de exibir
     // Futuro muda quando o desktop também consegue conferir a fatura de Crédito.
     const criaBlocoDebito = exibeFuturo => {
-        const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' || (exibeFuturo && classeSaldoFuturo == 'vm');
+        // Ciclo passado não é "agora": o rótulo e os números mudam juntos. Em vez do
+        // retrato ao vivo de hoje (debitoHoje, que é o MESMO valor global pra qualquer
+        // ciclo que esteja sendo olhado), mostra o total que aquele ciclo fechou — Saldo
+        // e Guardado acumulados até ali, iguais ao que apareceria em Futuro se o ciclo
+        // ainda estivesse aberto.
+        const saldoExibidoNaLinhaUnica = cicloDebitoPassado ? totalDebito : debitoHoje.saldo;
+        const guardadoExibidoNaLinhaUnica = cicloDebitoPassado ? guardado : debitoHoje.guardado;
+        const classeSaldoNaLinhaUnica = cicloDebitoPassado ? classeSaldoFuturo : classeSaldoHoje;
+        const debitoTemSaldoVermelho = classeSaldoNaLinhaUnica == 'vm' || (exibeFuturo && classeSaldoFuturo == 'vm');
         const alertaTituloDebito = alertaTitulo('alertaSaldo', debitoTemSaldoVermelho,
             'Saldo negativo', 'Saldo negativo após usar o guardado');
-        // Ciclo passado não é "agora": mesmo cálculo (pago = true), só o rótulo muda pra
-        // não chamar de "Hoje" um retrato de um ciclo que já fechou.
         const linhaHojeDebito = cicloDebitoFuturo ? '' :
             `<span class=resumoLinha><span class=resumoRotulo>${cicloDebitoPassado ? 'Passado' : 'Hoje'}</span><span class=resumoDados>` +
-            `<span>Saldo <b class="${classeSaldoHoje}">${brl(debitoHoje.saldo)}</b></span>` +
-            `<span>Guardado <b class="${corValor(debitoHoje.guardado)}">${brl(debitoHoje.guardado)}</b></span></span></span>`;
+            `<span>Saldo <b class="${classeSaldoNaLinhaUnica}">${brl(saldoExibidoNaLinhaUnica)}</b></span>` +
+            `<span>Guardado <b class="${corValor(guardadoExibidoNaLinhaUnica)}">${brl(guardadoExibidoNaLinhaUnica)}</b></span></span></span>`;
         const linhaFuturoDebito = exibeFuturo ?
             `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +

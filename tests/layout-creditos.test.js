@@ -100,7 +100,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(fs.readFileSync('js\/tables\.js', 'utf8'), /separadorTotal = ' · '/);
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
     assert.match(visoes, /'Saldo negativo após usar o guardado'/);
-    assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoHoje == 'vm' \|\| \(exibeFuturo && classeSaldoFuturo == 'vm'\)/);
+    assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoNaLinhaUnica == 'vm' \|\| \(exibeFuturo && classeSaldoFuturo == 'vm'\)/);
     assert.match(visoes, /!cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal/);
     assert.match(visoes, /const alertaTituloDebito = alertaTitulo\('alertaSaldo', debitoTemSaldoVermelho,/);
     assert.match(visoes, /`Débito\$\{alertaTituloDebito\}`/);
@@ -129,6 +129,16 @@ test('ciclo anterior ao atual troca o rótulo Hoje do Débito por Passado', () =
     // Mesmo cálculo de sempre (pago = true); só o texto muda, porque um ciclo que já
     // fechou não é "agora".
     assert.match(visoes, /resumoRotulo>\$\{cicloDebitoPassado \? 'Passado' : 'Hoje'\}<\/span>/);
+});
+
+test('Passado mostra o total fechado daquele ciclo, não o retrato de hoje', () => {
+    // debitoHoje é um valor GLOBAL (mesmo não importa o ciclo aberto); um ciclo passado
+    // precisa do total acumulado ATÉ ELE (totalDebito/guardado), senão todo ciclo antigo
+    // mostraria o mesmo número de hoje, o que não faz sentido pra histórico.
+    assert.match(visoes, /const saldoExibidoNaLinhaUnica = cicloDebitoPassado \? totalDebito : debitoHoje\.saldo;/);
+    assert.match(visoes, /const guardadoExibidoNaLinhaUnica = cicloDebitoPassado \? guardado : debitoHoje\.guardado;/);
+    assert.match(visoes, /const classeSaldoNaLinhaUnica = cicloDebitoPassado \? classeSaldoFuturo : classeSaldoHoje;/);
+    assert.match(regras, /não repete o retrato de agora.*mostra Saldo e Guardado acumulados até o fechamento daquele ciclo específico/);
 });
 
 test('ciclo anterior ao atual nunca recolhe automaticamente ao navegar para o histórico', () => {
