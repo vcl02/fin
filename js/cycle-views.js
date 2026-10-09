@@ -130,6 +130,13 @@ function vCiclo() {
     // zerar a diferença por coincidência, mesmo havendo lançamento ainda por pagar. Por
     // isso também exige nenhum débito real aberto nem fatura do cartão ainda pendente.
     const cicloAtual = i === Estado.idxHoje;
+    // Besteira combina Débito e Crédito do MESMO ciclo (periodoIdx) contra um único teto —
+    // só aparece no ciclo atual mesmo, nunca no histórico nem num ciclo futuro ainda não
+    // iniciado. Hoje usa só o pago; Futuro usa pago + aberto (o que está planejado gastar).
+    const besteiraDoCiclo = cicloAtual ? dadosLimiteBesteiraDoCiclo([...debitos, ...creditosDaFatura]) : null;
+    const spanBesteira = percentual => besteiraDoCiclo
+        ? `<span class=besteiraIndicador>Besteira <b class="${percentual > 100 ? 'vm' : 'vd'}">${Math.round(percentual)}%</b></span>`
+        : '';
     const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
         Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&
@@ -151,11 +158,13 @@ function vCiclo() {
         const linhaHojeDebito = cicloDebitoFuturo ? '' :
             `<span class=resumoLinha><span class=resumoRotulo>${cicloDebitoPassado ? 'Passado' : 'Hoje'}</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoNaLinhaUnica}">${brl(saldoExibidoNaLinhaUnica)}</b></span>` +
-            `<span>Guardado <b class="${corValor(guardadoExibidoNaLinhaUnica)}">${brl(guardadoExibidoNaLinhaUnica)}</b></span></span></span>`;
+            `<span>Guardado <b class="${corValor(guardadoExibidoNaLinhaUnica)}">${brl(guardadoExibidoNaLinhaUnica)}</b></span>` +
+            spanBesteira(besteiraDoCiclo?.percentualPago) + `</span></span>`;
         const linhaFuturoDebito = exibeFuturo ?
             `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +
-            `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span></span></span>` : '';
+            `<span>Guardado <b class="${corValor(guardado)}">${brl(guardado)}</b></span>` +
+            spanBesteira(besteiraDoCiclo?.percentualTotal) + `</span></span>` : '';
         const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito + linhaFuturoDebito + `</span>`;
         return renderBloco(
             `Débito${alertaTituloDebito}`, totalDebito,

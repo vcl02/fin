@@ -207,6 +207,21 @@ function dadosCompromissosDoCiclo(linhas) {
     return { faturamento, limites: LIMITES_COMPROMISSOS.map(resumo) };
 }
 
+// Besteira soma Débito e Crédito do MESMO ciclo contra um único teto (LIMITE_BESTEIRA):
+// Hoje considera só o que já está pago; Futuro considera tudo (pago + aberto), porque é
+// quanto o usuário planeja gastar no ciclo, não só o que já aconteceu.
+function dadosLimiteBesteiraDoCiclo(linhas) {
+    const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) &&
+        categoriaContemCompromisso(r.categ, CATEGORIA_BESTEIRA));
+    const valorPago = gastos.filter(r => r.pago).reduce((soma, r) => soma + -r.v, 0);
+    const valorTotal = gastos.reduce((soma, r) => soma + -r.v, 0);
+    return {
+        valorPago, valorTotal,
+        percentualPago: LIMITE_BESTEIRA ? valorPago / LIMITE_BESTEIRA * 100 : 0,
+        percentualTotal: LIMITE_BESTEIRA ? valorTotal / LIMITE_BESTEIRA * 100 : 0,
+    };
+}
+
 function dadosCompromissosCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
     const linhas = Estado.lancamentos

@@ -17,6 +17,11 @@
 
 const NOME_ANCORA_CICLO = 'Faturamento PJ';
 const CATEGORIA_INVESTIMENTO = 'Investimento';
+// Teto mensal de "besteira" (cafés, milkshakes, lanches/doces com a Isabella, Uber não
+// essencial), somando Débito e Crédito do mesmo ciclo — um único limite pros dois, não um
+// por bloco. Fixo em código de propósito: é uma meta pessoal, não dado editável na tela.
+const CATEGORIA_BESTEIRA = 'Besteira';
+const LIMITE_BESTEIRA = 250;
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
 // garantia positiva do ciclo é somada separadamente, sem alterar este valor-base.
 let LIMITE_CARTAO = 3350;

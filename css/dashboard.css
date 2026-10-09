@@ -306,6 +306,15 @@
       min-width: 0;
   }
 
+  /* Fica visivelmente separado de Saldo/Guardado (gap maior + divisor), pois é uma leitura
+     diferente: não é saldo de caixa, é progresso contra um teto fixo de código. */
+  .besteiraIndicador {
+      margin-left: .4rem;
+      padding-left: .8rem;
+      border-left: 1px solid var(--ln);
+      color: var(--mu);
+  }
+
   /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */
   .limiteCartao {
       color: var(--mu);
