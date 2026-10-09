@@ -56,13 +56,22 @@ function atualizarCombos(lancamentosCrus) {
 
 // Identificador estável para compartilhar o ciclo, sem expor o índice interno que pode mudar
 // quando novos Faturamentos PJ são incluídos. O nome do ciclo já é definido pelo mês do início.
+// Backlog não tem mês de início (não é um ciclo de verdade) — usa a palavra fixa "backlog".
 function chaveCicloNaUrl(idx) {
+    if (+idx === -1) return 'backlog';
     const ciclo = Estado.ciclos[+idx];
     return ciclo?.ini ? dataISO(ciclo.ini).slice(0, 7) : '';
 }
 
 function aplicarCicloDaUrl() {
     const chave = new URLSearchParams(window.location.search).get('ciclo');
+    // Backlog só existe no combo De (nunca no Até — "não faz sentido comparar com outro
+    // período", ver atualizarCombos); conta restrita nem tem a opção. Só aplica se a opção
+    // existir de verdade no combo, senão a tela mantém o ciclo padrão seguro.
+    if (chave === 'backlog') {
+        if ([...el('compDe').options].some(opcao => opcao.value === '-1')) el('compDe').value = -1;
+        return;
+    }
     if (!/^\d{4}-\d{2}$/.test(chave || '')) return;
 
     const idx = Estado.ciclos.findIndex((_, i) => chaveCicloNaUrl(i) === chave);
@@ -72,11 +81,12 @@ function aplicarCicloDaUrl() {
     el('compAte').value = idx;
 }
 
-// Mantém o link copiável somente para De=Até em ciclos reais. replaceState não cria uma entrada
-// de histórico para cada filtro/redesenho nem interfere no botão Voltar do navegador.
+// Mantém o link copiável pra De=Até em ciclos reais E pro Backlog (De=-1, Até ignorado/
+// desabilitado nesse caso — ver modoBlocos). replaceState não cria uma entrada de histórico
+// para cada filtro/redesenho nem interfere no botão Voltar do navegador.
 function sincronizarCicloNaUrl() {
     const de = el('compDe').value, ate = el('compAte').value;
-    const chave = de && de == ate && +de >= 0 ? chaveCicloNaUrl(de) : '';
+    const chave = de === '-1' ? 'backlog' : (de && de == ate && +de >= 0 ? chaveCicloNaUrl(de) : '');
     const url = new URL(window.location.href);
     if (chave) url.searchParams.set('ciclo', chave);
     else url.searchParams.delete('ciclo');
