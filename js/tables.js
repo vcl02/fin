@@ -115,7 +115,11 @@ function passaFiltroTexto(r, idTabela) {
             const termoExcluido = categoriaExcluidaDoFiltro(termo);
             return !termoExcluido || !texto.includes(termoExcluido);
         }
-        return texto.includes(termoNormalizado);
+        // '|' funciona como OU em qualquer coluna de texto: "Assinatura|Isabella" acha
+        // linhas que contenham qualquer um dos termos, não só os dois juntos. '|' sozinho
+        // ou com pedaços vazios equivale a filtro vazio, igual ao '!' isolado de Categoria.
+        const termosOu = termoNormalizado.split('|').map(t => t.trim()).filter(Boolean);
+        return !termosOu.length || termosOu.some(t => texto.includes(t));
     });
 }
 // clique no header: 1o clique ordena asc, 2o desc, alternando (sem 3o estado "original")

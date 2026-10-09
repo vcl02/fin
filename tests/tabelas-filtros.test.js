@@ -71,6 +71,38 @@ test('! isolado em Categoria não filtra e os outros campos mantêm busca litera
     assert.deepEqual(linhas.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')), []);
 });
 
+test('"|" funciona como OU em qualquer coluna de texto, sem diferenciar caixa ou acento', () => {
+    const c = filtroDeTexto();
+    const linhasComNome = [
+        { id: 10, nome: 'Assinatura Netflix', categ: 'Lazer' },
+        { id: 11, nome: 'Presente Isabella', categ: 'Presente' },
+        { id: 12, nome: 'Mercado', categ: 'Casa' },
+    ];
+    c.Estado.filtroTexto.debito = { nome: 'assinatura|ISABELLA' };
+    assert.deepEqual(
+        linhasComNome.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [10, 11],
+    );
+});
+
+test('"|" isolado ou com pedaço vazio não filtra por esse pedaço, igual ao "!" isolado de Categoria', () => {
+    const c = filtroDeTexto();
+    const linhasComNome = [
+        { id: 20, nome: 'Assinatura Netflix', categ: 'Lazer' },
+        { id: 21, nome: 'Mercado', categ: 'Casa' },
+    ];
+    c.Estado.filtroTexto.debito = { nome: '|' };
+    assert.deepEqual(
+        linhasComNome.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [20, 21],
+    );
+    c.Estado.filtroTexto.debito = { nome: 'assinatura|' };
+    assert.deepEqual(
+        linhasComNome.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [20],
+    );
+});
+
 test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer outros filtros', () => {
     const c = filtroDeTexto();
     c.Estado.lancamentos = linhas;
