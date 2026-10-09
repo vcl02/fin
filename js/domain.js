@@ -17,15 +17,24 @@
 
 const NOME_ANCORA_CICLO = 'Faturamento PJ';
 const CATEGORIA_INVESTIMENTO = 'Investimento';
-// Teto mensal de "besteira" (cafés, milkshakes, lanches/doces com a Isabella, Uber não
-// essencial), somando Débito e Crédito do mesmo ciclo — um único limite pros dois, não um
-// por bloco. Fixo em código de propósito: é uma meta pessoal, não dado editável na tela.
+// Teto mensal de "besteira" SOZINHO (cafés, milkshakes, lanches/doces comendo só, Uber não
+// essencial) — mesmo capricho, mas feito sozinho, por isso desconta daqui e não do teto da
+// Isabella. Quando é junto com ela, vira "Besteira Isabella" (ver CATEGORIA_BESTEIRA_ISABELLA
+// e o guia de categorias no cadastro). Soma Débito e Crédito do mesmo ciclo — um único
+// limite pros dois blocos, não um por bloco. Fixo em código de propósito: é uma meta
+// pessoal, não dado editável na tela.
 const CATEGORIA_BESTEIRA = 'Besteira';
 const LIMITE_BESTEIRA = 250;
-// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella": soma a categoria
-// "Besteira Isabella" sozinha, ou "Lazer"/"Presentes" junto com "Isabella" na mesma linha
-// (regra completa em ehGastoIsabella, js/charts.js) — nunca "Isabella" sozinha, que é a
-// categoria distinta do lançamento real da fatura detalhada do cartão dela (ver Faturas).
+// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella". "Lazer" e "Presentes"
+// sozinhos NÃO contam — podem ser lazer ou presente pra outra pessoa, não pra ela — então
+// precisam vir combinados com "Isabella" na mesma linha pra entrar aqui (ver o guia de
+// categorias no cadastro e ehGastoIsabella em js/charts.js para a regra completa):
+//   - "Besteira Isabella" sozinha: comeram/lancharam juntos, valor inteiro da conta;
+//   - "Lazer" + "Isabella": outro custo de sair juntos que não é a comida nem um presente
+//     (estacionamento, ingresso, Uber compartilhado, cover...);
+//   - "Presentes" + "Isabella": algo comprado especificamente pra ela.
+// "Isabella" sozinha nunca entra nesse teto — é a categoria distinta do lançamento real da
+// fatura detalhada do cartão dela (ver Faturas).
 const CATEGORIA_BESTEIRA_ISABELLA = 'Besteira Isabella';
 const LIMITE_BESTEIRA_ISABELLA = 700;
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;

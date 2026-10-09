@@ -223,7 +223,17 @@
           </select>
         </label>
 
-        <label class=fm><span>Categorias <b class=req>*</b></span>
+        <label class=fm><span>Categorias <b class=req>*</b>
+            <button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer, Presentes"
+              aria-label="Abrir guia de categorias Besteira, Isabella, Lazer e Presentes">
+              <svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.4
+                stroke-linecap=round stroke-linejoin=round aria-hidden=true>
+                <circle cx=12 cy=12 r=10 />
+                <path d="M9.5 9a2.5 2.5 0 0 1 4.6-1.4c.6.9.4 1.8-.4 2.5-.9.8-1.7 1.3-1.7 2.4" />
+                <path d="M12 17h.01" />
+              </svg>
+            </button>
+          </span>
           <input type=text id=fCateg list=fCategList required autocomplete=off
             placeholder="Ex.: Casa, Mercado">
           <datalist id=fCategList></datalist>
@@ -233,6 +243,34 @@
 
         <button type=button id=salvaNovo class=btPri>Salvar</button>
       </form>
+    </dialog>
+
+    <!-- Guia de referência pra digitar categoria certo na hora do cadastro (ver REGRAS.md,
+         seção Isabella); não altera dado nenhum, é só lembrete da convenção. -->
+    <dialog id=modalAjudaCategorias>
+      <div class=modalHead>
+        <h2>Categorias: Besteira e Isabella</h2>
+        <button type=button id=fechaAjudaCategorias aria-label="Fechar">×</button>
+      </div>
+      <dl class=ajudaCategorias>
+        <div>
+          <dt>Besteira</dt>
+          <dd>Sozinho, sem "Isabella" junto: seus próprios caprichos — comendo fora sozinho, por exemplo. Desconta só do seu teto (R$ 250); nunca entra no teto dela.</dd>
+        </div>
+        <div>
+          <dt>Besteira Isabella</dt>
+          <dd>Vocês comendo/lanchando juntos: o valor inteiro da conta, sem dividir. Entra só no teto dela (R$ 700); nunca no seu.</dd>
+        </div>
+        <div>
+          <dt>Presentes + Isabella</dt>
+          <dd>As duas categorias juntas na mesma linha: algo comprado especificamente pra ela (presente, tênis, roupa…). "Presentes" sozinho não conta aqui — pode ser presente pra outra pessoa.</dd>
+        </div>
+        <div>
+          <dt>Lazer + Isabella</dt>
+          <dd>As duas categorias juntas na mesma linha: qualquer outro custo de sair com ela que não seja a comida nem um presente — estacionamento, ingresso, Uber compartilhado, cover… "Lazer" sozinho não conta aqui — pode ser lazer com outra pessoa.</dd>
+        </div>
+      </dl>
+      <p class=meta>"Isabella" sozinha, sem nenhuma das combinações acima, nunca entra nesse teto — é a categoria do lançamento real da fatura detalhada do cartão dela (ver Faturas).</p>
     </dialog>
 
     <dialog id=modalVisualizacao>

@@ -603,6 +603,14 @@ el('fechaNovo').onclick = () => modalNovo.close();
 el('salvaNovo').onclick = () => submeteNovoLancamento();
 modalNovo.addEventListener('click', e => { if (e.target == modalNovo) modalNovo.close(); });
 
+// Guia de categorias (Besteira/Isabella/Lazer/Presentes): abre por cima do cadastro, sem
+// fechá-lo — é só consulta, não precisa perder o que já foi digitado no formulário.
+el('ajudaCategorias').onclick = () => el('modalAjudaCategorias').showModal();
+el('fechaAjudaCategorias').onclick = () => el('modalAjudaCategorias').close();
+el('modalAjudaCategorias').addEventListener('click', e => {
+    if (e.target == el('modalAjudaCategorias')) el('modalAjudaCategorias').close();
+});
+
 // ao fechar o modal (por qualquer via: X, clique fora, Esc, ou apos salvar), se ele foi
 // aberto pelo "Duplicar", desmarca a linha que originou o duplicado — senao ela ficava
 // selecionada na tabela depois de fechar, o que nao faz mais sentido.

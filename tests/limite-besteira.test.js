@@ -10,7 +10,10 @@ const dominio = fs.readFileSync('js/domain.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+const html = fs.readFileSync('index.html', 'utf8');
+const formulario = fs.readFileSync('js/form.js', 'utf8');
 
 test('cada categoria tem seu teto fixo em código, não editável pela tela', () => {
     assert.match(dominio, /const CATEGORIA_BESTEIRA = 'Besteira';/);
@@ -127,6 +130,30 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`creditosExibidosNoCiclo`, fatura de `i\+1`/);
     assert.match(regras, /ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro/);
     assert.match(regras, /o rótulo `Isabella` contra `LIMITE_BESTEIRA_ISABELLA`, R\$ 700/);
-    assert.match(regras, /que soma a linha quando ela tem a categoria `Besteira Isabella` sozinha, OU `Lazer` junto com `Isabella` na mesma linha, OU `Presentes` junto com `Isabella`/);
+    assert.match(regras, /`Lazer` e `Presentes` sozinhos não contam pro teto `Isabella`/);
+    assert.match(regras, /precisam vir combinados com a categoria `Isabella` na mesma linha/);
+    assert.match(regras, /`Besteira Isabella` sozinha é comer ou lanchar junto/);
+    assert.match(regras, /`Lazer` \+ `Isabella` é qualquer outro custo de sair junto/);
+    assert.match(regras, /`Presentes` \+ `Isabella` é algo comprado especificamente para ela/);
     assert.match(regras, /categoria distinta usada pelo lançamento real da fatura detalhada do cartão dela/);
+    assert.match(regras, /#ajudaCategorias.*abre `#modalAjudaCategorias`/);
+});
+
+test('botão de ajuda ao lado de Categorias abre um guia com as 4 regras de categorização', () => {
+    assert.match(html, /<button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer, Presentes"/);
+    assert.match(html, /aria-label="Abrir guia de categorias Besteira, Isabella, Lazer e Presentes"/);
+    assert.match(html, /<dialog id=modalAjudaCategorias>/);
+    assert.match(html, /<dt>Besteira<\/dt>/);
+    assert.match(html, /<dt>Besteira Isabella<\/dt>/);
+    assert.match(html, /<dt>Presentes \+ Isabella<\/dt>/);
+    assert.match(html, /<dt>Lazer \+ Isabella<\/dt>/);
+    assert.match(html, /"Isabella" sozinha, sem nenhuma das combinações acima, nunca entra nesse teto/);
+
+    assert.match(formulario, /el\('ajudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.showModal\(\);/);
+    assert.match(formulario, /el\('fechaAjudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.close\(\);/);
+    assert.match(formulario, /if \(e\.target == el\('modalAjudaCategorias'\)\) el\('modalAjudaCategorias'\)\.close\(\);/);
+
+    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias \{/);
+    assert.match(estilosForm, /\.btAjudaMini\s*\{/);
+    assert.match(estilosForm, /\.ajudaCategorias\s*\{/);
 });
