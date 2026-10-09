@@ -210,9 +210,13 @@ const celObs = r => ehLinhaReal(r) && !modoRestrito()
 const ehUrlHttp = texto => /^https?:\/\//i.test(String(texto ?? '').trim());
 const celCanal = r => {
     const bruto = String(r.canal ?? '').trim();
+    const textoVisivel = escapeHtml(textoOuTraco(r.canal));
+    // Largura fixa (ver .togCanal/.celCanalTexto no CSS): o que nao couber vira "...", mas
+    // continua clicavel pra editar o texto inteiro. A conta restrita/linha nao-real tambem
+    // trunca, so' sem o clique de edicao.
     const texto = ehLinhaReal(r) && !modoRestrito()
-        ? `<span class="togCanal" data-tog-canal="${escapeHtml(String(r.id))}" title="Editar canal">${escapeHtml(textoOuTraco(r.canal))}</span>`
-        : escapeHtml(textoOuTraco(r.canal));
+        ? `<span class="togCanal" data-tog-canal="${escapeHtml(String(r.id))}" title="Editar canal">${textoVisivel}</span>`
+        : `<span class=celCanalTexto>${textoVisivel}</span>`;
     const link = ehUrlHttp(bruto)
         ? ` <a class=linkCanal href="${escapeHtml(bruto)}" target=_blank rel="noopener noreferrer" title="Abrir link" aria-label="Abrir link" onclick="event.stopPropagation()">` +
             `<svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>` +

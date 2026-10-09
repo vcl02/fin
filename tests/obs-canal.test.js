@@ -9,6 +9,7 @@ const vm = require('node:vm');
 const estado = fs.readFileSync('js/app-state.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
+const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migracao = fs.readFileSync('migrations/19-obs-canal-lancamentos.sql', 'utf8');
 
@@ -32,13 +33,13 @@ test('célula Canal é clicável igual às demais, e ganha ícone de link quando
 
 // Extrai celCanal (e sua dependência ehUrlHttp) do arquivo real e roda isolada, com
 // ehLinhaReal/modoRestrito/escapeHtml/textoOuTraco simulados.
-function carregaCelCanal() {
+function carregaCelCanal({ linhaReal = true, restrito = false } = {}) {
     const inicio = tabelas.indexOf('const ehUrlHttp = texto =>');
     const fim = tabelas.indexOf('\n};', tabelas.indexOf('const celCanal = r =>')) + 3;
     if (inicio < 0 || fim < 3) throw Error('Não encontrou celCanal em tables.js.');
     const contexto = {
-        ehLinhaReal: r => r.id > 0,
-        modoRestrito: () => false,
+        ehLinhaReal: () => linhaReal,
+        modoRestrito: () => restrito,
         escapeHtml: v => String(v),
         textoOuTraco: v => (v == null || v === '' ? '—' : v),
     };
@@ -60,6 +61,21 @@ test('Canal com URL http(s) mostra o ícone de link; texto comum não mostra', (
     assert.doesNotMatch(vazio, /class=linkCanal/);
 });
 
+test('conta restrita/linha não-real também trunca o texto do Canal (celCanalTexto), só sem o clique de edição', () => {
+    const celCanal = carregaCelCanal({ restrito: true });
+    const html = celCanal({ id: 9, canal: 'https://www.enel.com.br/minha-conta' });
+    assert.match(html, /class=celCanalTexto/);
+    assert.doesNotMatch(html, /data-tog-canal/);
+    assert.match(html, /class=linkCanal/);   // o ícone de link continua aparecendo
+});
+
+test('estilos: Canal tem largura fixa com reticências; o ícone de link fica em evidência, sem ser cortado', () => {
+    assert.match(estilos, /\.togCanal, \.celCanalTexto \{/);
+    assert.match(estilos, /max-width: 9rem;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;\s*\n\s*white-space: nowrap;/);
+    assert.match(estilos, /\.linkCanal \{[\s\S]*?flex: none;/);
+    assert.match(estilos, /\.linkCanal \{[\s\S]*?border-radius: 50%;/);
+});
+
 test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', () => {
     assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-obs\]'\);/);
     assert.match(interacoes, /<input type=text class=inpObs/);
@@ -78,6 +94,8 @@ test('migration já aplicada pelo mantenedor, documentada no repo', () => {
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`fin\.obs` \(observação livre\) e `fin\.canal`/);
-    assert.match(regras, /ganha um ícone de abrir link numa aba nova ao lado do texto/);
+    assert.match(regras, /A coluna Canal tem largura fixa: texto que não couber vira "…"/);
+    assert.match(regras, /ganha um ícone redondo de abrir link numa aba nova ao lado do texto/);
+    assert.match(regras, /fica sempre em evidência, nunca cortado pelo texto truncado/);
     assert.match(regras, /Nenhum dos dois participa de cálculo financeiro/);
 });

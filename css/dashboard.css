@@ -648,18 +648,42 @@
       text-underline-offset: .2em;
   }
 
-  /* Icone de abrir link ao lado do Canal, so' quando o texto e' uma URL http(s) (ver
-     celCanal em tables.js). Fica discreto e nao herda o sublinhado do texto ao lado. */
-  .linkCanal {
-      display: inline-flex;
-      align-items: center;
-      margin-left: .3rem;
-      color: var(--mu);
+  /* Canal tem largura fixa: o que nao couber vira "..." (ainda clicavel por inteiro pra
+     editar o texto completo, igual Nome/Categoria). .celCanalTexto e' a mesma caixa pra
+     conta restrita/linha nao-real, que mostra o texto truncado mas sem o clique de edicao. */
+  .togCanal, .celCanalTexto {
+      display: inline-block;
+      max-width: 9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       vertical-align: middle;
   }
 
-  .linkCanal:hover {
+  /* Icone de abrir link ao lado do Canal, so' quando o texto e' uma URL http(s) (ver
+     celCanal em tables.js) — pedido explicito: fica em EVIDENCIA (mesmo círculo do botão
+     de ajuda do cadastro, só que sem o tom apagado), nunca cortado pelo texto truncado ao
+     lado, já que não faz parte da caixa com overflow escondido. */
+  .linkCanal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 1.3rem;
+      height: 1.3rem;
+      margin-left: .3rem;
+      vertical-align: middle;
+
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+
+      background: var(--field);
       color: var(--fg);
+  }
+
+  .linkCanal:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
   }
 
   .inpData {
