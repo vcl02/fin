@@ -11,7 +11,7 @@ const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 test('célula de Valor editável ganha o botão de sinal, reaproveitando o ícone do cadastro', () => {
-    assert.match(compartilhado, /const celValorEditavel = r => `<td class="n \$\{corValor\(r\.v\)\}">` \+/);
+    assert.match(compartilhado, /const celValorEditavel = r => `<td class="n \$\{corValor\(r\.v\)\}"><span class=valorLinha>` \+/);
     assert.match(compartilhado, /class="sinalBt compacto\$\{r\.v < 0 \? '' : ' pos'\}" data-tog-sinal="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
     assert.match(compartilhado, /title="Inverter sinal" aria-label="Inverter sinal"/);
     assert.match(estilosForm, /\.sinalBt\.compacto\s*\{/);

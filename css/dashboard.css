@@ -520,20 +520,23 @@
       white-space: nowrap;
   }
 
-  /* Célula de Valor editável (botão de sinal + texto): texto corrido com text-align:right
-     empacota botão+valor como um bloco só e alinha o bloco inteiro à direita — como o
+  /* Botão de sinal + valor (ver celValorEditavel): texto corrido com text-align:right
+     empacotava os dois como um bloco só e alinhava o bloco inteiro à direita — como o
      valor muda de largura a cada linha, o botão "andava" de posição (efeito escadinha).
      Em flex, com o valor numa largura fixa (grande o bastante pra qualquer quantia real,
      mesma largura do campo de edição .inpValor), o par fica colado e sempre na mesma
-     posição — sem o vão enorme de esticar o valor até a largura total da coluna
-     (definida pelo cabeçalho/filtro) nem a escadinha de deixar a largura variar. */
-  .n:has(.sinalBt.compacto) {
+     posição — sem o vão de esticar o valor até a largura total da coluna (definida pelo
+     cabeçalho/filtro) nem a escadinha de deixar a largura variar. É um wrapper PRÓPRIO
+     (não o <td> inteiro) porque o saldo do dia (.sd) é outro filho do <td>, anexado depois,
+     que precisa continuar empilhando por baixo em 'display:block' normal. */
+  .valorLinha {
       display: flex;
       align-items: center;
       justify-content: flex-end;
+      width: 100%;
   }
 
-  .n:has(.sinalBt.compacto) .togValor {
+  .valorLinha .togValor {
       width: 6.5rem;
       text-align: right;
   }
