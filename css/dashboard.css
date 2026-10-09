@@ -637,18 +637,6 @@
       cursor: pointer;
   }
 
-  .inpValorSinal {
-      display: inline-block;
-      width: 1.1em;
-      cursor: pointer;
-      font-weight: 700;
-      color: var(--mu);
-  }
-
-  .inpValorSinal:hover {
-      color: var(--fg);
-  }
-
   .inpValor {
       width: 6.5rem;
       font: inherit;

@@ -368,30 +368,24 @@ el('out').addEventListener('click', e => {
     const bruto = Math.abs(r.v || 0);
     const negativo = (r.v || 0) < 0;
     span.classList.add('editando');
-    span.innerHTML = `<span class=inpValorSinal>${negativo ? '−' : '+'}</span>` +
-        `<input type=text inputmode=numeric class=inpValor value="${bruto ? formataMascaraDinheiro(String(Math.round(bruto * 100))) : ''}" placeholder="0,00">`;
+    // O sinal não se edita mais por aqui: o clique perdia o foco do input antes do clique
+    // no +/− terminar de registrar (blur disparava confirma() com o sinal antigo primeiro),
+    // então o toggle nunca pegava. O botão de sinal ao lado (data-tog-sinal) resolve isso
+    // de verdade, com PATCH próprio — este campo só edita a magnitude, mantendo o sinal atual.
+    span.innerHTML = `<input type=text inputmode=numeric class=inpValor value="${bruto ? formataMascaraDinheiro(String(Math.round(bruto * 100))) : ''}" placeholder="0,00">`;
     const input = span.querySelector('input');
-    const sinalEl = span.querySelector('.inpValorSinal');
-    let sinalNegativo = negativo;
 
     input.addEventListener('input', () => {
         const cursorNoFim = input.selectionEnd == input.value.length;
         input.value = formataMascaraDinheiro(input.value);
         if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
     });
-    // clique no sinal (+/−) alterna, sem submeter nem perder o foco do input
-    sinalEl.onclick = ev => {
-        ev.stopImmediatePropagation();
-        sinalNegativo = !sinalNegativo;
-        sinalEl.textContent = sinalNegativo ? '−' : '+';
-        input.focus();
-    };
 
     let concluido = false;
     async function confirma() {
         if (concluido) return;
         concluido = true;
-        const novoValor = valorMascaraParaNumero(input.value.trim() || '0') * (sinalNegativo ? -1 : 1);
+        const novoValor = valorMascaraParaNumero(input.value.trim() || '0') * (negativo ? -1 : 1);
         if (novoValor == r.v) { desenhar(); return; }   // nada mudou, so' redesenha (sai do modo edicao)
         input.disabled = true;
         try {
