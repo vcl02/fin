@@ -158,6 +158,13 @@ test('edição inline de data no desktop não confirma a cada dígito antes do s
     assert.match(interacoes, /ev\.key == 'Enter'.*clearTimeout\(timerConfirma\); confirma\(\);/);
 });
 
+test('edição inline de data não apaga a data ao perder o foco com dígito incompleto', () => {
+    // "0" sozinho no dia nao e' um dia valido: o navegador marca badInput e deixa
+    // input.value vazio, igual a quando a data e' apagada de proposito. Sem essa checagem,
+    // perder o foco no meio da digitacao mandaria o lancamento pro Backlog sem querer.
+    assert.match(interacoes, /if \(input\.validity && input\.validity\.badInput\) \{ desenhar\(\); return; \}/);
+});
+
 test('comparar mantém apenas todas ou diferentes confirmados sem recorrência duplicada', () => {
     assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);

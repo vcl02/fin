@@ -438,6 +438,11 @@ el('out').addEventListener('click', e => {
     let concluido = false;
     async function confirma() {
         if (concluido) return;
+        // Digito incompleto (ex.: parou no "0" do dia, que sozinho nao e' um dia valido)
+        // deixa o input.value vazio igual a quando o usuario apaga a data de proposito.
+        // badInput distingue os dois casos: so' confirma a limpeza quando o campo foi
+        // mesmo esvaziado, nunca quando a digitacao so' ficou pela metade.
+        if (input.validity && input.validity.badInput) { desenhar(); return; }
         concluido = true;
         const nova = input.value || null;   // apagar a data manda o lancamento pro Backlog
         if ((nova || '') === original) { desenhar(); return; }   // nada mudou, so' sai do modo edicao
