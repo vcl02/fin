@@ -523,8 +523,10 @@
   /* Célula de Valor editável (botão de sinal + texto): texto corrido com text-align:right
      empacota botão+valor como um bloco só e alinha o bloco inteiro à direita — como o
      valor muda de largura a cada linha, o botão "andava" de posição (efeito escadinha).
-     Em flex, o botão fica fixo numa borda e o valor ocupa o espaço restante, sempre
-     alinhado à outra borda, nas duas pontas, independente da largura do número. */
+     Em flex, com o valor numa largura fixa (grande o bastante pra qualquer quantia real,
+     mesma largura do campo de edição .inpValor), o par fica colado e sempre na mesma
+     posição — sem o vão enorme de esticar o valor até a largura total da coluna
+     (definida pelo cabeçalho/filtro) nem a escadinha de deixar a largura variar. */
   .n:has(.sinalBt.compacto) {
       display: flex;
       align-items: center;
@@ -532,7 +534,7 @@
   }
 
   .n:has(.sinalBt.compacto) .togValor {
-      flex: 1;
+      width: 6.5rem;
       text-align: right;
   }
 
