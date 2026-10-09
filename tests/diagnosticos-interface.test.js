@@ -49,9 +49,11 @@ test('modal separa inconsistências de avisos e problemas operacionais usam toas
     assert.match(inicializacao, /el\('modalDiagnostico'\)\.addEventListener\('click', e => \{\s*if \(e\.target == el\('modalDiagnostico'\)\) el\('modalDiagnostico'\)\.close\(\);\s*\}\);/);
 });
 
-test('erros operacionais usam toast e só exclusão pede confirmação nativa', () => {
+test('erros operacionais usam toast; só exclusão e pago fora do ciclo pedem confirmação nativa', () => {
     assert.doesNotMatch(fontesJs, /\balert\(/);
-    assert.equal((fontesJs.match(/\bconfirm\(/g) || []).length, 1);
+    // As duas únicas caixas nativas permitidas (ver REGRAS.md): excluir lançamento e marcar
+    // como pago um Débito com data fora do ciclo atual (ver pago-ajusta-data.test.js).
+    assert.equal((fontesJs.match(/\bconfirm\(/g) || []).length, 2);
     assert.match(formulario, /if \(!confirm\(pergunta\)\) return;/);
     assert.match(interacoes, /mostrarToast\('Falhou ao atualizar'/);
 });

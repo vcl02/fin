@@ -304,14 +304,41 @@ el('out').addEventListener('click', async e => {
     if (!r) return;
 
     const novoPago = !r.pago;
+    let novaData = r.data;
+
+    // So' ao MARCAR como pago (nunca ao desmarcar) de um Débito com vencimento ainda nao
+    // chegado: o pagamento aconteceu HOJE, antes do dia que a linha gravou (ex.: a conta de
+    // agua paga no dia do Faturamento PJ, com vencimento mais pra frente no mesmo ciclo).
+    // Dentro do MESMO ciclo isso e' so' adiantar um pagamento ja disponivel — ajusta a data
+    // pra hoje sem perguntar. Fora do ciclo (atual ou outro ja fechado) e' o padrao exato do
+    // bug de recorrencia que nasce paga (ver validarLancamentosCarregados em domain.js):
+    // pede confirmacao em vez de aplicar direto.
+    if (novoPago && !r.cred && r.data) {
+        const hoje = hojeISO();
+        const dataAtual = dataISO(r.data);
+        if (dataAtual !== hoje) {
+            const cicloDoLancamento = periodoDoDebito(dataAtual);
+            const cicloDeHoje = periodoDoDebito(hoje);
+            const mesmoCiclo = cicloDoLancamento >= 0 && cicloDoLancamento === cicloDeHoje;
+            if (mesmoCiclo) {
+                if (dataAtual > hoje) novaData = hoje;
+            } else if (!confirm(`"${r.nome ?? ''}" está datado ${dataBR(dataAtual)}, fora do ciclo atual. Marcar como pago mesmo assim?`)) {
+                return;
+            }
+        }
+    }
+
     badge.classList.toggle('vd', novoPago);
     badge.classList.toggle('vm', !novoPago);
     badge.textContent = novoPago ? 'Pago' : 'Aberto';
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
 
     try {
-        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { pago: novoPago });
+        const campos = { pago: novoPago };
+        if (novaData !== r.data) campos.data = novaData;
+        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, campos);
         r.pago = novoPago;
+        if (novaData !== r.data) { r.data = novaData; reclassificaPeriodo(r); }
         desenhar();
     } catch (err) {
         badge.style.opacity = '';
