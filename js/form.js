@@ -725,17 +725,52 @@ el('seldup').onclick = async () => {
     if (r) { modalNovo.dataset.viaDuplicar = '1'; abreModalNovo(r); }
 };
 
+// Mesma correção do botão "↷" (ver celData em tables.js e marcaOcorrenciasDuplicadasNoCiclo
+// em cycle-views.js), varrendo um intervalo de ciclos inteiro de uma vez em vez de pedir pra
+// abrir ciclo por ciclo. Sem caixa de confirmação por linha — o próprio clique em "Consolidar
+// tudo" já é a confirmação da varredura em lote, igual como ela já trata aporte/resgate. Roda ANTES do
+// loop de aporte/resgate abaixo: mover uma data entre ciclos muda o total de cada um, então
+// precisa refletir nos ajustes que o loop seguinte vai materializar/consolidar.
+async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
+    let corrigidos = 0;
+    for (let idx = idxInicio; idx <= idxFim; idx++) {
+        const proximoCiclo = Estado.ciclos[idx + 1];
+        if (!proximoCiclo) continue;   // sem próximo ciclo cadastrado, não há pra onde mover
+        const debitos = Estado.lancamentos.filter(r => r.periodoIdx == idx && !r.cred);
+        marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo);
+        for (const r of debitos.filter(r => r._dupCiclo)) {
+            const novaData = r._dupCiclo;
+            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { data: novaData });
+            r.data = novaData;
+            reclassificaPeriodo(r);
+            delete r._dupCiclo;
+            corrigidos++;
+            limparCachesFinanceiros();
+        }
+    }
+    return corrigidos;
+}
+
 // "Consolidar tudo": repete materializaOuConsolidaAjuste ciclo a ciclo, de hoje até o
-// último ciclo que tem algum lançamento, pra não exigir abrir um por um manualmente.
-// Cada escrita muda Estado.lancamentos (logo o guardado disponível do ciclo seguinte), por
-// isso limpa os caches financeiros entre uma iteração e a próxima, não só no fim.
+// último ciclo que tem algum lançamento, pra não exigir abrir um por um manualmente — e, de
+// quebra, corrige toda recorrência duplicada no mesmo intervalo (ver função acima). Cada
+// escrita muda Estado.lancamentos (logo o guardado disponível do ciclo seguinte), por isso
+// limpa os caches financeiros entre uma iteração e a próxima, não só no fim.
 el('btConsolidarTudo').onclick = async () => {
     if (el('btConsolidarTudo').disabled || Estado.idxHoje < 0) return;
     el('btConsolidarTudo').disabled = true;
     try {
-        const ultimoCicloComDados = Estado.lancamentos.reduce(
+        const ultimoCicloAntesDaCorrecao = Estado.lancamentos.reduce(
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
             Estado.idxHoje
+        );
+        const corrigidos = await corrigeRecorrenciasDuplicadasNoIntervalo(Estado.idxHoje, ultimoCicloAntesDaCorrecao);
+        // Uma correção pode ter empurrado alguma linha pro ciclo logo depois do limite
+        // conhecido antes da varredura — recalcula pra não deixar esse ciclo de fora do
+        // loop de aporte/resgate a seguir.
+        const ultimoCicloComDados = Estado.lancamentos.reduce(
+            (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
+            ultimoCicloAntesDaCorrecao
         );
         let materializados = 0, consolidados = 0;
         for (let idx = Estado.idxHoje; idx <= ultimoCicloComDados; idx++) {
@@ -749,9 +784,12 @@ el('btConsolidarTudo').onclick = async () => {
         desenhar();
         // Nada aparece na tela pros ciclos fora do atual (não estão renderizados), então o
         // toast é o único retorno de que a varredura rodou e o que ela de fato mudou.
-        mostrarToast('Consolidar tudo', materializados || consolidados
-            ? `${materializados} materializado(s), ${consolidados} consolidado(s).`
-            : 'Nenhum ciclo com Aporte sugerido ou Resgate necessário pendente.');
+        const partes = [];
+        if (materializados || consolidados) partes.push(`${materializados} materializado(s), ${consolidados} consolidado(s)`);
+        if (corrigidos) partes.push(`${corrigidos} data(s) de recorrência duplicada corrigida(s)`);
+        mostrarToast('Consolidar tudo', partes.length
+            ? `${partes.join('; ')}.`
+            : 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente.');
     } catch (err) {
         mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();

@@ -11,6 +11,7 @@ const vm = require('node:vm');
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
+const formulario = fs.readFileSync('js/form.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
@@ -35,6 +36,82 @@ globalThis.gruposComRecorrenciaDuplicadaEntreMeses = gruposComRecorrenciaDuplica
 globalThis.marcaOcorrenciasDuplicadasNoCiclo = marcaOcorrenciasDuplicadasNoCiclo;`, contexto);
     return contexto;
 }
+
+// Extrai corrigeRecorrenciasDuplicadasNoIntervalo do form.js real E a marcação do
+// cycle-views.js real, rodando as duas juntas num contexto isolado — a mesma combinação que
+// "Consolidar tudo" usa de verdade, só com atualizarLancamento/reclassificaPeriodo/
+// limparCachesFinanceiros simulados (gravam numa lista em vez de chamar o Supabase/redesenhar).
+function carregaCorrecaoEmLote() {
+    const inicioMarcacao = visoes.indexOf('function chaveDaRecorrencia');
+    const fimMarcacao = visoes.indexOf('function todasRecorrenciasDaMudancaSaoExplicadas');
+    const inicioLote = formulario.indexOf('async function corrigeRecorrenciasDuplicadasNoIntervalo');
+    const fimLote = formulario.indexOf('\n}', inicioLote) + 2;
+    if (inicioMarcacao < 0 || fimMarcacao < 0 || inicioLote < 0 || fimLote < 2) {
+        throw Error('Não encontrou a correção em lote de recorrência duplicada.');
+    }
+    const chamadasPatch = [];
+    const contexto = {
+        semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
+        categoriaDaComparacao: categ => categ ?? '',
+        textoOuTraco: v => (v == null || v === '' ? '—' : v),
+        ehLinhaReal: r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._sim,
+        dataISO: v => String(v ?? '').slice(0, 10),
+        timestamp: v => new Date(String(v)).getTime(),
+        Estado: { ciclos: [], lancamentos: [], simulando: false },
+        atualizarLancamento: async (id, campos) => { chamadasPatch.push({ id, ...campos }); },
+        reclassificaPeriodo: r => {
+            const idx = contexto.Estado.ciclos.findIndex((c, i) =>
+                r.data >= c.ini && (!contexto.Estado.ciclos[i + 1] || r.data < contexto.Estado.ciclos[i + 1].ini));
+            r.periodoIdx = idx >= 0 ? idx : null;
+        },
+        limparCachesFinanceiros: () => {},
+    };
+    vm.createContext(contexto);
+    vm.runInContext(`${visoes.slice(inicioMarcacao, fimMarcacao)}
+${formulario.slice(inicioLote, fimLote)}
+globalThis.corrigeRecorrenciasDuplicadasNoIntervalo = corrigeRecorrenciasDuplicadasNoIntervalo;`, contexto);
+    return { contexto, chamadasPatch };
+}
+
+test('consolidar tudo em lote: corrige todas as ocorrências aplicáveis no intervalo, sem confirm(), registrando o PATCH de cada uma', async () => {
+    const { contexto, chamadasPatch } = carregaCorrecaoEmLote();
+    contexto.Estado.ciclos = [
+        { ini: '2026-09-08' }, { ini: '2026-10-08' }, { ini: '2026-11-09' }, { ini: '2026-12-09' },
+    ];
+    contexto.Estado.lancamentos = [
+        { id: 10, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', periodoIdx: 1, cred: false },
+        { id: 11, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', periodoIdx: 1, cred: false },
+        { id: 12, nome: 'Mercado', categ: 'Casa', data: '2026-10-20', periodoIdx: 1, cred: false },
+        { id: 13, nome: 'Internet', categ: 'Casa', data: '2026-11-10', periodoIdx: 2, cred: false },
+        { id: 14, nome: 'Internet', categ: 'Casa', data: '2026-12-05', periodoIdx: 2, cred: false },
+    ];
+    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 2);
+    assert.equal(corrigidos, 2);
+    assert.deepEqual(chamadasPatch, [
+        { id: 11, data: '2026-11-09' },
+        { id: 14, data: '2026-12-09' },
+    ]);
+    const r11 = contexto.Estado.lancamentos.find(r => r.id == 11);
+    assert.equal(r11.data, '2026-11-09');
+    assert.equal(r11.periodoIdx, 2);   // reclassificado pro ciclo que a nova data cai
+    const r14 = contexto.Estado.lancamentos.find(r => r.id == 14);
+    assert.equal(r14.data, '2026-12-09');
+    assert.equal(r14.periodoIdx, 3);
+});
+
+test('simulação (Estado.simulando) não faz PATCH nenhum, só ajusta em memória', async () => {
+    const { contexto, chamadasPatch } = carregaCorrecaoEmLote();
+    contexto.Estado.simulando = true;
+    contexto.Estado.ciclos = [{ ini: '2026-10-08' }, { ini: '2026-11-09' }];
+    contexto.Estado.lancamentos = [
+        { id: 20, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', periodoIdx: 0, cred: false },
+        { id: 21, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', periodoIdx: 0, cred: false },
+    ];
+    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(0, 0);
+    assert.equal(corrigidos, 1);
+    assert.deepEqual(chamadasPatch, []);
+    assert.equal(contexto.Estado.lancamentos.find(r => r.id == 21).data, '2026-11-09');
+});
 
 test('marca só a(s) ocorrência(s) mais recente(s) do grupo duplicado, com a data do próximo ciclo', () => {
     const c = carregaMarcacao();
