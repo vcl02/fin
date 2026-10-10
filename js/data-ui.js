@@ -82,17 +82,25 @@ function aplicarCicloDaUrl() {
 }
 
 // Mantém o link copiável pra De=Até em ciclos reais E pro Backlog (De=-1, Até ignorado/
-// desabilitado nesse caso — ver modoBlocos). replaceState não cria uma entrada de histórico
-// para cada filtro/redesenho nem interfere no botão Voltar do navegador.
+// desabilitado nesse caso — ver modoBlocos). Uma troca REAL de ciclo empurra uma entrada de
+// histórico (pushState), pra Voltar/Avançar do navegador navegarem entre ciclos já
+// visitados; redesenhos que não mudam o ciclo (filtro, seleção de linha, edição inline…)
+// continuam substituindo a entrada atual (replaceState), sem encher o histórico. undefined
+// na primeira chamada evita empurrar uma entrada pra o próprio estado de carga inicial.
+let _ultimaChaveCicloUrl;
 function sincronizarCicloNaUrl() {
     const de = el('compDe').value, ate = el('compAte').value;
     const chave = de === '-1' ? 'backlog' : (de && de == ate && +de >= 0 ? chaveCicloNaUrl(de) : '');
+    const trocouDeCiclo = _ultimaChaveCicloUrl !== undefined && chave !== _ultimaChaveCicloUrl;
+    _ultimaChaveCicloUrl = chave;
+
     const url = new URL(window.location.href);
     if (chave) url.searchParams.set('ciclo', chave);
     else url.searchParams.delete('ciclo');
     const destino = url.pathname + url.search + url.hash;
     if (destino !== window.location.pathname + window.location.search + window.location.hash) {
-        window.history.replaceState(window.history.state, '', destino);
+        if (trocouDeCiclo) window.history.pushState(window.history.state, '', destino);
+        else window.history.replaceState(window.history.state, '', destino);
     }
 }
 

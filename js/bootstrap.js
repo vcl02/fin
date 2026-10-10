@@ -7,6 +7,16 @@ if ('serviceWorker' in navigator) {
         .catch(() => { /* Instalação da PWA não pode impedir o uso normal da aplicação. */ }));
 }
 
+// Botão Voltar/Avançar do navegador: cada troca real de ciclo empurra uma entrada de
+// histórico (ver sincronizarCicloNaUrl em js/data-ui.js); aqui só precisamos reagir lendo a
+// URL restaurada e redesenhando — sem rebuscar o Supabase, Estado.lancamentos já tem tudo.
+// Sem ciclos carregados ainda (antes do primeiro load() ou já deslogado), não há o que redesenhar.
+window.addEventListener('popstate', () => {
+    if (!Estado.ciclos.length) return;
+    aplicarCicloDaUrl();
+    desenhar();
+});
+
 const mostraTela = logado => {
     el('login').style.display = logado ? 'none' : 'flex';
     el('app').style.display = logado ? 'block' : 'none';
