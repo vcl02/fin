@@ -26,6 +26,7 @@ function carregaMarcacao() {
         categoriaDaComparacao: categ => categ ?? '',
         textoOuTraco: v => (v == null || v === '' ? '—' : v),
         ehLinhaReal: r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._sim,
+        ehTransferenciaFatura: mockEhTransferenciaFatura,
         dataISO: v => String(v ?? '').slice(0, 10),
         timestamp: v => new Date(String(v)).getTime(),
     };
@@ -35,6 +36,18 @@ globalThis.chaveDaRecorrencia = chaveDaRecorrencia;
 globalThis.gruposComRecorrenciaDuplicadaEntreMeses = gruposComRecorrenciaDuplicadaEntreMeses;
 globalThis.marcaOcorrenciasDuplicadasNoCiclo = marcaOcorrenciasDuplicadasNoCiclo;`, contexto);
     return contexto;
+}
+
+// Mesma regra de ehTransferenciaFatura em js/shared.js (!cred + "antecipacao"+"fatura" em
+// categ OU nome, sem diferenciar acento/caixa), reimplementada aqui só pro contexto isolado
+// do vm — não é a função real, por isso os testes de integração em bruto continuam
+// validando js/shared.js e js/cycle-views.js separadamente.
+function mockEhTransferenciaFatura(r) {
+    if (r.cred) return false;
+    return [r.categ, r.nome].some(v => {
+        const c = String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        return c.includes('antecipacao') && c.includes('fatura');
+    });
 }
 
 // Extrai corrigeRecorrenciasDuplicadasNoIntervalo do form.js real E a marcação do
@@ -55,6 +68,7 @@ function carregaCorrecaoEmLote() {
         categoriaDaComparacao: categ => categ ?? '',
         textoOuTraco: v => (v == null || v === '' ? '—' : v),
         ehLinhaReal: r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._sim,
+        ehTransferenciaFatura: mockEhTransferenciaFatura,
         dataISO: v => String(v ?? '').slice(0, 10),
         timestamp: v => new Date(String(v)).getTime(),
         Estado: { ciclos: [], lancamentos: [], simulando: false },
@@ -148,6 +162,37 @@ test('mesmo mês (sem duplicidade real) ou linha sintética/simulada não marca'
     assert.equal(antigaReal._dupCiclo, undefined);   // real mas sozinha no grupo: nada pra corrigir
 });
 
+test('antecipação de fatura em meses-calendário diferentes no mesmo ciclo nunca ganha o botão de corrigir', () => {
+    const c = carregaMarcacao();
+    const antecip1 = { id: 1, nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', data: '2026-10-05', cred: false };
+    const antecip2 = { id: 2, nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', data: '2026-11-04', cred: false };
+    c.marcaOcorrenciasDuplicadasNoCiclo([antecip1, antecip2], { ini: '2026-11-09' });
+    assert.equal(antecip1._dupCiclo, undefined);
+    assert.equal(antecip2._dupCiclo, undefined);
+});
+
+test('antecipação identificada só pelo nome (categoria genérica) também fica fora', () => {
+    const c = carregaMarcacao();
+    const antecip1 = { id: 1, nome: 'Antecipação Fatura', categ: 'Fatura', data: '2026-10-05', cred: false };
+    const antecip2 = { id: 2, nome: 'Antecipação Fatura', categ: 'Fatura', data: '2026-11-04', cred: false };
+    c.marcaOcorrenciasDuplicadasNoCiclo([antecip1, antecip2], { ini: '2026-11-09' });
+    assert.equal(antecip1._dupCiclo, undefined);
+    assert.equal(antecip2._dupCiclo, undefined);
+});
+
+test('consolidar tudo em lote também pula antecipação de fatura, sem PATCH nem contagem', async () => {
+    const { contexto, chamadasPatch } = carregaCorrecaoEmLote();
+    contexto.Estado.ciclos = [{ ini: '2026-09-08' }, { ini: '2026-10-08' }, { ini: '2026-11-09' }];
+    contexto.Estado.lancamentos = [
+        { id: 30, nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', data: '2026-10-05', periodoIdx: 1, cred: false },
+        { id: 31, nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', data: '2026-11-04', periodoIdx: 1, cred: false },
+    ];
+    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 1);
+    assert.equal(corrigidos, 0);
+    assert.deepEqual(chamadasPatch, []);
+    assert.equal(contexto.Estado.lancamentos.find(r => r.id == 31).data, '2026-11-04');   // intocada
+});
+
 test('limpa marca de um redesenho anterior antes de recalcular', () => {
     const c = carregaMarcacao();
     const r = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', _dupCiclo: '2026-09-01' };
@@ -184,4 +229,5 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /a tabela Débito marca a\(s\) ocorrência\(s\) mais recente\(s\) do grupo \(a mais antiga fica como está\) com um botão "↷"/);
     assert.match(regras, /Um clique, com confirmação, move a `data` dessa linha pro 1º dia do PRÓXIMO ciclo/);
     assert.match(regras, /some sozinho se não houver próximo ciclo cadastrado ainda/);
+    assert.match(regras, /Antecipação\/pagamento de fatura nunca entra nessa detecção: é transferência, não recorrência/);
 });

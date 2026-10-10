@@ -341,8 +341,13 @@ function chaveDaRecorrencia(r) {
 function gruposComRecorrenciaDuplicadaEntreMeses(linhas) {
     // Uma recorrência continua sendo a mesma quando seu valor muda. Nome e categoria
     // identificam o compromisso; o valor é apenas o montante daquela ocorrência.
+    // Antecipação/pagamento de fatura é transferência, não recorrência (ver
+    // ehTransferenciaFatura em js/shared.js): duas antecipações de verdade no mesmo ciclo,
+    // em meses-calendário diferentes, são dois pagamentos distintos por si só — nunca "a
+    // mesma conta cortada pela janela do ciclo". Mover a data mudaria quando o dinheiro de
+    // verdade saiu da conta, por isso fica fora desta detecção desde a raiz.
     const mesesPorGrupo = {};
-    linhas.filter(ehLinhaReal).forEach(r => {
+    linhas.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r)).forEach(r => {
         const grupo = chaveDaRecorrencia(r);
         (mesesPorGrupo[grupo] = mesesPorGrupo[grupo] || new Set()).add(dataISO(r.data).slice(0, 7));
     });
@@ -367,7 +372,10 @@ function marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo) {
     const grupos = gruposComRecorrenciaDuplicadaEntreMeses(debitos);
     if (!grupos.size) return;
     const porGrupo = {};
-    debitos.filter(ehLinhaReal).forEach(r => {
+    // Segunda barreira, redundante com a de gruposComRecorrenciaDuplicadaEntreMeses de
+    // propósito: nenhuma antecipação/pagamento de fatura deve ganhar _dupCiclo, mesmo se
+    // seu nome+categoria coincidisse por acaso com outro grupo já marcado como duplicado.
+    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r)).forEach(r => {
         const grupo = chaveDaRecorrencia(r);
         if (!grupos.has(grupo)) return;
         (porGrupo[grupo] = porGrupo[grupo] || []).push(r);

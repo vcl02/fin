@@ -20,6 +20,10 @@ function regrasDaComparacao() {
             const texto = normalizar(valor);
             return texto.includes('antecipacao') && texto.includes('fatura');
         },
+        ehTransferenciaFatura: r => !r.cred && [r.categ, r.nome].some(v => {
+            const texto = normalizar(v);
+            return texto.includes('antecipacao') && texto.includes('fatura');
+        }),
         semAcento: normalizar,
         ehLinhaReal: linha => Number.isInteger(+linha.id) && +linha.id > 0 && !linha._sid && !linha._sim,
         dataISO: valor => String(valor || '').slice(0, 10),
