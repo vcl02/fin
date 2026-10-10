@@ -52,7 +52,7 @@ test('cada ciclo limpa os caches financeiros antes do próximo, pois o guardado 
     assert.match(formulario, /if \(resultado == 'consolidado'\) consolidados\+\+; else materializados\+\+;\s*\n\s*limparCachesFinanceiros\(\);/);
     assert.match(financeiro, /function limparCachesFinanceiros\(\) \{/);
     assert.match(financeiro, /Object\.keys\(_cacheSaldo\)\.forEach\(k => delete _cacheSaldo\[k\]\);/);
-    assert.match(financeiro, /_baseFiltrada = _abatFiltrada = _baseUnica = _abatUnica = null;/);
+    assert.match(financeiro, /_baseFiltrada = _abatFiltrada = null;/);
     // desenhar() passou a reaproveitar a mesma função, em vez de repetir as 5 linhas.
     assert.match(interacoes, /function desenhar\(\) \{\s*limparCachesFinanceiros\(\);/);
 });

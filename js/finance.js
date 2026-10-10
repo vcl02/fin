@@ -8,16 +8,6 @@ function baseEAbatFiltrados() {
     if (!_baseFiltrada) { _baseFiltrada = filtrarLancamentos(); _abatFiltrada = abatimentosDaBase(_baseFiltrada); }
     return { base: _baseFiltrada, abat: _abatFiltrada };
 }
-let _baseUnica = null, _abatUnica = null;
-function baseEAbatContaUnica() {
-    if (!_baseUnica) { _baseUnica = baseContaUnica(); _abatUnica = abatimentosDaBase(_baseUnica); }
-    return { base: _baseUnica, abat: _abatUnica };
-}
-function baseContaUnica() {
-    return Estado.lancamentos;
-}
-// as 4 caches acima (filtrada e conta unica) sao zeradas em desenhar() a cada redesenho.
-
 // Saldo bruto (ANTES de aplicar Resgate necessario / Aporte sugerido) de um ciclo, a partir de
 // uma lista `base` ja filtrada e o `abat` (alocacaoAntecipacoes) JA CALCULADO pra essa base —
 // nunca chame alocacaoAntecipacoes aqui dentro. `saldoAnteriorFn` devolve o saldo (com ajuste
@@ -63,9 +53,8 @@ function ajusteInvestimento(totalBase, guardadoDisponivel = Infinity) {
 
 // Total do bloco Debito de um ciclo: lancamentos + fatura + saldo do ciclo anterior + o
 // Resgate necessario / Aporte sugerido do proprio ciclo. E' recursivo — cada ciclo carrega o
-// anterior — e para no SALDO_DESDE. Respeita os filtros de Origem/Titular; pra conta unica
-// ignorando Titular, ver saldoCicloContaUnica. Memoizado (idx -> total, idx -> ajuste) porque
-// a cascata reprocessa os mesmos ciclos varias vezes por render.
+// anterior — e para no SALDO_DESDE. Memoizado (idx -> total, idx -> ajuste) porque a cascata
+// reprocessa os mesmos ciclos varias vezes por render.
 const _cacheSaldo = {};
 const _cacheAjuste = {};
 function saldoDoCiclo(idx) {
@@ -85,55 +74,23 @@ function saldoDoCiclo(idx) {
     _cacheSaldo[idx] = total;
     return total;
 }
-// Resgate necessario / Aporte sugerido de um ciclo (base "respeita filtros"). SEMPRE usar
-// esta funcao em vez de chamar totalBaseDoCiclo/ajusteInvestimento direto — ela reaproveita
-// o calculo memoizado de saldoDoCiclo, garantindo O(1) amortizado por idx no render inteiro.
+// Resgate necessario / Aporte sugerido de um ciclo. SEMPRE usar esta funcao em vez de chamar
+// totalBaseDoCiclo/ajusteInvestimento direto — ela reaproveita o calculo memoizado de
+// saldoDoCiclo, garantindo O(1) amortizado por idx no render inteiro.
 function ajusteDoCiclo(idx) {
     if (idx < 0 || !Estado.ciclos[idx] || dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return null;
     saldoDoCiclo(idx);   // efeito colateral: preenche _cacheAjuste[idx]
     return _cacheAjuste[idx] || null;
 }
 
-// Mesma logica de saldoDoCiclo, mas na base "conta unica" (so Pago, ignora Origem/
-// Titular) — usada por saldoPorDia e pela pizza de gastos, que ja tratavam a conta como
-// uma so antes desta mudanca. Cache proprio pra nao misturar com _cacheSaldo/_cacheAjuste.
-const _cacheSaldoUnico = {};
-const _cacheAjusteUnico = {};
-function saldoCicloContaUnica(idx) {
-    if (idx < 0 || !Estado.ciclos[idx]) return 0;
-    if (dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
-    if (_cacheSaldoUnico[idx] != null) return _cacheSaldoUnico[idx];
-
-    _cacheSaldoUnico[idx] = 0;
-
-    const { base, abat } = baseEAbatContaUnica();
-    const totalBase = totalBaseDoCiclo(idx, base, abat, saldoCicloContaUnica);
-    const ajuste = ajusteInvestimento(totalBase,
-        guardadoDisponivelNoCiclo(idx, base, guardadoAteContaUnica(idx - 1)));
-    _cacheAjusteUnico[idx] = ajuste;
-    const total = totalBase + (ajuste ? ajuste.v : 0);
-
-    _cacheSaldoUnico[idx] = total;
-    return total;
-}
-// Resgate necessario / Aporte sugerido de um ciclo (base "conta unica"). Mesma ideia de
-// ajusteDoCiclo, so que pra quem ignora o filtro de Titular (saldoPorDia, pizza de gastos).
-function ajusteDoCicloContaUnica(idx) {
-    if (idx < 0 || !Estado.ciclos[idx] || dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return null;
-    saldoCicloContaUnica(idx);
-    return _cacheAjusteUnico[idx] || null;
-}
-
-// Zera as 4 memoizações acima (saldo/ajuste, filtrado e conta única). desenhar() chama isso
+// Zera as 2 memoizações acima (saldo/ajuste e a base/abatimento). desenhar() chama isso
 // a cada redesenho; consolidar tudo também chama entre um ciclo e o próximo, pois materializar
 // o ajuste de um ciclo muda Estado.lancamentos e o guardado disponível do ciclo seguinte
 // (guardadoAte) precisa recalcular em cima do lançamento recém-criado, não do cache antigo.
 function limparCachesFinanceiros() {
     Object.keys(_cacheSaldo).forEach(k => delete _cacheSaldo[k]);
     Object.keys(_cacheAjuste).forEach(k => delete _cacheAjuste[k]);
-    Object.keys(_cacheSaldoUnico).forEach(k => delete _cacheSaldoUnico[k]);
-    Object.keys(_cacheAjusteUnico).forEach(k => delete _cacheAjusteUnico[k]);
-    _baseFiltrada = _abatFiltrada = _baseUnica = _abatUnica = null;
+    _baseFiltrada = _abatFiltrada = null;
 }
 
 // Saldo em conta ao fim de cada dia, acumulado desde SALDO_INICIAL. Considera o que
@@ -141,7 +98,7 @@ function limparCachesFinanceiros() {
 // linhas sinteticas de fatura, que representam apenas o restante a sair no vencimento, mais
 // o Resgate necessario / Aporte sugerido de cada ciclo (na data de fechamento dele) — pra
 // que cada pagamento de cartão entre uma vez, na sua data real, e o saldo final bata com
-// saldoCicloContaUnica(idx).
+// saldoDoCiclo(idx).
 // A exclusão por categoria é um recorte exclusivamente visual da tabela de Débito. Como
 // fatura e aporte/resgate sintéticos dependem da mesma base, este contexto local os refaz
 // junto com os eventos reais; reutilizar o cache da conta inteira misturaria o recorte com
@@ -219,16 +176,16 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
     return saldo;
 }
 
-// Ignora o filtro de Titular — a conta e' uma so. `baseVisual` só é enviada pela tabela
-// quando Categoria usa `!texto`; assim filtros de Nome, Valor e Frequência nunca mudam
-// o saldo diário, e os títulos/indicadores financeiros também permanecem intactos.
+// `baseVisual` só é enviada pela tabela quando Categoria usa `!texto`; assim filtros de
+// Nome, Valor e Frequência nunca mudam o saldo diário, e os títulos/indicadores financeiros
+// também permanecem intactos. Sem recorte, usa a mesma base/ajuste de saldoDoCiclo.
 function saldoPorDia(baseVisual = null) {
     if (baseVisual) {
         const abat = abatimentosDaBase(baseVisual);
         return saldoPorDiaDaBase(baseVisual, abat, ajusteDoCicloParaSaldoDiario(baseVisual, abat));
     }
-    const { base, abat } = baseEAbatContaUnica();
-    return saldoPorDiaDaBase(base, abat, ajusteDoCicloContaUnica);
+    const { base, abat } = baseEAbatFiltrados();
+    return saldoPorDiaDaBase(base, abat, ajusteDoCiclo);
 }
 
 
@@ -263,26 +220,6 @@ function guardadoDisponivelNoCiclo(idx, base, guardadoAnterior) {
         .reduce((s, r) => s - r.v, 0);
     return guardadoAnterior + reaisDoCiclo;
 }
-
-// Mesma logica de guardadoAte, mas na base "conta unica" (ignora o filtro de Titular) —
-// usada so' pra limitar o Resgate necessario de saldoCicloContaUnica/ajusteDoCicloContaUnica
-// (saldoPorDia, pizza de gastos), que tem que respeitar a MESMA base que calculou o saldo,
-// nunca misturar com a base filtrada por Titular que guardadoAte usa.
-function guardadoAteContaUnica(idx) {
-    const reais = baseContaUnica()
-        .filter(r => r.inv && r.periodoIdx != null && r.periodoIdx <= idx)
-        .reduce((s, r) => s - r.v, 0);
-
-    let hipotetico = 0;
-    for (let i = 0; i <= idx; i++) {
-        const ajuste = ajusteDoCicloContaUnica(i);
-        if (ajuste) hipotetico -= ajuste.v;
-    }
-
-    return reais + hipotetico;
-}
-
-
 
 // Visão "Ciclo": mostra um periodo por vez, com os blocos Debito e Credito (ou o Backlog).
 // O Crédito é uma prévia visual: no ciclo N mostra as compras da fatura do ciclo N+1.

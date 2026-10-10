@@ -440,7 +440,7 @@ function dadosDoGraficoCiclo(idxPeriodo) {
         r.periodoIdx == idxPeriodo && !r.cred && !ehTransferenciaFatura(r));
 
 
-    const ajuste = ajusteDoCicloContaUnica(idxPeriodo);
+    const ajuste = ajusteDoCiclo(idxPeriodo);
     const linhas = [
         ...doPeriodo,
         ajuste ? { categ: ajuste.categ, v: ajuste.v } : null,
