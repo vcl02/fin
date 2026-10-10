@@ -93,7 +93,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Essa conta só vê o bloco Débito (sem Crédito), e só navega entre o ciclo atual e o próximo (sem Backlog, sem ciclos mais antigos ou mais distantes, sem Comparar por intervalo — `atualizarCombos()` em `js/data-ui.js` nem oferece essas opções nos seletores).
 - A interface fica somente leitura: tabelas sem edição inline, sem Editar/Duplicar/Excluir/Materializar na barra de seleção (só soma e Limpar), sem cadastro de novo lançamento (`#abreNovo` escondido) e sem simulação (`#toggleSimulacao` escondido). Tocar uma linha ainda seleciona/desmarca pra somar valores — isso não grava nada.
 - Visualizações, Gráfico, Limpar filtros, Consolidar tudo e os indicadores financeiros (`#rowVis` inteiro) ficam escondidos; não há filtro por coluna nas tabelas.
-- Essa é uma restrição de interface, não uma política de banco: a segurança de dados de fato continua sendo responsabilidade do RLS do Supabase para essa conta, que é uma decisão separada (ver "Regras de dados e segurança" no `AGENTS.md`).
+- A casca somente leitura é só a interface; a garantia real vem do RLS de `fin` (migration 20): somente o mantenedor grava — `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele —, qualquer outra conta logada (inclusive a restrita) apenas lê e o papel anônimo não tem nenhum acesso. Uma escrita negada volta vazia ou com erro e a tela mostra o toast de falha, sem fingir sucesso. O DataGrip usa o papel dono do banco e não passa pelo RLS.
 - A categoria textual `Isabella` (fatura detalhada do cartão, ver "Faturas") é um conceito totalmente diferente: continua sendo só uma categoria em lançamentos, sem relação com a conta/e-mail restrita.
 
 ## Migrations
@@ -109,6 +109,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/15-recorrencia.sql` adiciona `fin.recorrencia_id` e a sequência usada para identificadores de recorrência.
 - `migrations/16-classificacoes-em-categorias.sql` preserva valores `isa` e `reserva` verdadeiros nas categorias `Isabella` e `Reserva emergência`, remove essas flags e também remove `ativo`.
 - `migrations/17-normalizar-categoria-reserva.sql` normaliza a categoria criada pela migration 16 para o nome já adotado no banco: `Reserva`.
+- `migrations/20-rls-somente-dono-escreve.sql` troca as policies de `fin` para que somente o mantenedor grava (pelo `auth.uid()`), contas logadas só leiam e `anon` perca todos os grants; também retira a execução pública de `rls_auto_enable()` e remove as sobras `fn_diferenca_ciclos` e `btree_gist`. Coberta por `node --test tests/rls-somente-dono.test.js`.
 
 ## Testes
 
