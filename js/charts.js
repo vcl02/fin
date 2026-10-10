@@ -85,8 +85,16 @@ function abrirVisualizacao(id) {
 
 function popularAlvosVisualizacao(valorSelecionado = '') {
     // O próprio controle da barra é o seletor: a opção vazia o devolve ao rótulo curto após
-    // abrir um detalhe, sem criar outro modal nem exigir uma confirmação extra.
-    el('visAlvo').replaceChildren(new Option('Visualizações', ''), ...OPCOES_VISUALIZACOES
+    // abrir um detalhe, sem criar outro modal nem exigir uma confirmação extra. A ordem é
+    // dinâmica — do mais próximo de acabar (maior % pago) pro mais longe — pra quem falta
+    // pouco aparecer sempre no topo, sem precisar abrir cada opção pra descobrir quem está
+    // quase lá. Recalculada aqui porque dadosVisualizacao() depende de Estado.lancamentos,
+    // que muda a cada carga/edição.
+    const ordenadas = OPCOES_VISUALIZACOES
+        .map(opcao => ({ opcao, pctPago: dadosVisualizacao(opcao.id).pctPago }))
+        .sort((a, b) => b.pctPago - a.pctPago)
+        .map(({ opcao }) => opcao);
+    el('visAlvo').replaceChildren(new Option('Visualizações', ''), ...ordenadas
         .map(opcao => new Option(opcao.rotulo, opcao.id)));
     if (opcaoDaVisualizacao(valorSelecionado)) el('visAlvo').value = valorSelecionado;
 }
