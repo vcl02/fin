@@ -357,7 +357,6 @@ function abreModalNovo(prefill, modoEdicao) {
         atualizarFaturasDoFormulario([]);
     }
     atualizaSinalUI();
-    atualizaAvisoFronteira();
     sugereModoValorParcelas();
 
     modalNovo.showModal();
@@ -369,7 +368,6 @@ function abreModalNovo(prefill, modoEdicao) {
 }
 el('fDataHoje').onclick = () => {
     el('fData').value = hojeISO();
-    atualizaAvisoFronteira();
 };
 
 // ===================================================================
@@ -936,7 +934,6 @@ async function submeteNovoLancamento() {
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
         el('fCateg').value = '';   // categoria vinha do nome; sem nome, nao faz sentido manter
-        atualizaAvisoFronteira();
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
         desenhar();
