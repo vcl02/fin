@@ -246,24 +246,6 @@ function dadosCompromissosCiclo(idxPeriodo) {
     const linhas = Estado.lancamentos
         .filter(r => r.periodoIdx == idxPeriodo)
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
-    // A fatura do cartão é um compromisso recorrente (ver categ "Fatura, Comprometido" na
-    // linha sintética que o bloco Débito mostra, montaLinhaFatura em js/cycle-views.js), mas
-    // essa linha nunca existe em Estado.lancamentos — é montada só na hora de desenhar. Sem
-    // isso aqui, o rótulo "Comprometido" ficaria só de fachada, sem entrar no percentual.
-    // Exclui da soma as compras no cartão que o próprio usuário já marcou "Comprometido"
-    // (ex.: uma parcela de curso — confirmado que existe de verdade nos dados, não é só
-    // teórico): essas já entram via o filtro normal de linhas reais dentro de
-    // dadosCompromissosDoCiclo; somar a fatura inteira por cima as contaria duas vezes.
-    const abatido = alocacaoAntecipacoes(Estado.lancamentos);
-    const brutoFaturaSemComprometido = Estado.lancamentos
-        .filter(r => r.cred && r.periodoIdx == idxPeriodo && !categoriaContemCompromisso(r.categ, 'Comprometido'))
-        .reduce((soma, r) => soma + r.v, 0);
-    const liquidoFatura = brutoFaturaSemComprometido
-        ? brutoFaturaSemComprometido + (abatido[idxPeriodo] || 0)
-        : 0;
-    if (Math.abs(liquidoFatura) > TOLERANCIA_FINANCEIRA) {
-        linhas.push({ categ: 'Fatura, Comprometido', v: liquidoFatura, _transferencia: false });
-    }
     return { periodo, ...dadosCompromissosDoCiclo(linhas) };
 }
 

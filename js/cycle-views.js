@@ -37,10 +37,7 @@ function vCiclo() {
         const sid = `fat:${i}`;
         Estado.valorFaturaPorCiclo[sid] = liquido;
         return {
-            // Fatura também conta como Comprometido (ver dadosCompromissosCiclo em
-            // js/charts.js, que precisa somar o mesmo valor líquido por fora — esta linha
-            // nunca entra em Estado.lancamentos, só existe aqui na hora de desenhar).
-            data: venc || periodo.fat, nome: 'Fatura do cartão', categ: 'Fatura, Comprometido',
+            data: venc || periodo.fat, nome: 'Fatura do cartão', categ: 'Fatura',
             freq: '', id: -3, v: liquido, valor: liquido, _fat: 1, _sid: sid,
         };
     };
