@@ -638,13 +638,14 @@
 
   /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
      #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
-     tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. */
-  .togPago {
+     tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. togFlag
+     (Reserva/Comprometido) usa o mesmo esquema visual, so' que normalmente mostra "—". */
+  .togPago, .togFlag {
       cursor: pointer;
       transition: opacity .15s ease;
   }
 
-  .togPago:hover {
+  .togPago:hover, .togFlag:hover {
       text-decoration: underline dotted;
       text-underline-offset: .2em;
   }

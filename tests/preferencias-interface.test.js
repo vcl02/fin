@@ -196,10 +196,13 @@ test('conta restrita (Isabella) é identificada por e-mail, não a interface ger
     assert.match(estado, /const modoSimples = \(\) => modoRestrito\(\);/);
     assert.match(bootstrap, /Estado\.emailSessao = session\.user\?\.email \|\| null;/);
     assert.match(bootstrap, /Estado\.emailSessao = data\.user\?\.email \|\| null;/);
-    // Flags antigas de modo restrito (form com checkbox fIsa/reserva) continuam fora —
-    // essa reintrodução é só a checagem de e-mail, não aquele mecanismo antigo.
+    // Flag antiga de modo restrito (form com checkbox fIsa) continua fora — essa
+    // reintrodução é só a checagem de e-mail, não aquele mecanismo antigo. `reserva` em
+    // formulario já não é mais esse flag: é o bit fin.reserva do PRÓPRIO lançamento
+    // (reserva de emergência, sem nenhuma relação com a conta — ver migration 22 e
+    // tests/comparar-reserva.test.js), reintroduzido de propósito.
     assert.doesNotMatch(pagina, /id=fIsa|id=fReservaEmergencia/);
-    assert.doesNotMatch(formulario, /\bisa\b|\breserva\b/);
+    assert.doesNotMatch(formulario, /\bisa\b/);
     assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
     // A categoria textual "Isabella" (fatura do cartão) é outro conceito: a nota de que
     // "ela" (a categoria) não muda a interface continua valendo, sem relação com a conta.

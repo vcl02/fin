@@ -258,6 +258,20 @@ const celCanal = r => {
     return `${texto}${copiar}${link}`;
 };
 
+// Reserva/Comprometido são marcas raras (bit fin.reserva/fin.comprometido — ver migration
+// 22 — a maioria dos lançamentos não é nenhuma das duas): diferente de Pago, que é sempre
+// um estado relevante pra qualquer lançamento real, aqui "falso" fica em "—" em vez de
+// repetir um texto negativo em toda linha; só "verdadeiro" ganha destaque. Mesma permissão
+// de Pago (nunca em linha sintética nem na conta restrita), clicável pra alternar na hora.
+const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido' };
+const celFlag = (r, chave) => {
+    const marcado = !!r[chave];
+    const texto = marcado ? ROTULO_FLAG[chave] : '—';
+    return !r._sid && !modoRestrito()
+        ? `<span class="${marcado ? 'vd' : ''} togFlag" data-tog-flag="${chave}:${escapeHtml(String(r.id))}" title="Alternar ${ROTULO_FLAG[chave]}">${texto}</span>`
+        : texto;
+};
+
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
 // clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; só a conta restrita
 // (modoRestrito) vê tudo como texto simples, nunca editável.
@@ -266,6 +280,7 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
         : (ehLinhaReal(r) && !modoRestrito() ? celValorEditavel(r) : celValorLancamento(r))).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
+    : tipo == 'b' && chave != 'pago' ? `<td>${celFlag(r, chave)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (modoRestrito() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`

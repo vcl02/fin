@@ -15,6 +15,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
+    ['reserva', 'Reserva', 'b'], ['comprometido', 'Comprometido', 'b'],
     ['prio', 'Prio', 'n'], ['obs', 'Obs', 't'], ['canal', 'Canal', 't'], ['id', 'ID', 'n'],
 ];
 // Mesmas colunas do desktop no mobile: a tabela já tinha rolagem horizontal própria
