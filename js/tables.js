@@ -79,21 +79,25 @@ window.filtrarColuna = (idTabela, coluna, input) => {
     const novoInput = document.querySelector(`[data-filtro="${idTabela}|${coluna}"]`);
     if (novoInput) { novoInput.focus(); if (posicaoCursor != null) novoInput.setSelectionRange(posicaoCursor, posicaoCursor); }
 };
-// Extrai somente a exclusão explícita de Categoria. A mesma leitura serve para o filtro
-// da linha e para o saldo diário, sem deixar filtros visuais de outras colunas alterarem caixa.
-function categoriaExcluidaDoFiltro(termo) {
+// Extrai todos os termos de exclusão de um campo que começa com "!": cada "!" seguinte
+// inicia outro termo excluído, em AND — "!Besteira!Assinatura" exclui as duas. Pedaços
+// vazios (ex.: "!!" ou "!Besteira!") são ignorados, igual aos pedaços vazios de "|". A
+// mesma leitura serve para o filtro da linha (Categoria e Nome) e para o saldo diário, sem
+// deixar filtros visuais de outras colunas alterarem caixa.
+function termosExcluidosDoFiltro(termo) {
     const normalizado = semAcento(termo);
-    return normalizado.startsWith('!') ? normalizado.slice(1).trim() : '';
+    if (!normalizado.startsWith('!')) return [];
+    return normalizado.split('!').map(t => t.trim()).filter(Boolean);
 }
 
 // O saldo cinza ao fim do dia acompanha exclusivamente `!Categoria`: é a única busca que
 // remove movimentos da conta. A cópia protege o array carregado de qualquer mutação no render.
 function baseParaSaldoDiario(idTabela) {
-    const categoriaExcluida = idTabela == 'db'
-        ? categoriaExcluidaDoFiltro(estadoFiltroTexto(idTabela).categ)
-        : '';
-    return categoriaExcluida
-        ? Estado.lancamentos.filter(r => !semAcento(r.categ).includes(categoriaExcluida))
+    const termosExcluidos = idTabela == 'db'
+        ? termosExcluidosDoFiltro(estadoFiltroTexto(idTabela).categ)
+        : [];
+    return termosExcluidos.length
+        ? Estado.lancamentos.filter(r => !termosExcluidos.some(t => semAcento(r.categ).includes(t)))
         : null;
 }
 
@@ -125,12 +129,13 @@ function passaFiltroTexto(r, idTabela) {
         // nada preenchido naquela coluna — mesmo critério da célula "—" (ehVazioTextual).
         // Não combina com ! nem |: é um atalho isolado, igual aos outros desta função.
         if (termoNormalizado.trim() == 'vazio') return ehVazioTextual(r[coluna]);
-        // Categorias podem ser compostas (por exemplo, "Casa, Reserva"). O ! é
-        // propositalmente exclusivo deste campo para não mudar a busca literal de Nome
-        // ou Frequência. ! isolado equivale a filtro vazio e evita ocultar toda a tabela.
-        if (coluna == 'categ' && termoNormalizado.startsWith('!')) {
-            const termoExcluido = categoriaExcluidaDoFiltro(termo);
-            return !termoExcluido || !texto.includes(termoExcluido);
+        // Categoria (pode ser composta, ex.: "Casa, Reserva") e Nome aceitam "!" pra
+        // excluir — um ou mais termos encadeados, em AND (ver termosExcluidosDoFiltro).
+        // Frequência nunca entra aqui: mantém a busca literal normal. "!" isolado (ou só
+        // pedaços vazios) equivale a filtro vazio e evita ocultar toda a tabela.
+        if ((coluna == 'categ' || coluna == 'nome') && termoNormalizado.startsWith('!')) {
+            const termosExcluidos = termosExcluidosDoFiltro(termo);
+            return !termosExcluidos.length || termosExcluidos.every(t => !texto.includes(t));
         }
         // '|' funciona como OU em qualquer coluna de texto: "Assinatura|Isabella" acha
         // linhas que contenham qualquer um dos termos, não só os dois juntos. '|' sozinho

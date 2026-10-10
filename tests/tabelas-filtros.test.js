@@ -19,7 +19,7 @@ function filtros() {
 }
 
 function filtroDeTexto() {
-    const inicio = fonte.indexOf('function categoriaExcluidaDoFiltro');
+    const inicio = fonte.indexOf('function termosExcluidosDoFiltro');
     const fim = fonte.indexOf('\n// clique no header', inicio);
     if (inicio < 0 || fim < 0) throw Error('Não encontrou o filtro textual da tabela.');
     const contexto = {
@@ -35,7 +35,7 @@ function filtroDeTexto() {
         },
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { passaFiltroTexto, categoriaExcluidaDoFiltro, baseParaSaldoDiario };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { passaFiltroTexto, termosExcluidosDoFiltro, baseParaSaldoDiario };`, contexto);
     return contexto;
 }
 
@@ -66,15 +66,60 @@ test('Categoria aceita ! para inverter uma busca sem diferenciar caixa ou acento
     );
 });
 
-test('! isolado em Categoria não filtra e os outros campos mantêm busca literal', () => {
+test('! isolado em Categoria não filtra; Frequência mantém busca literal (nunca exclui)', () => {
     const c = filtroDeTexto();
     c.Estado.filtroTexto.debito = { categ: '!' };
     assert.deepEqual(
         linhas.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
         [1, 2, 3, 4],
     );
-    c.Estado.filtroTexto.debito = { nome: '!casa' };
+    // Frequência não é Categoria nem Nome: "!mensal" é buscado literalmente, não exclui nada.
+    c.Estado.filtroTexto.debito = { freq: '!mensal' };
     assert.deepEqual(linhas.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')), []);
+});
+
+test('Nome também aceita ! para excluir, igual a Categoria', () => {
+    const c = filtroDeTexto();
+    const linhasComNome = [
+        { id: 70, nome: 'Besteira Café' },
+        { id: 71, nome: 'Assinatura Netflix' },
+        { id: 72, nome: 'Mercado' },
+    ];
+    c.Estado.filtroTexto.debito = { nome: '!besteira' };
+    assert.deepEqual(
+        linhasComNome.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [71, 72],
+    );
+});
+
+test('mais de um ! encadeia exclusões em AND, em Categoria e em Nome', () => {
+    const c = filtroDeTexto();
+    const linhasComNome = [
+        { id: 80, nome: 'Café', categ: 'Besteira' },
+        { id: 81, nome: 'Netflix', categ: 'Assinatura' },
+        { id: 82, nome: 'Mercado', categ: 'Casa' },
+    ];
+    c.Estado.filtroTexto.debito = { categ: '!besteira!assinatura' };
+    assert.deepEqual(
+        linhasComNome.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [82],
+    );
+    const linhasComNomeVariado = [
+        { id: 90, nome: 'Besteira Café' },
+        { id: 91, nome: 'Assinatura Netflix' },
+        { id: 92, nome: 'Mercado' },
+    ];
+    c.Estado.filtroTexto.debito = { nome: '!besteira!assinatura' };
+    assert.deepEqual(
+        linhasComNomeVariado.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [92],
+    );
+    // pedaço vazio (ex.: "!Besteira!") é ignorado, igual ao "!" isolado
+    c.Estado.filtroTexto.debito = { nome: '!besteira!' };
+    assert.deepEqual(
+        linhasComNomeVariado.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [91, 92],
+    );
 });
 
 test('"|" funciona como OU em qualquer coluna de texto, sem diferenciar caixa ou acento', () => {
@@ -203,4 +248,12 @@ test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer
     );
     c.Estado.filtroTexto.db = { categ: 'Casa' };
     assert.equal(c.regras.baseParaSaldoDiario('db'), null);
+    // mais de um ! também exclui em AND na base do saldo diário
+    c.Estado.filtroTexto.db = { categ: '!casa!isabella' };
+    assert.deepEqual(Array.from(c.regras.baseParaSaldoDiario('db')).map(linha => linha.id), []);
+});
+
+test('exclusão por ! de Categoria/Nome (uma ou mais) documentada em REGRAS.md', () => {
+    assert.match(regras, /\*\*Categoria\*\* e \*\*Nome\*\* aceitam o prefixo `!` para inverter a busca/);
+    assert.match(regras, /Mais de um `!` encadeia exclusões em AND — `!Besteira!Assinatura` mostra só as linhas que não contêm nem uma nem a outra/);
 });
