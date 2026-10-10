@@ -77,7 +77,7 @@ async function carregarDados() {
         fat: ancoras[i + 1] ? somaDias(dataISO(ancoras[i + 1].data), -1) : '9999-12-31',
     }));
     Estado.lancamentos = lancamentosCrus.map(r => {
-        const faturaRef = r.fatura || r.fatura_id;
+        const faturaRef = r.fatura;
         const periodoIdx = !r.data && !faturaRef ? null
             : r.cred ? periodoDaFatura(faturaRef) : periodoDoDebito(dataISO(r.data));
         const categ = normalizaCategorias(r.categ) || null;

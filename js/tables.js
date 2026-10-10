@@ -190,7 +190,7 @@ const celData = r => {
 const celNome = r => {
     const sim = r._sim ? '<span class=simIco title="Simulado">✦</span> ' : '';
     const nome = escapeHtml(textoOuTraco(r.nome));
-    const fatRef = r.fatura || r.fatura_id;
+    const fatRef = r.fatura;
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
         ? ` <span class="tagFatura" title="Abate fatura">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
         : '';

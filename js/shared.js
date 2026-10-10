@@ -294,7 +294,7 @@ function alocacaoAntecipacoes(linhas) {
     const abatido = {};
     let p = 0;                                                  // ponteiro no fallback cronologico
     antecipacoes.forEach(r => {
-        const refVenc = r.fatura || r.fatura_id;
+        const refVenc = r.fatura;
         if (refVenc) {
             // vinculo explicito: abate direto na fatura apontada pelo vencimento
             const f = faturas.find(x => x.vencimento != null && String(x.vencimento) === dataISO(refVenc));

@@ -77,7 +77,7 @@ function validarLancamentosCarregados(lancamentos) {
         ['cred', 'pago'].forEach(campo => {
             if (!ehBooleanoOuNulo(lancamento[campo])) inconsistencias.push(`${prefixo}: ${campo} precisa ser booleano.`);
         });
-        if (lancamento.cred === true && !(lancamento.fatura || lancamento.fatura_id)) {
+        if (lancamento.cred === true && !lancamento.fatura) {
             inconsistencias.push(`${prefixo}: crédito sem fatura vinculada.`);
         }
 

@@ -190,7 +190,7 @@ function opcoesFaturasDisponiveis() {
     // DISTINCT estrito de todas as datas de vencimento que realmente existem nos lancamentos
     const faturasSet = new Set();
     Estado.lancamentos.forEach(r => {
-        const v = r.fatura || r.fatura_id;
+        const v = r.fatura;
         if (v) faturasSet.add(dataISO(v));
     });
 
@@ -337,7 +337,7 @@ function abreModalNovo(prefill, modoEdicao) {
         el('fCateg').value = prefill.categ || '';
         el('fData').value = dataISO(prefill.data) || '';
         el('fCred').checked = !!prefill.cred;
-        const fatRef = prefill.fatura || prefill.fatura_id;
+        const fatRef = prefill.fatura;
         atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao

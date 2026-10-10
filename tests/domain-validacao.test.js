@@ -81,14 +81,6 @@ test('avisa sobre contrato inválido sem alterar os dados recebidos', () => {
     assert.ok(diagnostico.inconsistencias.some(aviso => aviso.includes('pago precisa ser booleano')));
 });
 
-test('aceita referência legada por fatura_id sem tratar id numérico como data', () => {
-    const diagnostico = dominio.validarLancamentosCarregados([{
-        id: 12, data: '2026-09-21', valor: -10, nome: 'Compra antiga', categ: 'Casa',
-        cred: true, pago: false, fatura_id: 8,
-    }]);
-    assert.ok(!diagnostico.inconsistencias.some(aviso => aviso.includes('crédito sem fatura vinculada')));
-});
-
 test('avisa quando o mesmo mês de fatura usa mais de um dia de vencimento', () => {
     const diagnostico = dominio.validarLancamentosCarregados([
         { id: 40, data: '2026-10-05', valor: -90, nome: 'Compra A', categ: 'Casa', cred: true, pago: true, fatura: '2026-10-12' },
@@ -97,14 +89,6 @@ test('avisa quando o mesmo mês de fatura usa mais de um dia de vencimento', () 
     ]);
     assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Fatura de 2026-10 tem vencimento em mais de um dia')));
     assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Fatura de 2026-11')));
-});
-
-test('não avisa de fatura com dia duplicado quando fatura_id legado não é data', () => {
-    const diagnostico = dominio.validarLancamentosCarregados([
-        { id: 43, data: '2026-10-05', valor: -90, nome: 'Compra A', categ: 'Casa', cred: true, pago: false, fatura_id: 7 },
-        { id: 44, data: '2026-10-06', valor: -90, nome: 'Compra B', categ: 'Casa', cred: true, pago: false, fatura_id: 7 },
-    ]);
-    assert.deepEqual(Array.from(diagnostico.avisos), []);
 });
 
 test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos à frente (a prévia normal é 1)', () => {

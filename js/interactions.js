@@ -476,7 +476,7 @@ el('out').addEventListener('change', e => {
 // 'data' (ex.: veio do Backlog e ganhou uma fatura na transformacao Debito -> Credito)
 // ainda classifica certo pelo vencimento — so' cai no Backlog quando faltam as DUAS coisas.
 function reclassificaPeriodo(r) {
-    const faturaRef = r.fatura || r.fatura_id;
+    const faturaRef = r.fatura;
     const idx = !r.data && !faturaRef ? null
         : r.cred ? periodoDaFatura(faturaRef)
             : periodoDoDebito(dataISO(r.data));
