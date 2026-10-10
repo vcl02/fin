@@ -217,12 +217,19 @@ const celCanal = r => {
     const texto = ehLinhaReal(r) && !modoRestrito()
         ? `<span class="togCanal" data-tog-canal="${escapeHtml(String(r.id))}" title="Editar canal">${textoVisivel}</span>`
         : `<span class=celCanalTexto>${textoVisivel}</span>`;
+    if (!bruto) return texto;
+    // Copiar sempre que houver texto — inclusive chave Pix, que nao e' um link pra abrir.
+    // So' quando e' http(s) o botao de abrir aparece ao lado (ver handler em
+    // interactions.js e ehUrlHttp acima).
+    const copiar = ` <button type=button class=copiarCanal data-copiar-canal="${escapeHtml(String(r.id))}" title="Copiar" aria-label="Copiar" onclick="event.stopPropagation()">` +
+        `<svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>` +
+        `<rect x=9 y=9 width=11 height=11 rx=2 /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>`;
     const link = ehUrlHttp(bruto)
         ? ` <a class=linkCanal href="${escapeHtml(bruto)}" target=_blank rel="noopener noreferrer" title="Abrir link" aria-label="Abrir link" onclick="event.stopPropagation()">` +
             `<svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>` +
             `<path d="M10 14 21 3" /><path d="M15 3h6v6" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg></a>`
         : '';
-    return `${texto}${link}`;
+    return `${texto}${copiar}${link}`;
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/

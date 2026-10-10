@@ -849,6 +849,22 @@ el('out').addEventListener('click', e => {
     input.select();
 });
 
+// clique no botão de copiar do Canal: copia o texto bruto pra área de transferência — link
+// ou chave Pix, tanto faz, não entra em edição nem seleciona a linha (disponível mesmo na
+// conta restrita/mobile, já que copiar não altera dado nenhum).
+el('out').addEventListener('click', e => {
+    const botao = e.target.closest('[data-copiar-canal]');
+    if (!botao) return;
+    e.stopImmediatePropagation();
+    const id = botao.dataset.copiarCanal;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r || !r.canal) return;
+    navigator.clipboard.writeText(String(r.canal)).then(
+        () => mostrarToast('Copiado', String(r.canal)),
+        () => mostrarToast('Falhou ao copiar', 'Tente selecionar e copiar manualmente.'),
+    );
+});
+
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;

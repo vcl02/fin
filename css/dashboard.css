@@ -660,11 +660,12 @@
       vertical-align: middle;
   }
 
-  /* Icone de abrir link ao lado do Canal, so' quando o texto e' uma URL http(s) (ver
-     celCanal em tables.js) — pedido explicito: fica em EVIDENCIA (mesmo círculo do botão
-     de ajuda do cadastro, só que sem o tom apagado), nunca cortado pelo texto truncado ao
-     lado, já que não faz parte da caixa com overflow escondido. */
-  .linkCanal {
+  /* Botões de copiar/abrir ao lado do Canal (ver celCanal em tables.js): copiar aparece
+     sempre que houver texto (serve pra chave Pix tambem, que nao e' um link); abrir so'
+     quando o texto e' uma URL http(s) — pedido explicito: ficam em EVIDENCIA (mesmo
+     círculo do botão de ajuda do cadastro, só que sem o tom apagado), nunca cortados pelo
+     texto truncado ao lado, já que não fazem parte da caixa com overflow escondido. */
+  .linkCanal, .copiarCanal {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -681,7 +682,7 @@
       color: var(--fg);
   }
 
-  .linkCanal:hover {
+  .linkCanal:hover, .copiarCanal:hover {
       background: var(--field-hover);
       border-color: var(--fg);
   }

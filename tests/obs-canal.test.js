@@ -23,9 +23,10 @@ test('célula Obs só é clicável pra linha real fora da conta restrita', () =>
     assert.match(tabelas, /chave == 'obs' \? celObs\(r\)/);
 });
 
-test('célula Canal é clicável igual às demais, e ganha ícone de link quando o valor é http(s)', () => {
+test('célula Canal é clicável igual às demais, ganha ícone de copiar sempre que houver valor, e ícone de link extra quando o valor é http(s)', () => {
     assert.match(tabelas, /const ehUrlHttp = texto => \/\^https\?:\\\/\\\/\/i\.test/);
     assert.match(tabelas, /class="togCanal" data-tog-canal=/);
+    assert.match(tabelas, /class=copiarCanal data-copiar-canal="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
     assert.match(tabelas, /class=linkCanal href="\$\{escapeHtml\(bruto\)\}" target=_blank rel="noopener noreferrer"/);
     assert.match(tabelas, /onclick="event\.stopPropagation\(\)"/);
     assert.match(tabelas, /chave == 'canal' \? celCanal\(r\)/);
@@ -48,32 +49,36 @@ function carregaCelCanal({ linhaReal = true, restrito = false } = {}) {
     return contexto.celCanal;
 }
 
-test('Canal com URL http(s) mostra o ícone de link; texto comum não mostra', () => {
+test('Canal com URL http(s) mostra os ícones de copiar e de link; texto comum (chave Pix) mostra só o de copiar; vazio não mostra nenhum', () => {
     const celCanal = carregaCelCanal();
     const comLink = celCanal({ id: 9, canal: 'https://www.enel.com.br/minha-conta' });
+    assert.match(comLink, /class=copiarCanal/);
     assert.match(comLink, /class=linkCanal/);
     assert.match(comLink, /href="https:\/\/www\.enel\.com\.br\/minha-conta"/);
 
-    const semLink = celCanal({ id: 9, canal: 'Ligação telefônica' });
+    const semLink = celCanal({ id: 9, canal: 'chave-pix@banco.com' });
+    assert.match(semLink, /class=copiarCanal/);
     assert.doesNotMatch(semLink, /class=linkCanal/);
 
     const vazio = celCanal({ id: 9, canal: null });
+    assert.doesNotMatch(vazio, /class=copiarCanal/);
     assert.doesNotMatch(vazio, /class=linkCanal/);
 });
 
-test('conta restrita/linha não-real também trunca o texto do Canal (celCanalTexto), só sem o clique de edição', () => {
+test('conta restrita/linha não-real também trunca o texto do Canal (celCanalTexto), só sem o clique de edição — mas copiar/abrir continuam disponíveis', () => {
     const celCanal = carregaCelCanal({ restrito: true });
     const html = celCanal({ id: 9, canal: 'https://www.enel.com.br/minha-conta' });
     assert.match(html, /class=celCanalTexto/);
     assert.doesNotMatch(html, /data-tog-canal/);
-    assert.match(html, /class=linkCanal/);   // o ícone de link continua aparecendo
+    assert.match(html, /class=copiarCanal/);   // copiar continua disponível (não altera dado)
+    assert.match(html, /class=linkCanal/);     // o ícone de link continua aparecendo
 });
 
-test('estilos: Canal tem largura fixa com reticências; o ícone de link fica em evidência, sem ser cortado', () => {
+test('estilos: Canal tem largura fixa com reticências; os ícones de copiar/link ficam em evidência, sem serem cortados', () => {
     assert.match(estilos, /\.togCanal, \.celCanalTexto \{/);
     assert.match(estilos, /max-width: 9rem;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;\s*\n\s*white-space: nowrap;/);
-    assert.match(estilos, /\.linkCanal \{[\s\S]*?flex: none;/);
-    assert.match(estilos, /\.linkCanal \{[\s\S]*?border-radius: 50%;/);
+    assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?flex: none;/);
+    assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?border-radius: 50%;/);
 });
 
 test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', () => {
@@ -86,6 +91,13 @@ test('clique em Obs abre input de texto livre; clique em Canal idem, com placeho
     assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ canal: novo \|\| null \}\);/);
 });
 
+test('clique no ícone de copiar do Canal usa a Clipboard API e nunca entra em edição', () => {
+    assert.match(interacoes, /const botao = e\.target\.closest\('\[data-copiar-canal\]'\);/);
+    assert.match(interacoes, /navigator\.clipboard\.writeText\(String\(r\.canal\)\)\.then\(/);
+    assert.match(interacoes, /mostrarToast\('Copiado', String\(r\.canal\)\)/);
+    assert.match(interacoes, /mostrarToast\('Falhou ao copiar'/);
+});
+
 test('migration já aplicada pelo mantenedor, documentada no repo', () => {
     assert.match(migracao, /^-- /);
     assert.match(migracao, /add column obs varchar\(255\);/);
@@ -95,7 +107,10 @@ test('migration já aplicada pelo mantenedor, documentada no repo', () => {
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`fin\.obs` \(observação livre\) e `fin\.canal`/);
     assert.match(regras, /A coluna Canal tem largura fixa: texto que não couber vira "…"/);
-    assert.match(regras, /ganha um ícone redondo de abrir link numa aba nova ao lado do texto/);
-    assert.match(regras, /fica sempre em evidência, nunca cortado pelo texto truncado/);
-    assert.match(regras, /Nenhum dos dois participa de cálculo financeiro/);
+    assert.match(regras, /Sempre que Canal tiver algum valor, a célula ganha um ícone redondo de copiar o texto pra área de transferência/);
+    assert.match(regras, /serve pra chave Pix, que não é um link pra abrir/);
+    assert.match(regras, /Quando o valor também é uma URL `http\(s\)`, aparece um segundo ícone redondo de abrir link numa aba nova/);
+    assert.match(regras, /Os dois ícones ficam sempre em evidência, nunca cortados pelo texto truncado/);
+    assert.match(regras, /funcionam mesmo na conta restrita\/mobile, já que copiar ou abrir não altera dado nenhum/);
+    assert.match(regras, /Nenhum dos dois campos participa de cálculo financeiro/);
 });
