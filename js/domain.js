@@ -44,6 +44,10 @@ function definirLimiteCartao(valor) {
     return true;
 }
 
+// Sem uso em produção: todo outro módulo lê LIMITE_CARTAO direto, já que scripts
+// classicos compartilham o mesmo escopo global. Existe só pra teste poder ler o valor
+// atual de volta depois de definirLimiteCartao() — um `let` sandboxado em vm não vira
+// propriedade legível do contexto, só um closure (esta função) consegue ver a mutação.
 const limiteCartaoContratado = () => LIMITE_CARTAO;
 const TOLERANCIA_FINANCEIRA = 0.005;
 const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;

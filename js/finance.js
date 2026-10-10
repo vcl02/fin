@@ -282,24 +282,6 @@ function guardadoAteContaUnica(idx) {
     return reais + hipotetico;
 }
 
-// HTML do saldo de um ciclo com o mesmo tratamento usado no titulo do bloco Debito: ciclo
-// equalizado (saldo ~0) vira destaque verde de sucesso — "R$ 0,00" sem nada guardado, ou
-// so' o valor guardado quando houver (o guardado ja fala por si, sem repetir o "R$ 0,00").
-// Saldo negativo (faltou) continua mostrando o valor normal, sem tratamento especial. Usado
-// tanto no titulo do bloco Debito (vCiclo) quanto na linha Total da matriz Comparar, pra os
-// dois lugares sempre concordarem sobre o mesmo mes.
-function celulaSaldoCiclo(idx) {
-    const total = saldoDoCiclo(idx);
-    const guardado = guardadoAte(idx);
-    const temGuardado = Math.abs(guardado) > 0.005;
-    if (Math.abs(total) < 0.005) {
-        // guardado pode ser NEGATIVO (resgatou mais do que aportou historicamente) — a
-        // cor segue o sinal de verdade, nunca fixa em verde
-        return temGuardado ? `<b class="${corValor(guardado)}">${brl(guardado)}</b>` : `<b class=vd>${brl(0)}</b>`;
-    }
-    return `<span class="${corSoma(total)}">${brl(total)}</span>`;
-}
-
 
 
 // Visão "Ciclo": mostra um periodo por vez, com os blocos Debito e Credito (ou o Backlog).

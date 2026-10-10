@@ -29,11 +29,6 @@ function ordenarLinhas(linhas, idTabela) {
     return copia;
 }
 
-function atualizaAvisoFronteira() {
-    // A fatura e' escolhida manualmente no formulario; nao existe mais aviso de fechamento.
-    el('avisoFr').hidden = true;
-}
-
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
     const cols = colunasAtivas(idTabela);
@@ -146,10 +141,6 @@ window.sortComp = k => {
     else oc.d = oc.d == 1 ? 2 : 1;
     desenhar();
 };
-
-['fData', 'fNome', 'fCred'].forEach(id =>
-    el(id).addEventListener('change', atualizaAvisoFronteira));
-el('fNome').addEventListener('input', atualizaAvisoFronteira);
 
 // ===================================================================
 // RENDERIZAÇÃO DE TABELAS
