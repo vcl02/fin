@@ -32,9 +32,9 @@ vm.runInContext(`${fonte.slice(inicio, fim)}; globalThis.regras = {
 test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', () => {
     const d = contexto.regras.calcular([
         { nome: 'Faturamento PJ', categ: 'Évora', v: 10000 },
-        { nome: 'Curso', categ: 'Casa, Comprometido', v: -900, cred: true },
-        { nome: 'Aluguel', categ: 'Comprometido', v: -3500, cred: false },
-        { nome: 'Antecipação', categ: 'Comprometido', v: -700, _transferencia: true },
+        { nome: 'Curso', categ: 'Casa', comprometido: true, v: -900, cred: true },
+        { nome: 'Aluguel', categ: '', comprometido: true, v: -3500, cred: false },
+        { nome: 'Antecipação', categ: '', comprometido: true, v: -700, _transferencia: true },
     ]);
     const [comprometido] = d.limites;
     assert.equal(d.faturamento, 10000);
@@ -46,7 +46,7 @@ test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', (
 });
 
 test('sem faturamento o limite permanece zerado', () => {
-    const d = contexto.regras.calcular([{ nome: 'Conta', categ: 'Comprometido', v: -200 }]);
+    const d = contexto.regras.calcular([{ nome: 'Conta', categ: '', comprometido: true, v: -200 }]);
     assert.equal(d.faturamento, 0);
     assert.equal(d.limites[0].valor, 200);
     assert.equal(d.limites[0].teto, 0);
@@ -55,10 +55,10 @@ test('sem faturamento o limite permanece zerado', () => {
 
 test('proporção de Reserva separa o gasto inteiro dos demais sem duplicar categoria composta', () => {
     const d = contexto.regras.proporcaoReserva([
-        { nome: 'Casa', categ: 'Casa, Reserva', v: -300, cred: false },
+        { nome: 'Casa', categ: 'Casa', reserva: true, v: -300, cred: false },
         { nome: 'Mercado', categ: 'Alimentação', v: -500, cred: false },
-        { nome: 'Compra', categ: 'Reserva', v: -200, cred: true },
-        { nome: 'Antecipação', categ: 'Reserva', v: -100, _transferencia: true },
+        { nome: 'Compra', categ: '', reserva: true, v: -200, cred: true },
+        { nome: 'Antecipação', categ: '', reserva: true, v: -100, _transferencia: true },
     ]);
     assert.deepEqual({ ...d }, {
         total: 1000, reserva: 500, demais: 500,

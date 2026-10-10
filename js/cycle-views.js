@@ -303,12 +303,11 @@ function vCiclo() {
 }
 
 // Visão "Comparar": uma matriz [categoria/nome/etc × periodo], com totais por linha e coluna.
-// Reserva é uma marca para a meta própria. Na comparação ela nunca vira uma categoria: se
-// coexistir com outra, preserva-se apenas a classificação útil; se vier sozinha, a linha sai.
+// Reserva é uma marca para a meta própria (bit `reserva`, não mais texto em categ — ver
+// migration 22), nunca uma categoria nesta matriz — por isso categ já chega aqui sem ela;
+// esta função não precisa mais filtrar nada, só devolve o texto (ou "—" se vazio).
 function categoriaDaComparacao(categ) {
-    const categorias = categoriasSeparadas(categ);
-    if (!categorias.length) return textoOuTraco(categ);
-    return categorias.filter(categoria => !ehCategoria(categoria, 'Reserva')).join(', ');
+    return textoOuTraco(categ);
 }
 
 // Estas categorias não são comparáveis: Rendimento é entrada, Reembolso compensa uma despesa,
@@ -323,7 +322,10 @@ function ehLinhaExcluidaDaComparacao(r) {
     const categoriaEspecial = categoriasSeparadas(r.categ)
         .some(categoria => CATEGORIAS_EXCLUIDAS_DA_COMPARACAO
             .some(excluida => ehCategoria(categoria, excluida)));
-    return categoriaEspecial || ehAntecipacaoFatura(r.categ) || ehAntecipacaoFatura(r.nome);
+    // Reserva sozinha (sem nenhuma outra categoria) sai da matriz; coexistindo com outra,
+    // só a outra importa e a linha entra normalmente — mesma regra de antes, agora pelo bit.
+    const soReserva = r.reserva && !categoriasSeparadas(r.categ).length;
+    return categoriaEspecial || soReserva || ehAntecipacaoFatura(r.categ) || ehAntecipacaoFatura(r.nome);
 }
 
 function filtrarLinhasDaComparacao(reais, sinteticas) {

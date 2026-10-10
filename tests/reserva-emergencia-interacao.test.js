@@ -18,8 +18,8 @@ test('front-end não mantém campos nem payloads das flags removidas', () => {
     assert.doesNotMatch(tabelas, /data-tog-reserva-emergencia|r\.isa|r\.ativo|r\.reserva/);
 });
 
-test('Reserva é lida como categoria pela meta', () => {
-    assert.match(graficos, /ehCategoria\(r\.categ, 'Reserva'\)/);
+test('Reserva é lida do bit próprio pela meta (migration 22 substituiu a categoria de texto)', () => {
+    assert.match(graficos, /!r\.reserva \|\| r\.periodoIdx == null\) return;/);
 });
 
 test('migration preserva classificações e remove as três colunas', () => {

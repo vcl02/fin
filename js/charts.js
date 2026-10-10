@@ -128,7 +128,7 @@ const MESES_MEDIA_LIBERDADE_FINANCEIRA = 12;
 const TAXA_RETIRADA_LIBERDADE_FINANCEIRA = 0.035;
 const PERCENTUAL_MINIMO_PIZZA = 2;
 const LIMITES_COMPROMISSOS = [
-    { chave: 'comprometido', rotulo: 'Comprometido', categoria: 'Comprometido', percentual: 50 },
+    { chave: 'comprometido', rotulo: 'Comprometido', percentual: 50 },
 ];
 
 // Categorias compartilhadas pedem decisão do usuário; ficam no início do seletor para não
@@ -154,7 +154,7 @@ function proximaExclusaoDasCategorias(categorias, excluidas) {
 function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
     const porCiclo = new Map();
     linhas.forEach(r => {
-        if (!(r.v < 0) || r._transferencia || !ehCategoria(r.categ, 'Reserva') || r.periodoIdx == null) return;
+        if (!(r.v < 0) || r._transferencia || !r.reserva || r.periodoIdx == null) return;
         const gastos = porCiclo.get(r.periodoIdx) || new Map();
         const nome = String(r.nome || '').trim();
         gastos.set(nome, (gastos.get(nome) || 0) + -r.v);
@@ -190,8 +190,9 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
     return { periodo, ...dadosMetaReservaEmergencia(gastos, idxPeriodo, guardadoAte(idxPeriodo)) };
 }
 
-// Comprometido é uma leitura do orçamento, não uma mudança de dado: ele identifica a
-// categoria especial no lançamento e a compara ao teto único sobre o Faturamento PJ.
+// Comprometido é uma leitura do orçamento, não uma mudança de dado: ele lê o bit
+// `comprometido` do lançamento (coluna própria, não mais texto em categ — ver migration 22)
+// e compara ao teto único sobre o Faturamento PJ.
 const categoriaContemCompromisso = (categ, texto) => semAcento(categ).toLowerCase()
     .includes(semAcento(texto).toLowerCase());
 
@@ -200,8 +201,7 @@ function dadosCompromissosDoCiclo(linhas) {
         .filter(r => r.v > 0 && String(r.nome || '').trim() === NOME_ANCORA_CICLO)
         .reduce((soma, r) => soma + r.v, 0);
     const resumo = limite => {
-        const gastos = linhas.filter(r => r.v < 0 && !r._transferencia &&
-            categoriaContemCompromisso(r.categ, limite.categoria));
+        const gastos = linhas.filter(r => r.v < 0 && !r._transferencia && r.comprometido);
         const valor = gastos.reduce((soma, r) => soma + -r.v, 0);
         const teto = faturamento * limite.percentual / 100;
         return {
@@ -256,7 +256,7 @@ function dadosProporcaoReservaDoCiclo(linhas) {
     const gastos = linhas.filter(r => r.v < 0 && !r._transferencia);
     const total = gastos.reduce((soma, r) => soma + -r.v, 0);
     const reserva = gastos
-        .filter(r => categoriaContemCompromisso(r.categ, 'Reserva'))
+        .filter(r => r.reserva)
         .reduce((soma, r) => soma + -r.v, 0);
     const demais = total - reserva;
     return {
@@ -459,10 +459,13 @@ function dadosDoGraficoCiclo(idxPeriodo) {
     const categoriasCompartilhadas = new Set();
     linhas.filter(r => r.v < 0).forEach(r => {
         const daLinha = categoriasSeparadas(r.categ);
-        // Reserva é uma classificação da meta própria, não uma fatia de gastos. Quando ela
-        // coexistir com outra categoria, a outra recebe o lançamento inteiro sem a marca *.
-        const categoriasDaLinha = (daLinha.length ? daLinha : [textoOuTraco(r.categ)])
-            .filter(c => !ehCategoria(c, 'Reserva'));
+        // Reserva é uma classificação da meta própria (bit `reserva`, não mais texto em
+        // categ — ver migration 22), não uma fatia de gastos: um lançamento só-Reserva
+        // (sem nenhuma outra categoria) não cria fatia nenhuma. Quando Reserva coexistir
+        // com outra categoria, a outra já recebe o lançamento inteiro — categ não carrega
+        // mais o token "Reserva" pra precisar filtrar daqui.
+        if (!daLinha.length && r.reserva) return;
+        const categoriasDaLinha = daLinha.length ? daLinha : [textoOuTraco(r.categ)];
         if (!categoriasDaLinha.length) return;
         categoriasDaLinha.forEach(c => categorias.add(c));
         if (categoriasDaLinha.length > 1) categoriasDaLinha.forEach(c => categoriasCompartilhadas.add(c));

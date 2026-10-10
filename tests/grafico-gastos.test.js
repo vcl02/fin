@@ -25,7 +25,7 @@ function dadosDoGrafico(lancamentos) {
 
 test('pizza oculta Reserva e mantém a outra categoria sem duplicação', () => {
     const regras = dadosDoGrafico([
-        { periodoIdx: 0, cred: false, nome: 'Mercado', categ: 'Casa, Reserva', v: -100 },
+        { periodoIdx: 0, cred: false, nome: 'Mercado', categ: 'Casa', reserva: true, v: -100 },
         { periodoIdx: 0, cred: false, nome: 'Antecipação de Fatura', categ: 'Fatura', v: -200 },
         { periodoIdx: 0, cred: true, nome: 'Compra cartão', categ: 'Eletrônicos', v: -300 },
     ]);
@@ -36,6 +36,16 @@ test('pizza oculta Reserva e mantém a outra categoria sem duplicação', () => 
     assert.deepEqual(Array.from(dados.gastos, gasto => ({ categorias: Array.from(gasto.categorias), valor: gasto.valor })), [
         { categorias: ['Casa'], valor: 100 },
     ]);
+});
+
+test('lançamento só-Reserva (bit, sem nenhuma outra categoria) não cria fatia nenhuma', () => {
+    const regras = dadosDoGrafico([
+        { periodoIdx: 0, cred: false, nome: 'Evolução Obra', categ: '', reserva: true, v: -100 },
+        { periodoIdx: 0, cred: false, nome: 'Mercado', categ: 'Casa', v: -50 },
+    ]);
+    const dados = regras.dadosDoGraficoCiclo(0);
+    assert.deepEqual(Array.from(dados.categorias), ['Casa']);
+    assert.deepEqual(Array.from(dados.gastos, gasto => gasto.categorias[0]), ['Casa']);
 });
 
 test('pizza mantém somente categorias de ao menos dois por cento do recorte', () => {

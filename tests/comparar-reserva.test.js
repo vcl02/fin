@@ -33,12 +33,19 @@ function regrasDaComparacao() {
     return contexto.regras;
 }
 
-test('comparar remove Reserva de categoria compartilhada e ignora Reserva isolada', () => {
+test('categoriaDaComparacao é um passthrough: Reserva já não existe em categ (bit próprio, migration 22)', () => {
     const regras = regrasDaComparacao();
-    assert.equal(regras.categoriaDaComparacao('Casa, Reserva'), 'Casa');
-    assert.equal(regras.categoriaDaComparacao('Reserva, Saúde'), 'Saúde');
-    assert.equal(regras.categoriaDaComparacao('Reserva'), '');
+    assert.equal(regras.categoriaDaComparacao('Casa'), 'Casa');
+    assert.equal(regras.categoriaDaComparacao('Casa, Saúde'), 'Casa, Saúde');
+    assert.equal(regras.categoriaDaComparacao(''), '-');
     assert.equal(regras.categoriaDaComparacao(null), '-');
+});
+
+test('linha só-Reserva (bit, sem nenhuma outra categoria) sai da comparação; coexistindo com outra, entra normalmente', () => {
+    const { ehLinhaExcluidaDaComparacao } = regrasDaComparacao();
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: '', reserva: true, nome: 'Evolução Obra' }), true);
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Casa', reserva: true, nome: 'Condomínio' }), false);
+    assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Casa', reserva: false, nome: 'Mercado' }), false);
 });
 
 test('confirma acabou, começou e único somente com dois ciclos futuros', () => {
