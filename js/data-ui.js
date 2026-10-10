@@ -212,7 +212,10 @@ async function load() {
         atualizarBotaoDiagnostico(diagnosticoDeDados);
     } catch (e) {
         el('st').textContent = '';
-        el('out').innerHTML = '<p class=empty>Falhou: ' + e.message + '</p>';
+        // e.message pode trazer texto crudo da resposta do Supabase (ver buscar() em
+        // supabase-api.js); escapar evita que um corpo de erro com '<'/'&' seja interpretado
+        // como HTML em vez de aparecer como texto.
+        el('out').innerHTML = '<p class=empty>Falhou: ' + escapeHtml(e.message) + '</p>';
         mostrarToast('Não foi possível carregar', e.message);
     }
 }
