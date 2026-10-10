@@ -865,6 +865,34 @@ el('out').addEventListener('click', e => {
     );
 });
 
+// clique no botão de corrigir a Data (ver celData em tables.js, _dupCiclo marcado em
+// marcaOcorrenciasDuplicadasNoCiclo no cycle-views.js): recorrência caiu 2x no mesmo ciclo
+// (ex.: dia 5 perto do fim, a janela entre Faturamento PJ corta o mês) — move a ocorrência
+// mais recente pro 1º dia do PRÓXIMO ciclo, que já existe (senão o botão nem apareceria).
+// É um PATCH de verdade, por isso pede confirmação antes, igual ao padrão já usado pro badge
+// Pago fora do ciclo.
+el('out').addEventListener('click', async e => {
+    const botao = e.target.closest('[data-corrige-dup]');
+    if (!botao) return;
+    e.stopImmediatePropagation();
+    if (modoRestrito()) return;
+    const id = botao.dataset.corrigeDup;
+    const r = Estado.lancamentos.find(x => String(x.id) == id);
+    if (!r || !r._dupCiclo) return;
+    const novaData = r._dupCiclo;
+    if (!confirm(`"${r.nome ?? ''}" está duplicado neste ciclo. Mover a data de ${dataBR(r.data)} para ${dataBR(novaData)} (1º dia do próximo ciclo)?`)) return;
+    botao.disabled = true;
+    try {
+        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { data: novaData });
+        r.data = novaData;
+        reclassificaPeriodo(r);
+        desenhar();
+    } catch (err) {
+        botao.disabled = false;
+        mostrarToast('Falhou ao atualizar', err.message);
+    }
+});
+
 el('out').addEventListener('click', e => {
     const linha = e.target.closest('tr[data-sid]');
     if (!linha || !linha.dataset.sid || e.target.closest('th')) return;

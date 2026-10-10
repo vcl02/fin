@@ -594,6 +594,34 @@
       cursor: help;
   }
 
+  /* Botão de corrigir ao lado da Data (ver celData em tables.js): mesma cor do asterisco
+     .avisoDup acima, porque é o mesmo sintoma (recorrência caindo 2x no ciclo) — só que na
+     tabela Débito ele vira uma AÇÃO de 1 clique, não só um aviso. Mesmo círculo em evidência
+     do .linkCanal/.copiarCanal, com borda âmbar pra se diferenciar visualmente. */
+  .corrigeDupData {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 1.3rem;
+      height: 1.3rem;
+      margin-left: .3rem;
+      vertical-align: middle;
+      cursor: pointer;
+      font-size: .85rem;
+      line-height: 1;
+
+      border: 1px solid #F0A83A;
+      border-radius: 50%;
+
+      background: var(--field);
+      color: #F0A83A;
+  }
+
+  .corrigeDupData:hover {
+      background: var(--field-hover);
+  }
+
   /* =========================================================
        CORES DE VALORES
        ========================================================= */

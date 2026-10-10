@@ -174,9 +174,19 @@ const textoData = r => r.data ? dataBR(r.data) : '—';
 // mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
 // lancamentos REAIS (id do banco, da' pra dar PATCH); a conta restrita (modoRestrito)
 // continua vendo so' texto, igual o Valor — qualquer outro dispositivo edita normalmente.
-const celData = r => ehLinhaReal(r) && !modoRestrito()
-    ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Editar data">${textoData(r)}</span>`
-    : textoData(r);
+const celData = r => {
+    const texto = ehLinhaReal(r) && !modoRestrito()
+        ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Editar data">${textoData(r)}</span>`
+        : textoData(r);
+    // _dupCiclo (marcado em marcaOcorrenciasDuplicadasNoCiclo, js/cycle-views.js): essa
+    // ocorrência é a mais recente de uma recorrência que caiu 2x no mesmo ciclo. O botão
+    // corrige com 1 clique, movendo pro 1º dia do próximo ciclo (handler data-corrige-dup
+    // em interactions.js) — só pra linha real fora da conta restrita, mesma regra de edição.
+    const corrige = r._dupCiclo && ehLinhaReal(r) && !modoRestrito()
+        ? ` <button type=button class=corrigeDupData data-corrige-dup="${escapeHtml(String(r.id))}" title="Recorrência caiu 2x neste ciclo — mover pro 1º dia do próximo" aria-label="Mover esta ocorrência pro 1º dia do próximo ciclo">↷</button>`
+        : '';
+    return `${texto}${corrige}`;
+};
 const celNome = r => {
     const sim = r._sim ? '<span class=simIco title="Simulado">✦</span> ' : '';
     const nome = escapeHtml(textoOuTraco(r.nome));

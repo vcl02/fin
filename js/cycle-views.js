@@ -12,6 +12,13 @@ function vCiclo() {
     if (!periodo) return '<p class=empty>Sem ciclos</p>';
 
     const debitos = filtrarLancamentos().filter(r => r.periodoIdx == i && !r.cred);
+    // Recorrência que caiu 2x dentro do MESMO ciclo (ex.: Seguro Residencial dia 5, quando a
+    // janela entre dois Faturamento PJ atravessa a virada do mês) já tinha o aviso "*" em
+    // Comparar; aqui, na própria tabela Débito, marca a ocorrência mais recente das duplicadas
+    // com _dupCiclo = data do próximo ciclo, pra exibir a ação de corrigir (ver celData em
+    // tables.js e o handler data-corrige-dup em interactions.js). Só se o próximo ciclo já
+    // existe (âncora Faturamento PJ seguinte cadastrada) — sem isso não há pra onde mover.
+    marcaOcorrenciasDuplicadasNoCiclo(debitos, Estado.ciclos[i + 1]);
     const visiveis = filtrarLancamentos();
     const creditosDaFatura = visiveis.filter(r => r.periodoIdx == i && r.cred);
 
@@ -346,6 +353,29 @@ function gruposComRecorrenciaDuplicadaEntreMeses(linhas) {
 
 function temRecorrenciaDuplicadaEntreMeses(linhas) {
     return gruposComRecorrenciaDuplicadaEntreMeses(linhas).size > 0;
+}
+
+// Dentro de um único ciclo (debitos já filtrados por periodoIdx), marca com _dupCiclo a(s)
+// ocorrência(s) MAIS RECENTE(S) de cada recorrência (nome+categoria) que caiu 2x — a mais
+// antiga fica como está, só a(s) de depois ganha(m) a ação de corrigir (ver celData em
+// tables.js). _dupCiclo guarda a data ISO do 1º dia do PRÓXIMO ciclo, pronta pra virar o
+// novo valor de `data` num PATCH (ver handler data-corrige-dup em interactions.js). Sem
+// próximo ciclo cadastrado ainda, não marca nada — não há pra onde mover.
+function marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo) {
+    debitos.forEach(r => { delete r._dupCiclo; });   // limpa marca de um redesenho anterior
+    if (!proximoCiclo) return;
+    const grupos = gruposComRecorrenciaDuplicadaEntreMeses(debitos);
+    if (!grupos.size) return;
+    const porGrupo = {};
+    debitos.filter(ehLinhaReal).forEach(r => {
+        const grupo = chaveDaRecorrencia(r);
+        if (!grupos.has(grupo)) return;
+        (porGrupo[grupo] = porGrupo[grupo] || []).push(r);
+    });
+    Object.values(porGrupo).forEach(linhasDoGrupo => {
+        const ordenadas = [...linhasDoGrupo].sort((a, b) => timestamp(a.data) - timestamp(b.data));
+        ordenadas.slice(1).forEach(r => { r._dupCiclo = proximoCiclo.ini; });
+    });
 }
 
 function todasRecorrenciasDaMudancaSaoExplicadas(linhasDaMudanca, fontesDuplicadas) {

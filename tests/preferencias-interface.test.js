@@ -210,7 +210,7 @@ test('conta restrita (Isabella) é identificada por e-mail, não a interface ger
 test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', () => {
     assert.match(estado, /const colunasAtivas = idTabela => idTabela === 'bk'\s*\n\s*\? \[COLS\.find\(\(\[chave\]\) => chave === 'prio'\), \.\.\.COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\)\]\s*\n\s*: COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\);/);
     assert.doesNotMatch(estado, /COLS_MOBILE/);
-    assert.match(tabelas, /const celData = r => ehLinhaReal\(r\) && !modoRestrito\(\)/);
+    assert.match(tabelas, /const texto = ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togData"/);
     assert.match(tabelas, /\? celValorEditavel\(r\) : celValorLancamento\(r\)/);
     assert.doesNotMatch(tabelas, /celValorMobile/);
     assert.match(tabelas, /const podeSelecionar = selecionavel;/);
