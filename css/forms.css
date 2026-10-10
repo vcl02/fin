@@ -675,6 +675,8 @@
       margin: 0;
       color: var(--mu);
       font-size: .82rem;
+      overflow-wrap: break-word;   /* chave Pix e outros textos sem espaço (ver copiarCanal
+                                       em interactions.js) não podem estourar a largura fixa */
   }
 
   .toast button {
