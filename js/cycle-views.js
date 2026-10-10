@@ -375,7 +375,11 @@ function marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo) {
     // Segunda barreira, redundante com a de gruposComRecorrenciaDuplicadaEntreMeses de
     // propósito: nenhuma antecipação/pagamento de fatura deve ganhar _dupCiclo, mesmo se
     // seu nome+categoria coincidisse por acaso com outro grupo já marcado como duplicado.
-    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r)).forEach(r => {
+    // r.v <= 0 fica só aqui (não em gruposComRecorrenciaDuplicadaEntreMeses, que o "*" de
+    // Comparar também usa): entrada (valor positivo) é recebimento, nunca uma conta
+    // recorrente que a janela do ciclo cortou ao meio, então nunca ganha o botão "↷" — mas
+    // isso não deve mudar o desconto de falso positivo que Comparar já faz por conta própria.
+    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r) && r.v <= 0).forEach(r => {
         const grupo = chaveDaRecorrencia(r);
         if (!grupos.has(grupo)) return;
         (porGrupo[grupo] = porGrupo[grupo] || []).push(r);
