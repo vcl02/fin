@@ -5,6 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const fonte = fs.readFileSync('js/tables.js', 'utf8');
+const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const fim = fonte.indexOf('\n// ORDENAÇÃO', 0);
 if (fim < 0) throw Error('Não encontrou os filtros de tabela.');
 
@@ -27,6 +28,11 @@ function filtroDeTexto() {
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
         valorMascaraParaNumero: () => 0,
         TOLERANCIA_BUSCA_VALOR: 0.05,
+        ehVazioTextual: v => {
+            if (v == null) return true;
+            const limpo = String(v).trim().toLowerCase().replace(/^<|>$/g, '');
+            return ['', 'null', 'undefined', 'nan', 'none', 'n/a'].includes(limpo);
+        },
     };
     vm.createContext(contexto);
     vm.runInContext(`${fonte.slice(inicio, fim)}\nglobalThis.regras = { passaFiltroTexto, categoriaExcluidaDoFiltro, baseParaSaldoDiario };`, contexto);
@@ -101,6 +107,37 @@ test('"|" isolado ou com pedaço vazio não filtra por esse pedaço, igual ao "!
         linhasComNome.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
         [20],
     );
+});
+
+test('campo de busca por coluna avisa sobre o atalho "vazio" (exceto em Valor, que já usa a máscara de dinheiro)', () => {
+    assert.match(fonte, /title="Digite \\'vazio\\' pra achar as linhas sem nada preenchido aqui"/);
+    assert.doesNotMatch(fonte, /inputmode=numeric title="Digite/);
+});
+
+test('"vazio" em qualquer coluna de texto acha só as linhas sem nada preenchido ali (null, string vazia ou "null"/"n/a" gravado por engano)', () => {
+    const c = filtroDeTexto();
+    const linhasComObs = [
+        { id: 30, obs: null },
+        { id: 31, obs: '' },
+        { id: 32, obs: 'null' },
+        { id: 33, obs: 'Pago via Pix' },
+    ];
+    c.Estado.filtroTexto.debito = { obs: 'vazio' };
+    assert.deepEqual(
+        linhasComObs.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [30, 31, 32],
+    );
+    // sem diferenciar caixa/acento, e isolado — não combina com "!" nem "|"
+    c.Estado.filtroTexto.debito = { categ: 'Vazío' };
+    assert.deepEqual(
+        linhas.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [],
+    );
+});
+
+test('atalho "vazio" documentado em REGRAS.md', () => {
+    assert.match(regras, /digitar exatamente `vazio` \(sem diferenciar caixa ou acento, sozinho no campo — não combina com `!` nem `\|`\)/);
+    assert.match(regras, /mesmo critério da célula "—" \(`ehVazioTextual`\)/);
 });
 
 test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer outros filtros', () => {

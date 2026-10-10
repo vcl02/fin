@@ -50,7 +50,7 @@ function cabecalhoTabela(idTabela) {
     // passaFiltroTexto), nao texto, mas a caixinha e' a mesma das outras colunas —
     // com a mesma mascara de dinheiro do cadastro por cima (ver filtrarColuna).
     const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => tipo == 't' || chave == 'valor'
-        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric ' : ''}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
+        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric ' : 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" '}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
         : '<th>'
     ).join('');
     return linhaTitulos + linhaBusca;
@@ -112,6 +112,10 @@ function passaFiltroTexto(r, idTabela) {
         }
         const texto = semAcento(r[coluna]);
         const termoNormalizado = semAcento(termo);
+        // Termo especial "vazio" (sem acento/caixa, sozinho no campo) acha as linhas sem
+        // nada preenchido naquela coluna — mesmo critério da célula "—" (ehVazioTextual).
+        // Não combina com ! nem |: é um atalho isolado, igual aos outros desta função.
+        if (termoNormalizado.trim() == 'vazio') return ehVazioTextual(r[coluna]);
         // Categorias podem ser compostas (por exemplo, "Casa, Reserva"). O ! é
         // propositalmente exclusivo deste campo para não mudar a busca literal de Nome
         // ou Frequência. ! isolado equivale a filtro vazio e evita ocultar toda a tabela.

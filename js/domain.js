@@ -25,17 +25,13 @@ const CATEGORIA_INVESTIMENTO = 'Investimento';
 // editável na tela.
 const CATEGORIA_BESTEIRA = 'Besteira';
 const LIMITE_BESTEIRA = 250;
-// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella". Conta quando a
-// categoria contém "Isabella" (ver o guia de categorias no cadastro e ehGastoIsabella em
-// js/charts.js para a regra completa):
-//   - "Isabella" sozinha: presente/mimo comprado especificamente pra ela;
-//   - "Lazer" + "Isabella": qualquer coisa feita junto, inclusive comer/lanchar juntos
-//     (valor inteiro da conta, sem dividir) — não só passeio: estacionamento, ingresso,
-//     Uber compartilhado, cover...
-// "Lazer" sozinho nunca conta — pode ser lazer com qualquer outra pessoa. A ÚNICA exceção
-// de "Isabella" que fica de fora é a fatura detalhada real do cartão dela, marcada com uma
-// 2ª categoria "Fatura" junto (ex.: "Isabella, Fatura") — é só o saldo da fatura, não um
-// gasto novo (ver Faturas).
+// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella". POR ENQUANTO conta só
+// "Lazer" + "Isabella" juntas na mesma linha: qualquer coisa feita com ela, inclusive comer/
+// lanchar juntos (valor inteiro da conta, sem dividir) — não só passeio: estacionamento,
+// ingresso, Uber compartilhado, cover... "Isabella" sozinha NÃO conta (nem presente/mimo
+// pontual, nem compromissos fixos que usam essa tag, como a fatura detalhada do cartão dela
+// — ver Faturas); "Lazer" sozinho também nunca conta, pois pode ser lazer com qualquer outra
+// pessoa. Ver ehGastoIsabella em js/charts.js para a regra completa.
 const LIMITE_ISABELLA = 700;
 // Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
 // garantia positiva do ciclo é somada separadamente, sem alterar este valor-base.
