@@ -619,7 +619,7 @@ el('seledit').onclick = () => {
     if (r) abreModalNovo(r, true);
 };
 
-// Guia de categorias (Besteira/Isabella/Lazer/Presentes): abre por cima do cadastro, sem
+// Guia de categorias (Besteira/Isabella/Lazer): abre por cima do cadastro, sem
 // fechá-lo — é só consulta, não precisa perder o que já foi digitado no formulário.
 el('ajudaCategorias').onclick = () => el('modalAjudaCategorias').showModal();
 el('fechaAjudaCategorias').onclick = () => el('modalAjudaCategorias').close();
