@@ -45,8 +45,23 @@ test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guard
     assert.match(trecho, /if \(modoRestrito\(\)\) return;/);
     assert.match(trecho, /const \[campo, id\] = badge\.dataset\.togFlag\.split\(':'\);/);
     assert.match(trecho, /const novoValor = !r\[campo\];/);
-    assert.match(trecho, /if \(!Estado\.simulando && !r\._sim\) await atualizarLancamento\(r\.id, \{ \[campo\]: novoValor \}\);/);
+    assert.match(trecho, /for \(const linha of mesmoNome\) \{/);
+    assert.match(trecho, /if \(!Estado\.simulando && !linha\._sim\) await atualizarLancamento\(linha\.id, \{ \[campo\]: novoValor \}\);/);
+    assert.match(trecho, /linha\[campo\] = novoValor;/);
     assert.match(trecho, /mostrarToast\('Falhou ao atualizar', err\.message\);/);
+});
+
+test('marcar/desmarcar Reserva ou Comprometido propaga pra todos os lançamentos com o mesmo nome', () => {
+    const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido' };");
+    const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
+    // mesma comparação de "mesmo nome" usada na detecção de recorrência duplicada: sem
+    // acento, sem caixa, ignora linha sintética (_sid nunca tem o badge pra começar, mas a
+    // busca por nome não deve puxar uma de qualquer jeito).
+    assert.match(trecho, /const nomeChave = semAcento\(r\.nome\)\.trim\(\);/);
+    assert.match(trecho, /const mesmoNome = Estado\.lancamentos\.filter\(x => !x\._sid && semAcento\(x\.nome\)\.trim\(\) === nomeChave\);/);
+    // toast só quando a varredura de fato pegou mais de um lançamento — clique isolado
+    // (nome único) continua silencioso, só o badge já é feedback suficiente.
+    assert.match(trecho, /if \(mesmoNome\.length > 1\) \{/);
 });
 
 test('Duplicar/Editar herdam reserva/comprometido do lançamento de origem; novo cadastro não força nada', () => {

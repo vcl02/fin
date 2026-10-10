@@ -355,6 +355,10 @@ el('out').addEventListener('click', async e => {
 // clique no badge Reserva/Comprometido alterna o bit na hora — mesmo esquema do togPago
 // acima, só sem a lógica de data (nenhum dos dois tem relação com vencimento). Um único
 // handler cobre as duas colunas: data-tog-flag="reserva:123" ou "comprometido:123".
+// Reserva/Comprometido classificam o COMPROMISSO (identificado pelo nome), não só esta
+// ocorrência — alternar um propaga pra TODOS os lançamentos com o mesmo nome (mesma
+// comparação sem acento/caixa de chaveDaRecorrencia), reais ou simulados, sequencial igual
+// salvaLancamentoParceladoNoBanco, pra preservar ordem e simplificar erro no meio do caminho.
 const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido' };
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-flag]');
@@ -367,14 +371,22 @@ el('out').addEventListener('click', async e => {
     if (!r) return;
 
     const novoValor = !r[campo];
+    const nomeChave = semAcento(r.nome).trim();
+    const mesmoNome = Estado.lancamentos.filter(x => !x._sid && semAcento(x.nome).trim() === nomeChave);
+
     badge.classList.toggle('vd', novoValor);
     badge.textContent = novoValor ? ROTULO_FLAG_TOGGLE[campo] : '—';
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
 
     try {
-        if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { [campo]: novoValor });
-        r[campo] = novoValor;
+        for (const linha of mesmoNome) {
+            if (!Estado.simulando && !linha._sim) await atualizarLancamento(linha.id, { [campo]: novoValor });
+            linha[campo] = novoValor;
+        }
         desenhar();
+        if (mesmoNome.length > 1) {
+            mostrarToast('Atualizado', `${ROTULO_FLAG_TOGGLE[campo]} ${novoValor ? 'marcado' : 'desmarcado'} em ${mesmoNome.length} lançamentos "${r.nome}".`);
+        }
     } catch (err) {
         badge.style.opacity = '';
         mostrarToast('Falhou ao atualizar', err.message);

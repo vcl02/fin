@@ -16,7 +16,7 @@ test('simulação mantém update e exclusão de linhas reais somente em memória
     // (texto), sinal (botão +/-), Data, Nome, Categoria, Frequência, Prio, Obs, Canal e
     // corrigir recorrência duplicada (botão "↷" ao lado da Data): 12 pontos de edição
     // inline, todos passando pela mesma guarda antes de chamar o Supabase.
-    assert.equal((interacoes.match(/!Estado\.simulando && !r\._sim\) await atualizarLancamento/g) || []).length, 12);
+    assert.equal((interacoes.match(/!Estado\.simulando && !\w+\._sim\) await atualizarLancamento/g) || []).length, 12);
     assert.doesNotMatch(graficos, /atualizarLancamento|inserirLancamento|excluirLancamento/);
 });
 
