@@ -140,5 +140,5 @@ test('regras documentam as exclusões específicas de Comparar, gráficos e Visu
     assert.match(regrasDocumentadas, /\*\*Comparar:\*\*[\s\S]*Rendimento[\s\S]*Alimentação[\s\S]*Saldo[\s\S]*Antecipação Fatura/);
     assert.match(regrasDocumentadas, /\*\*Gráfico — pizza do ciclo:\*\*[\s\S]*Compras de Crédito[\s\S]*Reserva/);
     assert.match(regrasDocumentadas, /\*\*Gráfico — evolução ao comparar ciclos:\*\*[\s\S]*Não há exclusão nominal/);
-    assert.match(regrasDocumentadas, /\*\*Visualizações:\*\*[\s\S]*categoria contendo `Roberta`[\s\S]*nome `Tenis`/);
+    assert.match(regrasDocumentadas, /\*\*Visualizações:\*\*[\s\S]*categoria contendo `Roberta`[\s\S]*Banco do Brasil/);
 });

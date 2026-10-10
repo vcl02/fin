@@ -23,14 +23,13 @@ el('btLimparFiltros').onclick = limparFiltros;
 // ===================================================================
 const NOMES_DAS_VISUALIZACOES = [
     'Entrada Econ',
-    'Evolução Obra', 'Financiamento Casa', 'VCardoso', 'Trybe', 'Senac',
-    'Roupa Intima', 'Seguro Residencial', 'Renegociação Nu', 'Iphone', 'Pós',
+    'Evolução Obra', 'Financiamento Casa', 'Trybe', 'Senac',
+    'Seguro Residencial', 'Iphone', 'Pós',
     'Banco do Brasil',
 ];
 const OPCOES_VISUALIZACOES = [
     { id: 'categoria-roberta', rotulo: 'Roberta', categoriaContem: 'Roberta' },
     ...NOMES_DAS_VISUALIZACOES.map((nome, indice) => ({ id: `nome-${indice}`, rotulo: nome, nome })),
-    { id: 'tenis-isabella', rotulo: 'Tênis (Isabella)', nome: 'Tenis', categoriaContem: 'Isabella' },
 ];
 
 const textoNormalizadoVisualizacao = valor => semAcento(valor).trim();

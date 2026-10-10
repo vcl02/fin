@@ -24,9 +24,9 @@ test('oferece somente os acompanhamentos fixos na ordem definida', () => {
     assert.deepEqual(Array.from(OPCOES_VISUALIZACOES, opcao => opcao.rotulo), [
         'Roberta',
         'Entrada Econ',
-        'Evolução Obra', 'Financiamento Casa', 'VCardoso', 'Trybe', 'Senac',
-        'Roupa Intima', 'Seguro Residencial', 'Renegociação Nu', 'Iphone', 'Pós',
-        'Banco do Brasil', 'Tênis (Isabella)',
+        'Evolução Obra', 'Financiamento Casa', 'Trybe', 'Senac',
+        'Seguro Residencial', 'Iphone', 'Pós',
+        'Banco do Brasil',
     ]);
 });
 
@@ -50,13 +50,4 @@ test('nomes são exatos sem diferenciar caixa ou acento', () => {
     ]);
     const id = OPCOES_VISUALIZACOES.find(opcao => opcao.rotulo == 'Evolução Obra').id;
     assert.deepEqual(Array.from(dadosVisualizacao(id).linhas, linha => linha.v), [-200]);
-});
-
-test('Tênis exige simultaneamente o nome exato e categoria contendo Isabella', () => {
-    const { dadosVisualizacao } = criarVisualizacoes([
-        { nome: 'Tênis', categ: 'Isabella, Presente', pago: true, v: -150 },
-        { nome: 'Tenis', categ: 'Casa', pago: false, v: -200 },
-        { nome: 'Tênis infantil', categ: 'Isabella', pago: false, v: -100 },
-    ]);
-    assert.deepEqual(Array.from(dadosVisualizacao('tenis-isabella').linhas, linha => linha.v), [-150]);
 });

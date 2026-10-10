@@ -87,13 +87,12 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
     assert.match(graficos, /const OPCOES_VISUALIZACOES/);
     assert.match(graficos, /categoriaContem: 'Roberta'/);
-    assert.match(graficos, /id: 'tenis-isabella'[^\n]*nome: 'Tenis'[^\n]*categoriaContem: 'Isabella'/);
     assert.doesNotMatch(graficos, /function valoresDaVisualizacao|visTipo/);
     assert.match(graficos, /el\('visAlvo'\)\.onchange/);
     assert.match(graficos, /new Option\('Visualizações', ''\)/);
     assert.match(regras, /\*\*Visualizações\*\* é o próprio dropdown/);
     assert.match(regras, /seletor é fixo/);
-    assert.match(regras, /nome `Tenis`/);
+    assert.match(regras, /categoria contendo `Roberta`/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
     // No mobile, a regra de botão não pode apagar a imagem de fundo que desenha a seta do select.
     assert.match(estilosMobile, /\.btFiltro\s*\{[\s\S]*background-color: var\(--field\);/);
