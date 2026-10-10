@@ -220,8 +220,10 @@ const celCanal = r => {
     if (!bruto) return texto;
     // Copiar sempre que houver texto — inclusive chave Pix, que nao e' um link pra abrir.
     // So' quando e' http(s) o botao de abrir aparece ao lado (ver handler em
-    // interactions.js e ehUrlHttp acima).
-    const copiar = ` <button type=button class=copiarCanal data-copiar-canal="${escapeHtml(String(r.id))}" title="Copiar" aria-label="Copiar" onclick="event.stopPropagation()">` +
+    // interactions.js e ehUrlHttp acima). SEM stopPropagation aqui: o clique precisa
+    // borbulhar até #out, onde o handler delegado (data-copiar-canal) faz a copia de
+    // verdade — ele mesmo chama stopImmediatePropagation pra nao cair na selecao de linha.
+    const copiar = ` <button type=button class=copiarCanal data-copiar-canal="${escapeHtml(String(r.id))}" title="Copiar" aria-label="Copiar">` +
         `<svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>` +
         `<rect x=9 y=9 width=11 height=11 rx=2 /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>`;
     const link = ehUrlHttp(bruto)

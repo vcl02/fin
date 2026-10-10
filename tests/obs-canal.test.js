@@ -26,9 +26,13 @@ test('célula Obs só é clicável pra linha real fora da conta restrita', () =>
 test('célula Canal é clicável igual às demais, ganha ícone de copiar sempre que houver valor, e ícone de link extra quando o valor é http(s)', () => {
     assert.match(tabelas, /const ehUrlHttp = texto => \/\^https\?:\\\/\\\/\/i\.test/);
     assert.match(tabelas, /class="togCanal" data-tog-canal=/);
-    assert.match(tabelas, /class=copiarCanal data-copiar-canal="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
+    assert.match(tabelas, /class=copiarCanal data-copiar-canal="\$\{escapeHtml\(String\(r\.id\)\)\}" title="Copiar" aria-label="Copiar">/);
+    // SEM stopPropagation no botão de copiar: o clique precisa borbulhar até #out pro
+    // handler delegado (data-copiar-canal, em interactions.js) rodar — ele mesmo chama
+    // stopImmediatePropagation depois de copiar, pra não cair na seleção de linha.
+    assert.doesNotMatch(tabelas, /class=copiarCanal[^>]*onclick/);
     assert.match(tabelas, /class=linkCanal href="\$\{escapeHtml\(bruto\)\}" target=_blank rel="noopener noreferrer"/);
-    assert.match(tabelas, /onclick="event\.stopPropagation\(\)"/);
+    assert.match(tabelas, /onclick="event\.stopPropagation\(\)"/);   // continua só no <a> de abrir link
     assert.match(tabelas, /chave == 'canal' \? celCanal\(r\)/);
 });
 
@@ -79,6 +83,9 @@ test('estilos: Canal tem largura fixa com reticências; os ícones de copiar/lin
     assert.match(estilos, /max-width: 9rem;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;\s*\n\s*white-space: nowrap;/);
     assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?flex: none;/);
     assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?border-radius: 50%;/);
+    // o <button> de copiar não herda a mãozinha do <a> por padrão — precisa do cursor
+    // explícito, senão parece não-clicável.
+    assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?cursor: pointer;/);
 });
 
 test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', () => {
@@ -92,7 +99,7 @@ test('clique em Obs abre input de texto livre; clique em Canal idem, com placeho
 });
 
 test('clique no ícone de copiar do Canal usa a Clipboard API e nunca entra em edição', () => {
-    assert.match(interacoes, /const botao = e\.target\.closest\('\[data-copiar-canal\]'\);/);
+    assert.match(interacoes, /const botao = e\.target\.closest\('\[data-copiar-canal\]'\);\s*\n\s*if \(!botao\) return;\s*\n\s*e\.stopImmediatePropagation\(\);/);
     assert.match(interacoes, /navigator\.clipboard\.writeText\(String\(r\.canal\)\)\.then\(/);
     assert.match(interacoes, /mostrarToast\('Copiado', String\(r\.canal\)\)/);
     assert.match(interacoes, /mostrarToast\('Falhou ao copiar'/);

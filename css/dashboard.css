@@ -674,6 +674,7 @@
       height: 1.3rem;
       margin-left: .3rem;
       vertical-align: middle;
+      cursor: pointer;   /* .copiarCanal e' <button>, que nao herda a maozinha como <a> */
 
       border: 1px solid var(--line-strong);
       border-radius: 50%;
