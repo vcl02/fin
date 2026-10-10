@@ -45,7 +45,7 @@ function cabecalhoTabela(idTabela) {
     // passaFiltroTexto), nao texto, mas a caixinha e' a mesma das outras colunas —
     // com a mesma mascara de dinheiro do cadastro por cima (ver filtrarColuna).
     const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => tipo == 't' || chave == 'valor'
-        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric ' : 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" '}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
+        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric title="Digite + pra só positivos, - pra só negativos" ' : 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" '}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
         : '<th>'
     ).join('');
     return linhaTitulos + linhaBusca;
@@ -60,10 +60,18 @@ window.filtrarColuna = (idTabela, coluna, input) => {
     // mostra exatamente o numero procurado — digitar "15000" vira "150,00", sem duvida
     // sobre onde caem os centavos. Campo esvaziado tem que voltar pra vazio (filtro
     // desligado), nunca virar "0,00" — que filtraria pelos valores zerados.
+    // "+" ou "-" sozinho (sem nenhum digito) e' um atalho isolado pra filtrar so' pelo
+    // sinal (ver passaFiltroTexto) — foge da mascara de proposito, senao o replace(/\D/g)
+    // abaixo apagaria o proprio caractere que faz esse atalho funcionar.
     if (coluna == 'valor') {
-        const cursorNoFim = input.selectionEnd == input.value.length;
-        input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
-        if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+        const bruto = input.value.trim();
+        if (bruto === '+' || bruto === '-') {
+            input.value = bruto;
+        } else {
+            const cursorNoFim = input.selectionEnd == input.value.length;
+            input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
+            if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+        }
     }
     estadoFiltroTexto(idTabela)[coluna] = input.value;
     const posicaoCursor = document.activeElement === input ? input.selectionStart : null;
@@ -101,9 +109,15 @@ function passaFiltroTexto(r, idTabela) {
         // dos dois lados (a mascara nao digita "-"): buscar "150" acha tanto -150 quanto +150.
         // Linha de Investimento sugerido mostra r._sug no lugar de r.v — busca no que esta visivel.
         if (coluna == 'valor') {
+            const valorAssinado = r._sug != null ? r._sug : (r.v || 0);
+            // "+"/"-" sozinho (ver filtrarColuna, que foge da mascara pra esses dois
+            // caracteres) filtra so' pelo sinal, sem olhar a magnitude. Zero nao e' nem
+            // positivo nem negativo aqui — nao aparece em nenhum dos dois.
+            const termoLimpo = termo.trim();
+            if (termoLimpo === '+') return valorAssinado > 0;
+            if (termoLimpo === '-') return valorAssinado < 0;
             const alvo = valorMascaraParaNumero(termo);
-            const valorLinha = Math.abs(r._sug != null ? r._sug : (r.v || 0));
-            return Math.abs(valorLinha - alvo) <= TOLERANCIA_BUSCA_VALOR;
+            return Math.abs(Math.abs(valorAssinado) - alvo) <= TOLERANCIA_BUSCA_VALOR;
         }
         const texto = semAcento(r[coluna]);
         const termoNormalizado = semAcento(termo);

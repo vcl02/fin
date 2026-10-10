@@ -109,9 +109,9 @@ test('"|" isolado ou com pedaço vazio não filtra por esse pedaço, igual ao "!
     );
 });
 
-test('campo de busca por coluna avisa sobre o atalho "vazio" (exceto em Valor, que já usa a máscara de dinheiro)', () => {
+test('campo de busca por coluna avisa sobre o atalho "vazio"; Valor avisa sobre + e - no lugar', () => {
     assert.match(fonte, /title="Digite \\'vazio\\' pra achar as linhas sem nada preenchido aqui"/);
-    assert.doesNotMatch(fonte, /inputmode=numeric title="Digite/);
+    assert.match(fonte, /inputmode=numeric title="Digite \+ pra só positivos, - pra só negativos"/);
 });
 
 test('"vazio" em qualquer coluna de texto acha só as linhas sem nada preenchido ali (null, string vazia ou "null"/"n/a" gravado por engano)', () => {
@@ -138,6 +138,59 @@ test('"vazio" em qualquer coluna de texto acha só as linhas sem nada preenchido
 test('atalho "vazio" documentado em REGRAS.md', () => {
     assert.match(regras, /digitar exatamente `vazio` \(sem diferenciar caixa ou acento, sozinho no campo — não combina com `!` nem `\|`\)/);
     assert.match(regras, /mesmo critério da célula "—" \(`ehVazioTextual`\)/);
+});
+
+test('"+" ou "-" sozinho em Valor filtra só pelo sinal, ignorando a magnitude; zero não entra em nenhum dos dois', () => {
+    const c = filtroDeTexto();
+    const linhasComValor = [
+        { id: 40, v: 100 },
+        { id: 41, v: -30 },
+        { id: 42, v: 0 },
+        { id: 43, v: 5000 },
+    ];
+    c.Estado.filtroTexto.debito = { valor: '+' };
+    assert.deepEqual(
+        linhasComValor.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [40, 43],
+    );
+    c.Estado.filtroTexto.debito = { valor: '-' };
+    assert.deepEqual(
+        linhasComValor.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [41],
+    );
+});
+
+test('"+"/"-" em Valor também olha r._sug (linha de Investimento sugerido), não só r.v', () => {
+    const c = filtroDeTexto();
+    const linhasComSugestao = [
+        { id: 50, v: -999, _sug: 300 },     // aporte sugerido: visual é _sug, não v
+        { id: 51, v: 999, _sug: -150 },     // resgate necessário
+    ];
+    c.Estado.filtroTexto.debito = { valor: '+' };
+    assert.deepEqual(
+        linhasComSugestao.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [50],
+    );
+    c.Estado.filtroTexto.debito = { valor: '-' };
+    assert.deepEqual(
+        linhasComSugestao.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [51],
+    );
+});
+
+test('filtro numérico normal de Valor continua intacto, sem olhar o sinal', () => {
+    const c = filtroDeTexto();
+    c.Estado.filtroTexto.debito = { valor: '150' };   // valorMascaraParaNumero mockado devolve 0
+    const linhasComValor = [{ id: 60, v: 0 }, { id: 61, v: 5 }];
+    assert.deepEqual(
+        linhasComValor.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
+        [60],
+    );
+});
+
+test('atalho "+"/"-" de Valor documentado em REGRAS.md', () => {
+    assert.match(regras, /Digitar exatamente `\+` ou `-` sozinho no campo \(sem nenhum dígito\) é um atalho isolado/);
+    assert.match(regras, /`\+` mostra somente positivos, `-` somente negativos. Zero não entra em nenhum dos dois/);
 });
 
 test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer outros filtros', () => {
