@@ -34,6 +34,7 @@
 4. Rode `node --test tests/*.test.js`, `git diff --check` e verificações de sintaxe aplicáveis. A suíte deve incluir a checagem de estrutura HTML/CSS: todo `<div>` precisa fechar na ordem correta e cada stylesheet precisa ter chaves balanceadas. Informe precisamente o que foi validado; não alegue validação visual ou Supabase se ela não ocorreu.
    O atalho oficial é `node scripts/check.mjs`, que executa a validação local completa sem dependências adicionais, inclusive higiene textual definida no `.editorconfig`.
 5. Depois de os testes passarem, faça commit e push para `origin/main` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
+6. Trabalhe sempre no checkout principal, direto na branch `main`: este é um projeto pessoal, sem fluxo de PR. Nunca crie git worktree, branch auxiliar nem peça revisão antes de puxar pra `main` — pedido explícito do mantenedor.
 
 ## Preferências do mantenedor
 
