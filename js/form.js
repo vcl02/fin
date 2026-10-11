@@ -1022,6 +1022,14 @@ async function submeteEdicaoLancamento(r) {
 // vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
 async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = [] }) {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
+    // Vezes > 1 cria o lote inteiro nesta mesma submissão (cartão parcelado ou várias
+    // ocorrências futuras de um débito recorrente): todas as parcelas compartilham um
+    // recorrencia_id só pra marcar que pertencem ao mesmo lote — a 1ª parcela só sabe seu
+    // próprio id depois de criada, então vira o identificador do lote e recebe um PATCH extra
+    // apontando pra si mesma; as demais já nascem com o campo preenchido. Lançamento único
+    // (parcelas == 1) continua sem recorrencia_id, mesmo com Frequência marcada: essa
+    // continuidade entre meses cadastrados em momentos separados não é coberta aqui.
+    let recorrenciaId = null;
     for (let p = 0; p < parcelas; p++) {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
@@ -1030,8 +1038,14 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
             nome,
             categ, valor: valores[p],
             fatura: faturaVenc,
+            recorrencia_id: recorrenciaId,
         };
         const linhaCriada = await inserirLancamento(payload);
+        if (parcelas > 1 && p === 0) {
+            recorrenciaId = linhaCriada.id;
+            await atualizarLancamento(linhaCriada.id, { recorrencia_id: recorrenciaId });
+            linhaCriada.recorrencia_id = recorrenciaId;
+        }
         const periodoIdx = !dataParcela ? null
             // antecipacao e' debito: periodo determinado pela propria data, nao pelo vencimento da fatura
             : cred ? periodoDaFatura(faturaVenc) : periodoDoDebito(dataISO(dataParcela));
@@ -1105,6 +1119,9 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserv
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),
             periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+            // mesma ideia do lote real (salvaLancamentoParceladoNoBanco): só parcelas > 1
+            // dividem um identificador de lote, aqui o próprio contador da simulação.
+            recorrencia_id: parcelas > 1 ? grupoSimulado : null,
             _sim: true,
         };
     });
