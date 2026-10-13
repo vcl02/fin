@@ -17,6 +17,12 @@
 
 const NOME_ANCORA_CICLO = 'Faturamento PJ';
 const CATEGORIA_INVESTIMENTO = 'Investimento';
+// Contabilidade é um custo intrínseco ao próprio faturamento PJ (a taxa de ter a empresa
+// aberta), não um gasto evitável/discricionário — por isso o gráfico de pizza (ver
+// abrirGraficoGastos em charts.js) abre toda vez já com essa categoria excluída, mostrando
+// direto o líquido. Fixo em código de propósito, igual aos tetos acima: ainda dá pra
+// reincluir manualmente no seletor de categorias do próprio modal, só não é o padrão.
+const CATEGORIA_EXCLUIDA_GRAFICO_PADRAO = 'Contabilidade';
 // Teto mensal de "besteira" SOZINHO (cafés, milkshakes, lanches/doces comendo só, Uber não
 // essencial) — mesmo capricho, mas feito sozinho, por isso desconta daqui e não do teto da
 // Isabella (LIMITE_ISABELLA). Quando é junto com ela, vira "Lazer"+"Isabella" (ver o guia de

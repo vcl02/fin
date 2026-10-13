@@ -9,7 +9,7 @@ function limparFiltros() {
     Estado.selecionados.clear();  // as linhas marcadas somem junto com o recorte que as gerou
     Estado.ordenacaoPorTabela = {};   // volta pra ordenacao padrao (data ascendente)
     Estado.ordComp = { k: 'total', d: 2 };
-    excluidasDoGrafico = [];      // categorias excluidas da pizza
+    excluidasDoGrafico = [CATEGORIA_EXCLUIDA_GRAFICO_PADRAO];   // volta ao padrão: só Contabilidade fora
     // De/Ate: zerar os dois faz desenhar() repor o ciclo ATUAL nos dois (mesmo caminho da
     // 1a carga). Sem ciclo atual, ficam em "Todos" — que tambem e' como a pagina abriria.
     el('compDe').value = '';
@@ -122,7 +122,7 @@ el('modalVisualizacao').addEventListener('click', e => {
 // O usuario pode selecionar categorias especificas da pizza via multi-select. Uma linha com
 // mais de uma categoria continua valendo uma vez só; o seletor decide em qual recorte ela entra.
 let graficoChart = null;
-let excluidasDoGrafico = [];
+let excluidasDoGrafico = [CATEGORIA_EXCLUIDA_GRAFICO_PADRAO];
 const MESES_META_RESERVA_EMERGENCIA = 9;
 const MESES_MEDIA_LIBERDADE_FINANCEIRA = 12;
 const TAXA_RETIRADA_LIBERDADE_FINANCEIRA = 0.035;
@@ -557,9 +557,11 @@ el('modalDetalheCel').addEventListener('click', e => { if (e.target == el('modal
 window.abrirGraficoGastos = idxPeriodo => {
     const { periodo, renda, categorias, categoriasCompartilhadas } = dadosDoGraficoCiclo(idxPeriodo);
     const todasCategorias = ordenarCategoriasDoGrafico(categorias, categoriasCompartilhadas);
-    // Cada abertura parte da visão total; o recorte anterior serve apenas enquanto este modal
-    // estiver aberto e nunca deve surpreender ao clicar novamente no botão Gráfico.
-    excluidasDoGrafico = [];
+    // Cada abertura parte do padrão (só CATEGORIA_EXCLUIDA_GRAFICO_PADRAO fora, pra mostrar
+    // direto o líquido); o recorte anterior serve apenas enquanto este modal estiver aberto e
+    // nunca deve surpreender ao clicar novamente no botão Gráfico. A categoria continua
+    // reincluível ali mesmo, no seletor — isso só muda o estado inicial.
+    excluidasDoGrafico = [CATEGORIA_EXCLUIDA_GRAFICO_PADRAO];
 
     el('graficoSubtitulo').textContent = `${nomePeriodo(periodo)} · Renda do ciclo: ${brl(renda)}`;
     montaExcluirCatDrop(todasCategorias, categoriasCompartilhadas);

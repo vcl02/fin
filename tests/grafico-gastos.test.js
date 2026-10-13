@@ -5,6 +5,8 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const fonte = fs.readFileSync('js/charts.js', 'utf8');
+const dominio = fs.readFileSync('js/domain.js', 'utf8');
+const regrasMd = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const inicio = fonte.indexOf('const PERCENTUAL_MINIMO_PIZZA');
 const fim = fonte.indexOf('\n// clique numa celula', inicio);
 if (inicio < 0 || fim < 0) throw Error('Não encontrou os dados da pizza de gastos.');
@@ -72,6 +74,28 @@ test('comando do seletor alterna entre incluir e excluir todas as categorias do 
 test('clique fora do seletor no modal fecha o dropdown antes do gráfico tratar o gesto', () => {
     assert.match(fonte, /modalGrafico'\)\.addEventListener\('pointerdown'/);
     assert.match(fonte, /!e\.target\.closest\('#excluirCatWrap'\)/);
+});
+
+test('Contabilidade (CATEGORIA_EXCLUIDA_GRAFICO_PADRAO) é intrínseca ao faturamento, fixa em código', () => {
+    assert.match(dominio, /const CATEGORIA_EXCLUIDA_GRAFICO_PADRAO = 'Contabilidade';/);
+});
+
+test('o modal Gráfico abre toda vez com Contabilidade excluída por padrão, mostrando o líquido', () => {
+    assert.match(fonte, /excluidasDoGrafico = \[CATEGORIA_EXCLUIDA_GRAFICO_PADRAO\];/);
+    // "Limpar filtros" também repõe esse mesmo padrão, não a lista vazia de antes.
+    assert.match(fonte, /excluidasDoGrafico = \[CATEGORIA_EXCLUIDA_GRAFICO_PADRAO\];\s*\/\/ volta ao padrão: só Contabilidade fora/);
+    assert.doesNotMatch(fonte, /excluidasDoGrafico = \[\];/);
+});
+
+test('categoria continua reincluível no seletor: só o estado INICIAL muda, não a lista de categorias disponíveis', () => {
+    assert.match(fonte, /const { periodo, renda, categorias, categoriasCompartilhadas } = dadosDoGraficoCiclo\(idxPeriodo\);/);
+    assert.match(fonte, /montaExcluirCatDrop\(todasCategorias, categoriasCompartilhadas\);/);
+});
+
+test('regra documentada em REGRAS.md', () => {
+    assert.match(regrasMd, /`Contabilidade` \(`CATEGORIA_EXCLUIDA_GRAFICO_PADRAO` em `js\/domain\.js`\) já abre desmarcada por padrão/);
+    assert.match(regrasMd, /é custo intrínseco ao próprio faturamento PJ, não um gasto discricionário, então a pizza mostra direto o líquido/);
+    assert.match(regrasMd, /Fechar e abrir o modal restaura esse padrão \(só `Contabilidade` fora, as demais categorias de volta\)/);
 });
 
 test('fatia mantém as linhas reais para abrir seu detalhamento no recorte atual', () => {
