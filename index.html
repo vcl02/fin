@@ -337,6 +337,18 @@
       </section>
     </dialog>
 
+    <!-- Resultado detalhado de "Consolidar tudo" (ver btConsolidarTudo em form.js): abre
+         sozinho ao fim da varredura, pra listar ciclo a ciclo o que foi materializado,
+         consolidado ou corrigido — a maioria dos ciclos varridos nem aparece na tela. Só
+         leitura do que já foi gravado, não altera nada por si só. -->
+    <dialog id=modalConsolidarTudo>
+      <div class=modalHead>
+        <h2>Consolidar tudo</h2>
+      </div>
+      <p class=meta id=textoConsolidarTudo></p>
+      <ul class=listaDiagnostico id=listaConsolidarTudo></ul>
+    </dialog>
+
     <!-- Avisos operacionais efêmeros: o JavaScript empilha toasts no canto inferior direito. -->
     <div id=toasts aria-live=polite aria-atomic=false></div>
 

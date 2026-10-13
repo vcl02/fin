@@ -23,7 +23,7 @@ test('botão fica na toolbar, com título explicando o alcance', () => {
 test('materializar/consolidar foi extraído pra uma função única, reaproveitada pelas duas ações', () => {
     assert.match(formulario, /async function materializaOuConsolidaAjuste\(idx, ehAporte, categ, valorAjuste\)/);
     assert.match(formulario, /await materializaOuConsolidaAjuste\(indiceDoAjuste\(chave\), ehAporte, ajuste\.categ, valorAjuste\);/);
-    assert.match(formulario, /await materializaOuConsolidaAjuste\(idx, ajuste\.tipo == 'aporte', ajuste\.categ, ajuste\.v\);/);
+    assert.match(formulario, /const ehAporte = ajuste\.tipo == 'aporte';\s*\n\s*const resultado = await materializaOuConsolidaAjuste\(idx, ehAporte, ajuste\.categ, ajuste\.v\);/);
     // a função usa o fim do próprio ciclo (Estado.ciclos[idx].fat), não mais ajuste.data de
     // uma linha renderizada — ela tem que funcionar pra ciclo nenhum estar na tela.
     assert.match(formulario, /const data = dataISO\(Estado\.ciclos\[idx\]\.fat\) \|\| null;/);
@@ -56,18 +56,22 @@ test('fica visualmente apagado enquanto desabilitado, igual Duplicar/Editar/Excl
 });
 
 test('consolidar tudo corrige recorrências duplicadas ANTES de materializar/consolidar, no mesmo intervalo, recalculando o fim do intervalo depois', () => {
-    assert.match(formulario, /const corrigidos = await corrigeRecorrenciasDuplicadasNoIntervalo\(Estado\.idxHoje, ultimoCicloAntesDaCorrecao\);/);
+    assert.match(formulario, /const \{ corrigidos, log: logDatas \} = await corrigeRecorrenciasDuplicadasNoIntervalo\(Estado\.idxHoje, ultimoCicloAntesDaCorrecao\);/);
     assert.match(formulario, /async function corrigeRecorrenciasDuplicadasNoIntervalo\(idxInicio, idxFim\) \{/);
     assert.match(formulario, /const proximoCiclo = Estado\.ciclos\[idx \+ 1\];\s*\n\s*if \(!proximoCiclo\) continue;/);
     assert.match(formulario, /marcaOcorrenciasDuplicadasNoCiclo\(debitos, proximoCiclo\);/);
     assert.match(formulario, /for \(const r of debitos\.filter\(r => r\._dupCiclo\)\) \{/);
+    assert.match(formulario, /const dataAntiga = r\.data;/);
     assert.match(formulario, /if \(!Estado\.simulando && !r\._sim\) await atualizarLancamento\(r\.id, \{ data: novaData \}\);/);
-    assert.match(formulario, /r\.data = novaData;\s*\n\s*reclassificaPeriodo\(r\);\s*\n\s*delete r\._dupCiclo;\s*\n\s*corrigidos\+\+;\s*\n\s*limparCachesFinanceiros\(\);/);
+    assert.match(formulario, /r\.data = novaData;\s*\n\s*reclassificaPeriodo\(r\);\s*\n\s*delete r\._dupCiclo;\s*\n\s*corrigidos\+\+;/);
+    assert.match(formulario, /log\.push\(`\$\{nomePeriodo\(Estado\.ciclos\[idx\]\)\}: "\$\{r\.nome \?\? ''\}" movida de \$\{dataBR\(dataAntiga\)\} para \$\{dataBR\(novaData\)\} \(recorrência duplicada no ciclo\)\.`\);/);
+    assert.match(formulario, /return \{ corrigidos, log \};/);
 });
 
 test('cada ciclo limpa os caches financeiros antes do próximo, pois o guardado disponível muda', () => {
-    assert.match(formulario, /const resultado = await materializaOuConsolidaAjuste\(idx, ajuste\.tipo == 'aporte', ajuste\.categ, ajuste\.v\);/);
-    assert.match(formulario, /if \(resultado == 'consolidado'\) consolidados\+\+; else materializados\+\+;\s*\n\s*limparCachesFinanceiros\(\);/);
+    assert.match(formulario, /const resultado = await materializaOuConsolidaAjuste\(idx, ehAporte, ajuste\.categ, ajuste\.v\);/);
+    assert.match(formulario, /if \(resultado == 'consolidado'\) consolidados\+\+; else materializados\+\+;/);
+    assert.match(formulario, /logAjustes\.push\(`[\s\S]*?`\);\s*\n\s*limparCachesFinanceiros\(\);/);
     assert.match(financeiro, /function limparCachesFinanceiros\(\) \{/);
     assert.match(financeiro, /Object\.keys\(_cacheSaldo\)\.forEach\(k => delete _cacheSaldo\[k\]\);/);
     assert.match(financeiro, /_baseFiltrada = _abatFiltrada = null;/);
@@ -83,8 +87,36 @@ test('conclusão sempre aparece em toast, juntando materialização/consolidaç�
     const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
     assert.match(trecho, /const partes = \[\];\s*\n\s*if \(materializados \|\| consolidados\) partes\.push\(`\$\{materializados\} materializado\(s\), \$\{consolidados\} consolidado\(s\)`\);\s*\n\s*if \(corrigidos\) partes\.push\(`\$\{corrigidos\} data\(s\) de recorrência duplicada corrigida\(s\)`\);/);
-    assert.match(trecho, /mostrarToast\('Consolidar tudo', partes\.length\s*\n\s*\? `\$\{partes\.join\('; '\)\}\.`\s*\n\s*: 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente\.'\);/);
+    assert.match(trecho, /const resumo = partes\.length\s*\n\s*\? `\$\{partes\.join\('; '\)\}\.`\s*\n\s*: 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente\.';/);
+    assert.match(trecho, /mostrarToast\('Consolidar tudo', resumo\);/);
     assert.match(trecho, /catch \(err\) \{\s*mostrarToast\('Falhou ao consolidar tudo', err\.message\);\s*desenhar\(\);/);
+});
+
+test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao clique, não escondida atrás de outro botão', () => {
+    const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
+    const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
+    assert.match(trecho, /const logAjustes = \[\];/);
+    assert.match(trecho, /const ehAporte = ajuste\.tipo == 'aporte';/);
+    assert.match(trecho, /logAjustes\.push\(`\$\{nomePeriodo\(Estado\.ciclos\[idx\]\)\}: \$\{resultado == 'consolidado' \? 'Consolidado' : 'Materializado'\} \$\{ehAporte \? 'Aporte' : 'Resgate'\} de \$\{brl\(Math\.abs\(ajuste\.v\)\)\}\.`\);/);
+    assert.match(trecho, /mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logDatas, \.\.\.logAjustes\]\);/);
+
+    assert.match(pagina, /<dialog id=modalConsolidarTudo>/);
+    assert.match(pagina, /<p class=meta id=textoConsolidarTudo><\/p>/);
+    assert.match(pagina, /<ul class=listaDiagnostico id=listaConsolidarTudo><\/ul>/);
+
+    const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
+    assert.match(dadosUi, /function mostrarResultadoConsolidarTudo\(resumo, log\) \{/);
+    assert.match(dadosUi, /el\('textoConsolidarTudo'\)\.textContent = resumo;/);
+    assert.match(dadosUi, /preencherListaDiagnostico\('listaConsolidarTudo', log\);/);
+    assert.match(dadosUi, /if \(!el\('modalConsolidarTudo'\)\.open\) el\('modalConsolidarTudo'\)\.showModal\(\);/);
+
+    const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
+    assert.match(inicializacao, /el\('modalConsolidarTudo'\)\.addEventListener\('click', e => \{\s*\n\s*if \(e\.target == el\('modalConsolidarTudo'\)\) el\('modalConsolidarTudo'\)\.close\(\);\s*\n\s*\}\);/);
+
+    const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
+    assert.match(estilosForm, /dialog#modalDiagnostico::backdrop,\s*\n\s*dialog#modalConsolidarTudo::backdrop \{\s*\n\s*background: rgba\(0, 0, 0, \.68\);/);
+    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias,\s*\n\s*dialog#modalConsolidarTudo \{/);
+    assert.match(estilosForm, /#listaConsolidarTudo \{\s*\n\s*color: var\(--mu\);\s*\n\s*\}/);
 });
 
 test('regra documentada em REGRAS.md', () => {
@@ -96,4 +128,8 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira/);
     assert.match(regras, /Ciclos anteriores ao atual nunca entram nessa varredura\./);
     assert.match(regras, /a conclusão sempre aparece em toast contando quantos foram materializados, quantos foram consolidados e quantas datas de recorrência duplicada foram corrigidas/);
+    assert.match(regras, /abre sozinho um modal \(`#modalConsolidarTudo`\) com o mesmo resumo e uma linha por ação de verdade executada/);
+    assert.match(regras, /Diferente do modal de diagnóstico de carga \(que só abre por escolha do usuário, pra não interromper a consulta\), este abre automaticamente porque é resposta direta a um clique explícito do próprio usuário/);
+    assert.match(regras, /sem botão de fechar, mesmo padrão de clicar fora ou Esc/);
+    assert.match(regras, /Não altera nem recalcula nada: só lê o que a varredura já gravou\./);
 });

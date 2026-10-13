@@ -17,7 +17,8 @@
   }
 
   dialog#modalDiagnostico,
-  dialog#modalAjudaCategorias {
+  dialog#modalAjudaCategorias,
+  dialog#modalConsolidarTudo {
       color: var(--fg);
       background: var(--pa);
       border: 1px solid var(--ln);
@@ -28,10 +29,11 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
-  /* No desktop, avisos/guia longos usam a largura disponível antes de quebrar em várias linhas. */
+  /* No desktop, avisos/guia/resultado longos usam a largura disponível antes de quebrar em várias linhas. */
   @media (min-width: 700px) {
       dialog#modalDiagnostico,
-      dialog#modalAjudaCategorias {
+      dialog#modalAjudaCategorias,
+      dialog#modalConsolidarTudo {
           width: min(44rem, calc(100vw - 4rem));
           max-height: 78vh;
       }
@@ -151,7 +153,8 @@
       background: rgba(0, 0, 0, .68);
   }
 
-  dialog#modalDiagnostico::backdrop {
+  dialog#modalDiagnostico::backdrop,
+  dialog#modalConsolidarTudo::backdrop {
       background: rgba(0, 0, 0, .68);
   }
 
@@ -591,6 +594,12 @@
   }
 
   #secaoAvisos .listaDiagnostico {
+      color: var(--mu);
+  }
+
+  /* Resultado de "Consolidar tudo" é informativo, não um erro — herdar o vermelho padrão
+     de .listaDiagnostico destoaria do que realmente é (confirmação do que foi gravado). */
+  #listaConsolidarTudo {
       color: var(--mu);
   }
 

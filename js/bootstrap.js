@@ -63,6 +63,9 @@ el('modalDiagnostico').addEventListener('click', e => {
     if (e.target == el('modalDiagnostico')) el('modalDiagnostico').close();
 });
 el('btDiagnostico').onclick = abrirDiagnosticoDeDados;
+el('modalConsolidarTudo').addEventListener('click', e => {
+    if (e.target == el('modalConsolidarTudo')) el('modalConsolidarTudo').close();
+});
 el('recarregar').onclick = async () => {
     const bt = el('recarregar');
 

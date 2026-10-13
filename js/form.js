@@ -733,22 +733,25 @@ el('seldup').onclick = async () => {
 // precisa refletir nos ajustes que o loop seguinte vai materializar/consolidar.
 async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
     let corrigidos = 0;
+    const log = [];   // uma linha por correção, pro modal de resultado (ver btConsolidarTudo)
     for (let idx = idxInicio; idx <= idxFim; idx++) {
         const proximoCiclo = Estado.ciclos[idx + 1];
         if (!proximoCiclo) continue;   // sem próximo ciclo cadastrado, não há pra onde mover
         const debitos = Estado.lancamentos.filter(r => r.periodoIdx == idx && !r.cred);
         marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo);
         for (const r of debitos.filter(r => r._dupCiclo)) {
+            const dataAntiga = r.data;
             const novaData = r._dupCiclo;
             if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { data: novaData });
             r.data = novaData;
             reclassificaPeriodo(r);
             delete r._dupCiclo;
             corrigidos++;
+            log.push(`${nomePeriodo(Estado.ciclos[idx])}: "${r.nome ?? ''}" movida de ${dataBR(dataAntiga)} para ${dataBR(novaData)} (recorrência duplicada no ciclo).`);
             limparCachesFinanceiros();
         }
     }
-    return corrigidos;
+    return { corrigidos, log };
 }
 
 // "Consolidar tudo": repete materializaOuConsolidaAjuste ciclo a ciclo, de hoje até o
@@ -769,7 +772,7 @@ el('btConsolidarTudo').onclick = async () => {
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
             Estado.idxHoje
         );
-        const corrigidos = await corrigeRecorrenciasDuplicadasNoIntervalo(Estado.idxHoje, ultimoCicloAntesDaCorrecao);
+        const { corrigidos, log: logDatas } = await corrigeRecorrenciasDuplicadasNoIntervalo(Estado.idxHoje, ultimoCicloAntesDaCorrecao);
         // Uma correção pode ter empurrado alguma linha pro ciclo logo depois do limite
         // conhecido antes da varredura — recalcula pra não deixar esse ciclo de fora do
         // loop de aporte/resgate a seguir.
@@ -778,23 +781,29 @@ el('btConsolidarTudo').onclick = async () => {
             ultimoCicloAntesDaCorrecao
         );
         let materializados = 0, consolidados = 0;
+        const logAjustes = [];
         for (let idx = Estado.idxHoje; idx <= ultimoCicloComDados; idx++) {
             const ajuste = ajusteDoCiclo(idx);
             if (!ajuste) continue;
-            const resultado = await materializaOuConsolidaAjuste(idx, ajuste.tipo == 'aporte', ajuste.categ, ajuste.v);
+            const ehAporte = ajuste.tipo == 'aporte';
+            const resultado = await materializaOuConsolidaAjuste(idx, ehAporte, ajuste.categ, ajuste.v);
             if (resultado == 'consolidado') consolidados++; else materializados++;
+            logAjustes.push(`${nomePeriodo(Estado.ciclos[idx])}: ${resultado == 'consolidado' ? 'Consolidado' : 'Materializado'} ${ehAporte ? 'Aporte' : 'Resgate'} de ${brl(Math.abs(ajuste.v))}.`);
             limparCachesFinanceiros();
         }
         Estado.selecionados.clear();
         desenhar();
         // Nada aparece na tela pros ciclos fora do atual (não estão renderizados), então o
-        // toast é o único retorno de que a varredura rodou e o que ela de fato mudou.
+        // toast é um resumo rápido e o modal (mostrarResultadoConsolidarTudo) traz o detalhe
+        // ciclo a ciclo de tudo que a varredura de fato gravou.
         const partes = [];
         if (materializados || consolidados) partes.push(`${materializados} materializado(s), ${consolidados} consolidado(s)`);
         if (corrigidos) partes.push(`${corrigidos} data(s) de recorrência duplicada corrigida(s)`);
-        mostrarToast('Consolidar tudo', partes.length
+        const resumo = partes.length
             ? `${partes.join('; ')}.`
-            : 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente.');
+            : 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente.';
+        mostrarToast('Consolidar tudo', resumo);
+        mostrarResultadoConsolidarTudo(resumo, [...logDatas, ...logAjustes]);
     } catch (err) {
         mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();

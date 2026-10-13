@@ -150,7 +150,7 @@ test('botão de ajuda ao lado de Categorias abre um guia com as regras de catego
     assert.match(formulario, /el\('fechaAjudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.close\(\);/);
     assert.match(formulario, /if \(e\.target == el\('modalAjudaCategorias'\)\) el\('modalAjudaCategorias'\)\.close\(\);/);
 
-    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias \{/);
+    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias,\s*\n\s*dialog#modalConsolidarTudo \{/);
     assert.match(estilosForm, /\.btAjudaMini\s*\{/);
     assert.match(estilosForm, /\.ajudaCategorias\s*\{/);
 });

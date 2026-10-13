@@ -72,6 +72,8 @@ function carregaCorrecaoEmLote() {
         dataISO: v => String(v ?? '').slice(0, 10),
         timestamp: v => new Date(String(v)).getTime(),
         Estado: { ciclos: [], lancamentos: [], simulando: false },
+        nomePeriodo: c => (c && c.ini ? `ciclo:${c.ini}` : '—'),
+        dataBR: s => { const p = String(s ?? '').slice(0, 10).split('-'); return p.length == 3 ? `${p[2]}/${p[1]}/${p[0]}` : s; },
         atualizarLancamento: async (id, campos) => { chamadasPatch.push({ id, ...campos }); },
         reclassificaPeriodo: r => {
             const idx = contexto.Estado.ciclos.findIndex((c, i) =>
@@ -99,11 +101,17 @@ test('consolidar tudo em lote: corrige todas as ocorrências aplicáveis no inte
         { id: 13, nome: 'Internet', categ: 'Casa', data: '2026-11-10', v: -70, periodoIdx: 2, cred: false },
         { id: 14, nome: 'Internet', categ: 'Casa', data: '2026-12-05', v: -70, periodoIdx: 2, cred: false },
     ];
-    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 2);
+    const { corrigidos, log } = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 2);
     assert.equal(corrigidos, 2);
     assert.deepEqual(chamadasPatch, [
         { id: 11, data: '2026-11-09' },
         { id: 14, data: '2026-12-09' },
+    ]);
+    // Array.from: "log" nasce dentro do vm (outro realm, outro construtor Array) — sem
+    // converter primeiro, deepEqual falha por identidade de realm, não por conteúdo.
+    assert.deepEqual(Array.from(log), [
+        'ciclo:2026-10-08: "Seguro Residencial" movida de 04/11/2026 para 09/11/2026 (recorrência duplicada no ciclo).',
+        'ciclo:2026-11-09: "Internet" movida de 05/12/2026 para 09/12/2026 (recorrência duplicada no ciclo).',
     ]);
     const r11 = contexto.Estado.lancamentos.find(r => r.id == 11);
     assert.equal(r11.data, '2026-11-09');
@@ -121,7 +129,7 @@ test('simulação (Estado.simulando) não faz PATCH nenhum, só ajusta em memór
         { id: 20, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90, periodoIdx: 0, cred: false },
         { id: 21, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90, periodoIdx: 0, cred: false },
     ];
-    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(0, 0);
+    const { corrigidos } = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(0, 0);
     assert.equal(corrigidos, 1);
     assert.deepEqual(chamadasPatch, []);
     assert.equal(contexto.Estado.lancamentos.find(r => r.id == 21).data, '2026-11-09');
@@ -196,7 +204,7 @@ test('consolidar tudo em lote também pula entrada (valor positivo), sem PATCH n
         { id: 40, nome: 'Salário', categ: 'Isabella', data: '2026-10-10', v: 2000, periodoIdx: 1, cred: false },
         { id: 41, nome: 'Salário', categ: 'Isabella', data: '2026-11-05', v: 2000, periodoIdx: 1, cred: false },
     ];
-    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 1);
+    const { corrigidos } = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 1);
     assert.equal(corrigidos, 0);
     assert.deepEqual(chamadasPatch, []);
     assert.equal(contexto.Estado.lancamentos.find(r => r.id == 41).data, '2026-11-05');   // intocada
@@ -209,7 +217,7 @@ test('consolidar tudo em lote também pula antecipação de fatura, sem PATCH ne
         { id: 30, nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', data: '2026-10-05', periodoIdx: 1, cred: false },
         { id: 31, nome: 'Antecipação Fatura', categ: 'Antecipação Fatura', data: '2026-11-04', periodoIdx: 1, cred: false },
     ];
-    const corrigidos = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 1);
+    const { corrigidos } = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 1);
     assert.equal(corrigidos, 0);
     assert.deepEqual(chamadasPatch, []);
     assert.equal(contexto.Estado.lancamentos.find(r => r.id == 31).data, '2026-11-04');   // intocada
