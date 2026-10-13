@@ -1036,6 +1036,17 @@
       cursor: default;
   }
 
+  /* .btFiltro (Visualizações, Gráfico, Limpar filtros, Consolidar tudo) só tem estilo
+     próprio dentro do media query mobile (ver mobile.css) — no desktop usa a aparência
+     nativa do navegador, que nem sempre deixa claro que o botão está desabilitado durante
+     um processamento (ex.: "Consolidar tudo" enquanto roda, ver btConsolidarTudo em
+     form.js). Esta regra fica fora do media query de propósito, pra valer nas duas
+     larguras, mesmo esquema de opacidade do Duplicar/Editar/Excluir acima. */
+  .btFiltro:disabled {
+      opacity: .5;
+      cursor: default;
+  }
+
   /* =========================================================
        NAVEGAÇÃO DE CICLOS
        ========================================================= */

@@ -10,6 +10,7 @@ const financeiro = fs.readFileSync('js/finance.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
+const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
 test('botão fica na toolbar, com título explicando o alcance', () => {
     assert.match(pagina, /id=btConsolidarTudo class=btFiltro title="[^"]*hoje até o último ciclo com lançamentos[^"]*"/);
@@ -46,6 +47,14 @@ test('botão fica desabilitado e com texto "Consolidando…" durante a varredura
     assert.match(trecho, /\} finally \{\s*\n\s*el\('btConsolidarTudo'\)\.disabled = false;\s*\n\s*el\('btConsolidarTudo'\)\.textContent = textoOriginal;\s*\n\s*\}/);
 });
 
+test('fica visualmente apagado enquanto desabilitado, igual Duplicar/Editar/Excluir e o Salvar do cadastro — não só o cursor nativo do navegador', () => {
+    // .btFiltro só tinha estilo dentro do media query mobile (ver css/mobile.css); esta
+    // regra fica em dashboard.css, fora de qualquer media query, pra também valer no
+    // desktop — onde "Consolidar tudo" realmente roda.
+    assert.match(estilos, /\.btFiltro:disabled \{\s*\n\s*opacity: \.5;\s*\n\s*cursor: default;\s*\n\s*\}/);
+    assert.doesNotMatch(estilosMobile, /\.btFiltro:disabled/);
+});
+
 test('consolidar tudo corrige recorrências duplicadas ANTES de materializar/consolidar, no mesmo intervalo, recalculando o fim do intervalo depois', () => {
     assert.match(formulario, /const corrigidos = await corrigeRecorrenciasDuplicadasNoIntervalo\(Estado\.idxHoje, ultimoCicloAntesDaCorrecao\);/);
     assert.match(formulario, /async function corrigeRecorrenciasDuplicadasNoIntervalo\(idxInicio, idxFim\) \{/);
@@ -80,7 +89,8 @@ test('conclusão sempre aparece em toast, juntando materialização/consolidaç�
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /\*\*Consolidar tudo\*\* repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
-    assert.match(regras, /o próprio botão fica desabilitado e o texto muda pra "Consolidando…", pra bloquear clique duplo/);
+    assert.match(regras, /o próprio botão fica desabilitado \(`disabled`, de verdade bloqueado pro navegador — mesmo esquema visual apagado do Salvar do cadastro e do Duplicar\/Editar\/Excluir da barra de seleção/);
+    assert.match(regras, /e o texto muda pra "Consolidando…", pra bloquear clique duplo/);
     assert.match(regras, /volta ao normal \("Consolidar tudo"\) ao final, com sucesso ou falha/);
     assert.match(regras, /ela também corrige toda recorrência duplicada nesse mesmo intervalo \(mesma regra do botão "↷" ao lado da Data/);
     assert.match(regras, /sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira/);
