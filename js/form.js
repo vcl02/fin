@@ -758,7 +758,12 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 // limpa os caches financeiros entre uma iteração e a próxima, não só no fim.
 el('btConsolidarTudo').onclick = async () => {
     if (el('btConsolidarTudo').disabled || Estado.idxHoje < 0) return;
+    // disabled bloqueia clique duplo nativamente (botão desabilitado não dispara 'click'),
+    // mas sozinho pode passar despercebido — o texto muda pra deixar claro que já está
+    // processando, mesmo esquema do "Salvando…" de #seldup.
+    const textoOriginal = el('btConsolidarTudo').textContent;
     el('btConsolidarTudo').disabled = true;
+    el('btConsolidarTudo').textContent = 'Consolidando…';
     try {
         const ultimoCicloAntesDaCorrecao = Estado.lancamentos.reduce(
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
@@ -795,6 +800,7 @@ el('btConsolidarTudo').onclick = async () => {
         desenhar();
     } finally {
         el('btConsolidarTudo').disabled = false;
+        el('btConsolidarTudo').textContent = textoOriginal;
     }
 };
 

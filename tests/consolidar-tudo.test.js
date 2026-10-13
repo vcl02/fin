@@ -37,6 +37,15 @@ test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca
     assert.match(formulario, /const ajuste = ajusteDoCiclo\(idx\);\s*\n\s*if \(!ajuste\) continue;/);
 });
 
+test('botão fica desabilitado e com texto "Consolidando…" durante a varredura, bloqueando clique duplo', () => {
+    const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
+    const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
+    assert.match(trecho, /const textoOriginal = el\('btConsolidarTudo'\)\.textContent;\s*\n\s*el\('btConsolidarTudo'\)\.disabled = true;\s*\n\s*el\('btConsolidarTudo'\)\.textContent = 'Consolidando…';/);
+    // finally roda tanto no caminho feliz quanto no catch, então o texto e o disabled
+    // voltam ao normal nos dois casos — sucesso ou falha.
+    assert.match(trecho, /\} finally \{\s*\n\s*el\('btConsolidarTudo'\)\.disabled = false;\s*\n\s*el\('btConsolidarTudo'\)\.textContent = textoOriginal;\s*\n\s*\}/);
+});
+
 test('consolidar tudo corrige recorrências duplicadas ANTES de materializar/consolidar, no mesmo intervalo, recalculando o fim do intervalo depois', () => {
     assert.match(formulario, /const corrigidos = await corrigeRecorrenciasDuplicadasNoIntervalo\(Estado\.idxHoje, ultimoCicloAntesDaCorrecao\);/);
     assert.match(formulario, /async function corrigeRecorrenciasDuplicadasNoIntervalo\(idxInicio, idxFim\) \{/);
@@ -71,6 +80,8 @@ test('conclusão sempre aparece em toast, juntando materialização/consolidaç�
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /\*\*Consolidar tudo\*\* repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
+    assert.match(regras, /o próprio botão fica desabilitado e o texto muda pra "Consolidando…", pra bloquear clique duplo/);
+    assert.match(regras, /volta ao normal \("Consolidar tudo"\) ao final, com sucesso ou falha/);
     assert.match(regras, /ela também corrige toda recorrência duplicada nesse mesmo intervalo \(mesma regra do botão "↷" ao lado da Data/);
     assert.match(regras, /sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira/);
     assert.match(regras, /Ciclos anteriores ao atual nunca entram nessa varredura\./);
