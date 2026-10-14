@@ -358,6 +358,20 @@
       padding-right: 2rem;
   }
 
+  /* Compra em muitas parcelas gera um <select> de fatura por parcela (ver
+     atualizarFaturasDoFormulario em form.js) — sem limite de altura, a lista inteira
+     empurra o resto do formulário (Vezes, Frequência, Categorias, Salvar) pra muito longe
+     no mobile, e a pessoa se perde rolando só pra achar o botão de novo. Vira sua própria
+     área rolável e compacta, sem turbinar o formulário inteiro. */
+  #faturasPorParcela {
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+      max-height: 13rem;
+      overflow-y: auto;
+      padding-right: .2rem;
+  }
+
   .dataWrap {
       display: flex;
       gap: .4rem;
