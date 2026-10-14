@@ -167,6 +167,11 @@
       max-height: 88vh;
   }
 
+  /* Crédito/Pago/Reserva/Comprometido (.fmChecks) ficam numa linha própria logo abaixo do
+     título "Novo/Duplicar/Editar lançamento" — não mais espremidos ao lado dele. Como é
+     filho direto de #formNovo, herda o mesmo espaçamento (gap: 1rem) de qualquer outro
+     campo do formulário, sem precisar de margem própria. */
+
   .modalHead {
       display: flex;
       align-items: center;
@@ -184,23 +189,6 @@
       align-items: center;
       gap: .65rem;
       min-width: 0;
-  }
-
-  .modalTituloAcoes .fmChecks {
-      margin: 0;
-  }
-
-  #formNovo .modalHead {
-      justify-content: flex-start;
-      gap: 1.15rem;
-  }
-
-  #formNovo .modalTituloAcoes {
-      flex: 1;
-  }
-
-  #formNovo .modalTituloAcoes .fmChecks {
-      margin-left: auto;
   }
 
   #fechaNovo,

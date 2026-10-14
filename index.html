@@ -148,32 +148,31 @@
     <dialog id=modalNovo>
       <form id=formNovo method=dialog>
         <div class=modalHead>
-          <div class=modalTituloAcoes>
-            <h2 id=tituloNovo>Novo lançamento</h2>
-            <div class=fmChecks>
-              <label class="fmChk fmChkIco" title="Crédito">
-                <input type=checkbox id=fCred checked aria-label="Crédito">
-                <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3" /></svg>
-              </label>
-              <label class="fmChk fmChkIco" title="Pago">
-                <input type=checkbox id=fPago checked aria-label="Pago">
-                <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><circle cx=12 cy=12 r=8 /><path d="m8.5 12 2.2 2.2 4.8-5" /></svg>
-              </label>
-              <label class="fmChk fmChkIco" title="Reserva">
-                <input type=checkbox id=fReserva aria-label="Reserva">
-                <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><path d="M12 3 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z" /></svg>
-              </label>
-              <label class="fmChk fmChkIco" title="Comprometido">
-                <input type=checkbox id=fComprometido aria-label="Comprometido">
-                <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><path d="M5 3v18" /><path d="M5 4h11l-3 4 3 4H5" /></svg>
-              </label>
-            </div>
-          </div>
+          <h2 id=tituloNovo>Novo lançamento</h2>
           <button type=button id=fechaNovo title="Fechar" aria-label="Fechar">
             <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round>
               <path d="m6 6 12 12M18 6 6 18" />
             </svg>
           </button>
+        </div>
+
+        <div class=fmChecks>
+          <label class="fmChk fmChkIco" title="Crédito">
+            <input type=checkbox id=fCred checked aria-label="Crédito">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3" /></svg>
+          </label>
+          <label class="fmChk fmChkIco" title="Pago">
+            <input type=checkbox id=fPago checked aria-label="Pago">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><circle cx=12 cy=12 r=8 /><path d="m8.5 12 2.2 2.2 4.8-5" /></svg>
+          </label>
+          <label class="fmChk fmChkIco" title="Reserva">
+            <input type=checkbox id=fReserva aria-label="Reserva">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><path d="M12 3 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z" /></svg>
+          </label>
+          <label class="fmChk fmChkIco" title="Comprometido">
+            <input type=checkbox id=fComprometido aria-label="Comprometido">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><path d="M5 3v18" /><path d="M5 4h11l-3 4 3 4H5" /></svg>
+          </label>
         </div>
 
         <p class=avisoFr id=avisoSimulando hidden>Simulação: não salva.</p>

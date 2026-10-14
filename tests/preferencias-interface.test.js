@@ -50,19 +50,25 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.match(estilosForm, /\.parcelasLinha/);
 });
 
-test('cabeçalho do cadastro concentra ícones e deixa o sinal ao lado do valor', () => {
-    assert.match(pagina, /class=modalTituloAcoes>[\s\S]*id=tituloNovo[\s\S]*id=fCred[\s\S]*id=fPago[\s\S]*id=fechaNovo/);
+test('cabeçalho do cadastro fica só com título e fechar; Crédito/Pago/Reserva/Comprometido ganham linha própria logo abaixo; o sinal fica ao lado do valor', () => {
+    assert.match(pagina, /<div class=modalHead>\s*\n\s*<h2 id=tituloNovo>Novo lançamento<\/h2>\s*\n\s*<button type=button id=fechaNovo/);
+    // os 4 ícones (tirando o X de fechar, que fica no cabeçalho) formam a próxima linha,
+    // filha direta de #formNovo — não mais espremidos ao lado do título.
+    assert.match(pagina, /<\/div>\s*\n\s*<div class=fmChecks>\s*\n\s*<label class="fmChk fmChkIco" title="Crédito">/);
+    assert.doesNotMatch(pagina, /class=modalTituloAcoes>[\s\S]{0,200}id=fCred/);
     assert.match(pagina, /class=moneyLinha>[\s\S]*class=moneyWrap[\s\S]*id=fValor[\s\S]*<\/div>\s*<button type=button id=fSinal/);
     assert.doesNotMatch(pagina, /id=abreCalc|id=modalCalc/);
     assert.doesNotMatch(pagina, /class=moneyPrefix/);
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
-    assert.match(estilosForm, /\.modalTituloAcoes/);
+    assert.match(estilosForm, /\.modalTituloAcoes/);   // continua existindo, usado por outro modal (modalVisualizacao)
     assert.match(estilosForm, /\.moneyLinha/);
     assert.match(pagina, /id=fechaNovo title="Fechar" aria-label="Fechar">\s*<svg/);
-    assert.match(estilosForm, /#formNovo \.modalHead\s*\{[\s\S]*justify-content:\s*flex-start/);
-    assert.match(estilosForm, /#formNovo \.modalTituloAcoes\s*\{[\s\S]*flex:\s*1/);
-    assert.match(estilosForm, /#formNovo \.modalTituloAcoes \.fmChecks\s*\{[\s\S]*margin-left:\s*auto/);
+    // sem override próprio: #formNovo .modalHead volta a herdar o space-between genérico
+    // de .modalHead, igual aos demais modais (h2 à esquerda, fechar à direita).
+    assert.doesNotMatch(estilosForm, /#formNovo \.modalHead/);
+    assert.doesNotMatch(estilosForm, /#formNovo \.modalTituloAcoes/);
     assert.match(estilosForm, /#fechaNovo\s*\{[\s\S]*background:\s*var\(--red-soft\)/);
+    assert.match(regras, /os quatro ícones Crédito\/Pago\/Reserva\/Comprometido \(`\.fmChecks`\) formam sua própria linha logo abaixo, não mais espremidos ao lado do título/);
 });
 
 test('cadastro abre sem foco automático no mobile', () => {
