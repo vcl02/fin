@@ -590,6 +590,16 @@
       min-height: 1.1rem;
   }
 
+  /* Sem mensagem, o min-height reservado acima some os dois lados do gap do formulário
+     (Categoria → erroNovo → Salvar), dobrando o espaço visual ali contra qualquer outro
+     par de campos. :empty colapsa a própria altura e cancela o gap de cima com margem
+     negativa, sobrando só o gap normal entre erroNovo e Salvar — mesma distância que entre
+     dois campos quaisquer. Volta ao normal sozinho assim que ganha um texto. */
+  .erroNovo:empty {
+      min-height: 0;
+      margin-top: -1rem;
+  }
+
   .listaDiagnostico {
       margin: .8rem 0 0;
       padding-left: 1.2rem;
