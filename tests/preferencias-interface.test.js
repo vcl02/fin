@@ -46,7 +46,8 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.doesNotMatch(pagina, /À vista \(1x\)|Separe mais de uma categoria por vírgula/);
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(estilosForm, /\.fmChkIco/);
-    assert.match(estilosForm, /grid-template-columns: repeat\(2, 2\.9rem\)/);
+    // os 4 ícones (Crédito/Pago/Reserva/Comprometido) ficam numa linha só, não mais 2x2.
+    assert.match(estilosForm, /grid-template-columns: repeat\(4, 2\.9rem\)/);
     assert.match(estilosForm, /\.parcelasLinha/);
 });
 
