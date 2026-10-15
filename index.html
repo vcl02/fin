@@ -199,29 +199,30 @@
           </div>
         </label>
 
-        <!-- Frequência, Vezes e Dividir sempre no mesmo lugar: com Frequência, o JavaScript
-             desativa Vezes e mostra nele a contagem da série até a data-limite. -->
+        <label class=fm id=fFreqWrap for=fFreq><span>Frequência
+            <button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"
+              aria-label="Abrir ajuda da Frequência">
+              <svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.4
+                stroke-linecap=round stroke-linejoin=round aria-hidden=true>
+                <circle cx=12 cy=12 r=10 />
+                <path d="M9.5 9a2.5 2.5 0 0 1 4.6-1.4c.6.9.4 1.8-.4 2.5-.9.8-1.7 1.3-1.7 2.4" />
+                <path d="M12 17h.01" />
+              </svg>
+            </button>
+          </span>
+          <select id=fFreq>
+            <option value="">— Sem recorrência
+            <option value=Mensal>Mensal
+            <option value=Semanal>Semanal
+            <option value=Quinzenal>Quinzenal
+            <option value=Semestral>Semestral
+            <option value=Anual>Anual
+          </select>
+        </label>
+
+        <!-- Vezes e Dividir sempre no mesmo lugar: com Frequência, o JavaScript desativa Vezes
+             e mostra nele a contagem da série até a data-limite. -->
         <div class=parcelasLinha id=parcelasLinha>
-          <label class=fm id=fFreqWrap for=fFreq><span>Frequência
-              <button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"
-                aria-label="Abrir ajuda da Frequência">
-                <svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.4
-                  stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                  <circle cx=12 cy=12 r=10 />
-                  <path d="M9.5 9a2.5 2.5 0 0 1 4.6-1.4c.6.9.4 1.8-.4 2.5-.9.8-1.7 1.3-1.7 2.4" />
-                  <path d="M12 17h.01" />
-                </svg>
-              </button>
-            </span>
-            <select id=fFreq>
-              <option value="">— Sem recorrência
-              <option value=Mensal>Mensal
-              <option value=Semanal>Semanal
-              <option value=Quinzenal>Quinzenal
-              <option value=Semestral>Semestral
-              <option value=Anual>Anual
-            </select>
-          </label>
           <label class=fm id=fParcelasWrap><span>Vezes</span>
             <select id=fParcelas>
               <option value=1>À vista

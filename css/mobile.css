@@ -75,10 +75,25 @@
           margin: 1rem auto;
       }
 
+      /* O modal ocupa a tela inteira; o formulário preenche essa altura e reparte a sobra
+         entre os campos (space-between), em vez de deixar um vão entre Salvar e o fim do
+         modal. Se o conteúdo passar da altura (tela baixa), só rola, sem espaço extra. */
       #formNovo {
-          max-height: 100vh;
-          max-height: 100dvh;
+          height: 100%;
+          max-height: none;
+          justify-content: space-between;
           padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
+      }
+
+      /* .btPri tem flex: 1 (pra linhas de botões); aqui ele esticaria e engoliria a sobra. */
+      #salvaNovo {
+          flex: none;
+      }
+
+      /* Vazia, a mensagem sai do fluxo: senão ganharia uma fatia da sobra e abriria um vão
+         duplo entre Categorias e Salvar. */
+      .erroNovo:empty {
+          display: none;
       }
 
       dialog#modalGrafico,

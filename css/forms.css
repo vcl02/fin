@@ -486,30 +486,22 @@
       stroke: var(--vd);
   }
 
-  /* Frequência, Vezes e Dividir sempre no mesmo grid: Frequência na linha inteira, Vezes e
-     Dividir embaixo. Com Frequência, Vezes só fica desativado (ver atualizaModoFrequencia
-     em form.js), nunca some. Gap vertical de 1rem = o mesmo entre campos do formulário. */
+  /* Vezes e Dividir na mesma linha, logo abaixo da Frequência (que é um campo comum do
+     formulário, pra receber o mesmo espaçamento dos demais). Com Frequência, Vezes só fica
+     desativado (ver atualizaModoFrequencia em form.js), nunca some. Em Editar, a linha
+     inteira some. */
   .parcelasLinha {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-areas:
-          "freq freq"
-          "vezes dividir";
-      gap: 1rem .6rem;
+      display: flex;
+      gap: .6rem;
       align-items: end;
   }
 
-  /* Editar: Vezes e Dividir somem, Frequência fica sozinha na linha inteira. */
-  .parcelasLinha:has(#fDivideWrap[hidden]) {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: "freq";
+  #fParcelasWrap {
+      flex: 1;
+      min-width: 0;
   }
 
-  #fFreqWrap { grid-area: freq; }
-  #fParcelasWrap { grid-area: vezes; }
-
   #fDivideWrap {
-      grid-area: dividir;
       min-height: 2.9rem;
   }
 

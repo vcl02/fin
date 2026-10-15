@@ -335,9 +335,7 @@ el('fData').addEventListener('change', () => {
 // Editar é sempre a própria linha: Vezes e Dividir só servem pra criar lançamentos novos
 // (ver submeteEdicaoLancamento, que ignora os dois), mas a Frequência continua editável.
 function atualizaModoFrequencia() {
-    const editando = !!modalNovo.dataset.editandoId;
-    el('fParcelasWrap').hidden = editando;
-    el('fDivideWrap').hidden = editando;
+    el('parcelasLinha').hidden = !!modalNovo.dataset.editandoId;
 
     const vezes = el('fParcelas');
     const freq = el('fFreq').value;

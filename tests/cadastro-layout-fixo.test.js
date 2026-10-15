@@ -38,8 +38,7 @@ function carregaModoFrequencia({ freq, data, editando }) {
         fParcelas: selectSimulado(['1', '2', '3']),
         fFreq: { value: freq },
         fData: { value: data },
-        fParcelasWrap: { hidden: false },
-        fDivideWrap: { hidden: false },
+        parcelasLinha: { hidden: false },
     };
     const contexto = {
         el: id => campos[id],
@@ -57,8 +56,7 @@ test('com Frequência, Vezes continua visível, desativado, mostrando a contagem
     const { campos, atualizaModoFrequencia } = carregaModoFrequencia({ freq: 'Mensal', data: '2026-10-15' });
     campos.fParcelas.value = '3';
     atualizaModoFrequencia();
-    assert.equal(campos.fParcelasWrap.hidden, false);
-    assert.equal(campos.fDivideWrap.hidden, false);
+    assert.equal(campos.parcelasLinha.hidden, false);
     assert.equal(campos.fParcelas.disabled, true);
     assert.equal(campos.fParcelas.value, 'serie');
     assert.equal(campos.fParcelas.querySelector('option[value=serie]').textContent, '39x até 2029');
@@ -95,8 +93,7 @@ test('depois de um reset (série já não selecionada), o valor do reset prevale
 test('Editar continua escondendo Vezes e Dividir', () => {
     const { campos, atualizaModoFrequencia } = carregaModoFrequencia({ freq: '', data: '2026-10-15', editando: true });
     atualizaModoFrequencia();
-    assert.equal(campos.fParcelasWrap.hidden, true);
-    assert.equal(campos.fDivideWrap.hidden, true);
+    assert.equal(campos.parcelasLinha.hidden, true);
 });
 
 test('a contagem acompanha a Data', () => {

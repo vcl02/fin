@@ -78,7 +78,7 @@ test('o "?" fica dentro do rótulo, mas o rótulo aponta pro campo (for=), não 
 });
 
 test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
-    assert.match(formulario, /el\('fParcelasWrap'\)\.hidden = editando;/);
+    assert.match(formulario, /el\('parcelasLinha'\)\.hidden = !!modalNovo\.dataset\.editandoId;/);
     assert.match(formulario, /vezes\.disabled = !!freq;/);
     assert.match(formulario, /const parcelas = freq \? 1 : \(\+el\('fParcelas'\)\.value \|\| 1\);/);
     assert.match(formulario, /const tituloPrincipal = freq \? '1ª fatura' :/);
@@ -110,13 +110,12 @@ test('regra dos rótulos com "?" documentada em REGRAS.md', () => {
     assert.match(regras, /Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo \(`for=`\): tocar no texto do rótulo foca o campo, nunca abre a ajuda/);
 });
 
-test('Frequência, Vezes e Dividir no mesmo grid fixo: Frequência na linha inteira, Vezes e Dividir embaixo', () => {
-    assert.match(pagina, /<div class=parcelasLinha id=parcelasLinha>\s*\n\s*<label class=fm id=fFreqWrap for=fFreq><span>Frequência/);
-    assert.match(pagina, /<\/label>\s*\n\s*<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
-    assert.match(estilos, /grid-template-areas:\s*\n\s*"freq freq"\s*\n\s*"vezes dividir";/);
-    // Layout fixo: nenhum rearranjo do grid quando Vezes muda de estado.
-    assert.doesNotMatch(estilos, /\.parcelasLinha:has\(#fParcelasWrap\[hidden\]\)/);
-    assert.match(estilos, /\.parcelasLinha:has\(#fDivideWrap\[hidden\]\) \{\s*\n\s*grid-template-columns: minmax\(0, 1fr\);\s*\n\s*grid-template-areas: "freq";/);
+test('Frequência é um campo comum; Vezes e Dividir ficam numa linha fixa logo abaixo', () => {
+    // Fora do grid, a Frequência recebe o mesmo espaçamento dos demais campos (inclusive
+    // quando o mobile reparte a altura que sobra entre eles).
+    assert.match(pagina, /<\/select>\s*\n\s*<\/label>\s*\n\s*\n\s*<!-- Vezes e Dividir[\s\S]*?-->\s*\n\s*<div class=parcelasLinha id=parcelasLinha>\s*\n\s*<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
+    assert.match(estilos, /\.parcelasLinha \{\s*\n\s*display: flex;\s*\n\s*gap: \.6rem;\s*\n\s*align-items: end;/);
+    assert.doesNotMatch(estilos, /grid-template-areas:\s*\n\s*"freq freq"|\.parcelasLinha:has\(/);
     assert.match(estilos, /\.fm select:disabled \{\s*\n\s*opacity: \.5;/);
     assert.match(regras, /Frequência, Vezes, Dividir e Fatura têm posição fixa no cadastro \(exceção pontual registrada em `docs\/DECISOES\.md`\)/);
 });

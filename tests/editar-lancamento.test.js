@@ -24,9 +24,9 @@ test('só aparece com exatamente 1 linha real/simulada selecionada, nunca ajuste
 test('abre o modal de cadastro pré-preenchido em modo edição, escondendo Vezes\\/Dividir', () => {
     assert.match(formulario, /function abreModalNovo\(prefill, modoEdicao\) \{/);
     assert.match(formulario, /\(modoEdicao \? 'Editar lançamento' : \(prefill \? 'Duplicar lançamento' : 'Novo lançamento'\)\)/);
-    // Vezes e Dividir somem (a Frequência, no mesmo grid, continua editável).
-    assert.match(formulario, /const editando = !!modalNovo\.dataset\.editandoId;\s*\n\s*el\('fParcelasWrap'\)\.hidden = editando;\s*\n\s*el\('fDivideWrap'\)\.hidden = editando;/);
-    assert.doesNotMatch(formulario, /el\('parcelasLinha'\)\.hidden/);
+    // Some a linha Vezes/Dividir; a Frequência, fora dela, continua editável.
+    assert.match(formulario, /el\('parcelasLinha'\)\.hidden = !!modalNovo\.dataset\.editandoId;/);
+    assert.ok(html.indexOf('id=fFreqWrap') < html.indexOf('id=parcelasLinha'));
     assert.match(formulario, /if \(modoEdicao\) \{ el\('fParcelas'\)\.value = 1; modalNovo\.dataset\.editandoId = String\(prefill\.id\); \}/);
     assert.match(formulario, /el\('seledit'\)\.onclick = \(\) => \{/);
     assert.match(formulario, /if \(r\) abreModalNovo\(r, true\);/);
