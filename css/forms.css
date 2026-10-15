@@ -168,14 +168,23 @@
   }
 
   /* Crédito/Pago/Reserva/Comprometido (.fmChecks) ficam numa linha própria logo abaixo do
-     título "Novo/Duplicar/Editar lançamento" — não mais espremidos ao lado dele. Como é
-     filho direto de #formNovo, herda o mesmo espaçamento (gap: 1rem) de qualquer outro
-     campo do formulário, sem precisar de margem própria. */
+     cabeçalho — não mais espremidos ao lado do título. Como é filho direto de #formNovo,
+     herda o mesmo espaçamento (gap: 1rem) de qualquer outro campo do formulário, sem
+     precisar de margem própria. */
 
   .modalHead {
       display: flex;
       align-items: center;
       justify-content: space-between;
+  }
+
+  /* O título "Novo/Duplicar/Editar lançamento"/"Simular compra" (#tituloNovo) é só pra
+     leitor de tela (.srOnly, ver abreModalNovo em form.js — mesmo texto de sempre, só não
+     aparece mais na tela): a ação que abriu o modal já deixa claro o contexto, texto
+     visível vira redundância. Sem ele no fluxo, sobra só o botão de fechar no cabeçalho —
+     empurra pra direita, onde já ficava. */
+  #formNovo .modalHead {
+      justify-content: flex-end;
   }
 
   .modalHead h2 {
