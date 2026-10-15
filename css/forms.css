@@ -376,10 +376,59 @@
   }
 
   /* Campo desativado pelo modo (Vezes com Frequência, Fatura no Débito): continua no lugar,
-     só esmaecido. */
+     mas afundado — fundo mais escuro que o painel, texto apagado, borda tracejada e sem a
+     setinha, pra ler como "não dá pra mexer" e não como um campo vazio. */
   .fm select:disabled {
-      opacity: .5;
-      cursor: default;
+      color: var(--mu);
+      background-color: var(--bg);
+      background-image: none;
+      border-style: dashed;
+      opacity: .7;
+      cursor: not-allowed;
+  }
+
+  /* Troca de estado animada: a classe é posta só quando o campo realmente alterna entre
+     ativo e desativado com o cadastro aberto (animaTrocaDeEstado em form.js); re-renderizar
+     no mesmo estado não anima. Cada animação parte do visual do estado anterior. */
+  .fm select.trocaEstado:disabled {
+      animation: desativaCampo .35s ease-out;
+  }
+
+  .fm select.trocaEstado:enabled {
+      animation: ativaCampo .35s ease-out;
+  }
+
+  @keyframes desativaCampo {
+      from {
+          color: var(--fg);
+          background-color: var(--field);
+          opacity: 1;
+      }
+
+      40% {
+          transform: scale(.97);
+      }
+  }
+
+  @keyframes ativaCampo {
+      from {
+          color: var(--mu);
+          background-color: var(--bg);
+          opacity: .7;
+      }
+
+      40% {
+          transform: scale(1.02);
+          border-color: var(--line-strong);
+      }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+
+      .fm select.trocaEstado:disabled,
+      .fm select.trocaEstado:enabled {
+          animation: none;
+      }
   }
 
   .dataWrap {

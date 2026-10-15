@@ -79,7 +79,7 @@ test('o "?" fica dentro do rótulo, mas o rótulo aponta pro campo (for=), não 
 
 test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
     assert.match(formulario, /el\('parcelasLinha'\)\.hidden = !!modalNovo\.dataset\.editandoId;/);
-    assert.match(formulario, /vezes\.disabled = !!freq;/);
+    assert.match(formulario, /if \(vezes\.disabled !== !!freq\) \{\s*\n\s*vezes\.disabled = !!freq;\s*\n\s*animaTrocaDeEstado\(vezes\);/);
     assert.match(formulario, /const parcelas = freq \? 1 : \(\+el\('fParcelas'\)\.value \|\| 1\);/);
     assert.match(formulario, /const tituloPrincipal = freq \? '1ª fatura' :/);
     assert.doesNotMatch(formulario, /el\('fFreq'\)\.value = 'Mensal'/);
@@ -116,7 +116,6 @@ test('Frequência é um campo comum; Vezes e Dividir ficam numa linha fixa logo 
     assert.match(pagina, /<\/select>\s*\n\s*<\/label>\s*\n\s*\n\s*<!-- Vezes e Dividir[\s\S]*?-->\s*\n\s*<div class=parcelasLinha id=parcelasLinha>\s*\n\s*<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
     assert.match(estilos, /\.parcelasLinha \{\s*\n\s*display: flex;\s*\n\s*gap: \.6rem;\s*\n\s*align-items: end;/);
     assert.doesNotMatch(estilos, /grid-template-areas:\s*\n\s*"freq freq"|\.parcelasLinha:has\(/);
-    assert.match(estilos, /\.fm select:disabled \{\s*\n\s*opacity: \.5;/);
     assert.match(regras, /Frequência, Vezes, Dividir e Fatura têm posição fixa no cadastro \(exceção pontual registrada em `docs\/DECISOES\.md`\)/);
 });
 

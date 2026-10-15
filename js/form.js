@@ -228,8 +228,21 @@ function faturasSugeridasParaParcelas(faturas, data, parcelas, freq) {
 // Antecipacao de fatura (debito) tambem exige uma fatura explicita para abatimento direto.
 // Layout fixo: o campo Fatura nunca some (no Débito comum vira um seletor desativado "—")
 // e mostra só a 1ª parcela; as demais ficam em #modalFaturasParcelas, aberto pelo "+N".
+// Anima a passagem ativo <-> desativado (ver .trocaEstado em forms.css). Só com o cadastro
+// aberto: ao abrir, o estado inicial aparece direto, sem animar. A classe sai no fim, senão
+// a animação recomeçaria sozinha da próxima vez que o modal fosse exibido.
+function animaTrocaDeEstado(select) {
+    if (!modalNovo.open || !select) return;
+    select.classList.remove('trocaEstado');
+    void select.offsetWidth;   // força reflow pra a animação reiniciar
+    select.classList.add('trocaEstado');
+    select.addEventListener('animationend', () => select.classList.remove('trocaEstado'), { once: true });
+}
+
 function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()) {
     const principal = el('faturaPrincipal');
+    // O seletor é recriado a cada chamada; compara com o estado anterior pra só animar troca real.
+    const estavaDesativada = !!principal.querySelector('select:disabled');
     const demais = el('faturasPorParcela');
     const mais = el('fFaturasMais');
     const cred = el('fCred').checked;
@@ -245,6 +258,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
         principal.innerHTML = '<select disabled title="Fatura só no Crédito" aria-label="Fatura (só no Crédito)"><option>—</option></select>';
         demais.innerHTML = '';
         marcaMais(0);
+        if (!estavaDesativada) animaTrocaDeEstado(principal.querySelector('select'));
         return;
     }
 
@@ -289,6 +303,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     };
     const tituloPrincipal = freq ? '1ª fatura' : (parcelas > 1 ? 'Fatura da parcela 1' : 'Parcela única');
     principal.innerHTML = seletor(0, tituloPrincipal);
+    if (estavaDesativada) animaTrocaDeEstado(principal.querySelector('select'));
     demais.innerHTML = Array.from({ length: parcelas - 1 }, (_, i) =>
         `<label class=fm><span>Parcela ${i + 2} <b class=req>*</b></span>${seletor(i + 1)}</label>`
     ).join('');
@@ -357,7 +372,10 @@ function atualizaModoFrequencia() {
         if (vezes.value === 'serie') vezes.value = vezes.dataset.anterior || '1';
         serie.remove();
     }
-    vezes.disabled = !!freq;
+    if (vezes.disabled !== !!freq) {
+        vezes.disabled = !!freq;
+        animaTrocaDeEstado(vezes);
+    }
 }
 
 el('fFreq').addEventListener('change', () => {
