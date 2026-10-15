@@ -1040,8 +1040,9 @@ async function submeteNovoLancamento() {
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
+        let aviso = '';
         if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
+        else aviso = await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data e mantem as opcoes do cadastro
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
@@ -1050,7 +1051,8 @@ async function submeteNovoLancamento() {
             (parcelas > 1
                 ? (valores[0] == null ? `${parcelas}x sem valor`
                     : `${parcelas}x ${brl(Math.abs(valores[0]))} · ${brl(Math.abs(totalAssinado))} no total`)
-                : brl(totalAssinado));
+                : brl(totalAssinado)) +
+            (aviso ? ` · ${aviso}` : '');
         el('erroNovo').classList.add('ok');
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
@@ -1146,32 +1148,41 @@ async function submeteEdicaoLancamento(r) {
 async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = [] }) {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     // Vezes > 1 cria o lote inteiro nesta mesma submissão (cartão parcelado ou várias
-    // ocorrências futuras de um débito recorrente): todas as parcelas compartilham um
-    // recorrencia_id só pra marcar que pertencem ao mesmo lote — a 1ª parcela só sabe seu
-    // próprio id depois de criada, então vira o identificador do lote e recebe um PATCH extra
-    // apontando pra si mesma; as demais já nascem com o campo preenchido. Lançamento único
-    // (parcelas == 1) continua sem recorrencia_id, mesmo com Frequência marcada: essa
-    // continuidade entre meses cadastrados em momentos separados não é coberta aqui.
-    let recorrenciaId = null;
-    for (let p = 0; p < parcelas; p++) {
+    // ocorrências futuras de um débito recorrente) num único INSERT (inserirLancamentos):
+    // com sinal ruim, ou o lote inteiro entra, ou nada entra — nunca uma série pela metade.
+    // Todas as parcelas compartilham um recorrencia_id só pra marcar o lote: é o id da 1ª
+    // parcela (o menor do lote, já que o banco numera na ordem enviada), que só existe depois
+    // do INSERT, então um PATCH em lote grava o vínculo. Lançamento único (parcelas == 1)
+    // continua sem recorrencia_id, mesmo com Frequência marcada: essa continuidade entre
+    // meses cadastrados em momentos separados não é coberta aqui.
+    const payloads = Array.from({ length: parcelas }, (_, p) => {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
-        const payload = {
+        return {
             data: dataParcela, freq, cred, pago, reserva, comprometido,
             nome,
             categ, valor: valores[p],
             fatura: faturaVenc,
-            recorrencia_id: recorrenciaId,
+            recorrencia_id: null,
         };
-        const linhaCriada = await inserirLancamento(payload);
-        if (parcelas > 1 && p === 0) {
-            recorrenciaId = linhaCriada.id;
-            await atualizarLancamento(linhaCriada.id, { recorrencia_id: recorrenciaId });
-            linhaCriada.recorrencia_id = recorrenciaId;
+    });
+    const criadas = (await inserirLancamentos(payloads)).sort((a, b) => a.id - b.id);
+    let aviso = '';
+    if (parcelas > 1) {
+        const recorrenciaId = criadas[0].id;
+        try {
+            await atualizarLancamentos(criadas.map(linha => linha.id), { recorrencia_id: recorrenciaId });
+            criadas.forEach(linha => { linha.recorrencia_id = recorrenciaId; });
+        } catch (err) {
+            // As linhas já estão no banco: falhar aqui faria a pessoa salvar de novo e duplicar.
+            // O vínculo de lote é só uma marca (a tela não depende dele), então vira aviso.
+            aviso = `sem o vínculo de lote (recorrencia_id): ${err.message}`;
         }
-        const periodoIdx = !dataParcela ? null
+    }
+    criadas.forEach(linhaCriada => {
+        const periodoIdx = !linhaCriada.data ? null
             // antecipacao e' debito: periodo determinado pela propria data, nao pelo vencimento da fatura
-            : cred ? periodoDaFatura(faturaVenc) : periodoDoDebito(dataISO(dataParcela));
+            : cred ? periodoDaFatura(dataISO(linhaCriada.fatura)) : periodoDoDebito(dataISO(linhaCriada.data));
         const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null;
         Estado.lancamentos.push({
             ...linhaCriada,
@@ -1179,7 +1190,8 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
             inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
             periodoIdx: idxValido,
         });
-    }
+    });
+    return aviso;
 }
 
 

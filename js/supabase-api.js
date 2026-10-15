@@ -2,11 +2,64 @@
 const sb = supabase.createClient(API, KEY);
 const TAMANHO_LOTE_SUPABASE = 1000;
 
-const tokenAtual = async (forcar) => {
+// Rede ruim (metrô): sem teto, um fetch que perde o sinal no meio fica pendente pra sempre
+// e o botão que esperava por ele nunca volta. Cada tentativa tem um limite de tempo.
+const LIMITE_REQUISICAO_MS = 12000;
+// GET, PATCH e DELETE podem ser repetidos sem mudar o resultado; INSERT não (duplicaria).
+const TENTATIVAS_IDEMPOTENTES = 3;
+const ESPERA_ENTRE_TENTATIVAS_MS = [1000, 2000];
+
+// Falha sem resposta do servidor (sinal caiu ou estourou o tempo): o pedido pode ou não ter
+// chegado ao banco. Um erro HTTP é diferente — é uma resposta de verdade e nunca se repete.
+const erroSemResposta = mensagem => Object.assign(Error(mensagem), { semResposta: true });
+
+function comTeto(promessa, oQue) {
+    let relogio;
+    const estouro = new Promise((_, rejeita) => {
+        relogio = setTimeout(() => rejeita(erroSemResposta(`${oQue}: sem resposta em ${LIMITE_REQUISICAO_MS / 1000} s`)), LIMITE_REQUISICAO_MS);
+    });
+    return Promise.race([promessa, estouro]).finally(() => clearTimeout(relogio));
+}
+
+// Lê o corpo dentro do mesmo teto: a conexão pode cair depois dos cabeçalhos, no meio da
+// resposta. Devolve o texto já lido, pra quem chama não esperar mais nada da rede.
+async function fetchComLimite(url, opcoes, oQue) {
+    const controle = new AbortController();
+    const relogio = setTimeout(() => controle.abort(), LIMITE_REQUISICAO_MS);
+    try {
+        const r = await fetch(url, { ...opcoes, signal: controle.signal });
+        return { ok: r.ok, status: r.status, texto: await r.text() };
+    } catch (err) {
+        throw erroSemResposta(controle.signal.aborted
+            ? `${oQue}: sem resposta em ${LIMITE_REQUISICAO_MS / 1000} s`
+            : `${oQue}: conexão falhou (${err.message})`);
+    } finally {
+        clearTimeout(relogio);
+    }
+}
+
+const espera = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Só para operações idempotentes. Repete apenas falha sem resposta; erro HTTP sobe direto.
+async function comRetentativas(operacao) {
+    for (let tentativa = 1; ; tentativa++) {
+        try {
+            return await operacao(tentativa);
+        } catch (err) {
+            if (!err.semResposta) throw err;
+            if (tentativa >= TENTATIVAS_IDEMPOTENTES) {
+                throw erroSemResposta(`${err.message} (${tentativa} tentativas) — pode tentar de novo, repetir não duplica nada`);
+            }
+            await espera(ESPERA_ENTRE_TENTATIVAS_MS[tentativa - 1]);
+        }
+    }
+}
+
+const tokenAtual = async (forcar) => comTeto((async () => {
     if (forcar) await sb.auth.refreshSession();
     const { data: { session } } = await sb.auth.getSession();
     return session?.access_token || KEY;
-};
+})(), 'sessão');
 
 const buscar = async (tabela, retry) => {
     // O limite de linhas da API vale por resposta, mesmo quando a URL pede um limite maior.
@@ -18,10 +71,10 @@ const buscar = async (tabela, retry) => {
         const url = `${API}/rest/v1/${tabela}?select=*&order=id.asc&limit=${TAMANHO_LOTE_SUPABASE}${depois}`;
         // Reconsulta a carga inteira uma única vez após 401: a sessão pode ter sido renovada
         // entre dois lotes e reaproveitar os anteriores criaria duplicatas no resultado.
-        const r = await fetch(url, { headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(retry) } });
+        const r = await comRetentativas(async () => fetchComLimite(url, { headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(retry) } }, 'carregar'));
         if (r.status === 401 && !retry) return buscar(tabela, true);
-        if (!r.ok) throw Error(`${tabela}: ${r.status} ${await r.text()}`);
-        const lote = await r.json();
+        if (!r.ok) throw Error(`${tabela}: ${r.status} ${r.texto}`);
+        const lote = JSON.parse(r.texto);
         linhas.push(...lote);
         if (lote.length < TAMANHO_LOTE_SUPABASE) return linhas;
         ultimoId = lote.at(-1).id;
@@ -32,37 +85,66 @@ const normalizarCategoriasNoPayload = payload => Object.hasOwn(payload, 'categ')
     ? { ...payload, categ: normalizaCategorias(payload.categ) || null }
     : payload;
 
-const inserirLancamento = async payload => {
-    // Retorna a representação persistida para a tela usar o id e os defaults reais do banco.
-    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}`, {
-        method: 'POST',
-        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(normalizarCategoriasNoPayload(payload)),
-    });
-    if (!r.ok) throw Error(`inserir: ${r.status} ${await r.text()}`);
-    return (await r.json())[0];
+const inserirLancamentos = async payloads => {
+    // Um único POST com todas as linhas: o PostgREST grava o lote num só INSERT, inteiro ou
+    // nada — sinal caindo no meio nunca deixa uma série pela metade. INSERT nunca é repetido
+    // sozinho: sem resposta, o lote pode já estar no banco, e repetir duplicaria.
+    // Retorna a representação persistida para a tela usar os ids e os defaults reais do banco.
+    // A sessão vem antes do try: se ela travar, nada foi enviado e não há o que conferir.
+    const token = await tokenAtual();
+    let r;
+    try {
+        r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN}`, {
+            method: 'POST',
+            headers: { apikey: KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+            body: JSON.stringify(payloads.map(normalizarCategoriasNoPayload)),
+        }, 'inserir');
+    } catch (err) {
+        if (err.semResposta) throw erroSemResposta(`${err.message} — sem confirmação: pode ter salvado. Recarregue e confira antes de repetir`);
+        throw err;
+    }
+    if (!r.ok) throw Error(`inserir: ${r.status} ${r.texto}`);
+    return JSON.parse(r.texto);
 };
 
-const excluirLancamento = async id => {
+const inserirLancamento = async payload => (await inserirLancamentos([payload]))[0];
+
+const linhaExiste = async id => {
+    const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN}?select=id&id=eq.${encodeURIComponent(id)}`, {
+        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual() },
+    }, 'conferir exclusão');
+    if (!r.ok) throw Error(`conferir exclusão: ${r.status} ${r.texto}`);
+    return JSON.parse(r.texto).length > 0;
+};
+
+const excluirLancamento = async id => comRetentativas(async tentativa => {
     // Prefer retorna a linha removida: resposta vazia denuncia policy/RLS sem fingir sucesso.
-    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?id=eq.${encodeURIComponent(id)}`, {
+    const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN}?id=eq.${encodeURIComponent(id)}`, {
         method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), Prefer: 'return=representation' },
-    });
-    if (!r.ok) throw Error(`excluir: ${r.status} ${await r.text()}`);
-    if (!(await r.json()).length) throw Error('nenhuma linha excluída (RLS/policy do Supabase pode estar bloqueando DELETE)');
-};
+    }, 'excluir');
+    if (!r.ok) throw Error(`excluir: ${r.status} ${r.texto}`);
+    if (JSON.parse(r.texto).length) return;
+    // Numa repetição, a tentativa sem resposta pode ter excluído de fato: só é bloqueio se a
+    // linha ainda existir.
+    if (tentativa > 1 && !(await linhaExiste(id))) return;
+    throw Error('nenhuma linha excluída (RLS/policy do Supabase pode estar bloqueando DELETE)');
+});
 
-const atualizarLancamento = async (id, campos) => {
-    const r = await fetch(`${API}/rest/v1/${TABELA_FIN}?id=eq.${encodeURIComponent(id)}`, {
+const atualizarLancamentos = async (ids, campos) => comRetentativas(async () => {
+    // Mesmos campos em várias linhas num só PATCH (filtro id=in.(...)).
+    const filtro = ids.length === 1 ? `eq.${encodeURIComponent(ids[0])}` : `in.(${ids.map(encodeURIComponent).join(',')})`;
+    const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN}?id=${filtro}`, {
         method: 'PATCH',
         headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify(normalizarCategoriasNoPayload(campos)),
-    });
-    if (!r.ok) throw Error(`atualizar: ${r.status} ${await r.text()}`);
-    const linhas = await r.json();
-    if (!linhas.length) throw Error('nenhuma linha atualizada (RLS/policy do Supabase pode estar bloqueando UPDATE)');
-    return linhas[0];
-};
+    }, 'atualizar');
+    if (!r.ok) throw Error(`atualizar: ${r.status} ${r.texto}`);
+    const linhas = JSON.parse(r.texto);
+    if (linhas.length < ids.length) throw Error('nenhuma linha atualizada (RLS/policy do Supabase pode estar bloqueando UPDATE)');
+    return linhas;
+});
+
+const atualizarLancamento = async (id, campos) => (await atualizarLancamentos([id], campos))[0];
 
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);

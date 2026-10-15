@@ -5,7 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const fonte = fs.readFileSync('js/supabase-api.js', 'utf8');
-const inicio = fonte.indexOf('const tokenAtual =');
+const inicio = fonte.indexOf('const LIMITE_REQUISICAO_MS');
 const fim = fonte.indexOf('const normalizarCategoriasNoPayload', inicio);
 const codigo = fonte.slice(inicio, fim);
 
@@ -16,6 +16,7 @@ function carregarBusca(fetch) {
         TAMANHO_LOTE_SUPABASE: 1000,
         encodeURIComponent,
         fetch,
+        setTimeout, clearTimeout, AbortController,
         sb: { auth: {
             getSession: async () => ({ data: { session: { access_token: 'sessao' } } }),
             refreshSession: async () => {},
@@ -33,7 +34,7 @@ test('busca todos os lotes em ordem de id até receber um lote incompleto', asyn
         const ultimo = new URL(url).searchParams.get('id');
         const depoisDe = ultimo ? Number(ultimo.replace('gt.', '')) : -Infinity;
         const lote = registros.filter(r => r.id > depoisDe).slice(0, 1000);
-        return { ok: true, status: 200, json: async () => lote };
+        return { ok: true, status: 200, text: async () => JSON.stringify(lote) };
     });
 
     const resultado = await buscar('fin');
@@ -57,7 +58,7 @@ test('reinicia a carga após 401 entre lotes sem duplicar registros', async () =
             return { ok: false, status: 401, text: async () => 'expirou' };
         }
         const lote = segundoLote ? [{ id: 1001 }] : Array.from({ length: 1000 }, (_, i) => ({ id: i + 1 }));
-        return { ok: true, status: 200, json: async () => lote };
+        return { ok: true, status: 200, text: async () => JSON.stringify(lote) };
     });
 
     const resultado = await buscar('fin');
