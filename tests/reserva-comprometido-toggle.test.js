@@ -71,8 +71,8 @@ test('Duplicar/Editar herdam reserva/comprometido do lançamento de origem; novo
 
 test('submeteNovoLancamento lê os dois checkboxes e propaga pra simulação e pro Supabase', () => {
     assert.match(formulario, /const reserva = el\('fReserva'\)\.checked;\s*\n\s*const comprometido = el\('fComprometido'\)\.checked;/);
-    assert.match(formulario, /simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds \}\);/);
-    assert.match(formulario, /salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds \}\);/);
+    assert.match(formulario, /simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie \}\);/);
+    assert.match(formulario, /salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie \}\);/);
     assert.match(formulario, /async function salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = \[\] \}\)/);
     assert.match(formulario, /data: dataParcela, freq, cred, pago, reserva, comprometido,/);
     assert.match(formulario, /function simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = \[\] \}\)/);

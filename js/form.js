@@ -228,7 +228,10 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     wrap.hidden = !cred && !ehAntecip;
     if (!cred && !ehAntecip) { destino.innerHTML = ''; return; }
 
-    const parcelas = +el('fParcelas').value || 1;
+    // Com Frequência, a pessoa escolhe só a 1ª fatura: as seguintes saem dela, avançadas mês
+    // a mês (faturaDaOcorrencia, no momento de salvar). Sem Frequência, uma por parcela.
+    const freq = el('fFreq').value;
+    const parcelas = freq ? 1 : (+el('fParcelas').value || 1);
     const faturasMap = new Map();
 
     // DISTINCT das datas de vencimento existentes
@@ -250,7 +253,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     // O mesmo preenchimento inicial vale no cadastro real e na simulação. A sugestão
     // nunca substitui uma fatura que a pessoa já escolheu manualmente.
     const sugestoes = cred
-        ? faturasSugeridasParaParcelas(faturas, el('fData').value, parcelas, el('fFreq').value)
+        ? faturasSugeridasParaParcelas(faturas, el('fData').value, parcelas, freq)
         : [];
 
     const opcoes = faturas.map(f =>
@@ -258,7 +261,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     ).join('');
     destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
         const selecionada = idsSelecionados[parcela] || sugestoes[parcela];
-        const titulo = parcelas > 1 ? `Parcela ${parcela + 1}` : 'Parcela única';
+        const titulo = freq ? '1ª fatura' : (parcelas > 1 ? `Parcela ${parcela + 1}` : 'Parcela única');
         return `<label class=fm><span>${titulo} <b class=req>*</b></span>` +
             `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required>` +
             `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a fatura…</option>` +
@@ -291,21 +294,24 @@ el('fData').addEventListener('change', () => {
         atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
     }
 });
+// Frequência escolhida = série até DATA_LIMITE_RECORRENCIA: a quantidade sai da própria
+// data, então Vezes some. Sem Frequência, Vezes volta (compra parcelada comum). Vezes não
+// mexe mais na Frequência — se subisse pra Mensal sozinha, viraria série até 2029.
+function atualizaModoFrequencia() {
+    el('fParcelasWrap').hidden = !!el('fFreq').value;
+}
+
 el('fFreq').addEventListener('change', () => {
-    if (el('fCred').checked) {
-        atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
-    }
+    atualizaModoFrequencia();
+    atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
 });
 
-// Frequencia abre em "— Sem recorrencia", que e' o certo pra compra avulsa (1x) — o caso
-// mais comum de longe, e o que mantem a coluna Frequencia significando alguma coisa (se
-// todo lancamento nascesse "Mensal", a coluna nao distinguiria mais nada). A partir de 2x
-// a recorrencia passa a IMPORTAR (e' ela que decide a data de cada ocorrencia, ver
-// dataDaOcorrencia), entao aqui ela sobe pro padrao Mensal sozinha — so' quando ainda
-// estava vazia, pra nunca atropelar uma escolha explicita (Semanal, Anual...).
-el('fParcelas').addEventListener('change', () => {
-    if (+el('fParcelas').value > 1 && !el('fFreq').value) el('fFreq').value = 'Mensal';
-    atualizarFaturasDoFormulario();
+el('fParcelas').addEventListener('change', () => atualizarFaturasDoFormulario());
+
+el('ajudaFrequencia').onclick = () => el('modalAjudaFrequencia').showModal();
+el('fechaAjudaFrequencia').onclick = () => el('modalAjudaFrequencia').close();
+el('modalAjudaFrequencia').addEventListener('click', e => {
+    if (e.target == el('modalAjudaFrequencia')) el('modalAjudaFrequencia').close();
 });
 
 function abreModalNovo(prefill, modoEdicao) {
@@ -355,9 +361,13 @@ function abreModalNovo(prefill, modoEdicao) {
     }
     else {
         el('fData').value = hojeISO();
-        el('fFreq').value = '';   // avulso ate' que o Vezes diga o contrario (ver listener de #fParcelas)
+        el('fFreq').value = '';   // avulso: série só se a pessoa escolher uma Frequência
         atualizarFaturasDoFormulario([]);
     }
+    // Duplicar/Editar herdam a Frequência do original — o campo Vezes precisa refletir isso,
+    // e as faturas também (com Frequência, só a 1ª).
+    atualizaModoFrequencia();
+    atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
     atualizaSinalUI();
     sugereModoValorParcelas();
 
@@ -916,38 +926,53 @@ async function submeteNovoLancamento() {
     const reserva = el('fReserva').checked;
     const comprometido = el('fComprometido').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
-    // valor em branco: cadastro sempre foi permitido assim (lancamento sem valor definido
-    // ainda, ex: assinatura de preco variavel). Sem valor nao ha o que dividir nem repetir,
-    // entao o campo Vezes/Dividir fica sem efeito — 1 unica linha com valor null, igual
-    // sempre foi.
-    const parcelas = valorTotal ? +el('fParcelas').value : 1;
+    // Com Frequência, a série vai da 1ª data até DATA_LIMITE_RECORRENCIA — sem data não há
+    // de onde contar nem onde parar.
+    if (freq && !data) {
+        el('erroNovo').textContent = 'Escolha a data da 1ª ocorrência.'; el('fData').focus(); return;
+    }
+    // Sem Frequência: valor em branco continua gerando 1 única linha (null), sem efeito do
+    // Vezes — lançamento sem valor definido ainda, ex: assinatura de preço variável. Com
+    // Frequência, a série é o pedido em si: sai inteira mesmo sem valor (cada linha null,
+    // pra preencher depois), em vez de a Frequência não fazer nada.
+    const parcelas = freq ? ocorrenciasAteLimite(data, freq, DATA_LIMITE_RECORRENCIA)
+        : valorTotal ? +el('fParcelas').value : 1;
     const dividir = el('fDivide').checked;
     const valorAssinado = valorTotal * (sinalPositivo ? 1 : -1);
-    const valores = !valorTotal ? [null]
+    const valores = !valorTotal ? Array(freq ? parcelas : 1).fill(null)
         : dividir ? valorDasParcelas(valorTotal, parcelas).map(v => v * (sinalPositivo ? 1 : -1))
             : Array(parcelas).fill(valorAssinado);   // repete o mesmo valor digitado em cada linha, sem dividir
 
-    if ((cred || ehAntecip) && (faturaIds.length !== parcelas || faturaIds.some(id => !id))) {
+    // Com Frequência só existe o seletor da 1ª fatura; sem, um por parcela.
+    const faturasEsperadas = freq ? 1 : parcelas;
+    if ((cred || ehAntecip) && (faturaIds.length !== faturasEsperadas || faturaIds.some(id => !id))) {
         el('erroNovo').textContent = cred
-            ? 'Escolha uma fatura para cada parcela de crédito.'
+            ? (freq ? 'Escolha a 1ª fatura.' : 'Escolha uma fatura para cada parcela de crédito.')
             : 'Escolha a fatura que esta antecipação está quitando.';
         el('fFaturasWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         return;
     }
+    const faturasDaSerie = freq && faturaIds.length
+        ? Array.from({ length: parcelas }, (_, p) =>
+            faturaDaOcorrencia(faturaIds[0], data, dataDaOcorrencia(data, p, freq)))
+        : faturaIds;
 
     if (el('salvaNovo').disabled) return;   // trava clique duplo / Enter repetido
     el('salvaNovo').disabled = true;
     el('salvaNovo').textContent = Estado.simulando ? 'Simulando…' : 'Salvando…';
 
     try {
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds });
-        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
+        else await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data e mantem as opcoes do cadastro
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
         const totalAssinado = valores.reduce((s, v) => s + v, 0);
         el('erroNovo').textContent = (Estado.simulando ? 'Simulado: ' : 'Salvo: ') +
-            (parcelas > 1 ? `${parcelas}x ${brl(Math.abs(valores[0]))} · ${brl(Math.abs(totalAssinado))} no total` : brl(totalAssinado));
+            (parcelas > 1
+                ? (valores[0] == null ? `${parcelas}x sem valor`
+                    : `${parcelas}x ${brl(Math.abs(valores[0]))} · ${brl(Math.abs(totalAssinado))} no total`)
+                : brl(totalAssinado));
         el('erroNovo').classList.add('ok');
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();

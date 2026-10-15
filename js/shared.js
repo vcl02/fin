@@ -184,6 +184,23 @@ function dataDaOcorrencia(iso, p, freq) {
     return regra.tipo == 'dia' ? somaDias(iso, passo) : somaMeses(iso, passo);
 }
 
+// Quantas ocorrências da série cabem da 1ª data até `limite` (inclusive). A 1ª sempre
+// conta, mesmo se já passar do limite: é o lançamento que a pessoa pediu explicitamente.
+function ocorrenciasAteLimite(iso, freq, limite) {
+    let n = 1;
+    while (dataDaOcorrencia(iso, n, freq) <= limite) n++;
+    return n;
+}
+
+// Fatura de uma ocorrência da série no Crédito: a 1ª fatura escolhida, avançada pelo
+// número de meses de calendário entre a 1ª data e a data da ocorrência. Sempre calculada
+// a partir da 1ª (nunca encadeada), pra o clamp de dia 31 não ir encurtando o vencimento.
+function faturaDaOcorrencia(faturaInicial, dataInicial, dataOcorrencia) {
+    const [y1, m1] = dataISO(dataInicial).split('-').map(Number);
+    const [y2, m2] = dataISO(dataOcorrencia).split('-').map(Number);
+    return somaMeses(faturaInicial, (y2 - y1) * 12 + (m2 - m1));
+}
+
 // Nome de exibicao de um periodo: baseado no mes de inicio do ciclo ou no mes anterior ao fat seguinte.
 function nomePeriodo(fatOuCiclo) {
     if (!fatOuCiclo) return '—';

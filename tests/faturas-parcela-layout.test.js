@@ -24,6 +24,6 @@ test('o formulário inteiro (#formNovo) continua com seu próprio scroll e teto 
 });
 
 test('regra documentada em REGRAS.md', () => {
-    assert.match(regras, /O cadastro gera um `<select>` de fatura por parcela dentro do campo \*\*Fatura\*\*; essa lista tem altura própria limitada \(9rem, \+\/- 2 parcelas visíveis por vez\) e rola por conta, em vez de esticar o formulário inteiro/);
+    assert.match(regras, /Sem Frequência, o cadastro gera um `<select>` de fatura por parcela dentro do campo \*\*Fatura\*\* \(com Frequência, só o da 1ª — ver regra acima\); essa lista tem altura própria limitada \(9rem, \+\/- 2 parcelas visíveis por vez\) e rola por conta, em vez de esticar o formulário inteiro/);
     assert.match(regras, /com Vezes alto \(compra em muitas prestações\), sem esse limite o resto do formulário \(Vezes, Frequência, Categorias, Salvar\) ficaria empurrado pra muito longe no mobile/);
 });

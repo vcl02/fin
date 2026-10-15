@@ -204,19 +204,17 @@
           </div>
         </label>
 
-        <div class=parcelasLinha id=parcelasLinha>
-          <label class=fm><span>Vezes</span>
-            <select id=fParcelas>
-              <option value=1>À vista
-            </select>
-          </label>
-          <label class="fmChk fmChkIco" id=fDivideWrap title="Dividir a compra entre parcelas">
-            <input type=checkbox id=fDivide checked aria-label="Dividir a compra entre parcelas">
-            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3M9 12l6 6m0-6-6 6" /></svg>
-          </label>
-        </div>
-
-        <label class=fm><span>Frequência</span>
+        <label class=fm><span>Frequência
+            <button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"
+              aria-label="Abrir ajuda da Frequência">
+              <svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.4
+                stroke-linecap=round stroke-linejoin=round aria-hidden=true>
+                <circle cx=12 cy=12 r=10 />
+                <path d="M9.5 9a2.5 2.5 0 0 1 4.6-1.4c.6.9.4 1.8-.4 2.5-.9.8-1.7 1.3-1.7 2.4" />
+                <path d="M12 17h.01" />
+              </svg>
+            </button>
+          </span>
           <select id=fFreq>
             <option value="">— Sem recorrência
             <option value=Mensal>Mensal
@@ -226,6 +224,19 @@
             <option value=Anual>Anual
           </select>
         </label>
+
+        <!-- Vezes some quando há Frequência (o JavaScript gera a série até a data-limite). -->
+        <div class=parcelasLinha id=parcelasLinha>
+          <label class=fm id=fParcelasWrap><span>Vezes</span>
+            <select id=fParcelas>
+              <option value=1>À vista
+            </select>
+          </label>
+          <label class="fmChk fmChkIco" id=fDivideWrap title="Dividir a compra entre parcelas">
+            <input type=checkbox id=fDivide checked aria-label="Dividir a compra entre parcelas">
+            <svg viewBox="0 0 24 24" width=18 height=18 aria-hidden=true><rect x=3 y=5 width=18 height=14 rx=2 /><path d="M3 10h18M7 15h3M9 12l6 6m0-6-6 6" /></svg>
+          </label>
+        </div>
 
         <label class=fm><span>Categorias <b class=req>*</b>
             <button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer"
@@ -267,6 +278,24 @@
         </div>
       </dl>
       <p class=meta>Por enquanto, "Isabella" sozinha NUNCA entra nesse teto — nem presente/mimo pontual, nem compromissos fixos que usam essa tag (parcela, reserva, a fatura detalhada do cartão dela…). Só a combinação "Lazer" + "Isabella" conta.</p>
+    </dialog>
+
+    <!-- Ajuda da Frequência no cadastro (ver REGRAS.md); só explica a regra, não altera dados. -->
+    <dialog id=modalAjudaFrequencia>
+      <div class=modalHead>
+        <h2>Frequência</h2>
+        <button type=button id=fechaAjudaFrequencia aria-label="Fechar">×</button>
+      </div>
+      <dl class=ajudaCategorias>
+        <div>
+          <dt>Com Frequência</dt>
+          <dd>Você informa só a 1ª ocorrência (a Data e, no Crédito, a 1ª fatura). O cadastro gera uma ocorrência a cada período até 31/12/2029; no Crédito, cada uma cai na fatura do mês correspondente.</dd>
+        </div>
+        <div>
+          <dt>Sem Frequência</dt>
+          <dd>Use Vezes pra parcelar e escolha a fatura de cada parcela.</dd>
+        </div>
+      </dl>
     </dialog>
 
     <dialog id=modalVisualizacao>
