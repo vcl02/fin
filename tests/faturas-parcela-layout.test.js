@@ -15,8 +15,8 @@ test('o campo Fatura do cadastro envolve a lista de parcelas num container próp
     assert.match(pagina, /<div class=fm id=fFaturasWrap hidden>\s*\n\s*<span>Fatura<\/span>\s*\n\s*<div id=faturasPorParcela><\/div>\s*\n\s*<\/div>/);
 });
 
-test('#faturasPorParcela tem altura máxima própria e rola por conta, em vez de esticar o formulário inteiro', () => {
-    assert.match(estilos, /#faturasPorParcela \{\s*\n\s*display: flex;\s*\n\s*flex-direction: column;\s*\n\s*gap: \.7rem;\s*\n\s*max-height: 13rem;\s*\n\s*overflow-y: auto;/);
+test('#faturasPorParcela tem altura máxima própria (9rem, +/- 2 parcelas por vez) e rola por conta, em vez de esticar o formulário inteiro', () => {
+    assert.match(estilos, /#faturasPorParcela \{\s*\n\s*display: flex;\s*\n\s*flex-direction: column;\s*\n\s*gap: \.7rem;\s*\n\s*max-height: 9rem;\s*\n\s*overflow-y: auto;/);
 });
 
 test('o formulário inteiro (#formNovo) continua com seu próprio scroll e teto de altura, independente do limite da lista de parcelas', () => {
@@ -24,6 +24,6 @@ test('o formulário inteiro (#formNovo) continua com seu próprio scroll e teto 
 });
 
 test('regra documentada em REGRAS.md', () => {
-    assert.match(regras, /O cadastro gera um `<select>` de fatura por parcela dentro do campo \*\*Fatura\*\*; essa lista tem altura própria limitada e rola por conta \(até 13rem\), em vez de esticar o formulário inteiro/);
+    assert.match(regras, /O cadastro gera um `<select>` de fatura por parcela dentro do campo \*\*Fatura\*\*; essa lista tem altura própria limitada \(9rem, \+\/- 2 parcelas visíveis por vez\) e rola por conta, em vez de esticar o formulário inteiro/);
     assert.match(regras, /com Vezes alto \(compra em muitas prestações\), sem esse limite o resto do formulário \(Vezes, Frequência, Categorias, Salvar\) ficaria empurrado pra muito longe no mobile/);
 });

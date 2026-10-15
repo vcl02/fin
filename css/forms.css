@@ -352,12 +352,14 @@
      atualizarFaturasDoFormulario em form.js) — sem limite de altura, a lista inteira
      empurra o resto do formulário (Vezes, Frequência, Categorias, Salvar) pra muito longe
      no mobile, e a pessoa se perde rolando só pra achar o botão de novo. Vira sua própria
-     área rolável e compacta, sem turbinar o formulário inteiro. */
+     área rolável e compacta, sem turbinar o formulário inteiro. 9rem cabe +/- 2 parcelas
+     por vez (cada uma com rótulo + select, ~4rem, mais o gap de .7rem entre elas) — antes
+     de 13rem dava pra ver 3 de cada vez, espaço demais pra uma lista que já rola. */
   #faturasPorParcela {
       display: flex;
       flex-direction: column;
       gap: .7rem;
-      max-height: 13rem;
+      max-height: 9rem;
       overflow-y: auto;
       padding-right: .2rem;
   }
