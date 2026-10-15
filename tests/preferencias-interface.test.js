@@ -91,7 +91,7 @@ test('cadastro mantém margem visível em todos os lados no mobile', () => {
 });
 
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
-    assert.match(pagina, /id=fFaturasWrap hidden>\s*<span>Fatura<\/span>/);
+    assert.match(pagina, /id=fFaturasWrap>\s*<span>Fatura<\/span>/);
     assert.match(formulario, /: 'Parcela única'\);/);
     assert.match(formulario, /function nomeFatura\(fatura\) \{\s*return dataBR\(fatura\.vencimento\);/);
 });

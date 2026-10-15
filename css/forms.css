@@ -16,6 +16,7 @@
       border: 1px solid var(--ln);
   }
 
+  dialog#modalFaturasParcelas,
   dialog#modalAjudaFrequencia,
   dialog#modalDiagnostico,
   dialog#modalAjudaCategorias,
@@ -154,6 +155,7 @@
       background: rgba(0, 0, 0, .68);
   }
 
+  dialog#modalFaturasParcelas::backdrop,
   dialog#modalDiagnostico::backdrop,
   dialog#modalConsolidarTudo::backdrop {
       background: rgba(0, 0, 0, .68);
@@ -349,20 +351,35 @@
       padding-right: 2rem;
   }
 
-  /* Compra em muitas parcelas gera um <select> de fatura por parcela (ver
-     atualizarFaturasDoFormulario em form.js) — sem limite de altura, a lista inteira
-     empurra o resto do formulário (Vezes, Frequência, Categorias, Salvar) pra muito longe
-     no mobile, e a pessoa se perde rolando só pra achar o botão de novo. Vira sua própria
-     área rolável e compacta, sem turbinar o formulário inteiro. 9rem cabe +/- 2 parcelas
-     por vez (cada uma com rótulo + select, ~4rem, mais o gap de .7rem entre elas) — antes
-     de 13rem dava pra ver 3 de cada vez, espaço demais pra uma lista que já rola. */
+  /* Fatura em uma linha fixa: o seletor da 1ª parcela + "+N". As demais parcelas ficam em
+     #modalFaturasParcelas (ver atualizarFaturasDoFormulario em form.js), então muitas
+     parcelas nunca esticam o cadastro. Sem outras parcelas, o "+N" fica invisível mas
+     ocupa o mesmo espaço, pra o seletor não mudar de largura. */
+  .faturaLinha {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: .6rem;
+  }
+
+  .btMaisFaturas {
+      min-width: 2.9rem;
+  }
+
+  .btMaisFaturas.vazio {
+      visibility: hidden;
+  }
+
   #faturasPorParcela {
       display: flex;
       flex-direction: column;
       gap: .7rem;
-      max-height: 9rem;
-      overflow-y: auto;
-      padding-right: .2rem;
+  }
+
+  /* Campo desativado pelo modo (Vezes com Frequência, Fatura no Débito): continua no lugar,
+     só esmaecido. */
+  .fm select:disabled {
+      opacity: .5;
+      cursor: default;
   }
 
   .dataWrap {
@@ -469,10 +486,9 @@
       stroke: var(--vd);
   }
 
-  /* Frequência, Vezes e Dividir no mesmo grid. Sem Frequência: Frequência ocupa a linha
-     inteira e Dividir fica ao lado de Vezes. Com Frequência (Vezes some, ver
-     atualizaModoFrequencia em form.js), Dividir sobe pro lado da Frequência em vez de
-     sobrar sozinho numa linha. Gap vertical de 1rem = o mesmo entre campos do formulário. */
+  /* Frequência, Vezes e Dividir sempre no mesmo grid: Frequência na linha inteira, Vezes e
+     Dividir embaixo. Com Frequência, Vezes só fica desativado (ver atualizaModoFrequencia
+     em form.js), nunca some. Gap vertical de 1rem = o mesmo entre campos do formulário. */
   .parcelasLinha {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -481,10 +497,6 @@
           "vezes dividir";
       gap: 1rem .6rem;
       align-items: end;
-  }
-
-  .parcelasLinha:has(#fParcelasWrap[hidden]) {
-      grid-template-areas: "freq dividir";
   }
 
   /* Editar: Vezes e Dividir somem, Frequência fica sozinha na linha inteira. */

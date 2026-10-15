@@ -179,8 +179,15 @@ function nomeFatura(fatura) {
     return dataBR(fatura.vencimento);
 }
 
-function idsFaturasDoFormulario(incluirSugestoes = true) {
+// A 1ª parcela fica no cadastro e as demais em #modalFaturasParcelas: a ordem vem do
+// data-fatura-parcela, não da posição no documento.
+function seletoresDeFatura() {
     return [...document.querySelectorAll('[data-fatura-parcela]')]
+        .sort((a, b) => Number(a.dataset.faturaParcela) - Number(b.dataset.faturaParcela));
+}
+
+function idsFaturasDoFormulario(incluirSugestoes = true) {
+    return seletoresDeFatura()
         .map(select => !incluirSugestoes && select.dataset.faturaSugerida === '1'
             ? null
             : (select.value ? dataISO(select.value) : null));
@@ -219,14 +226,27 @@ function faturasSugeridasParaParcelas(faturas, data, parcelas, freq) {
 // Credito nao tem mais inferencia por fechamento: cada parcela recebe seu vencimento
 // explicitamente. Assim uma compra 3x pode apontar para tres faturas diferentes.
 // Antecipacao de fatura (debito) tambem exige uma fatura explicita para abatimento direto.
+// Layout fixo: o campo Fatura nunca some (no Débito comum vira um seletor desativado "—")
+// e mostra só a 1ª parcela; as demais ficam em #modalFaturasParcelas, aberto pelo "+N".
 function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()) {
-    const wrap = el('fFaturasWrap');
-    const destino = el('faturasPorParcela');
+    const principal = el('faturaPrincipal');
+    const demais = el('faturasPorParcela');
+    const mais = el('fFaturasMais');
     const cred = el('fCred').checked;
     const categ = el('fCateg').value || '';
     const ehAntecip = ehAntecipacaoFatura(categ);
-    wrap.hidden = !cred && !ehAntecip;
-    if (!cred && !ehAntecip) { destino.innerHTML = ''; return; }
+    const marcaMais = n => {
+        mais.textContent = `+${n}`;
+        mais.disabled = n < 1;
+        mais.classList.toggle('vazio', n < 1);
+    };
+    if (!cred && !ehAntecip) {
+        // Sem data-fatura-parcela: o seletor desativado nunca entra em idsFaturasDoFormulario.
+        principal.innerHTML = '<select disabled title="Fatura só no Crédito" aria-label="Fatura (só no Crédito)"><option>—</option></select>';
+        demais.innerHTML = '';
+        marcaMais(0);
+        return;
+    }
 
     // Com Frequência, a pessoa escolhe só a 1ª fatura: as seguintes saem dela, avançadas mês
     // a mês (faturaDaOcorrencia, no momento de salvar). Sem Frequência, uma por parcela.
@@ -259,17 +279,23 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     const opcoes = faturas.map(f =>
         `<option value="${dataISO(f.vencimento)}">${escapeHtml(f.rotulo || nomeFatura(f))}</option>`
     ).join('');
-    destino.innerHTML = Array.from({ length: parcelas }, (_, parcela) => {
+    const seletor = (parcela, rotulo) => {
         const selecionada = idsSelecionados[parcela] || sugestoes[parcela];
-        const titulo = freq ? '1ª fatura' : (parcelas > 1 ? `Parcela ${parcela + 1}` : 'Parcela única');
-        return `<label class=fm><span>${titulo} <b class=req>*</b></span>` +
-            `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required>` +
+        return `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required` +
+            (rotulo ? ` title="${rotulo}" aria-label="${rotulo}"` : '') + '>' +
             `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a fatura…</option>` +
             opcoes +
-            '</select></label>';
-    }).join('');
+            '</select>';
+    };
+    const tituloPrincipal = freq ? '1ª fatura' : (parcelas > 1 ? 'Fatura da parcela 1' : 'Parcela única');
+    principal.innerHTML = seletor(0, tituloPrincipal);
+    demais.innerHTML = Array.from({ length: parcelas - 1 }, (_, i) =>
+        `<label class=fm><span>Parcela ${i + 2} <b class=req>*</b></span>${seletor(i + 1)}</label>`
+    ).join('');
+    marcaMais(parcelas - 1);
 
-    [...document.querySelectorAll('[data-fatura-parcela]')].forEach((select, parcela) => {
+    seletoresDeFatura().forEach(select => {
+        const parcela = Number(select.dataset.faturaParcela);
         const sel = idsSelecionados[parcela] || sugestoes[parcela];
         if (sel) {
             select.value = dataISO(sel);
@@ -277,6 +303,12 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
         select.addEventListener('change', () => { select.dataset.faturaSugerida = '0'; });
     });
 }
+
+el('fFaturasMais').onclick = () => el('modalFaturasParcelas').showModal();
+el('fechaFaturasParcelas').onclick = () => el('modalFaturasParcelas').close();
+el('modalFaturasParcelas').addEventListener('click', e => {
+    if (e.target == el('modalFaturasParcelas')) el('modalFaturasParcelas').close();
+});
 
 el('fCred').addEventListener('change', () => {
     sugereModoValorParcelas();
@@ -290,19 +322,44 @@ el('fCateg').addEventListener('input', () => atualizarFaturasDoFormulario());
 // Uma sugestao ainda automatica acompanha a data da venda; uma fatura escolhida
 // manualmente nunca e' substituida por esse recálculo.
 el('fData').addEventListener('change', () => {
+    atualizaModoFrequencia();   // a contagem da série mostrada em Vezes sai da data
     if (el('fCred').checked) {
         atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
     }
 });
 // Frequência escolhida = série até DATA_LIMITE_RECORRENCIA: a quantidade sai da própria
-// data, então Vezes some. Sem Frequência, Vezes volta (compra parcelada comum). Vezes não
-// mexe mais na Frequência — se subisse pra Mensal sozinha, viraria série até 2029.
+// data, então Vezes fica desativado mostrando essa contagem (ex.: "39x até 2029") — nunca
+// some, pra o formulário não mudar de forma. Sem Frequência, Vezes volta ao valor que
+// tinha (compra parcelada comum). Vezes não mexe mais na Frequência — se subisse pra
+// Mensal sozinha, viraria série até 2029.
 // Editar é sempre a própria linha: Vezes e Dividir só servem pra criar lançamentos novos
 // (ver submeteEdicaoLancamento, que ignora os dois), mas a Frequência continua editável.
 function atualizaModoFrequencia() {
     const editando = !!modalNovo.dataset.editandoId;
-    el('fParcelasWrap').hidden = editando || !!el('fFreq').value;
+    el('fParcelasWrap').hidden = editando;
     el('fDivideWrap').hidden = editando;
+
+    const vezes = el('fParcelas');
+    const freq = el('fFreq').value;
+    let serie = vezes.querySelector('option[value=serie]');
+    if (freq) {
+        if (!serie) {
+            serie = new Option('', 'serie');
+            vezes.add(serie);
+        }
+        if (vezes.value !== 'serie') vezes.dataset.anterior = vezes.value;
+        const data = el('fData').value;
+        serie.textContent = data
+            ? `${ocorrenciasAteLimite(data, freq, DATA_LIMITE_RECORRENCIA)}x até ${DATA_LIMITE_RECORRENCIA.slice(0, 4)}`
+            : 'Escolha a data';
+        vezes.value = 'serie';
+    } else if (serie) {
+        // Só restaura o Vezes anterior se a contagem estava selecionada; depois de um
+        // formNovo.reset() ela já não está, e o valor padrão do reset prevalece.
+        if (vezes.value === 'serie') vezes.value = vezes.dataset.anterior || '1';
+        serie.remove();
+    }
+    vezes.disabled = !!freq;
 }
 
 el('fFreq').addEventListener('change', () => {
@@ -952,7 +1009,9 @@ async function submeteNovoLancamento() {
         el('erroNovo').textContent = cred
             ? (freq ? 'Escolha a 1ª fatura.' : 'Escolha uma fatura para cada parcela de crédito.')
             : 'Escolha a fatura que esta antecipação está quitando.';
-        el('fFaturasWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        // Faltando a de uma parcela 2..N, abre direto o modal onde ela está.
+        if (faturaIds.findIndex(id => !id) > 0) el('modalFaturasParcelas').showModal();
+        else el('fFaturasWrap').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         return;
     }
     const faturasDaSerie = freq && faturaIds.length

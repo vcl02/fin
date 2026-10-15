@@ -190,11 +190,6 @@
           </div>
         </label>
 
-        <div class=fm id=fFaturasWrap hidden>
-          <span>Fatura</span>
-          <div id=faturasPorParcela></div>
-        </div>
-
         <label class=fm><span>Valor</span>
           <div class=moneyLinha>
             <div class=moneyWrap>
@@ -204,9 +199,8 @@
           </div>
         </label>
 
-        <!-- Frequência, Vezes e Dividir num só grid: sem Frequência, Dividir fica ao lado de
-             Vezes; com Frequência, Vezes some (o JavaScript gera a série até a data-limite) e
-             Dividir sobe pro lado da Frequência. -->
+        <!-- Frequência, Vezes e Dividir sempre no mesmo lugar: com Frequência, o JavaScript
+             desativa Vezes e mostra nele a contagem da série até a data-limite. -->
         <div class=parcelasLinha id=parcelasLinha>
           <label class=fm id=fFreqWrap for=fFreq><span>Frequência
               <button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"
@@ -239,6 +233,17 @@
           </label>
         </div>
 
+        <!-- Fatura sempre no mesmo lugar (só desativa no Débito). O JavaScript põe aqui o
+             seletor da 1ª parcela e os das demais em #modalFaturasParcelas, aberto pelo "+N". -->
+        <div class=fm id=fFaturasWrap>
+          <span>Fatura</span>
+          <div class=faturaLinha>
+            <div id=faturaPrincipal></div>
+            <button type=button id=fFaturasMais class="btHojeMini btMaisFaturas vazio" disabled
+              title="Escolher as faturas das outras parcelas" aria-label="Escolher as faturas das outras parcelas">+0</button>
+          </div>
+        </div>
+
         <label class=fm for=fCateg><span>Categorias <b class=req>*</b>
             <button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer"
               aria-label="Abrir guia de categorias Besteira, Isabella e Lazer">
@@ -259,6 +264,16 @@
 
         <button type=button id=salvaNovo class=btPri>Salvar</button>
       </form>
+    </dialog>
+
+    <!-- Faturas das parcelas 2..N do cadastro (sem Frequência): o JavaScript cria os seletores.
+         Fica depois de #modalNovo, mas a ordem das parcelas vem de data-fatura-parcela. -->
+    <dialog id=modalFaturasParcelas>
+      <div class=modalHead>
+        <h2>Faturas das parcelas</h2>
+        <button type=button id=fechaFaturasParcelas aria-label="Fechar">×</button>
+      </div>
+      <div id=faturasPorParcela></div>
     </dialog>
 
     <!-- Guia de referência pra digitar categoria certo na hora do cadastro (ver REGRAS.md,

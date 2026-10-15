@@ -16,6 +16,10 @@ O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newli
 
 O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. Não existe modo especial por e-mail ou titular: `Isabella` é uma categoria comum. No mobile, `modoSimples` não exibe o bloco Crédito; as tabelas permitem somente seleção para somar valores e não oferecem edição, duplicação, exclusão nem atualização.
 
+## Cadastro com layout fixo
+
+Exceção pontual, sem mudar a direção minimalista: no cadastro, trocar Crédito ou Frequência desativa campos em vez de escondê-los. Vezes fica desativado mostrando a contagem da série, Fatura vira "—" no Débito e as faturas das parcelas 2..N ficam num modal aberto pelo "+N". Esconder e reaparecer campos movia Dividir, Fatura e Salvar a cada toque, o que pesava mais que um campo desativado à vista. Em Editar, Vezes e Dividir continuam escondidos: o modo é fixo durante toda a edição, então não há salto. Os demais formulários seguem a regra geral de mostrar só o necessário.
+
 ## Fatura e Crédito
 
 Hoje há um único cartão detalhado: Nubank. A fatura é derivada de `fin.fatura`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte. `cred = true` pertence a esse cartão por definição temporária, não por nome ou categoria.

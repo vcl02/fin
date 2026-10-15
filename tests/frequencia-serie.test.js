@@ -1,6 +1,7 @@
 // Regressão: Frequência no cadastro gera a série da 1ª ocorrência até 31/12/2029 (Vezes
-// some) e, no Crédito, só pede a 1ª fatura — as seguintes avançam mês a mês a partir dela.
-// Sem Frequência, Vezes volta e cada parcela escolhe sua fatura.
+// fica desativado mostrando a contagem) e, no Crédito, só pede a 1ª fatura — as seguintes
+// avançam mês a mês a partir dela. Sem Frequência, Vezes volta a ser editável e cada
+// parcela escolhe sua fatura.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -76,10 +77,11 @@ test('o "?" fica dentro do rótulo, mas o rótulo aponta pro campo (for=), não 
     assert.match(pagina, /<label class=fm for=fCateg><span>Categorias <b class=req>\*<\/b>\s*\n\s*<button type=button id=ajudaCategorias/);
 });
 
-test('com Frequência, Vezes some e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
-    assert.match(formulario, /el\('fParcelasWrap'\)\.hidden = editando \|\| !!el\('fFreq'\)\.value;/);
+test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
+    assert.match(formulario, /el\('fParcelasWrap'\)\.hidden = editando;/);
+    assert.match(formulario, /vezes\.disabled = !!freq;/);
     assert.match(formulario, /const parcelas = freq \? 1 : \(\+el\('fParcelas'\)\.value \|\| 1\);/);
-    assert.match(formulario, /const titulo = freq \? '1ª fatura' :/);
+    assert.match(formulario, /const tituloPrincipal = freq \? '1ª fatura' :/);
     assert.doesNotMatch(formulario, /el\('fFreq'\)\.value = 'Mensal'/);
     // Duplicar/Editar herdam a Frequência: a abertura do modal reflete isso no Vezes e nas
     // faturas, sem congelar a sugestão automática como se fosse escolha manual.
@@ -108,17 +110,19 @@ test('regra dos rótulos com "?" documentada em REGRAS.md', () => {
     assert.match(regras, /Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo \(`for=`\): tocar no texto do rótulo foca o campo, nunca abre a ajuda/);
 });
 
-test('Frequência, Vezes e Dividir no mesmo grid: com Frequência, Dividir sobe pro lado dela', () => {
+test('Frequência, Vezes e Dividir no mesmo grid fixo: Frequência na linha inteira, Vezes e Dividir embaixo', () => {
     assert.match(pagina, /<div class=parcelasLinha id=parcelasLinha>\s*\n\s*<label class=fm id=fFreqWrap for=fFreq><span>Frequência/);
     assert.match(pagina, /<\/label>\s*\n\s*<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
     assert.match(estilos, /grid-template-areas:\s*\n\s*"freq freq"\s*\n\s*"vezes dividir";/);
-    assert.match(estilos, /\.parcelasLinha:has\(#fParcelasWrap\[hidden\]\) \{\s*\n\s*grid-template-areas: "freq dividir";/);
+    // Layout fixo: nenhum rearranjo do grid quando Vezes muda de estado.
+    assert.doesNotMatch(estilos, /\.parcelasLinha:has\(#fParcelasWrap\[hidden\]\)/);
     assert.match(estilos, /\.parcelasLinha:has\(#fDivideWrap\[hidden\]\) \{\s*\n\s*grid-template-columns: minmax\(0, 1fr\);\s*\n\s*grid-template-areas: "freq";/);
-    assert.match(regras, /com Frequência, Dividir sobe pro lado da Frequência \(que estreita igual Vezes\)/);
+    assert.match(estilos, /\.fm select:disabled \{\s*\n\s*opacity: \.5;/);
+    assert.match(regras, /Frequência, Vezes, Dividir e Fatura têm posição fixa no cadastro \(exceção pontual registrada em `docs\/DECISOES\.md`\)/);
 });
 
-test('depois de salvar, a Frequência volta a "sem recorrência" e Vezes reaparece', () => {
+test('depois de salvar, a Frequência volta a "sem recorrência" e Vezes volta a ser editável', () => {
     assert.match(formulario, /el\('fData'\)\.value = hojeISO\(\);\s*\n(\s*\/\/.*\n)*\s*el\('fFreq'\)\.value = '';\s*\n\s*atualizaModoFrequencia\(\);\s*\n\s*atualizarFaturasDoFormulario\(idsFaturasDoFormulario\(false\)\);/);
-    assert.match(regras, /Depois de salvar, a Frequência volta a "sem recorrência" \(e Vezes reaparece\)/);
+    assert.match(regras, /Depois de salvar, a Frequência volta a "sem recorrência" \(e Vezes volta a ser editável, com o valor que tinha antes da Frequência\)/);
     assert.match(regras, /abre marcado no Crédito, desmarcado no Débito, sempre alternável/);
 });
