@@ -68,6 +68,14 @@ test('Frequência vem antes de Vezes no cadastro, com o "?" de ajuda abrindo um 
     assert.match(estilos, /dialog#modalAjudaFrequencia,\s*\n\s*dialog#modalDiagnostico,/);
 });
 
+test('o "?" fica dentro do rótulo, mas o rótulo aponta pro campo (for=), não pro botão de ajuda', () => {
+    // Sem for=, o rótulo vira do 1º elemento rotulável dentro dele — o próprio botão "?",
+    // que vem antes do campo: tocar no texto abriria a ajuda e o campo ficaria sem nome
+    // acessível.
+    assert.match(pagina, /<label class=fm for=fFreq><span>Frequência\s*\n\s*<button type=button id=ajudaFrequencia/);
+    assert.match(pagina, /<label class=fm for=fCateg><span>Categorias <b class=req>\*<\/b>\s*\n\s*<button type=button id=ajudaCategorias/);
+});
+
 test('com Frequência, Vezes some e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
     assert.match(formulario, /function atualizaModoFrequencia\(\) \{\s*\n\s*el\('fParcelasWrap'\)\.hidden = !!el\('fFreq'\)\.value;/);
     assert.match(formulario, /const parcelas = freq \? 1 : \(\+el\('fParcelas'\)\.value \|\| 1\);/);
@@ -94,4 +102,8 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Dividir continua valendo/);
     assert.match(regras, /Duplicar herda a Frequência do original — salvar um duplicado de algo Mensal gera a série inteira/);
     assert.match(regras, /`#ajudaFrequencia`, abre `#modalAjudaFrequencia`/);
+});
+
+test('regra dos rótulos com "?" documentada em REGRAS.md', () => {
+    assert.match(regras, /Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo \(`for=`\): tocar no texto do rótulo foca o campo, nunca abre a ajuda/);
 });
