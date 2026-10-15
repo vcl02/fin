@@ -297,8 +297,12 @@ el('fData').addEventListener('change', () => {
 // Frequência escolhida = série até DATA_LIMITE_RECORRENCIA: a quantidade sai da própria
 // data, então Vezes some. Sem Frequência, Vezes volta (compra parcelada comum). Vezes não
 // mexe mais na Frequência — se subisse pra Mensal sozinha, viraria série até 2029.
+// Editar é sempre a própria linha: Vezes e Dividir só servem pra criar lançamentos novos
+// (ver submeteEdicaoLancamento, que ignora os dois), mas a Frequência continua editável.
 function atualizaModoFrequencia() {
-    el('fParcelasWrap').hidden = !!el('fFreq').value;
+    const editando = !!modalNovo.dataset.editandoId;
+    el('fParcelasWrap').hidden = editando || !!el('fFreq').value;
+    el('fDivideWrap').hidden = editando;
 }
 
 el('fFreq').addEventListener('change', () => {
@@ -331,9 +335,8 @@ function abreModalNovo(prefill, modoEdicao) {
         : (modoEdicao ? 'Editar lançamento' : (prefill ? 'Duplicar lançamento' : 'Novo lançamento'));
     el('salvaNovo').textContent = Estado.simulando ? 'Simular' : 'Salvar';
 
-    // Editar e' sempre a PROPRIA linha, nunca gera parcela nova — Vezes/Dividir so' fazem
-    // sentido pra criar lancamentos (ver submeteEdicaoLancamento, que ignora os dois campos).
-    el('parcelasLinha').hidden = !!modoEdicao;
+    // Editar e' sempre a PROPRIA linha, nunca gera parcela nova — Vezes/Dividir somem em
+    // atualizaModoFrequencia (chamada no fim desta funcao), que le o editandoId abaixo.
     if (modoEdicao) { el('fParcelas').value = 1; modalNovo.dataset.editandoId = String(prefill.id); }
     else delete modalNovo.dataset.editandoId;
 
@@ -977,6 +980,11 @@ async function submeteNovoLancamento() {
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
+        // Série até 2029 nunca é o padrão: o próximo cadastro volta a ser avulso, com Vezes
+        // de volta, pra não gerar outra série sem a pessoa pedir de novo.
+        el('fFreq').value = '';
+        atualizaModoFrequencia();
+        atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
         el('fCateg').value = '';   // categoria vinha do nome; sem nome, nao faz sentido manter
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
