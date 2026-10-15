@@ -167,11 +167,6 @@
       max-height: 88vh;
   }
 
-  /* Crédito/Pago/Reserva/Comprometido (.fmChecks) ficam numa linha própria logo abaixo do
-     cabeçalho — não mais espremidos ao lado do título. Como é filho direto de #formNovo,
-     herda o mesmo espaçamento (gap: 1rem) de qualquer outro campo do formulário, sem
-     precisar de margem própria. */
-
   .modalHead {
       display: flex;
       align-items: center;
@@ -181,11 +176,9 @@
   /* O título "Novo/Duplicar/Editar lançamento"/"Simular compra" (#tituloNovo) é só pra
      leitor de tela (.srOnly, ver abreModalNovo em form.js — mesmo texto de sempre, só não
      aparece mais na tela): a ação que abriu o modal já deixa claro o contexto, texto
-     visível vira redundância. Sem ele no fluxo, sobra só o botão de fechar no cabeçalho —
-     empurra pra direita, onde já ficava. */
-  #formNovo .modalHead {
-      justify-content: flex-end;
-  }
+     visível vira redundância. Por ser position: absolute, não entra no fluxo do flex nem
+     consome o gap de #formNovo — sem precisar de .modalHead só pra ele, que sobraria vazio
+     e geraria espaço perdido (mesmo problema que #erroNovo tinha antes de virar :empty). */
 
   .modalHead h2 {
       font: 700 1.1rem/1 inherit;
@@ -400,9 +393,16 @@
   }
 
   .fmChecks {
-      display: grid;
-      grid-template-columns: repeat(4, 2.9rem);
+      display: flex;
+      align-items: center;
       gap: .6rem;
+  }
+
+  /* Fechar (#fechaNovo) divide a mesma linha dos 4 ícones, mas empurrado pro canto direito
+     — não é mais um 5º ícone igual aos outros, continua com a cara de ação destrutiva
+     (vermelho) que já tinha isolado no cabeçalho. */
+  .fmChecks #fechaNovo {
+      margin-left: auto;
   }
 
   .fmChk {

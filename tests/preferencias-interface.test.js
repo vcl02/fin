@@ -46,16 +46,20 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
     assert.doesNotMatch(pagina, /À vista \(1x\)|Separe mais de uma categoria por vírgula/);
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(estilosForm, /\.fmChkIco/);
-    // os 4 ícones (Crédito/Pago/Reserva/Comprometido) ficam numa linha só, não mais 2x2.
-    assert.match(estilosForm, /grid-template-columns: repeat\(4, 2\.9rem\)/);
+    // os 4 ícones (Crédito/Pago/Reserva/Comprometido) + o fechar ficam numa linha só (flex),
+    // não mais numa grade 2x2 (ver teste do cabeçalho pra essa regra em detalhe).
+    assert.match(estilosForm, /\.fmChecks\s*\{\s*\n\s*display:\s*flex;/);
     assert.match(estilosForm, /\.parcelasLinha/);
 });
 
-test('cabeçalho do cadastro fica só com fechar (título é .srOnly); Crédito/Pago/Reserva/Comprometido ganham linha própria, numa linha só; o sinal fica ao lado do valor', () => {
-    assert.match(pagina, /<div class=modalHead>\s*\n\s*<h2 id=tituloNovo class=srOnly>Novo lançamento<\/h2>\s*\n\s*<button type=button id=fechaNovo/);
-    // os 4 ícones (tirando o X de fechar, que fica no cabeçalho) formam a próxima linha,
-    // filha direta de #formNovo — não mais espremidos ao lado do título.
-    assert.match(pagina, /<\/div>\s*\n\s*<div class=fmChecks>\s*\n\s*<label class="fmChk fmChkIco" title="Crédito">/);
+test('título do cadastro é só pra leitor de tela (.srOnly); Crédito/Pago/Reserva/Comprometido e o fechar dividem uma única linha; o sinal fica ao lado do valor', () => {
+    // título vira o 1º filho de #formNovo, sem wrapper .modalHead: por ser position:
+    // absolute, não participa do flex nem consome gap — não sobra linha vazia por causa dele.
+    assert.match(pagina, /<form id=formNovo method=dialog>\s*\n\s*<h2 id=tituloNovo class=srOnly>Novo lançamento<\/h2>/);
+    assert.doesNotMatch(pagina, /class=modalHead>\s*\n\s*<h2 id=tituloNovo/);
+    // os 4 ícones E o fechar (nessa ordem) ficam juntos na mesma .fmChecks.
+    assert.match(pagina, /<div class=fmChecks>\s*\n\s*<label class="fmChk fmChkIco" title="Crédito">/);
+    assert.match(pagina, /title="Comprometido">[\s\S]{0,300}<\/label>\s*\n\s*<button type=button id=fechaNovo/);
     assert.doesNotMatch(pagina, /class=modalTituloAcoes>[\s\S]{0,200}id=fCred/);
     assert.match(pagina, /class=moneyLinha>[\s\S]*class=moneyWrap[\s\S]*id=fValor[\s\S]*<\/div>\s*<button type=button id=fSinal/);
     assert.doesNotMatch(pagina, /id=abreCalc|id=modalCalc/);
@@ -64,14 +68,17 @@ test('cabeçalho do cadastro fica só com fechar (título é .srOnly); Crédito/
     assert.match(estilosForm, /\.modalTituloAcoes/);   // continua existindo, usado por outro modal (modalVisualizacao)
     assert.match(estilosForm, /\.moneyLinha/);
     assert.match(pagina, /id=fechaNovo title="Fechar" aria-label="Fechar">\s*<svg/);
-    // título é .srOnly (position: absolute) e sai do fluxo do flex — sem esse override,
-    // o botão de fechar sozinho em justify-content: space-between iria pra esquerda.
-    assert.match(estilosForm, /#formNovo \.modalHead\s*\{\s*\n\s*justify-content:\s*flex-end;\s*\n\s*\}/);
+    // .fmChecks virou flex row (não mais grid 4 colunas) pra caber o fechar na mesma linha,
+    // empurrado pro canto direito por margem automática — continua vermelho/destrutivo,
+    // não um 5º ícone igual aos outros.
+    assert.match(estilosForm, /\.fmChecks\s*\{\s*\n\s*display:\s*flex;\s*\n\s*align-items:\s*center;\s*\n\s*gap:\s*\.6rem;\s*\n\s*\}/);
+    assert.match(estilosForm, /\.fmChecks #fechaNovo\s*\{\s*\n\s*margin-left:\s*auto;\s*\n\s*\}/);
+    assert.doesNotMatch(estilosForm, /#formNovo \.modalHead/);
     assert.doesNotMatch(estilosForm, /#formNovo \.modalTituloAcoes/);
+    assert.doesNotMatch(estilosForm, /grid-template-columns: repeat\(4, 2\.9rem\)/);
     assert.match(estilosForm, /#fechaNovo\s*\{[\s\S]*background:\s*var\(--red-soft\)/);
-    // grid-template-columns: repeat(4, ...) já confere em outro teste (cadastro compacto).
-    assert.match(regras, /o título "Novo\/Duplicar\/Editar lançamento"\/"Simular compra" \(`#tituloNovo`\) continua existindo e mudando conforme o modo[\s\S]*?mas é só pra leitor de tela \(`\.srOnly`\)/);
-    assert.match(regras, /Os quatro ícones Crédito\/Pago\/Reserva\/Comprometido \(`\.fmChecks`\) formam sua própria linha logo abaixo, em uma linha só/);
+    assert.match(regras, /O título "Novo\/Duplicar\/Editar lançamento"\/"Simular compra" \(`#tituloNovo`\) continua existindo e mudando conforme o modo[\s\S]*?mas é só pra leitor de tela \(`\.srOnly`\)/);
+    assert.match(regras, /Os quatro ícones Crédito\/Pago\/Reserva\/Comprometido \(`\.fmChecks`\) e o botão de fechar dividem a mesma linha, numa única fileira/);
 });
 
 test('cadastro abre sem foco automático no mobile', () => {
