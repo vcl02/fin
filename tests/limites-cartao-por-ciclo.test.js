@@ -15,6 +15,8 @@ function carrega(ancoras) {
         idxHoje: 0, faturas: [],
         ciclos: ancoras.map((a, i) => ({ id: `pj:${a.id}`, ancoraId: a.id, ini: `2026-1${i}-05`, fat: `2026-1${i}-28` })),
         lancamentos: ancoras,
+        // fin_ciclo: os campos limite_* de cada âncora fazem o papel da linha da tabela.
+        limitesPorAncora: new Map(ancoras.map(a => [a.id, { ancora_id: a.id, ...a }])),
     };
     const contexto = { Estado: estado, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);

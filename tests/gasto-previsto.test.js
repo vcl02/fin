@@ -1,7 +1,7 @@
 // Regressão: do ciclo atual em diante, Besteira e Isabella contam como se o teto do ciclo
 // fosse gasto por inteiro — uma linha sintética completa o que falta até 100% e entra no
 // saldo e em tudo que deriva dele. O teto é individual por ciclo, gravado na linha âncora
-// "Faturamento PJ" (migration 23). Roda o código real de domain/shared/finance + a regra de
+// "Faturamento PJ" pela tabela fin_ciclo (migration 25). Roda o código real de domain/shared/finance + a regra de
 // categorias de charts.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -26,6 +26,8 @@ function carrega(lancamentos, idxHoje = 1) {
         ],
         faturas: [],
         lancamentos,
+        // fin_ciclo: aqui, os campos limite_* de cada âncora fazem o papel da linha da tabela.
+        limitesPorAncora: new Map(lancamentos.filter(l => l.nome === 'Faturamento PJ').map(l => [l.id, { ancora_id: l.id, ...l }])),
     };
     const contexto = { Estado: estado, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);
@@ -79,7 +81,7 @@ test('ciclo passado não ganha previsão', () => {
     assert.equal(r.previstasDoCiclo(0, [...ancoras]).length, 0);
 });
 
-test('teto individual por ciclo, gravado na âncora; vazio volta ao padrão', () => {
+test('teto individual por ciclo, salvo em fin_ciclo; vazio volta ao padrão', () => {
     const base = [{ ...ancoras[0] }, { ...ancoras[1], limite_besteira: 400, limite_isabella: '0' }, { ...ancoras[2], limite_besteira: null }];
     const r = carrega(base);
     assert.deepEqual({ ...r.limitesCategoriaDoCiclo(1) }, { besteira: 400, isabella: 0 });
@@ -105,12 +107,13 @@ test('Débito, saldo diário, Comparar, evolução e pizza usam as mesmas linhas
     assert.match(ler('js/domain.js'), /const PREFIXO_LINHA_SINTETICA = \/\^\(fat\|cp\|sal\|res\|sug\|abt\|prev\):\/;/);
 });
 
-test('teto editável no título do ciclo atual e seguintes; grava na âncora, vazio = padrão', () => {
+test('teto editável no título do ciclo atual e seguintes; grava em fin_ciclo, vazio = padrão', () => {
     assert.match(visoes, /data-limite-categoria="\$\{limite\.chave\}" data-ciclo="\$\{i\}"/);
     assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*if \(modoRestrito\(\)\) return brl\(limite\.teto\);/);
     assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
     assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
-    assert.match(interacoes, /if \(!Estado\.simulando && !ancora\._sim\) await atualizarLancamento\(ancora\.id, \{ \[campo\]: valor \}\);/);
+    assert.match(interacoes, /const gravada = !Estado\.simulando && !ancora\._sim \? await salvarLimiteDoCiclo\(ancora\.id, campo, valor\) : null;/);
+    assert.match(interacoes, /Estado\.limitesPorAncora\.set\(ancora\.id, gravada \|\| \{ \.\.\.salvos, \[campo\]: valor \}\);/);
     assert.match(interacoes, /if \(input\) confirmarLimiteNaAncora\(input\);/);
 });
 

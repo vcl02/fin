@@ -61,23 +61,24 @@ const tokenAtual = async (forcar) => comTeto((async () => {
     return session?.access_token || KEY;
 })(), 'sessão');
 
-const buscar = async (tabela, retry) => {
+// `chave`: coluna única e ordenável usada na paginação (fin usa id; fin_ciclo, ancora_id).
+const buscar = async (tabela, retry, chave = 'id') => {
     // O limite de linhas da API vale por resposta, mesmo quando a URL pede um limite maior.
     // Paginar pela chave evita truncar silenciosamente a base e não depende de IDs contínuos.
     const linhas = [];
     let ultimoId = null;
     while (true) {
-        const depois = ultimoId == null ? '' : `&id=gt.${encodeURIComponent(ultimoId)}`;
-        const url = `${API}/rest/v1/${tabela}?select=*&order=id.asc&limit=${TAMANHO_LOTE_SUPABASE}${depois}`;
+        const depois = ultimoId == null ? '' : `&${chave}=gt.${encodeURIComponent(ultimoId)}`;
+        const url = `${API}/rest/v1/${tabela}?select=*&order=${chave}.asc&limit=${TAMANHO_LOTE_SUPABASE}${depois}`;
         // Reconsulta a carga inteira uma única vez após 401: a sessão pode ter sido renovada
         // entre dois lotes e reaproveitar os anteriores criaria duplicatas no resultado.
         const r = await comRetentativas(async () => fetchComLimite(url, { headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(retry) } }, 'carregar'));
-        if (r.status === 401 && !retry) return buscar(tabela, true);
+        if (r.status === 401 && !retry) return buscar(tabela, true, chave);
         if (!r.ok) throw Error(`${tabela}: ${r.status} ${r.texto}`);
         const lote = JSON.parse(r.texto);
         linhas.push(...lote);
         if (lote.length < TAMANHO_LOTE_SUPABASE) return linhas;
-        ultimoId = lote.at(-1).id;
+        ultimoId = lote.at(-1)[chave];
     }
 };
 
@@ -146,9 +147,33 @@ const atualizarLancamentos = async (ids, campos) => comRetentativas(async () => 
 
 const atualizarLancamento = async (id, campos) => (await atualizarLancamentos([id], campos))[0];
 
+// Grava UMA escolha de um ciclo em fin_ciclo (upsert pela âncora): cria a linha do ciclo na
+// 1ª vez e, depois, muda só a coluna enviada. Repetir dá o mesmo resultado, então pode tentar
+// de novo sozinho quando não houver resposta, como UPDATE/DELETE.
+const salvarLimiteDoCiclo = async (ancoraId, campo, valor) => comRetentativas(async () => {
+    const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN_CICLO}?on_conflict=ancora_id`, {
+        method: 'POST',
+        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify({ ancora_id: ancoraId, [campo]: valor }),
+    }, 'salvar limite');
+    if (!r.ok) throw Error(`salvar limite: ${r.status} ${r.texto}`);
+    const linhas = JSON.parse(r.texto);
+    if (!linhas.length) throw Error('limite não gravado (RLS/policy do Supabase pode estar bloqueando)');
+    return linhas[0];
+});
+
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);
     const diagnosticoDeDados = validarLancamentosCarregados(lancamentosCrus);
+    // Sem fin_ciclo (migration 25 ainda não aplicada) a tela carrega igual, com os padrões
+    // e um aviso no diagnóstico — os limites por ciclo nunca podem impedir a carga.
+    let limitesCiclo = [];
+    try {
+        limitesCiclo = await buscar(TABELA_FIN_CICLO, false, 'ancora_id');
+    } catch (err) {
+        diagnosticoDeDados.avisos.push(`Limites por ciclo indisponíveis (${err.message}); usando os padrões. Aplique migrations/25-tabela-fin-ciclo.sql.`);
+    }
+    Estado.limitesPorAncora = new Map(limitesCiclo.map(linha => [linha.ancora_id, linha]));
     // Faturamento PJ não é uma despesa comum: ele ancora os intervalos de caixa. O último
     // ciclo fica aberto até uma próxima âncora ser cadastrada.
     const ancoras = lancamentosCrus

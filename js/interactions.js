@@ -31,12 +31,12 @@ function numeroDoLimiteDigitado(texto) {
 
 restaurarLimiteCartaoLocal();
 
-// Limites gravados por ciclo na linha âncora "Faturamento PJ" (migrations 23 e 24): teto de
-// Besteira/Isabella (título do Débito), Aprovado de cada cartão e Garantia do Nubank (título
-// do Crédito). Vão pro banco, e não só pro navegador, pra valerem igual em qualquer aparelho
-// (Besteira/Isabella ainda mudam o saldo). Campo vazio grava null: Besteira/Isabella voltam
-// ao padrão do código; Aprovado/Garantia voltam a herdar do ciclo anterior. Simulação só
-// altera a memória, como qualquer outra edição.
+// Escolhas por ciclo gravadas em fin_ciclo (migration 25), uma linha por ciclo ligada à
+// âncora "Faturamento PJ": teto de Besteira/Isabella (título do Débito), Aprovado de cada
+// cartão e Garantia do Nubank (título do Crédito). Vão pro banco, e não só pro navegador,
+// pra valerem igual em qualquer aparelho (Besteira/Isabella ainda mudam o saldo). Campo
+// vazio grava null: Besteira/Isabella voltam ao padrão do código; Aprovado/Garantia voltam a
+// herdar do ciclo anterior. Simulação só altera a memória, como qualquer outra edição.
 function colunaDoCampoDeLimite(input) {
     if (input.dataset.limiteCategoria) return input.dataset.limiteCategoria === 'isabella' ? 'limite_isabella' : 'limite_besteira';
     if (input.dataset.garantiaCartao != null) return 'limite_garantia_nubank';
@@ -54,11 +54,12 @@ async function confirmarLimiteNaAncora(input) {
         desenhar();
         return;
     }
-    if ((ancora[campo] ?? null) == valor) { desenhar(); return; }
+    const salvos = Estado.limitesPorAncora.get(ancora.id) || { ancora_id: ancora.id };
+    if ((salvos[campo] ?? null) == valor) { desenhar(); return; }
     input.disabled = true;
     try {
-        if (!Estado.simulando && !ancora._sim) await atualizarLancamento(ancora.id, { [campo]: valor });
-        ancora[campo] = valor;
+        const gravada = !Estado.simulando && !ancora._sim ? await salvarLimiteDoCiclo(ancora.id, campo, valor) : null;
+        Estado.limitesPorAncora.set(ancora.id, gravada || { ...salvos, [campo]: valor });
     } catch (err) {
         mostrarToast('Falhou ao salvar limite', err.message);
     }

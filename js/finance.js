@@ -33,9 +33,9 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
     return anterior + doCiclo + fatura;
 }
 
-// Limites de Besteira/Isabella de um ciclo: o valor gravado na linha âncora "Faturamento PJ"
-// que abre o ciclo (fin.limite_besteira / fin.limite_isabella, migration 23) ou, sem valor,
-// o padrão do código. Cada ciclo é independente: mudar um não mexe nos outros.
+// Limites de Besteira/Isabella de um ciclo: o valor salvo em fin_ciclo pra âncora
+// "Faturamento PJ" que abre o ciclo (migration 25) ou, sem valor, o padrão do código. Cada
+// ciclo é independente: mudar um não mexe nos outros.
 function ancoraDoCiclo(idx) {
     const ancoraId = Estado.ciclos[idx]?.ancoraId;
     return ancoraId == null ? null : Estado.lancamentos.find(r => r.id === ancoraId) || null;
@@ -43,21 +43,27 @@ function ancoraDoCiclo(idx) {
 
 const ehValorDeLimite = valor => valor != null && valor !== '' && Number.isFinite(+valor);
 
+// Escolhas salvas de um ciclo (linha de fin_ciclo da âncora dele, migration 25) ou null.
+function limitesSalvosDoCiclo(idx) {
+    const ancoraId = Estado.ciclos[idx]?.ancoraId;
+    return ancoraId == null ? null : Estado.limitesPorAncora?.get(ancoraId) || null;
+}
+
 function limitesCategoriaDoCiclo(idx) {
-    const ancora = ancoraDoCiclo(idx);
+    const salvos = limitesSalvosDoCiclo(idx);
     const valorOuPadrao = (valor, padrao) => valor == null || valor === '' || !Number.isFinite(+valor) ? padrao : +valor;
     return {
-        besteira: valorOuPadrao(ancora?.limite_besteira, LIMITE_BESTEIRA),
-        isabella: valorOuPadrao(ancora?.limite_isabella, LIMITE_ISABELLA),
+        besteira: valorOuPadrao(salvos?.limite_besteira, LIMITE_BESTEIRA),
+        isabella: valorOuPadrao(salvos?.limite_isabella, LIMITE_ISABELLA),
     };
 }
 
-// Aprovado e garantia do cartão (migration 24) herdam: o valor definido num ciclo vale pra
+// Aprovado e garantia do cartão (fin_ciclo, migration 25) herdam: o valor definido num ciclo vale pra
 // ele e pros seguintes, até outro ciclo definir outro — limite de banco muda raramente, e
 // repetir o mesmo número em todo ciclo seria só trabalho. Nada definido até aqui = null.
 function valorDefinidoAteOCiclo(idx, campo) {
     for (let j = idx; j >= 0; j--) {
-        const valor = ancoraDoCiclo(j)?.[campo];
+        const valor = limitesSalvosDoCiclo(j)?.[campo];
         if (ehValorDeLimite(valor)) return +valor;
     }
     return null;
