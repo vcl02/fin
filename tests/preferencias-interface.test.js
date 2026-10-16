@@ -115,11 +115,9 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
-test('indicadores financeiros ficam depois de Consolidar tudo, separados por pipe', () => {
+test('indicadores financeiros ficam depois de Visualizações, separados por pipe', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
-    assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=btGrafico'));
-    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btConsolidarTudo'));
-    assert.ok(acoes.indexOf('id=btConsolidarTudo') < acoes.indexOf('id=indicadoresFinanceiros'));
+    assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=indicadoresFinanceiros'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
     assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
     assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorLiberdade'));
