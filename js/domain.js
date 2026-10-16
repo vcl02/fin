@@ -100,6 +100,18 @@ const ehBooleanoOuNulo = valor => valor == null || typeof valor === 'boolean';
 const chaveCategoria = valor => String(valor ?? '').trim()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+// Datas nas mensagens de diagnóstico no formato da tela (DD/MM/AAAA).
+const dataBRDiagnostico = iso => String(iso).slice(0, 10).split('-').reverse().join('/');
+// Como uma mensagem de diagnóstico identifica o lançamento: pelo id (o mesmo da coluna ID e
+// do filtro de ID), com nome e data pra reconhecer de cara. A posição na lista carregada não
+// aparece — não é campo do lançamento e muda a cada registro novo; só serve quando falta id.
+function identificacaoDoLancamento(lancamento, indice) {
+    if (lancamento?.id == null) return `Registro ${indice + 1} da carga (sem id)`;
+    const nome = String(lancamento.nome || '').trim() || 'sem nome';
+    const data = ehDataIso(lancamento.data) ? `, ${dataBRDiagnostico(lancamento.data)}` : '';
+    return `id ${lancamento.id} — "${nome}"${data}`;
+}
+
 // Diagnóstico conservador da resposta do Supabase. Ele não altera nem exclui linhas:
 // inconsistências apontam contrato de dados inválido; avisos são apenas sinais para revisão.
 // Toda nova regra personalizada entra aqui na lista adequada e aparece no mesmo modal.
@@ -113,8 +125,8 @@ function validarLancamentosCarregados(lancamentos, ciclos = []) {
     const faturasPorMes = new Map();
 
     lancamentos.forEach((lancamento, indice) => {
-        const prefixo = `Lançamento ${indice + 1}${lancamento?.id != null ? ` (id ${lancamento.id})` : ''}`;
-        if (!lancamento || typeof lancamento !== 'object') { inconsistencias.push(`${prefixo}: registro inválido.`); return; }
+        if (!lancamento || typeof lancamento !== 'object') { inconsistencias.push(`Registro ${indice + 1} da carga: registro inválido.`); return; }
+        const prefixo = identificacaoDoLancamento(lancamento, indice);
         if (!String(lancamento.nome || '').trim()) inconsistencias.push(`${prefixo}: nome ausente.`);
         if (!Number.isFinite(Number(lancamento.valor))) inconsistencias.push(`${prefixo}: valor não numérico.`);
         if (!ehDataIso(lancamento.data)) inconsistencias.push(`${prefixo}: data fora do formato ISO.`);
@@ -189,10 +201,10 @@ function validarLancamentosCarregados(lancamentos, ciclos = []) {
                 const dataRelevante = lancamento.cred ? lancamento.fatura : lancamento.data;
                 if (!dataRelevante || !ehDataIso(dataRelevante)) return;
                 if (String(dataRelevante).slice(0, 10) < fronteira) return;
-                const prefixo = `Lançamento ${indice + 1}${lancamento.id != null ? ` (id ${lancamento.id})` : ''}`;
+                const prefixo = identificacaoDoLancamento(lancamento, indice);
                 const rotuloData = lancamento.cred ? 'vencimento de fatura' : 'data';
                 const alemDe = lancamento.cred ? 'dois ciclos à frente (além da prévia normal de 1 ciclo)' : 'um ciclo futuro, fora do atual';
-                avisos.push(`${prefixo}: marcado como pago com ${rotuloData} em ${String(dataRelevante).slice(0, 10)} — cai ${alemDe}.`);
+                avisos.push(`${prefixo}: marcado como pago com ${rotuloData} em ${dataBRDiagnostico(dataRelevante)} — cai ${alemDe}.`);
             });
         }
     }

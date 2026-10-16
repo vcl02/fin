@@ -116,9 +116,11 @@ test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos �
         { id: 54, data: '2026-09-26', valor: -60, nome: 'Compra cartão 2', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-12' },
     ], ciclos);
     assert.equal(diagnostico.avisos.filter(a => a.includes('marcado como pago')).length, 3);
-    assert.ok(diagnostico.avisos.some(a => a.includes('id 4)')));
-    assert.ok(diagnostico.avisos.some(a => a.includes('id 51') && a.includes('data em 2026-10-10') && a.includes('um ciclo futuro, fora do atual')));
-    assert.ok(diagnostico.avisos.some(a => a.includes('id 54') && a.includes('vencimento de fatura em 2026-11-12') && a.includes('dois ciclos à frente')));
+    // Identifica pelo id, nome e data; a posição na lista carregada não aparece mais.
+    assert.ok(diagnostico.avisos.some(a => a.startsWith('id 4 — "Faturamento PJ", 01/10/2026: marcado como pago')));
+    assert.ok(diagnostico.avisos.some(a => a.startsWith('id 51 — "Água", 10/10/2026:') && a.includes('data em 10/10/2026') && a.includes('um ciclo futuro, fora do atual')));
+    assert.ok(diagnostico.avisos.some(a => a.startsWith('id 54 — "Compra cartão 2", 26/09/2026:') && a.includes('vencimento de fatura em 12/11/2026') && a.includes('dois ciclos à frente')));
+    assert.ok(!diagnostico.avisos.some(a => /Lançamento \d/.test(a)));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 50')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 52')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 53')));
@@ -137,4 +139,13 @@ test('ciclos vêm de fin_ciclo: ordenados pelo início, fim vazio = aberto, bura
         { id: 'c:9', cicloId: 9, ini: '2026-11-05', fat: '9999-12-31' },
     ]);
     assert.deepEqual(Array.from(avisos), ['Sem ciclo entre 2026-10-05 e a véspera de 2026-10-10: lançamentos nessas datas vão pro Backlog.']);
+});
+
+test('mensagens identificam pelo id com nome e data; sem id, pela posição na carga', () => {
+    const diagnostico = dominio.validarLancamentosCarregados([
+        { id: 7, data: '2026-10-05', valor: 'x', nome: 'Netflix', categ: 'Casa', cred: false, pago: false },
+        { data: '2026-10-05', valor: 'y', nome: 'Sem id', categ: 'Casa', cred: false, pago: false },
+    ]);
+    assert.ok(diagnostico.inconsistencias.includes('id 7 — "Netflix", 05/10/2026: valor não numérico.'));
+    assert.ok(diagnostico.inconsistencias.includes('Registro 2 da carga (sem id): valor não numérico.'));
 });
