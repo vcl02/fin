@@ -30,13 +30,19 @@ function ordenarLinhas(linhas, idTabela) {
     return copia;
 }
 
+// Pergunta que decide a marca, no tooltip do cabeçalho (Débito, Crédito e Backlog).
+const PERGUNTA_DA_COLUNA = {
+    reserva: 'Se eu perder o emprego, preciso continuar pagando isso?',
+    comprometido: 'Começou o mês, isso já é obrigatório pagar?',
+};
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
     const cols = colunasAtivas(idTabela);
     const { k: colunaAtiva, d: direcao } = estadoOrdenacao(idTabela);
     const linhaTitulos = cols.map(([chave, rotulo, tipo]) => {
         const seta = colunaAtiva == chave ? (direcao == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
-        return `<th class="${tipo == 'n' ? 'n' : ''}" onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
+        const dica = PERGUNTA_DA_COLUNA[chave] ? ` title="${PERGUNTA_DA_COLUNA[chave]}"` : '';
+        return `<th class="${tipo == 'n' ? 'n' : ''}"${dica} onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
     }).join('');
     // 2a linha do header: campo de busca por coluna, so nas colunas de texto (tipo 't').
     // Conta restrita (modo simples) não tem busca — só ordenar pelo cabeçalho.

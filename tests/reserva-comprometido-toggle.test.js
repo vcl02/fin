@@ -121,3 +121,10 @@ test('Comprometido marcado em laranja escuro e Reserva em amarelo claro, inclusi
     assert.match(estilos, /\.flagReserva \{\s*\n\s*color: #F6E58D;/);
     assert.match(regras, /\*\*Comprometido em laranja escuro\*\* e \*\*Reserva em amarelo claro\*\*/);
 });
+
+test('cabeçalho de Reserva e Comprometido tem a pergunta que decide a marca', () => {
+    assert.match(tabelas, /reserva: 'Se eu perder o emprego, preciso continuar pagando isso\?',/);
+    assert.match(tabelas, /comprometido: 'Começou o mês, isso já é obrigatório pagar\?',/);
+    assert.match(tabelas, /const dica = PERGUNTA_DA_COLUNA\[chave\] \? ` title="\$\{PERGUNTA_DA_COLUNA\[chave\]\}"` : '';/);
+    assert.match(regras, /a pergunta que decide a marca: \*\*Reserva\*\* — "Se eu perder o emprego, preciso continuar pagando isso\?"/);
+});
