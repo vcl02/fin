@@ -31,6 +31,7 @@ function carregaDadosLimiteCategoriaDoCiclo() {
     const contexto = {
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
         ehTransferenciaFatura: r => String(r.categ || '').toLowerCase().includes('antecipação fatura'),
+        categoriasSeparadas: valor => String(valor ?? '').split(',').map(c => c.trim()).filter(Boolean),
     };
     vm.createContext(contexto);
     vm.runInContext(`${graficos.slice(inicio, fim)}
@@ -69,7 +70,7 @@ test('Besteira solo e Isabella usam cada um o próprio limite, sem misturar com 
     assert.ok(Math.abs(isabella.percentualPago - 120 / 700 * 100) < 1e-9);
 });
 
-test('um lançamento ainda taggeado com a categoria descontinuada "Besteira Isabella" conta pro teto Besteira solo (substring), não pro teto Isabella (falta "Lazer")', () => {
+test('um lançamento ainda taggeado com a categoria descontinuada "Besteira Isabella" conta pro teto Besteira solo (substring), não pro teto Isabella (não é o item "Isabella")', () => {
     const { dadosLimiteCategoriaDoCiclo, ehGastoIsabella } = carregaDadosLimiteCategoriaDoCiclo();
     const linhas = [{ v: -350, categ: 'Besteira Isabella', pago: true, cred: false }];
     const besteira = dadosLimiteCategoriaDoCiclo(linhas, 'Besteira', 250);
@@ -87,19 +88,20 @@ test('exclui antecipação de fatura, igual às demais leituras de orçamento', 
     assert.equal(resultado.valorTotal, 0);
 });
 
-test('indicador Isabella (por enquanto) soma SÓ "Lazer"+"Isabella" juntas; "Isabella" sozinha nunca conta, nem presente/mimo nem compromisso fixo (parcela, reserva, fatura)', () => {
+test('indicador Isabella soma tudo com a categoria Isabella (com Lazer ou sozinha), menos a fatura do cartão dela', () => {
     const { dadosLimiteCategoriaDoCiclo, ehGastoIsabella } = carregaDadosLimiteCategoriaDoCiclo();
     const linhas = [
-        { v: -80, categ: 'Lazer, Isabella', pago: true, cred: false },         // comeram/saíram juntos: conta
-        { v: -60, categ: 'Isabella', pago: false, cred: true },                // presente/mimo pra ela: não conta mais
-        { v: -40, categ: 'Isabella, Fatura', pago: true, cred: false },        // fatura detalhada real do cartão dela: não conta
-        { v: -25, categ: 'Isabella, Comprometido', pago: true, cred: false },  // compromisso fixo (parcela, reserva): não conta
-        { v: -30, categ: 'Lazer', pago: true, cred: false },                   // sem "Isabella" junto: não conta
-        { v: -10, categ: 'Lazer, Presentes', pago: true, cred: false },        // nenhuma com "Isabella": não conta
+        { v: -80, categ: 'Lazer, Isabella', pago: true, cred: false },               // saíram juntos: conta
+        { v: -60, categ: 'Isabella', pago: false, cred: true },                      // presente/mimo: conta
+        { v: -25, categ: 'Isabella, Comprometido', pago: true, cred: false },        // parcela pra ela: conta
+        { v: -40, categ: 'Isabella, Fatura', pago: true, cred: false },              // fatura do cartão dela: fica de fora
+        { v: -900, nome: 'Fatura Isabella', categ: 'Isabella', pago: false, cred: false },  // idem, pelo nome
+        { v: -30, categ: 'Lazer', pago: true, cred: false },                         // sem Isabella: não conta
+        { v: -10, categ: 'Lazer, Presentes', pago: true, cred: false },
     ];
     const resultado = dadosLimiteCategoriaDoCiclo(linhas, ehGastoIsabella, 700);
-    assert.equal(resultado.valorPago, 80);
-    assert.equal(resultado.valorTotal, 80);
+    assert.equal(resultado.valorPago, 105);
+    assert.equal(resultado.valorTotal, 165);
 });
 
 test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', () => {
@@ -134,25 +136,24 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /o rótulo `Isabella` contra `LIMITE_ISABELLA`, R\$ 700/);
     assert.match(regras, /`Besteira Isabella`.*foi descontinuada e substituída por `Lazer`\+`Isabella`/);
     assert.match(regras, /não há mais rastro dela em código/);
-    assert.match(regras, /Convenção de categorização \(POR ENQUANTO, pode ser revista\): só `Lazer` \+ `Isabella` combinadas na mesma linha contam pro teto dela/);
-    assert.match(regras, /`Isabella` sozinha NÃO conta — nem presente\/mimo pontual, nem compromissos fixos que usam essa tag/);
-    assert.match(regras, /`Lazer` sozinho também nunca conta, pois pode ser lazer com qualquer outra pessoa/);
+    assert.match(regras, /Convenção de categorização: todo lançamento com a categoria `Isabella` \(comparada como item inteiro da lista de categorias\) conta pro teto dela/);
+    assert.match(regras, /Fica de fora só a fatura do cartão dela: lançamento com `Fatura` na categoria ou no nome/);
+    assert.match(regras, /`Lazer` sozinho nunca conta, pois pode ser lazer com qualquer outra pessoa/);
     assert.match(regras, /Besteira \(café, milkshake, lanche sozinho\) é só o teto `Besteira` — nunca combina com `Isabella`/);
     assert.match(regras, /`#ajudaCategorias`, abre `#modalAjudaCategorias`/);
 
-    assert.match(regras, /categoria `Isabella` \(sem `Lazer` junto, então nunca entra no indicador `Isabella`/);
+    assert.match(regras, /categoria `Isabella` \(nunca entra no indicador `Isabella`, porque o nome ou a categoria têm `Fatura`/);
 });
 
-test('botão de ajuda ao lado de Categorias abre um guia com as regras de categorização (Besteira solo, Lazer+Isabella) — Isabella sozinha nunca conta', () => {
+test('botão de ajuda ao lado de Categorias abre um guia com as regras de categorização (Besteira solo, Isabella) — só a fatura dela fica de fora', () => {
     assert.match(html, /<button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer"/);
     assert.match(html, /aria-label="Abrir guia de categorias Besteira, Isabella e Lazer"/);
     assert.match(html, /<dialog id=modalAjudaCategorias>/);
     assert.match(html, /<dt>Besteira<\/dt>/);
     assert.doesNotMatch(html, /<dt>Besteira Isabella<\/dt>/);
     assert.doesNotMatch(html, /<dt>Presentes \+ Isabella<\/dt>/);
-    assert.doesNotMatch(html, /<dt>Isabella \(sozinha\)<\/dt>/);
-    assert.match(html, /<dt>Lazer \+ Isabella<\/dt>/);
-    assert.match(html, /Por enquanto, "Isabella" sozinha NUNCA entra nesse teto/);
+    assert.match(html, /<dt>Isabella<\/dt>\s*\n\s*<dd>Com "Lazer" junto:[^<]*Sozinha: presente, mimo, parcela pra ela/);
+    assert.match(html, /Só a fatura do cartão dela \(categoria ou nome com "Fatura"\) fica fora desse teto\./);
 
     assert.match(formulario, /el\('ajudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.showModal\(\);/);
     assert.match(formulario, /el\('fechaAjudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.close\(\);/);
@@ -184,7 +185,7 @@ test('nome de Besteira e Isabella no título explica o que entra no teto (toolti
     const dominio = fs.readFileSync('js/domain.js', 'utf8');
     const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
     const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
-    assert.match(dominio, /const DESCRICAO_LIMITE_CATEGORIA = \{\s*\n\s*besteira: 'Besteira: [^']*café[^']*',\s*\n\s*isabella: 'Isabella: [^']*Lazer e Isabella juntas[^']*',/);
+    assert.match(dominio, /const DESCRICAO_LIMITE_CATEGORIA = \{\s*\n\s*besteira: 'Besteira: [^']*café[^']*',\s*\n\s*isabella: 'Isabella: tudo com a categoria Isabella[^']*fatura do cartão dela[^']*',/);
     assert.match(visoes, /<span class=rotuloComDica title="\$\{escapeHtml\(descricao\)\}">\$\{limite\.rotulo\}<\/span>/);
     assert.match(regras, /Passar o mouse no nome \*\*Besteira\*\* ou \*\*Isabella\*\* do indicador mostra o que entra naquele teto/);
 });

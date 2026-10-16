@@ -53,18 +53,14 @@ const DATA_LIMITE_RECORRENCIA = '2029-12-31';
 // editável na tela.
 const CATEGORIA_BESTEIRA = 'Besteira';
 const LIMITE_BESTEIRA = 250;
-// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella". POR ENQUANTO conta só
-// "Lazer" + "Isabella" juntas na mesma linha: qualquer coisa feita com ela, inclusive comer/
-// lanchar juntos (valor inteiro da conta, sem dividir) — não só passeio: estacionamento,
-// ingresso, Uber compartilhado, cover... "Isabella" sozinha NÃO conta (nem presente/mimo
-// pontual, nem compromissos fixos que usam essa tag, como a fatura detalhada do cartão dela
-// — ver Faturas); "Lazer" sozinho também nunca conta, pois pode ser lazer com qualquer outra
-// pessoa. Ver ehGastoIsabella em js/charts.js para a regra completa.
+// Mesma ideia, outro teto, exibido no front com o rótulo "Isabella": todo lançamento com a
+// categoria "Isabella" (com "Lazer" junto ou sozinha), menos a fatura do cartão dela. Ver
+// ehGastoIsabella em js/charts.js para a regra completa.
 const LIMITE_ISABELLA = 700;
 // Tooltip do nome de cada indicador no título do Débito: o que entra em cada teto.
 const DESCRICAO_LIMITE_CATEGORIA = {
     besteira: 'Besteira: gastos pequenos e evitáveis feitos sozinho — café, milkshake, lanche/doce, Uber não essencial (categoria Besteira).',
-    isabella: 'Isabella: saídas com a Isabella — lançamentos com Lazer e Isabella juntas na categoria, pelo valor inteiro da conta. Isabella sozinha ou Lazer sozinho não contam.',
+    isabella: 'Isabella: tudo com a categoria Isabella — junto com Lazer (saídas com ela, pelo valor inteiro da conta) ou sozinha (presente, mimo, parcela). Fica de fora a fatura do cartão dela; Lazer sozinho não conta.',
 };
 // Dois cartões de crédito, identificados SÓ pelo dia de vencimento da fatura (regra
 // provisória, ver docs/DECISOES.md): dia 13 = Mercado Pago; qualquer outro dia = Nubank,

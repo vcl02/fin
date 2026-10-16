@@ -262,14 +262,16 @@ function dadosCompromissosDoCiclo(linhas) {
     return { faturamento, limites: LIMITES_COMPROMISSOS.map(resumo) };
 }
 
-// Indicador "Isabella" (rótulo exibido no título — ver cycle-views.js): POR ENQUANTO conta
-// só "Lazer" + "Isabella" juntas (sair com ela: lanches, estacionamento etc.). "Isabella"
-// sozinha NÃO conta mais — nem presente/mimo pontual, nem os compromissos fixos que também
-// usam essa tag (parcela, reserva, fatura do cartão dela etc.): todos ficam de fora até essa
-// regra ser revista. "Lazer" sozinho também nunca conta — pode ser lazer com qualquer outra
-// pessoa.
-const ehGastoIsabella = r => categoriaContemCompromisso(r.categ, 'Lazer') &&
-    categoriaContemCompromisso(r.categ, 'Isabella');
+// Indicador "Isabella" (rótulo exibido no título — ver cycle-views.js): conta todo
+// lançamento com a categoria "Isabella" — junto com "Lazer" (sair com ela) ou sozinha
+// (presente, mimo, parcela…) —, MENOS a fatura do cartão dela (categoria ou nome com
+// "Fatura"): essa é a conta mensal inteira do cartão, não um gasto com ela, e estouraria o
+// teto sozinha. A categoria é comparada como item inteiro ("Isabella"), então a antiga
+// "Besteira Isabella" não entra. "Lazer" sozinho nunca conta — pode ser lazer com outra pessoa.
+const ehGastoIsabella = r => {
+    const categorias = categoriasSeparadas(r.categ).map(c => semAcento(c).trim());
+    return categorias.includes('isabella') && !categorias.includes('fatura') && !semAcento(r.nome).includes('fatura');
+};
 
 // Regra única pros indicadores de limite por categoria (Besteira, Isabella, ...): soma
 // Débito e Crédito do MESMO ciclo contra um teto fixo em código. Hoje considera só o que já
