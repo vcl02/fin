@@ -99,7 +99,7 @@ test('consolidarTudo chama depoisDaCarga entre a recarga e a varredura', () => {
 });
 
 test('recarga automática só lê: chama recarregarDados, nunca o clique do botão', () => {
-    assert.match(inicializacao, /async function recarregarDados\(\) \{[\s\S]*?await load\(\);[\s\S]*?\n\}/);
+    assert.match(inicializacao, /async function recarregarDados\(\) \{[\s\S]*?await load\(\{ silencioso: true \}\);[\s\S]*?\n\}/);
     assert.match(inicializacao, /if \(telaLivreParaRecarregar\(\)\) recarregarDados\(\);/);
     assert.doesNotMatch(inicializacao, /el\('recarregar'\)\.onclick\(\)/);
     assert.match(regras, /a recarga automática de 5 minutos continua só lendo/);
@@ -142,4 +142,34 @@ test('menu de Visualizações fecha ao escolher, ao clicar fora e com Esc, e nã
     assert.match(graficos, /if \(!el\('visMenu'\)\.hidden && !el\('visIcone'\)\.contains\(e\.target\)\) fecharMenuVis\(\);/);
     assert.match(graficos, /if \(e\.key === 'Escape' && !el\('visMenu'\)\.hidden\) \{ fecharMenuVis\(\); el\('btVis'\)\.focus\(\); \}/);
     assert.match(graficos, /if \(sobra < 0\) menu\.style\.left = `\$\{sobra\}px`;/);
+});
+
+test('recarga automática é silenciosa: sem toast, e falha não troca a tela pelo erro', async () => {
+    const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
+    const codigo = trechoAte(dadosUi, 'async function load({ silencioso = false } = {}) {', '\n}\n');
+    const rodar = async (falhar, opcoes) => {
+        const toasts = [];
+        const out = { innerHTML: 'tabela antiga' };
+        const ctx = {
+            API: 'https://x', LIMIAR_CARGA_LENTA_MS: 0, Estado: { ciclos: [], lancamentos: [] },
+            performance: { now: () => 0 }, console: { info() {}, warn() {} },
+            carregarDados: async () => { if (falhar) throw Error('sem rede'); return { lancamentosCrus: [], diagnosticoDeDados: {} }; },
+            atualizarCombos() {}, desenhar() {}, atualizarBotaoDiagnostico() {}, escapeHtml: String,
+            mostrarToast: titulo => toasts.push(titulo),
+            el: id => (id === 'out' ? out : { textContent: '' }),
+        };
+        vm.runInNewContext(`${codigo}\nthis.load = load;`, ctx);
+        const ok = await ctx.load(opcoes);
+        return { ok, toasts, out: out.innerHTML };
+    };
+    // Limiar 0: toda carga conta como lenta, então o toast apareceria se não fosse silenciosa.
+    assert.deepEqual(await rodar(false, { silencioso: true }), { ok: true, toasts: [], out: 'tabela antiga' });
+    assert.deepEqual(await rodar(true, { silencioso: true }), { ok: false, toasts: [], out: 'tabela antiga' });
+    // Clique manual continua avisando.
+    assert.deepEqual((await rodar(false)).toasts, ['Carga lenta']);
+    const falhaManual = await rodar(true);
+    assert.deepEqual(falhaManual.toasts, ['Não foi possível carregar']);
+    assert.match(falhaManual.out, /Falhou: sem rede/);
+    assert.match(inicializacao, /async function recarregarDados\(\) \{[\s\S]*?await load\(\{ silencioso: true \}\);/);
+    assert.match(regras, /É silenciosa: não mostra toast nem toca som/);
 });

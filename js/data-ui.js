@@ -215,8 +215,10 @@ function mostrarToast(titulo, texto) {
 }
 
 // Devolve true quando a carga deu certo — quem depende de dados frescos (Consolidar tudo)
-// não segue em cima de uma carga que falhou.
-async function load() {
+// não segue em cima de uma carga que falhou. `silencioso` (recarga automática): sem toast
+// (cada toast toca um som) e, se falhar, mantém a tela como estava em vez de trocá-la pela
+// mensagem de erro — a próxima verificação tenta de novo sozinha.
+async function load({ silencioso = false } = {}) {
     if (API.includes('SEUPROJETO')) { el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>'; return false; }
     const inicioCarga = performance.now();
     try {
@@ -229,11 +231,15 @@ async function load() {
         const aposRender = performance.now();
         const cargaMs = Math.round(aposRender - inicioCarga);
         console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
-        if (cargaMs >= LIMIAR_CARGA_LENTA_MS) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
+        if (cargaMs >= LIMIAR_CARGA_LENTA_MS && !silencioso) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
         atualizarBotaoDiagnostico(diagnosticoDeDados);
         Estado.ultimaCarga = Date.now();   // base da recarga automática (bootstrap.js)
         return true;
     } catch (e) {
+        if (silencioso) {
+            console.warn('[recarga automática] falhou:', e.message);
+            return false;
+        }
         el('st').textContent = '';
         // e.message pode trazer texto crudo da resposta do Supabase (ver buscar() em
         // supabase-api.js); escapar evita que um corpo de erro com '<'/'&' seja interpretado

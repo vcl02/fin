@@ -66,14 +66,15 @@ el('btDiagnostico').onclick = abrirDiagnosticoDeDados;
 el('modalConsolidarTudo').addEventListener('click', e => {
     if (e.target == el('modalConsolidarTudo')) el('modalConsolidarTudo').close();
 });
-// Só recarrega do banco (sem navegar nem gravar): base da recarga automática abaixo.
+// Só recarrega do banco (sem navegar nem gravar), em silêncio: base da recarga automática
+// abaixo — sem toast nem som, e uma falha não troca a tela pela mensagem de erro.
 async function recarregarDados() {
     const bt = el('recarregar');
     if (bt.disabled) return;
     bt.classList.add('carregando');
     bt.disabled = true;
     try {
-        await load();
+        await load({ silencioso: true });
     } finally {
         bt.classList.remove('carregando');
         bt.disabled = false;

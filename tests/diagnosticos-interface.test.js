@@ -62,7 +62,7 @@ test('erros operacionais usam toast; só exclusão, pago fora do ciclo e corrigi
 test('Console recebe uma única linha de métricas e toast avisa carga lenta', () => {
     assert.match(dadosUi, /const LIMIAR_CARGA_LENTA_MS = 1000/);
     assert.match(dadosUi, /console\.info\(`\[diag\] carga \$\{cargaMs\}ms/);
-    assert.match(dadosUi, /if \(cargaMs >= LIMIAR_CARGA_LENTA_MS\) mostrarToast\('Carga lenta'/);
+    assert.match(dadosUi, /if \(cargaMs >= LIMIAR_CARGA_LENTA_MS && !silencioso\) mostrarToast\('Carga lenta'/);
     assert.doesNotMatch(dadosUi, /console\.time|console\.timeEnd|load\(\) iniciou|load\(\) terminou/);
     assert.doesNotMatch(interacoes, /console\.time|console\.timeEnd/);
     assert.doesNotMatch(dadosUi, /console\.error/);
