@@ -121,3 +121,15 @@ test('linha calculada mostra o botão de sinal desabilitado e o valor sem ediç�
     assert.match(sugerido, /^<td class="n vd">.*class="sinalBt compacto pos" disabled[^>]*>\+<\/button>/);
     assert.doesNotMatch(sugerido, /data-tog-/);
 });
+
+test('ao lado do botão de sinal o número aparece sem "-"; sem botão, o sinal continua', () => {
+    const { celValorEditavel, celValorSomenteLeitura, celValorLancamento } = carregaCelulasDeValor();
+    const despesa = { id: 7, valor: -1500, v: -1500 };
+    const editavel = celValorEditavel(despesa);
+    assert.match(editavel, />−<\/button>/);
+    assert.match(editavel, /title="Editar valor">R\$\s?1\.500,00<\/span>/);
+    assert.match(celValorSomenteLeitura({ id: -3, _sid: 'fat:1', v: -500 }), /<span class=valorFixo>R\$\s?500,00<\/span>/);
+    // Só apresentação: a linha segue negativa, e sem botão (conta restrita) o "-" fica.
+    assert.equal(despesa.v, -1500);
+    assert.match(celValorLancamento(despesa), />-R\$\s?1\.500,00$/);
+});
