@@ -70,7 +70,7 @@ function definirLimiteCartao(valor, cartao = CARTAO_NUBANK) {
 const limiteCartaoContratado = (cartao = CARTAO_NUBANK) =>
     cartao === CARTAO_MERCADO_PAGO ? LIMITE_CARTAO_MP : LIMITE_CARTAO;
 const TOLERANCIA_FINANCEIRA = 0.005;
-const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;
+const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt|prev):/;
 
 const ehDataIso = valor => !valor || /^\d{4}-\d{2}-\d{2}$/.test(String(valor).slice(0, 10));
 const ehBooleanoOuNulo = valor => valor == null || typeof valor === 'boolean';
@@ -120,7 +120,9 @@ function validarLancamentosCarregados(lancamentos) {
 
         if (lancamento.fatura && ehDataIso(lancamento.fatura)) {
             const [ano, mes, dia] = String(lancamento.fatura).slice(0, 10).split('-');
-            const chaveMes = `${ano}-${mes}`;
+            // Um dia por mês POR CARTÃO: Nubank (12) e Mercado Pago (13) no mesmo mês é normal.
+            const cartao = +dia === DIA_VENCIMENTO_CARTAO[CARTAO_MERCADO_PAGO] ? CARTAO_MERCADO_PAGO : CARTAO_NUBANK;
+            const chaveMes = `${ano}-${mes}|${cartao}`;
             const porDia = faturasPorMes.get(chaveMes) || new Map();
             const itensDoDia = porDia.get(dia) || [];
             itensDoDia.push({ id: lancamento.id ?? indice + 1, nome: String(lancamento.nome || '').trim() || 'sem nome' });
@@ -134,14 +136,15 @@ function validarLancamentosCarregados(lancamentos) {
             avisos.push(`Categoria "${nome}" aparece em apenas um lançamento: "${nomeLancamento}" (id ${id}).`);
         }
     });
-    faturasPorMes.forEach((porDia, chaveMes) => {
+    faturasPorMes.forEach((porDia, chave) => {
         if (porDia.size <= 1) return;
+        const [chaveMes, cartao] = chave.split('|');
         const dias = [...porDia.keys()].sort();
         const exemplos = dias.map(dia => {
             const [{ id, nome: nomeLancamento }] = porDia.get(dia);
             return `dia ${dia} (ex.: "${nomeLancamento}", id ${id})`;
         }).join(', ');
-        avisos.push(`Fatura de ${chaveMes} tem vencimento em mais de um dia: ${exemplos}. Cada mês deveria ter um único dia de fatura.`);
+        avisos.push(`Fatura ${NOME_CARTAO[cartao]} de ${chaveMes} tem vencimento em mais de um dia: ${exemplos}. Cada mês deveria ter um único dia de fatura por cartão.`);
     });
 
     // "Hoje" do Débito e do Crédito (ver finance.js: lancamentosPagos) conta qualquer

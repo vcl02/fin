@@ -457,6 +457,8 @@ function dadosDoGraficoCiclo(idxPeriodo) {
     const ajuste = ajusteDoCiclo(idxPeriodo);
     const linhas = [
         ...doPeriodo,
+        // Besteira/Isabella previstas viram fatia como qualquer gasto do ciclo.
+        ...previstasDoCiclo(idxPeriodo, visiveis),
         ajuste ? { categ: ajuste.categ, v: ajuste.v } : null,
     ].filter(Boolean);
 
@@ -742,6 +744,9 @@ function dadosEvolucao(de, ate) {
                 data: f.vencimento, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura', v: f.liquido,
             });
         });
+
+        // Besteira/Isabella previstas entram no Gasto do ciclo, como no bloco Debito
+        previstasDoCiclo(i, base).forEach(p => linhasDe.Gasto.push(p));
 
         // o Resgate necessario / Aporte sugerido do ciclo entra como uma linha sintetica na
         // barra correspondente, do mesmo jeito que aparece no bloco Debito da visao Ciclo

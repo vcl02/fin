@@ -87,8 +87,16 @@ test('avisa quando o mesmo mês de fatura usa mais de um dia de vencimento', () 
         { id: 41, data: '2026-10-06', valor: -50, nome: 'Compra B', categ: 'Casa', cred: true, pago: true, fatura: '2026-10-14' },
         { id: 42, data: '2026-11-05', valor: -90, nome: 'Compra C', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-12' },
     ]);
-    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Fatura de 2026-10 tem vencimento em mais de um dia')));
-    assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Fatura de 2026-11')));
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Fatura Nubank de 2026-10 tem vencimento em mais de um dia')));
+    assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('de 2026-11')));
+});
+
+test('Nubank dia 12 e Mercado Pago dia 13 no mesmo mês não geram aviso (um dia por cartão)', () => {
+    const diagnostico = dominio.validarLancamentosCarregados([
+        { id: 60, data: '2026-10-05', valor: -90, nome: 'Compra A', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-12' },
+        { id: 61, data: '2026-10-06', valor: -50, nome: 'Compra B', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-13' },
+    ]);
+    assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('vencimento em mais de um dia')));
 });
 
 test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos à frente (a prévia normal é 1)', () => {

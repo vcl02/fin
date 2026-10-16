@@ -159,7 +159,7 @@ test('igualdade de valores não recolhe débito ou crédito com lançamento real
     // Um débito aberto pode compensar outro em valor (ex.: +100 e -100 abertos) e zerar
     // a diferença entre Hoje e Futuro por coincidência, sem que o ciclo esteja quitado.
     // A mesma fatura do cartão pendente (linhasFatura não vazia) também não pode sumir.
-    assert.match(visoes, /const debitoTemPendencia = debitos\.some\(r => r\.pago === false\) \|\| linhasFatura\.length > 0;/);
+    assert.match(visoes, /const debitoTemPendencia = debitos\.some\(r => r\.pago === false\) \|\| linhasFatura\.length > 0 \|\| linhasPrevistas\.length > 0;/);
     assert.match(visoes, /const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&/);
     assert.match(visoes, /const creditoTemPendencia = creditosExibidos\.some\(r => r\.pago === false\);/);
     assert.match(visoes, /const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo && !creditoTemPendencia &&/);

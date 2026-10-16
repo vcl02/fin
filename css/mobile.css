@@ -224,6 +224,16 @@
       background: var(--green-hover);
   }
 
+  /* Besteira/Isabella prevista: gasto ainda não lançado, reservado até o teto do ciclo. */
+  tbody tr.prev td {
+      background: var(--red-soft);
+      font-style: italic;
+  }
+
+  tbody tr.prev:hover td {
+      background: var(--red-hover);
+  }
+
   /* linha de lancamento SIMULADO (modo simulacao) — listrado sutil, nunca confundido
      com um lancamento real */
   tbody tr.sim td {

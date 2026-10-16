@@ -107,8 +107,8 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
     assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\];/);
-    assert.match(visoes, /rotulo: 'Besteira', teto: LIMITE_BESTEIRA, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA\)/);
-    assert.match(visoes, /rotulo: 'Isabella', teto: LIMITE_ISABELLA, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_ISABELLA\)/);
+    assert.match(visoes, /rotulo: 'Besteira', teto: tetosDoCiclo\.besteira, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo\.besteira\)/);
+    assert.match(visoes, /rotulo: 'Isabella', teto: tetosDoCiclo\.isabella, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo\.isabella\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualPago'\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
     assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
@@ -116,8 +116,9 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     assert.match(visoes, /const restante = limite\.teto - \(chave === 'percentualPago' \? limite\.valorPago : limite\.valorTotal\);/);
     assert.match(visoes, /<span class=limiteRotulo>Livre<\/span> <b class="\$\{cor\}">\$\{brl\(Math\.max\(0, restante\)\)\}<\/b>/);
     assert.match(visoes, /<span class=limiteRotulo>Acima<\/span> <b class=vm>\$\{brl\(-restante\)\}<\/b>/);
-    assert.match(visoes, /rotulo: 'Besteira', teto: LIMITE_BESTEIRA,/);
-    assert.match(visoes, /rotulo: 'Isabella', teto: LIMITE_ISABELLA,/);
+    // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
+    assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
+    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje \? \[/);
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {

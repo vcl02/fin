@@ -155,7 +155,8 @@ async function carregarDados() {
         .filter(r => !r.cred && String(r.nome || '').trim() === NOME_ANCORA_CICLO && r.data)
         .sort((a, b) => timestamp(a.data) - timestamp(b.data));
     Estado.ciclos = ancoras.map((ancora, i) => ({
-        id: `pj:${ancora.id}`, ini: dataISO(ancora.data),
+        // ancoraId: a linha "Faturamento PJ" guarda os limites de Besteira/Isabella do ciclo.
+        id: `pj:${ancora.id}`, ancoraId: ancora.id, ini: dataISO(ancora.data),
         fat: ancoras[i + 1] ? somaDias(dataISO(ancoras[i + 1].data), -1) : '9999-12-31',
     }));
     Estado.lancamentos = lancamentosCrus.map(r => {

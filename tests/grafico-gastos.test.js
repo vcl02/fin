@@ -16,6 +16,7 @@ function dadosDoGrafico(lancamentos) {
         Estado: { ciclos: [{ fat: '2026-10-12' }], lancamentos },
         ehTransferenciaFatura: r => !r.cred && /antecipação de fatura/i.test(`${r.nome || ''} ${r.categ || ''}`),
         ajusteDoCiclo: () => null,
+        previstasDoCiclo: () => [],
         textoOuTraco: valor => String(valor || '-'),
         categoriasSeparadas: valor => String(valor || '').split(',').map(c => c.trim()).filter(Boolean),
         ehCategoria: (categoria, procurada) => String(categoria).trim().toLowerCase() === String(procurada).toLowerCase(),

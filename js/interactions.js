@@ -42,6 +42,35 @@ function confirmarLimiteCartao(input) {
 
 restaurarLimiteCartaoLocal();
 
+// Limite de Besteira/Isabella de UM ciclo, editado no título do Débito. Diferente do limite
+// do cartão, ele muda o saldo (a linha prevista completa até esse teto), então vai pro banco,
+// na linha âncora "Faturamento PJ" do ciclo (fin.limite_besteira/limite_isabella, migration
+// 23) — mesmo valor em qualquer aparelho. Campo vazio grava null = volta ao padrão do código.
+// Simulação só altera a memória, como qualquer outra edição.
+async function confirmarLimiteCategoria(input) {
+    const idx = +input.dataset.ciclo;
+    const campo = input.dataset.limiteCategoria === 'isabella' ? 'limite_isabella' : 'limite_besteira';
+    const ancoraId = Estado.ciclos[idx]?.ancoraId;
+    const ancora = ancoraId == null ? null : Estado.lancamentos.find(r => r.id === ancoraId);
+    if (!ancora) { mostrarToast('Limite não salvo', 'Ciclo sem lançamento Faturamento PJ.'); desenhar(); return; }
+    const texto = input.value.trim();
+    const valor = texto ? Math.round(numeroDoLimiteDigitado(texto) * 100) / 100 : null;
+    if (valor != null && !(Number.isFinite(valor) && valor >= 0)) {
+        mostrarToast('Limite inválido', 'Informe um valor igual ou maior que zero, ou deixe vazio pro padrão.');
+        desenhar();
+        return;
+    }
+    if ((ancora[campo] ?? null) == valor) { desenhar(); return; }
+    input.disabled = true;
+    try {
+        if (!Estado.simulando && !ancora._sim) await atualizarLancamento(ancora.id, { [campo]: valor });
+        ancora[campo] = valor;
+    } catch (err) {
+        mostrarToast('Falhou ao salvar limite', err.message);
+    }
+    desenhar();
+}
+
 // redesenha a tela conforme o modo ativo (blocos Debito/Credito vs matriz de comparacao),
 // escondendo/mostrando os filtros que fazem sentido em cada um
 function desenhar() {
@@ -498,25 +527,27 @@ el('out').addEventListener('click', e => {
 // lançamento nem alteração de banco: usa a mesma máscara monetária do cadastro; Enter ou
 // sair do campo atualiza apenas a preferência local do limite contratado.
 el('out').addEventListener('input', e => {
-    const input = e.target.closest('[data-limite-cartao]');
+    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria]');
     if (!input) return;
     const cursorNoFim = input.selectionEnd == input.value.length;
     input.value = formataMascaraDinheiro(input.value);
     if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
 });
 el('out').addEventListener('focusin', e => {
-    const input = e.target.closest('[data-limite-cartao]');
+    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria]');
     if (input) input.select();
 });
 el('out').addEventListener('keydown', e => {
-    const input = e.target.closest('[data-limite-cartao]');
+    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria]');
     if (!input) return;
     if (e.key == 'Enter') { e.preventDefault(); input.blur(); }
     else if (e.key == 'Escape') { e.preventDefault(); desenhar(); }
 });
 el('out').addEventListener('change', e => {
-    const input = e.target.closest('[data-limite-cartao]');
-    if (input) confirmarLimiteCartao(input);
+    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria]');
+    if (!input) return;
+    if (input.dataset.limiteCategoria) confirmarLimiteCategoria(input);
+    else confirmarLimiteCartao(input);
 });
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial

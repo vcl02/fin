@@ -51,12 +51,17 @@ function vCiclo() {
         }]
         : [];
 
-    const debitosComFatura = [...linhaAnterior, ...debitos, ...linhasFatura];
+    // Besteira/Isabella previstas (do ciclo atual em diante): o que falta até o teto do ciclo
+    // entra como gasto, igual a qualquer débito, no fechamento (ver previstasDoCiclo).
+    const linhasPrevistas = previstasDoCiclo(i, visiveis);
+
+    const debitosComFatura = [...linhaAnterior, ...debitos, ...linhasFatura, ...linhasPrevistas];
 
     const movimentosDoSaldo = [
         ...linhaAnterior,
         ...debitos,
-        ...linhasFatura
+        ...linhasFatura,
+        ...linhasPrevistas
     ];
 
 
@@ -137,14 +142,22 @@ function vCiclo() {
     // ciclo (periodoIdx == i) + Crédito da MESMA prévia que a tabela Crédito já mostra pra
     // esse ciclo (creditosExibidosNoCiclo: fatura de i+1 — ciclo que começa em outubro conta,
     // no Crédito, o que vai entrar na fatura de novembro). Não é pela data da compra nem
-    // pelo periodoIdx cru do Crédito. Só aparecem no ciclo atual mesmo, nunca no histórico
-    // nem num ciclo futuro ainda não iniciado. Hoje usa só o pago; Futuro usa pago + aberto
-    // (o que está planejado gastar).
+    // pelo periodoIdx cru do Crédito. Aparecem no ciclo atual e nos seguintes (onde também
+    // se ajusta o teto de cada ciclo), nunca no histórico. Hoje usa só o pago; Futuro usa
+    // pago + aberto (o que está planejado gastar). Só lançamentos reais: a linha prevista é
+    // justamente o que falta até o teto, então nunca entra nesta conta.
     const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)];
-    const limitesCategoria = cicloAtual ? [
-        { rotulo: 'Besteira', teto: LIMITE_BESTEIRA, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA) },
-        { rotulo: 'Isabella', teto: LIMITE_ISABELLA, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_ISABELLA) },
+    const tetosDoCiclo = limitesCategoriaDoCiclo(i);
+    const limitesCategoria = Estado.idxHoje >= 0 && i >= Estado.idxHoje ? [
+        { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo.besteira) },
+        { chave: 'isabella', rotulo: 'Isabella', teto: tetosDoCiclo.isabella, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo.isabella) },
     ] : [];
+    // Teto editável no próprio indicador, como o Aprovado do cartão: grava na linha âncora
+    // do ciclo (ver confirmarLimiteCategoria em interactions.js). Conta restrita só lê.
+    const tetoDoIndicador = limite => modoRestrito() ? brl(limite.teto)
+        : `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-categoria="${limite.chave}" data-ciclo="${i}" ` +
+        `value="${limite.teto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}" placeholder="padrão" inputmode=decimal ` +
+        `title="Editar limite de ${limite.rotulo} deste ciclo (vazio volta ao padrão)" aria-label="Limite de ${limite.rotulo} deste ciclo"></span>`;
     // Além do %, quanto ainda dá pra gastar até o teto (ou quanto já passou dele), com o
     // mesmo valor da linha: Hoje usa só o pago; Futuro, pago + aberto.
     const spansLimitesCategoria = chave => limitesCategoria.map(limite => {
@@ -153,9 +166,9 @@ function vCiclo() {
         const sobra = restante >= -TOLERANCIA_FINANCEIRA
             ? `<span class=limiteRotulo>Livre</span> <b class="${cor}">${brl(Math.max(0, restante))}</b>`
             : `<span class=limiteRotulo>Acima</span> <b class=vm>${brl(-restante)}</b>`;
-        return `<span class=besteiraIndicador>${limite.rotulo} <b class="${cor}">${Math.round(limite[chave])}%</b> · ${sobra}</span>`;
+        return `<span class=besteiraIndicador>${limite.rotulo} <b class="${cor}">${Math.round(limite[chave])}%</b> · ${sobra} <span class=limiteTeto>de ${tetoDoIndicador(limite)}</span></span>`;
     }).join('');
-    const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
+    const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0 || linhasPrevistas.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
         Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&
         Math.abs(debitoHoje.guardado - guardado) <= TOLERANCIA_FINANCEIRA;
@@ -517,6 +530,9 @@ function vComp() {
                 v: anterior, valor: anterior, periodoIdx: idx,
             });
         }
+        // Besteira/Isabella previstas são gasto do ciclo como qualquer outro (Besteira em si
+        // continua fora da matriz pela lista de exclusões; Isabella prevista entra como Lazer).
+        sinteticas.push(...previstasDoCiclo(idx, visiveis));
         const ajuste = ajusteDoCiclo(idx);
         if (!ajuste) return;
         sinteticas.push({

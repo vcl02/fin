@@ -16,8 +16,10 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
     if (idx < 0 || !Estado.ciclos[idx]) return 0;
     if (dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
 
-    const doCiclo = base
-        .filter(r => r.periodoIdx === idx && !r.cred)
+    // Besteira/Isabella previstas (linhas sintéticas do ciclo atual em diante) contam como
+    // qualquer débito do ciclo — por aqui elas chegam ao saldo, ao Aporte sugerido/Resgate
+    // necessário e a tudo que deriva deles.
+    const doCiclo = [...base.filter(r => r.periodoIdx === idx && !r.cred), ...previstasDoCiclo(idx, base)]
         .reduce((s, r) => s + r.v, 0);
 
     const brutoFatura = base
@@ -29,6 +31,47 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
         ? saldoAnteriorFn(idx - 1) : 0;
 
     return anterior + doCiclo + fatura;
+}
+
+// Limites de Besteira/Isabella de um ciclo: o valor gravado na linha âncora "Faturamento PJ"
+// que abre o ciclo (fin.limite_besteira / fin.limite_isabella, migration 23) ou, sem valor,
+// o padrão do código. Cada ciclo é independente: mudar um não mexe nos outros.
+function limitesCategoriaDoCiclo(idx) {
+    const ancoraId = Estado.ciclos[idx]?.ancoraId;
+    const ancora = ancoraId == null ? null : Estado.lancamentos.find(r => r.id === ancoraId);
+    const valorOuPadrao = (valor, padrao) => valor == null || valor === '' || !Number.isFinite(+valor) ? padrao : +valor;
+    return {
+        besteira: valorOuPadrao(ancora?.limite_besteira, LIMITE_BESTEIRA),
+        isabella: valorOuPadrao(ancora?.limite_isabella, LIMITE_ISABELLA),
+    };
+}
+
+// Do ciclo atual em diante, o ciclo assume que o teto de Besteira e de Isabella será gasto
+// por inteiro: uma linha sintética completa o que falta até 100% (limite − já lançado, pago
+// ou aberto, nunca negativa; nada se o ciclo já passou do teto). "Já lançado" é a mesma base
+// do indicador: débitos do ciclo + créditos da prévia (fatura de idx+1). Entra na data de
+// fechamento do ciclo, como o Aporte sugerido. Ciclos passados não ganham previsão.
+function previstasDoCiclo(idx, base) {
+    const ciclo = Estado.ciclos[idx];
+    if (!ciclo || Estado.idxHoje == null || Estado.idxHoje < 0 || idx < Estado.idxHoje) return [];
+    const linhas = [...base.filter(r => r.periodoIdx === idx && !r.cred), ...creditosExibidosNoCiclo(base, idx)];
+    const tetos = limitesCategoriaDoCiclo(idx);
+    // A Isabella prevista leva "Lazer, Isabella" pra continuar sendo gasto com ela em qualquer
+    // leitura (ehGastoIsabella, Comparar, pizza). Montada aqui, e não no topo do arquivo, porque
+    // ehGastoIsabella vem de js/charts.js, carregado depois deste.
+    const categorias = [
+        { chave: 'besteira', nome: 'Besteira prevista', categ: CATEGORIA_BESTEIRA, combina: CATEGORIA_BESTEIRA },
+        { chave: 'isabella', nome: 'Isabella prevista', categ: 'Lazer, Isabella', combina: ehGastoIsabella },
+    ];
+    return categorias.map(c => {
+        const falta = tetos[c.chave] - dadosLimiteCategoriaDoCiclo(linhas, c.combina, tetos[c.chave]).valorTotal;
+        if (falta <= TOLERANCIA_FINANCEIRA) return null;
+        const v = -Math.round(falta * 100) / 100;
+        return {
+            data: dataISO(ciclo.fat), nome: c.nome, categ: c.categ, freq: '', pago: null, cred: false,
+            id: -6, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx,
+        };
+    }).filter(Boolean);
 }
 
 // Linha sintetica de Resgate necessario / Aporte sugerido de um ciclo, a partir do seu saldo
@@ -149,6 +192,12 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
         });
     });
 
+    // Besteira/Isabella previstas, na data de fechamento de cada ciclo (ver previstasDoCiclo)
+    const previstas = [];
+    Estado.ciclos.forEach((per, idx) => {
+        previstasDoCiclo(idx, base).forEach(p => previstas.push({ data: p.data, v: p.v }));
+    });
+
     // um evento de Resgate/Aporte por ciclo, na data de fechamento (usa o cache — nunca
     // recalcula alocacaoAntecipacoes por periodo)
     const ajustes = [];
@@ -162,6 +211,7 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
             .filter(r => !r.cred && r.data)
             .map(r => ({ data: dataISO(r.data), v: r.v })),
         ...faturas,
+        ...previstas,
         ...ajustes,
     ]
         .filter(e => e.data >= SALDO_DESDE)

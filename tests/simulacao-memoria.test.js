@@ -14,9 +14,10 @@ test('simulação mantém update e exclusão de linhas reais somente em memória
     assert.match(formulario, /Volta ao recarregar ou sair da simulação/);
     // Pago, Reserva/Comprometido (um único handler pras duas — data-tog-flag), Valor
     // (texto), sinal (botão +/-), Data, Nome, Categoria, Frequência, Prio, Obs, Canal e
-    // corrigir recorrência duplicada (botão "↷" ao lado da Data): 12 pontos de edição
-    // inline, todos passando pela mesma guarda antes de chamar o Supabase.
-    assert.equal((interacoes.match(/!Estado\.simulando && !\w+\._sim\) await atualizarLancamento/g) || []).length, 12);
+    // corrigir recorrência duplicada (botão "↷" ao lado da Data) e o limite de Besteira/
+    // Isabella do ciclo (gravado na âncora Faturamento PJ): 13 pontos de edição inline, todos
+    // passando pela mesma guarda antes de chamar o Supabase.
+    assert.equal((interacoes.match(/!Estado\.simulando && !\w+\._sim\) await atualizarLancamento/g) || []).length, 13);
     assert.doesNotMatch(graficos, /atualizarLancamento|inserirLancamento|excluirLancamento/);
 });
 
