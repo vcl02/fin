@@ -69,3 +69,16 @@ test('Atual é ícone com title e aria-label, no mesmo lugar; não há mais bot�
     assert.match(regras, /\*\*Atual\*\* é um ícone \(alvo\), no mesmo lugar, logo depois da seta ›: volta De\/Até ao ciclo atual e também limpa os filtros/);
     assert.match(regras, /Não existe mais botão "Limpar filtros" separado/);
 });
+
+test('Gráfico e Consolidar tudo são botões só de ícone, com title e aria-label, na mesma ordem', () => {
+    const acoes = pagina.slice(pagina.indexOf('id=rowVis'), pagina.indexOf('id=indicadoresFinanceiros'));
+    assert.match(acoes, /<button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">\s*\n\s*<svg/);
+    assert.match(acoes, /<button type=button id=btConsolidarTudo class=btIcone title="Consolidar tudo: [^"]*" aria-label="Consolidar tudo">\s*\n\s*<svg/);
+    assert.doesNotMatch(acoes, />Gráfico<\/button>|>Consolidar tudo<\/button>/);
+    assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=btGrafico'));
+    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btConsolidarTudo'));
+    assert.match(estilos, /\.btIcone \{[\s\S]*?width: 2\.2rem;\s*\n\s*height: 2\.2rem;/);
+    assert.match(estilos, /\.btIcone:disabled \{\s*\n\s*opacity: \.5;/);
+    assert.match(estilos, /\.btIcone\.carregando svg \{\s*\n\s*animation: girar/);
+    assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) e \*\*Consolidar tudo\*\* \(ícone de duplo check\) são botões só de ícone/);
+});

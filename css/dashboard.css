@@ -1096,7 +1096,39 @@
       cursor: default;
   }
 
-  /* .btFiltro (Visualizações, Gráfico, Limpar filtros, Consolidar tudo) só tem estilo
+  /* Botões de ação só com ícone na barra (Gráfico, Consolidar tudo): quadrados, no mesmo
+     tamanho dos botões de navegação de ciclo. O texto fica no title/aria-label. */
+  .btIcone {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 2.2rem;
+      height: 2.2rem;
+      padding: 0;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  .btIcone:hover:not(:disabled) {
+      background: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .btIcone:disabled {
+      opacity: .5;
+      cursor: default;
+  }
+
+  /* Consolidar tudo rodando: o ícone gira (mesmo giro do Recarregar) no lugar do texto. */
+  .btIcone.carregando svg {
+      animation: girar 0.8s linear infinite;
+  }
+
+  /* .btFiltro (Visualizações) só tem estilo
      próprio dentro do media query mobile (ver mobile.css) — no desktop usa a aparência
      nativa do navegador, que nem sempre deixa claro que o botão está desabilitado durante
      um processamento (ex.: "Consolidar tudo" enquanto roda, ver btConsolidarTudo em

@@ -890,21 +890,24 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 el('btConsolidarTudo').onclick = async () => {
     if (el('btConsolidarTudo').disabled || Estado.idxHoje < 0) return;
     // disabled bloqueia clique duplo nativamente (botão desabilitado não dispara 'click'),
-    // mas sozinho pode passar despercebido — o texto muda pra deixar claro que já está
-    // processando, mesmo esquema do "Salvando…" de #seldup.
-    const textoOriginal = el('btConsolidarTudo').textContent;
-    el('btConsolidarTudo').disabled = true;
+    // mas sozinho pode passar despercebido — o ícone gira e o title diz a etapa, pra deixar
+    // claro que já está processando (o botão é só ícone; trocar o texto apagaria o desenho).
+    const botao = el('btConsolidarTudo');
+    const tituloOriginal = botao.title;
+    const etapa = texto => { botao.title = texto; botao.setAttribute('aria-label', texto); };
+    botao.disabled = true;
+    botao.classList.add('carregando');
     try {
         // Sempre recarrega do banco antes: a varredura grava em cima do que lê, então nunca
         // pode partir de uma tela velha (outro aparelho, DataGrip ou aba aberta há horas).
         // Carga que falhou para tudo — não consolida em cima de dado desatualizado. Na
         // simulação não recarrega: isso apagaria os lançamentos simulados, que só existem aqui.
         if (!Estado.simulando) {
-            el('btConsolidarTudo').textContent = 'Recarregando…';
+            etapa('Recarregando…');
             if (!(await load())) return;
             if (Estado.idxHoje < 0) return;
         }
-        el('btConsolidarTudo').textContent = 'Consolidando…';
+        etapa('Consolidando…');
         const ultimoCicloAntesDaCorrecao = Estado.lancamentos.reduce(
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
             Estado.idxHoje
@@ -946,8 +949,10 @@ el('btConsolidarTudo').onclick = async () => {
         mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();
     } finally {
-        el('btConsolidarTudo').disabled = false;
-        el('btConsolidarTudo').textContent = textoOriginal;
+        botao.disabled = false;
+        botao.classList.remove('carregando');
+        botao.title = tituloOriginal;
+        botao.setAttribute('aria-label', 'Consolidar tudo');
     }
 };
 

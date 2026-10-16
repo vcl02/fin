@@ -13,7 +13,7 @@ const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
 test('botão fica na toolbar, com título explicando o alcance', () => {
-    assert.match(pagina, /id=btConsolidarTudo class=btFiltro title="[^"]*hoje até o último ciclo com lançamentos[^"]*"/);
+    assert.match(pagina, /id=btConsolidarTudo class=btIcone title="Consolidar tudo: [^"]*hoje até o último ciclo com lançamentos[^"]*" aria-label="Consolidar tudo">\s*\n\s*<svg/);
     // .tool tem paridade total com o desktop: fica sempre visível, em qualquer largura —
     // sem regra própria escondendo este botão no mobile (só a conta restrita o esconde,
     // junto com o resto de #rowVis, testado em preferencias-interface.test.js).
@@ -41,12 +41,15 @@ test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca
 test('botão fica desabilitado e com texto "Consolidando…" durante a varredura, bloqueando clique duplo', () => {
     const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
-    assert.match(trecho, /const textoOriginal = el\('btConsolidarTudo'\)\.textContent;\s*\n\s*el\('btConsolidarTudo'\)\.disabled = true;/);
-    assert.match(trecho, /el\('btConsolidarTudo'\)\.textContent = 'Recarregando…';/);
-    assert.match(trecho, /el\('btConsolidarTudo'\)\.textContent = 'Consolidando…';/);
+    // Botão só de ícone: trocar textContent apagaria o SVG; a etapa vai pro title/aria-label.
+    assert.doesNotMatch(trecho, /textContent/);
+    assert.match(trecho, /const tituloOriginal = botao\.title;/);
+    assert.match(trecho, /botao\.disabled = true;\s*\n\s*botao\.classList\.add\('carregando'\);/);
+    assert.match(trecho, /etapa\('Recarregando…'\);/);
+    assert.match(trecho, /etapa\('Consolidando…'\);/);
     // finally roda tanto no caminho feliz quanto no catch, então o texto e o disabled
     // voltam ao normal nos dois casos — sucesso ou falha.
-    assert.match(trecho, /\} finally \{\s*\n\s*el\('btConsolidarTudo'\)\.disabled = false;\s*\n\s*el\('btConsolidarTudo'\)\.textContent = textoOriginal;\s*\n\s*\}/);
+    assert.match(trecho, /\} finally \{\s*\n\s*botao\.disabled = false;\s*\n\s*botao\.classList\.remove\('carregando'\);\s*\n\s*botao\.title = tituloOriginal;\s*\n\s*botao\.setAttribute\('aria-label', 'Consolidar tudo'\);\s*\n\s*\}/);
 });
 
 test('fica visualmente apagado enquanto desabilitado, igual Duplicar/Editar/Excluir e o Salvar do cadastro — não só o cursor nativo do navegador', () => {
@@ -126,7 +129,7 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /\*\*Consolidar tudo\*\* repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
     assert.match(regras, /o próprio botão fica desabilitado \(`disabled`, de verdade bloqueado pro navegador — mesmo esquema visual apagado do Salvar do cadastro e do Duplicar\/Editar\/Excluir da barra de seleção/);
-    assert.match(regras, /e o texto muda pra "Recarregando…" e depois "Consolidando…", pra bloquear clique duplo/);
+    assert.match(regras, /e o ícone gira, com o title\/aria-label passando a "Recarregando…" e depois "Consolidando…", pra bloquear clique duplo/);
     assert.match(regras, /volta ao normal \("Consolidar tudo"\) ao final, com sucesso ou falha/);
     assert.match(regras, /ela também corrige toda recorrência duplicada nesse mesmo intervalo \(mesma regra do botão "↷" ao lado da Data/);
     assert.match(regras, /sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira/);
@@ -142,7 +145,7 @@ test('regra documentada em REGRAS.md', () => {
 test('sempre recarrega do banco antes de varrer; carga com falha para tudo; simulação não recarrega', () => {
     const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
-    assert.match(trecho, /if \(!Estado\.simulando\) \{\s*\n\s*el\('btConsolidarTudo'\)\.textContent = 'Recarregando…';\s*\n\s*if \(!\(await load\(\)\)\) return;\s*\n\s*if \(Estado\.idxHoje < 0\) return;\s*\n\s*\}/);
+    assert.match(trecho, /if \(!Estado\.simulando\) \{\s*\n\s*etapa\('Recarregando…'\);\s*\n\s*if \(!\(await load\(\)\)\) return;\s*\n\s*if \(Estado\.idxHoje < 0\) return;\s*\n\s*\}/);
     // A recarga vem antes de qualquer leitura de Estado.lancamentos pela varredura.
     assert.ok(trecho.indexOf('await load()') < trecho.indexOf('corrigeRecorrenciasDuplicadasNoIntervalo('));
     const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
