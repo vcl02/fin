@@ -11,20 +11,19 @@ const inicio = graficos.indexOf('const NOMES_DAS_VISUALIZACOES =');
 const fim = graficos.indexOf('\n// A escolha abre o acompanhamento diretamente', inicio);
 const codigo = graficos.slice(inicio, fim);
 
-// Mock m\u00ednimo de #visAlvo (replaceChildren + value) e do construtor Option do browser,
-// s\u00f3 o suficiente pra popularAlvosVisualizacao rodar sem precisar de jsdom.
+// Mock mínimo de #visMenu (só innerHTML), o suficiente pra popularAlvosVisualizacao rodar
+// sem precisar de jsdom.
 function criarVisualizacoes(lancamentos) {
-    const visAlvoMock = { value: '', _children: [] };
-    visAlvoMock.replaceChildren = (...filhos) => { visAlvoMock._children = filhos; };
+    const visMenuMock = { innerHTML: '' };
     const contexto = {
         Estado: { lancamentos },
         semAcento: valor => String(valor ?? '').normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '').toLowerCase(),
-        Option: class { constructor(text, value) { this.text = text; this.value = value; } },
-        el: id => { if (id !== 'visAlvo') throw Error(`mock s\u00f3 conhece #visAlvo, pediu #${id}`); return visAlvoMock; },
+        escapeHtml: valor => String(valor).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'),
+        el: id => { if (id !== 'visMenu') throw Error(`mock só conhece #visMenu, pediu #${id}`); return visMenuMock; },
     };
     vm.runInNewContext(`${codigo}; this.testadas = { OPCOES_VISUALIZACOES, dadosVisualizacao, opcaoDaVisualizacao, popularAlvosVisualizacao };`, contexto);
-    return { ...contexto.testadas, visAlvoMock };
+    return { ...contexto.testadas, visMenuMock };
 }
 
 test('a lista fixa de acompanhamentos (roster) continua na ordem de definição', () => {
@@ -39,7 +38,7 @@ test('a lista fixa de acompanhamentos (roster) continua na ordem de definição'
 });
 
 test('popularAlvosVisualizacao reordena o dropdown do mais próximo de acabar pro mais longe', () => {
-    const { popularAlvosVisualizacao, opcaoDaVisualizacao, visAlvoMock } = criarVisualizacoes([
+    const { popularAlvosVisualizacao, opcaoDaVisualizacao, visMenuMock } = criarVisualizacoes([
         // Trybe: 100% pago (acabou) — deve vir primeiro.
         { nome: 'Trybe', categ: 'Dívida', pago: true, v: -100 },
         // Iphone: 50% pago — no meio.
@@ -49,7 +48,8 @@ test('popularAlvosVisualizacao reordena o dropdown do mais próximo de acabar pr
         { nome: 'Senac', categ: 'Isabella', pago: false, v: -200 },
     ]);
     popularAlvosVisualizacao();
-    const idsRenderizados = visAlvoMock._children.slice(1).map(opcao => opcao.value);   // [0] é "Visualizações"
+    const idsRenderizados = [...visMenuMock.innerHTML.matchAll(/data-vis="([^"]+)"/g)].map(m => m[1]);
+    assert.match(visMenuMock.innerHTML, /^<button type=button role=menuitem data-vis="/);
     const idPorNome = nome => idsRenderizados.find(id => opcaoDaVisualizacao(id)?.nome === nome);
     const posicao = id => idsRenderizados.indexOf(id);
     assert.ok(posicao(idPorNome('Trybe')) < posicao(idPorNome('Iphone')), 'Trybe (100%) antes de Iphone (50%)');

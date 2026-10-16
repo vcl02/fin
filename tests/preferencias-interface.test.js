@@ -97,16 +97,17 @@ test('fatura à vista não repete o rótulo nem o asterisco', () => {
 });
 
 test('visualizações usam um único dropdown com acompanhamentos fixos', () => {
-    assert.match(pagina, /<label id=visIcone class=btIcone title="Visualizações">\s*\n\s*<svg[\s\S]*?<\/svg>\s*\n\s*<select id=visAlvo aria-label="Visualizações">/);
+    assert.match(pagina, /<button type=button id=btVis class=btIcone title="Visualizações" aria-label="Visualizações"\s*\n\s*aria-haspopup=menu aria-expanded=false aria-controls=visMenu>/);
+    assert.match(pagina, /<div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden><\/div>/);
+    assert.doesNotMatch(pagina, /id=visAlvo/);
     assert.doesNotMatch(pagina, /id=visTipo|id=visAlvoRotulo/);
     assert.doesNotMatch(pagina, /id=btVisualizacoes|id=modalVisualizacoes|id=abreVisualizacao|id=voltaVisualizacoes/);
     assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
     assert.match(graficos, /const OPCOES_VISUALIZACOES/);
     assert.match(graficos, /categoriaContem: 'Roberta'/);
     assert.doesNotMatch(graficos, /function valoresDaVisualizacao|visTipo/);
-    assert.match(graficos, /el\('visAlvo'\)\.onchange/);
-    assert.match(graficos, /new Option\('Visualizações', ''\)/);
-    assert.match(regras, /por baixo dele há o próprio dropdown nativo, invisível/);
+    assert.match(graficos, /el\('visMenu'\)\.onclick = e => \{/);
+    assert.match(regras, /o clique abre um menu próprio logo abaixo dele/);
     assert.match(regras, /seletor é fixo/);
     assert.match(regras, /categoria contendo `Roberta`/);
     assert.match(regras, /Toda visualização usa a mesma regra/);

@@ -61,18 +61,19 @@
               <path d="M7 16v-5M12 16V6M17 16v-8" />
             </svg>
           </button>
-          <!-- Visualizações: ícone por cima de um <select> invisível — o clique abre a lista
-               nativa (inclusive no mobile); a escolha abre o acompanhamento (charts.js). -->
-          <label id=visIcone class=btIcone title="Visualizações">
-            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-              stroke-linejoin=round aria-hidden=true>
-              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-              <circle cx=12 cy=12 r=3 />
-            </svg>
-            <select id=visAlvo aria-label="Visualizações">
-              <option value="">Visualizações</option>
-            </select>
-          </label>
+          <!-- Visualizações: ícone que abre um menu próprio logo abaixo; charts.js preenche
+               #visMenu com os acompanhamentos e abre o escolhido. -->
+          <div id=visIcone class=visWrap>
+            <button type=button id=btVis class=btIcone title="Visualizações" aria-label="Visualizações"
+              aria-haspopup=menu aria-expanded=false aria-controls=visMenu>
+              <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+                stroke-linejoin=round aria-hidden=true>
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                <circle cx=12 cy=12 r=3 />
+              </svg>
+            </button>
+            <div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden></div>
+          </div>
           <button type=button id=btConsolidarTudo class=btIcone title="Consolidar tudo: materializa Aporte sugerido e consolida Resgate necessário de hoje até o último ciclo com lançamentos" aria-label="Consolidar tudo">
             <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
               stroke-linejoin=round aria-hidden=true>

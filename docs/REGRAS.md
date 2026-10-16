@@ -87,7 +87,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Visualizações de acompanhamento
 
-- **Visualizações** é um ícone (olho) na navegação de ciclo, entre Gráfico e Consolidar tudo; por baixo dele há o próprio dropdown nativo, invisível, que abre a lista no clique (inclusive no mobile), com os acompanhamentos fixos descritos em **Escopo e exclusões das visões**. Escolher uma opção abre o detalhe imediatamente, sem modal intermediário ou botão de confirmação; `×` encerra o detalhe. A ordem das opções não é fixa: a cada redesenho elas são reordenadas do mais próximo de acabar (maior percentual pago) pro mais longe, para quem falta pouco aparecer sempre no topo.
+- **Visualizações** é um ícone (olho) na navegação de ciclo, entre Gráfico e Consolidar tudo; o clique abre um menu próprio logo abaixo dele (cartão escuro com cantos arredondados, separado do ícone — não a lista nativa do navegador, que abria colada), que fecha ao escolher, ao clicar fora ou com Esc e aceita as setas do teclado, com os acompanhamentos fixos descritos em **Escopo e exclusões das visões**. Escolher uma opção abre o detalhe imediatamente, sem modal intermediário ou botão de confirmação; `×` encerra o detalhe. A ordem das opções não é fixa: a cada redesenho elas são reordenadas do mais próximo de acabar (maior percentual pago) pro mais longe, para quem falta pouco aparecer sempre no topo.
 - Toda visualização usa a mesma regra: considera apenas as despesas negativas pagas e abertas, usa valor absoluto e compara pago, pendente e total. Ela usa a relação inteira escolhida, independente do ciclo da barra.
 
 ## Mobile

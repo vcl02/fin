@@ -111,7 +111,7 @@ function desenhar() {
     el('btGrafico').hidden = simples;
     el('visIcone').hidden = simples;
     el('btConsolidarTudo').hidden = simples;
-    popularAlvosVisualizacao(el('visAlvo').value);   // reordena do mais perto de acabar pro mais longe a cada redesenho
+    popularAlvosVisualizacao();   // reordena do mais perto de acabar pro mais longe a cada redesenho
     el('abreNovo').hidden = simples;
     el('toggleSimulacao').hidden = simples;
     const noBacklog = modoBlocos && +el('ciclo').value < 0;

@@ -82,9 +82,9 @@ function abrirVisualizacao(id) {
     el('modalVisualizacao').showModal();
 }
 
-function popularAlvosVisualizacao(valorSelecionado = '') {
-    // O próprio controle da barra é o seletor: a opção vazia o devolve ao rótulo curto após
-    // abrir um detalhe, sem criar outro modal nem exigir uma confirmação extra. A ordem é
+function popularAlvosVisualizacao() {
+    // O menu do ícone Visualizações lista os acompanhamentos; escolher um abre o detalhe
+    // direto, sem outro modal nem confirmação extra. A ordem é
     // dinâmica — do mais próximo de acabar (maior % pago) pro mais longe — pra quem falta
     // pouco aparecer sempre no topo, sem precisar abrir cada opção pra descobrir quem está
     // quase lá. Recalculada aqui porque dadosVisualizacao() depende de Estado.lancamentos,
@@ -93,19 +93,50 @@ function popularAlvosVisualizacao(valorSelecionado = '') {
         .map(opcao => ({ opcao, pctPago: dadosVisualizacao(opcao.id).pctPago }))
         .sort((a, b) => b.pctPago - a.pctPago)
         .map(({ opcao }) => opcao);
-    el('visAlvo').replaceChildren(new Option('Visualizações', ''), ...ordenadas
-        .map(opcao => new Option(opcao.rotulo, opcao.id)));
-    if (opcaoDaVisualizacao(valorSelecionado)) el('visAlvo').value = valorSelecionado;
+    el('visMenu').innerHTML = ordenadas.map(opcao =>
+        `<button type=button role=menuitem data-vis="${escapeHtml(opcao.id)}">${escapeHtml(opcao.rotulo)}</button>`).join('');
 }
 
 // A escolha abre o acompanhamento diretamente; não existe etapa intermediária de "Ver".
 popularAlvosVisualizacao();
-el('visAlvo').onchange = () => {
-    const id = el('visAlvo').value;
-    if (!id) return;
-    el('visAlvo').value = '';
-    abrirVisualizacao(id);
+// Menu próprio no lugar da lista nativa do <select>, que no Windows abre colada no botão e
+// sem o tema escuro. Fecha ao escolher, ao clicar fora ou com Esc.
+const itensDoMenuVis = () => [...el('visMenu').querySelectorAll('[data-vis]')];
+function fecharMenuVis() {
+    el('visMenu').hidden = true;
+    el('btVis').setAttribute('aria-expanded', 'false');
+}
+el('btVis').onclick = e => {
+    e.stopPropagation();
+    const menu = el('visMenu');
+    if (!menu.hidden) { fecharMenuVis(); return; }
+    menu.style.left = '';
+    menu.hidden = false;
+    el('btVis').setAttribute('aria-expanded', 'true');
+    // Perto da borda direita (ícone no fim da linha no mobile), puxa o menu pra dentro da tela.
+    const sobra = window.innerWidth - 8 - menu.getBoundingClientRect().right;
+    if (sobra < 0) menu.style.left = `${sobra}px`;
+    itensDoMenuVis()[0]?.focus();
 };
+el('visMenu').onclick = e => {
+    const item = e.target.closest('[data-vis]');
+    if (!item) return;
+    fecharMenuVis();
+    abrirVisualizacao(item.dataset.vis);
+};
+el('visMenu').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const itens = itensDoMenuVis();
+    const atual = itens.indexOf(document.activeElement);
+    itens[(atual + (e.key === 'ArrowDown' ? 1 : -1) + itens.length) % itens.length]?.focus();
+});
+document.addEventListener('click', e => {
+    if (!el('visMenu').hidden && !el('visIcone').contains(e.target)) fecharMenuVis();
+});
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !el('visMenu').hidden) { fecharMenuVis(); el('btVis').focus(); }
+});
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
 el('modalVisualizacao').addEventListener('click', e => {
     if (e.target == el('modalVisualizacao')) el('modalVisualizacao').close();
