@@ -75,13 +75,26 @@ test('Gráfico e Consolidar tudo são ícones logo depois do Atual, com title e 
     assert.match(acoes, /<button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">\s*\n\s*<svg/);
     assert.match(acoes, /<button type=button id=btConsolidarTudo class=btIcone title="Consolidar tudo: [^"]*" aria-label="Consolidar tudo">\s*\n\s*<svg/);
     assert.doesNotMatch(acoes, />Gráfico<\/button>|>Consolidar tudo<\/button>/);
-    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btConsolidarTudo'));
+    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=visIcone'));
+    assert.ok(acoes.indexOf('id=visIcone') < acoes.indexOf('id=btConsolidarTudo'));
     // Fora de #rowVis: a conta restrita precisa escondê-los à parte.
     const barra = pagina.slice(pagina.indexOf('id=rowVis'), pagina.indexOf('id=indicadoresFinanceiros'));
-    assert.doesNotMatch(barra, /btGrafico|btConsolidarTudo/);
-    assert.match(interacoes, /el\('btGrafico'\)\.hidden = simples;\s*\n\s*el\('btConsolidarTudo'\)\.hidden = simples;/);
+    assert.doesNotMatch(barra, /btGrafico|btConsolidarTudo|visAlvo/);
+    assert.match(interacoes, /el\('btGrafico'\)\.hidden = simples;\s*\n\s*el\('visIcone'\)\.hidden = simples;\s*\n\s*el\('btConsolidarTudo'\)\.hidden = simples;/);
+    // O select fica invisível por cima do ícone inteiro: o clique abre a lista nativa.
+    assert.match(estilos, /#visIcone select \{\s*\n\s*position: absolute;\s*\n\s*inset: 0;[\s\S]*?opacity: 0;/);
+    assert.match(regras, /\*\*Visualizações\*\* é um ícone \(olho\) na navegação de ciclo, entre Gráfico e Consolidar tudo/);
     assert.match(estilos, /\.btIcone \{[\s\S]*?width: 2\.2rem;\s*\n\s*height: 2\.2rem;/);
     assert.match(estilos, /\.btIcone:disabled \{\s*\n\s*opacity: \.5;/);
     assert.match(estilos, /\.btIcone\.carregando svg \{\s*\n\s*animation: girar/);
-    assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) e \*\*Consolidar tudo\*\* \(ícone de duplo check\) são botões só de ícone[^.]*logo depois do ícone \*\*Atual\*\* \(seta ›, Atual, Gráfico, Consolidar tudo\)/);
+    assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) e \*\*Consolidar tudo\*\* \(ícone de duplo check\) são botões só de ícone[^.]*logo depois do ícone \*\*Atual\*\* \(seta ›, Atual, Gráfico, Visualizações, Consolidar tudo\)/);
+});
+
+test('navegação de ciclo quebra linha em vez de sobrepor o cabeçalho, e no mobile os ícones cabem ao lado do Até', () => {
+    const mobile = fs.readFileSync('css/mobile.css', 'utf8');
+    assert.match(estilos, /#navComparar \{\s*\n\s*display: flex;\s*\n\s*flex-direction: row;\s*\n\s*flex-wrap: wrap;/);
+    assert.match(mobile, /#fate \{\s*\n\s*flex: 1 1 0;\s*\n\s*min-width: 9rem;/);
+    assert.match(mobile, /#navComparar \.btNavCiclo,\s*\n\s*#navComparar \.btHoje,\s*\n\s*#navComparar \.btIcone \{\s*\n\s*width: 2rem;/);
+    // O select invisível de Visualizações não pode vazar por cima do botão vizinho.
+    assert.match(estilos, /#visIcone \{\s*\n\s*position: relative;\s*\n\s*overflow: hidden;/);
 });

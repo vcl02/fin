@@ -25,7 +25,9 @@ test('navegação de ciclo (setas, De/Até, Atual) encolhe e quebra em vez de es
     const blocoMedia = estilosMobile.slice(inicioMedia);
     assert.match(blocoMedia, /#fciclNav\s*\{[\s\S]*?flex:\s*1 1 100%;[\s\S]*?min-width:\s*0;/);
     assert.match(blocoMedia, /#navComparar\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
-    assert.match(blocoMedia, /#fde,\s*\n\s*#fate\s*\{[\s\S]*?min-width:\s*0;/);
+    // De encolhe até zero; Até só ocupa o que sobra da linha, com um mínimo legível.
+    assert.match(blocoMedia, /#fde\s*\{[\s\S]*?min-width:\s*0;/);
+    assert.match(blocoMedia, /#fate\s*\{\s*\n\s*flex:\s*1 1 0;/);
 });
 
 test('mobile.css não esconde mais nada por largura de tela, só o que genuinamente não cabe', () => {

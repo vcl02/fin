@@ -24,19 +24,45 @@
           min-width: 0;
       }
 
+      /* Vão menor entre os botões no mobile: com Atual, Gráfico, Visualizações e Consolidar
+         tudo depois da seta ›, o vão do desktop empurrava o último ícone pra uma 3ª linha. */
       #navComparar {
           flex-wrap: wrap;
           row-gap: .5rem;
+          column-gap: .4rem;
           min-width: 0;
       }
 
-      #fde,
-      #fate {
+      #fde {
           flex: 1 1 auto;
           min-width: 0;
       }
 
-      /* .tool (filtros, Visualizações, Gráfico, Consolidar tudo, indicadores) fica sempre
+      /* Até (que quebra pra 2ª linha junto com › e os ícones) ocupa só o que sobra dessa
+         linha, sem reservar a largura do texto do select — senão empurrava o último ícone
+         pra uma 3ª linha. O mínimo mantém o mês legível. */
+      #fate {
+          flex: 1 1 0;
+          min-width: 9rem;
+      }
+
+      /* Botões da navegação um pouco menores no mobile, pra › e os quatro ícones caberem
+         na mesma linha do Até. */
+      #navComparar .btNavCiclo,
+      #navComparar .btHoje,
+      #navComparar .btIcone {
+          width: 2rem;
+          height: 2rem;
+      }
+
+      /* O select acompanha o rótulo, encolhendo junto. */
+      #fde select,
+      #fate select {
+          width: 100%;
+          min-width: 0;
+      }
+
+      /* .tool (filtros e indicadores) fica sempre
          visível, igual ao desktop — sem menu pra abrir/fechar. */
 
       /* Barra flutuante de seleção some atrás do teclado em formulários altos; mantém a

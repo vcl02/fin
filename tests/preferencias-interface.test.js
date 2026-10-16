@@ -97,7 +97,7 @@ test('fatura à vista não repete o rótulo nem o asterisco', () => {
 });
 
 test('visualizações usam um único dropdown com acompanhamentos fixos', () => {
-    assert.match(pagina, /id=visAlvo class=btFiltro aria-label="Visualizações"/);
+    assert.match(pagina, /<label id=visIcone class=btIcone title="Visualizações">\s*\n\s*<svg[\s\S]*?<\/svg>\s*\n\s*<select id=visAlvo aria-label="Visualizações">/);
     assert.doesNotMatch(pagina, /id=visTipo|id=visAlvoRotulo/);
     assert.doesNotMatch(pagina, /id=btVisualizacoes|id=modalVisualizacoes|id=abreVisualizacao|id=voltaVisualizacoes/);
     assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
@@ -106,7 +106,7 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(graficos, /function valoresDaVisualizacao|visTipo/);
     assert.match(graficos, /el\('visAlvo'\)\.onchange/);
     assert.match(graficos, /new Option\('Visualizações', ''\)/);
-    assert.match(regras, /\*\*Visualizações\*\* é o próprio dropdown/);
+    assert.match(regras, /por baixo dele há o próprio dropdown nativo, invisível/);
     assert.match(regras, /seletor é fixo/);
     assert.match(regras, /categoria contendo `Roberta`/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
@@ -115,9 +115,8 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
-test('indicadores financeiros ficam depois de Visualizações, separados por pipe', () => {
+test('indicadores financeiros ficam na barra própria, separados por pipe', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
-    assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=indicadoresFinanceiros'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
     assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
     assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorLiberdade'));

@@ -1123,6 +1123,36 @@
       cursor: default;
   }
 
+  /* Visualizações: o <select> cobre o ícone inteiro, invisível, pra abrir a lista nativa
+     no clique; o foco do teclado aparece no contorno do ícone. */
+  /* overflow: hidden impede o select (que herda largura mínima de select) de vazar por
+     cima do botão vizinho e capturar o clique dele. */
+  #visIcone {
+      position: relative;
+      overflow: hidden;
+  }
+
+  #visIcone select {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      padding: 0;
+      opacity: 0;
+      cursor: pointer;
+  }
+
+  #visIcone:focus-within {
+      outline: 2px solid var(--line-strong);
+      outline-offset: 1px;
+  }
+
+  #visIcone option {
+      color: var(--fg);
+      background: var(--pa);
+  }
+
   /* Consolidar tudo rodando: o ícone gira (mesmo giro do Recarregar) no lugar do texto. */
   .btIcone.carregando svg {
       animation: girar 0.8s linear infinite;
@@ -1157,11 +1187,16 @@
       padding: .3rem 0;
   }
 
+  /* flex-wrap: com Atual, Gráfico, Visualizações e Consolidar tudo, numa janela estreita
+     (acima do breakpoint mobile) a fileira quebra em vez de passar por cima dos botões do
+     cabeçalho. */
   #navComparar {
       display: flex;
       flex-direction: row;
+      flex-wrap: wrap;
       align-items: center;
       gap: .8rem;
+      row-gap: .5rem;
   }
 
   /* Ícone quadrado, mesmo tamanho das setas ‹ › ao lado. */

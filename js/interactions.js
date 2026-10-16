@@ -106,8 +106,10 @@ function desenhar() {
     // simulação. Nada disso depende de largura de tela: continua assim em qualquer
     // dispositivo, inclusive desktop.
     el('rowVis').hidden = simples;
-    // Gráfico e Consolidar tudo moram na navegação de ciclo (fora de #rowVis): escondem à parte.
+    // Gráfico, Visualizações e Consolidar tudo moram na navegação de ciclo (fora de #rowVis):
+    // escondem à parte.
     el('btGrafico').hidden = simples;
+    el('visIcone').hidden = simples;
     el('btConsolidarTudo').hidden = simples;
     popularAlvosVisualizacao(el('visAlvo').value);   // reordena do mais perto de acabar pro mais longe a cada redesenho
     el('abreNovo').hidden = simples;
