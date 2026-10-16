@@ -461,6 +461,21 @@
       color: var(--vd);
   }
 
+  /* "N registros · período" encaixado no fim da faixa Futuro do título, à direita. */
+  .resumoMeta {
+      margin-left: auto;
+      font-size: .9em;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--mu);
+      white-space: nowrap;
+  }
+
+  /* Sem a linha de meta (encaixada no título), a tabela mantém a mesma folga abaixo dele. */
+  .blk > h3 + .wrap {
+      margin-top: .6rem;
+  }
+
   .blk .meta,
   .meta {
       font-size: .85rem;

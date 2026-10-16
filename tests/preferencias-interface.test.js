@@ -337,3 +337,28 @@ test('ícone Todas/Diferentes: lugar reservado fora da comparação, só funcion
     assert.match(interacoes, /el\('btSomenteDif'\)\.hidden = simples;/);
     assert.match(regras, /a escolha entre \*\*Todas\*\* e \*\*Diferentes\*\* é um ícone \(sinal de diferente, ≠\) na navegação de ciclo, logo depois de Visualizações/);
 });
+
+test('"N registros · período" fica encaixado no fim da faixa Futuro do título', () => {
+    const vm = require('node:vm');
+    const inicio = tabelas.indexOf('const textoMetaBloco =');
+    const fim = tabelas.indexOf('\n};', tabelas.indexOf('const renderBloco =')) + 3;
+    const ctx = {
+        Estado: { fechados: {} }, corSoma: () => '', brl: v => `R$ ${v}`,
+        renderTabela: () => '<div class=wrap>tabela</div>',
+    };
+    vm.runInNewContext(`${tabelas.slice(inicio, fim)}\nthis.renderBloco = renderBloco;`, ctx);
+    const faixa = (rotulo, dados) => `<span class=resumoLinha><span class=resumoRotulo>${rotulo}</span><span class=resumoDados>${dados}</span></span>`;
+    const resumo = `<span class=resumoTitulo>${faixa('Hoje', 'a')}${faixa('Futuro', 'b')}</span>`;
+    const html = ctx.renderBloco('Débito', 0, '08/10/2026 a 08/11/2026', [{}, {}], 'db', true, '', resumo);
+    // Entra no fim da faixa Futuro (a última), e a linha própria some.
+    assert.ok(html.includes(faixa('Futuro', 'b<span class=resumoMeta>2 registros · 08/10/2026 a 08/11/2026</span>')));
+    assert.doesNotMatch(html, /<p class=meta>/);
+    // Só uma faixa: vai no fim dela.
+    const unica = ctx.renderBloco('Débito', 0, 'x', [{}], 'db', true, '', `<span class=resumoTitulo>${faixa('Passado', 'a')}</span>`);
+    assert.ok(unica.includes(faixa('Passado', 'a<span class=resumoMeta>1 registro · x</span>')));
+    // Título compacto (sem faixas) mantém a linha própria.
+    assert.match(ctx.renderBloco('Backlog', 10, 'Sem data', [{}], 'bk'), /<p class=meta>1 registro · Sem data<\/p>/);
+    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+    assert.match(estilos, /\.resumoMeta \{\s*\n\s*margin-left: auto;/);
+    assert.match(regras, /"N registros · período" fica encaixado no fim da faixa \*\*Futuro\*\*/);
+});

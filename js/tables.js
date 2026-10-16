@@ -350,12 +350,24 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
 // de visao (Ciclo <-> Comparar) fica impercetivel, os blocos sao visualmente identicos.
 // 'corpoFn' e' chamada so' quando o bloco esta aberto (evita montar a tabela/matriz a
 // toa quando esta fechado).
-function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn) {
+const textoMetaBloco = (n, subtitulo) => `${n} ${n == 1 ? 'registro' : 'registros'} · ${subtitulo}`;
+// `metaNoTitulo`: a contagem/período já foi encaixada na última faixa do título (ver
+// renderBloco), então não ganha a linha própria embaixo.
+function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn, metaNoTitulo = false) {
     const fechado = !!Estado.fechados[idTabela];
     const btnTog = `<button type=button class=tog onclick="alternarBloco('${idTabela}')" aria-label="${fechado ? 'Expandir' : 'Recolher'}">${fechado ? '▸' : '▾'}</button>`;
     const corpo = fechado ? '' : corpoFn();
-    return `<div class=blk><h3>${btnTog}${tituloHtml}</h3><p class=meta>${n} ${n == 1 ? 'registro' : 'registros'} · ${subtitulo}</p>${corpo}</div>`;
+    const meta = metaNoTitulo ? '' : `<p class=meta>${textoMetaBloco(n, subtitulo)}</p>`;
+    return `<div class=blk><h3>${btnTog}${tituloHtml}</h3>${meta}${corpo}</div>`;
 }
+
+// Fecho comum de todo resumo de título: </span> do .resumoDados, da .resumoLinha e do
+// .resumoTitulo. A meta entra logo antes dele, ou seja, no fim da ÚLTIMA faixa — Futuro
+// quando existe; senão a única faixa (Hoje/Passado).
+const FECHO_RESUMO_TITULO = '</span></span></span>';
+const encaixaMetaNoResumo = (resumoTitulo, meta) => resumoTitulo.endsWith(FECHO_RESUMO_TITULO)
+    ? resumoTitulo.slice(0, -FECHO_RESUMO_TITULO.length) + `<span class=resumoMeta>${meta}</span>` + FECHO_RESUMO_TITULO
+    : null;
 
 // um card "Débito"/"Crédito"/"Backlog": titulo + total, subtitulo, tabela por baixo.
 // quando selecionavel, ganha um botao "Selecionar tudo" que marca/desmarca todas as linhas
@@ -368,11 +380,14 @@ const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = 
         : `<b class="${corSoma(total)}">${brl(Math.abs(total))}</b>${extra}`;
     // Resumos em duas linhas substituem o único total quando a visão precisa distinguir
     // o retrato de hoje da projeção. Os demais blocos preservam o título compacto legado.
+    // Com resumo em faixas, "N registros · período" fica encaixado no fim da última faixa
+    // (Futuro), em vez de ocupar uma linha própria entre o título e a tabela.
+    const resumoComMeta = resumoTitulo && encaixaMetaNoResumo(resumoTitulo, textoMetaBloco(linhas.length, subtitulo));
     const tituloCompleto = resumoTitulo
-        ? `<span class=tituloBloco>${titulo}</span>${resumoTitulo}`
+        ? `<span class=tituloBloco>${titulo}</span>${resumoComMeta || resumoTitulo}`
         : `${titulo}${separadorTotal}${valor}`;
     return blocoCasca(tituloCompleto, subtitulo, linhas.length, idTabela,
-        () => renderTabela(linhas, idTabela, selecionavel));
+        () => renderTabela(linhas, idTabela, selecionavel), !!resumoComMeta);
 };
 
 
