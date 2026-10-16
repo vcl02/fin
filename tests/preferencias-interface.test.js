@@ -360,8 +360,11 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
     assert.match(ctx.renderBloco('Backlog', 10, 'Sem data', [{}], 'bk'), /<p class=meta>1 registro · Sem data<\/p>/);
     // Backlog também sem subtítulo: só a contagem.
     assert.match(fs.readFileSync('js/cycle-views.js', 'utf8'), /renderBloco\('Backlog', linhas\.reduce\(\(s, r\) => s \+ r\.v, 0\), '', linhas, 'bk', true\)/);
-    assert.match(ctx.renderBloco('Backlog', 10, '', [{}, {}], 'bk'), /<p class=meta>2 registros<\/p>/);
-    assert.match(regras, /No Backlog essa linha mostra só a quantidade de registros, sem texto explicativo\./);
+    const backlog = ctx.renderBloco('Backlog', 10, '', [{}, {}], 'bk');
+    assert.match(backlog, /<h3>.*Backlog · <b class="">R\$ 10<\/b> <span class=contagemTitulo>\(2 registros\)<\/span><\/h3>/);
+    assert.doesNotMatch(backlog, /<p class=meta>/);
+    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.blk h3 \.contagemTitulo \{[\s\S]*?color: var\(--mu\);/);
+    assert.match(regras, /Sem período a mostrar \(Backlog e Crédito histórico\), a quantidade vai entre parênteses, em cinza e menor, logo depois do valor/);
     // Crédito não passa subtítulo: só a contagem, sem datas nem " · " sobrando.
     const credito = ctx.renderBloco('Crédito', 0, '', [{}, {}, {}], 'cr', true, '', `<span class=resumoTitulo>${faixa('Futuro', 'b')}</span>`);
     assert.ok(credito.includes('<span class=resumoMeta>3 registros</span>'));

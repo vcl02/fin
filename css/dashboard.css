@@ -461,6 +461,14 @@
       color: var(--vd);
   }
 
+  /* "(N registros)" logo depois do valor nos títulos compactos (Backlog, Crédito histórico). */
+  .blk h3 .contagemTitulo {
+      margin-left: .2rem;
+      font-size: .78em;
+      font-weight: 400;
+      color: var(--mu);
+  }
+
   /* "N registros · período" encaixado no fim da faixa Futuro do título, à direita. */
   .resumoMeta {
       margin-left: auto;
