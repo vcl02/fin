@@ -51,17 +51,23 @@ test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guard
     assert.match(trecho, /mostrarToast\('Falhou ao atualizar', err\.message\);/);
 });
 
-test('marcar/desmarcar Reserva ou Comprometido propaga pra todos os lançamentos com o mesmo nome', () => {
+test('marcar/desmarcar Reserva ou Comprometido propaga pros lançamentos com o mesmo nome E a mesma categoria', () => {
     const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido' };");
     const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
-    // mesma comparação de "mesmo nome" usada na detecção de recorrência duplicada: sem
-    // acento, sem caixa, ignora linha sintética (_sid nunca tem o badge pra começar, mas a
-    // busca por nome não deve puxar uma de qualquer jeito).
-    assert.match(trecho, /const nomeChave = semAcento\(r\.nome\)\.trim\(\);/);
-    assert.match(trecho, /const mesmoNome = Estado\.lancamentos\.filter\(x => !x\._sid && semAcento\(x\.nome\)\.trim\(\) === nomeChave\);/);
-    // toast só quando a varredura de fato pegou mais de um lançamento — clique isolado
-    // (nome único) continua silencioso, só o badge já é feedback suficiente.
+    const def = trecho.match(/const chaveDoCompromisso = (x => `[^`]*`);/);
+    assert.ok(def, 'não achou chaveDoCompromisso');
+    const semAcento = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const categoriasSeparadas = v => String(v ?? '').split(',').map(c => c.trim()).filter(Boolean);
+    const chaveDoCompromisso = require('node:vm').runInNewContext(def[1], { semAcento, categoriasSeparadas });
+    const k = (nome, categ) => chaveDoCompromisso({ nome, categ });
+    assert.equal(k('Iphone', 'Isabella'), k(' iphone ', 'ISABELLA'));
+    assert.equal(k('Cinema', 'Lazer, Isabella'), k('Cinema', 'Isabella, Lazer'));
+    assert.notEqual(k('Uber', 'Transporte'), k('Uber', 'Besteira'));
+    assert.notEqual(k('Uber', 'Transporte'), k('Uber 99', 'Transporte'));
+    assert.match(trecho, /const mesmoNome = Estado\.lancamentos\.filter\(x => !x\._sid && chaveDoCompromisso\(x\) === chave\);/);
+    // toast só quando a varredura de fato pegou mais de um lançamento.
     assert.match(trecho, /if \(mesmoNome\.length > 1\) \{/);
+    assert.match(regras, /identificado pelo \*\*nome e pela categoria juntos\*\*/);
 });
 
 test('Duplicar/Editar herdam reserva/comprometido do lançamento de origem; novo cadastro não força nada', () => {

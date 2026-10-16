@@ -434,8 +434,12 @@ el('out').addEventListener('click', async e => {
     if (!r) return;
 
     const novoValor = !r[campo];
-    const nomeChave = semAcento(r.nome).trim();
-    const mesmoNome = Estado.lancamentos.filter(x => !x._sid && semAcento(x.nome).trim() === nomeChave);
+    // O mesmo compromisso = mesmo nome E mesma categoria (sem acento/caixa; a ordem das
+    // categorias não importa). Só o nome igual não basta: "Uber" de Transporte e "Uber" de
+    // Besteira são coisas diferentes.
+    const chaveDoCompromisso = x => `${semAcento(x.nome).trim()}|${categoriasSeparadas(x.categ).map(c => semAcento(c).trim()).sort().join(',')}`;
+    const chave = chaveDoCompromisso(r);
+    const mesmoNome = Estado.lancamentos.filter(x => !x._sid && chaveDoCompromisso(x) === chave);
 
     badge.classList.toggle(COR_FLAG[campo], novoValor);
     badge.textContent = novoValor ? ROTULO_FLAG_TOGGLE[campo] : '—';
