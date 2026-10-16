@@ -264,13 +264,14 @@ function dadosCompromissosDoCiclo(linhas) {
 
 // Indicador "Isabella" (rótulo exibido no título — ver cycle-views.js): conta todo
 // lançamento com a categoria "Isabella" — junto com "Lazer" (sair com ela) ou sozinha
-// (presente, mimo, parcela…) —, MENOS a fatura do cartão dela (categoria ou nome com
-// "Fatura"): essa é a conta mensal inteira do cartão, não um gasto com ela, e estouraria o
-// teto sozinha. A categoria é comparada como item inteiro ("Isabella"), então a antiga
+// (presente, mimo…) —, MENOS a fatura do cartão dela (categoria ou nome com "Fatura"): essa
+// é a conta mensal inteira do cartão, não um gasto com ela, e estouraria o teto sozinha; e
+// MENOS o que está marcado Comprometido (parcelas e compromissos fixos, como Iphone e
+// Senac): o teto mede o gasto variável com ela, não o que já está assumido. A categoria é comparada como item inteiro ("Isabella"), então a antiga
 // "Besteira Isabella" não entra. "Lazer" sozinho nunca conta — pode ser lazer com outra pessoa.
 const ehGastoIsabella = r => {
     const categorias = categoriasSeparadas(r.categ).map(c => semAcento(c).trim());
-    return categorias.includes('isabella') && !categorias.includes('fatura') && !semAcento(r.nome).includes('fatura');
+    return categorias.includes('isabella') && !categorias.includes('fatura') && !semAcento(r.nome).includes('fatura') && !r.comprometido;
 };
 
 // Regra única pros indicadores de limite por categoria (Besteira, Isabella, ...): soma
