@@ -176,14 +176,33 @@ test('com dois cartões, Hoje e Futuro começam pelo Total somado dos dois', () 
     assert.match(visoes, /if \(limitesDosCartoes\.length < 2\) return '';/);
     assert.match(visoes, /const livre = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\[chaveLivre\], 0\);/);
     assert.match(visoes, /const teto = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal, 0\);/);
-    assert.match(visoes, /<span class=limiteCartaoNome>Total<\/span> \$\{usadoELivre\(teto - livre, livre\)\}\$\{brl\(teto\)\}/);
+    assert.match(visoes, /<span class="limiteCartaoNome cartao-total">Total<\/span> \$\{usadoELivre\(teto - livre, livre\)\}\$\{brl\(teto\)\}<\/span><\/span>/);
     assert.match(visoes, /resumoTotalDosCartoes\(chaveLivre\) \+ limitesDosCartoes\.map\(l => resumoLimiteCartao\(l, l\[chaveLivre\]\)\)\.join\(''\);/);
     assert.match(regras, /Com os dois cartões no título, Hoje e Futuro começam por uma faixa \*\*Total\*\*, antes das faixas de cada cartão/);
     assert.match(regras, /o próprio campo editável fica depois de "de"/);
 });
 
 test('cada faixa (Total, Nubank, Mercado Pago) mostra Usado e Livre do mesmo teto', () => {
-    assert.match(visoes, /const usadoELivre = \(usado, livre\) =>\s*\n\s*`Usado <b>\$\{brl\(usado\)\}<\/b> · Livre <b class="\$\{corValor\(livre\)\}">\$\{brl\(livre\)\}<\/b> de `;/);
+    assert.match(visoes, /<span class=limiteRotulo>Usado<\/span> <b class=limiteUsado>\$\{brl\(usado\)\}<\/b>/);
+    assert.match(visoes, /<span class=limiteRotulo>Livre<\/span> <b class="\$\{corValor\(livre\)\}">\$\{brl\(livre\)\}<\/b> <span class=limiteTeto>de `/);
     assert.match(visoes, /\$\{usadoELivre\(l\.limiteTotal - limiteLivre, limiteLivre\)\}/);
     assert.match(regras, /Cada faixa \(Total, Nubank, Mercado Pago\) mostra \*\*Usado\*\* e \*\*Livre\*\* do mesmo teto/);
+});
+
+test('o valor da fatura só abre a linha quando difere do Usado da 1ª faixa (sem número repetido)', () => {
+    assert.match(visoes, /const usadoNaPrimeiraFaixa = chaveLivre => limitesDosCartoes\s*\n\s*\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal - l\[chaveLivre\], 0\);/);
+    assert.match(visoes, /Math\.abs\(Math\.abs\(total\) - usadoNaPrimeiraFaixa\(chaveLivre\)\) < TOLERANCIA_FINANCEIRA \? ''/);
+    assert.match(visoes, /valorDaFaturaNaLinha\(totalCreditoHoje, 'limiteLivreHoje'\)/);
+    assert.match(visoes, /valorDaFaturaNaLinha\(totalCreditoExibido, 'limiteLivreFuturo'\)/);
+    assert.match(regras, /o valor da fatura no começo de Hoje\/Futuro só aparece quando é diferente do Usado da 1ª faixa/);
+});
+
+test('faixas separadas por divisor, nome do cartão em cor própria, teto em itálico', () => {
+    const estilos = ler('css/dashboard.css');
+    assert.match(visoes, /<span class="limiteCartaoNome cartao-\$\{cartao\}">/);
+    assert.match(visoes, /<span class="limiteCartaoNome cartao-total">Total<\/span>/);
+    assert.match(estilos, /\.resumoDados > \* \+ \.limiteCartao \{\s*\n\s*margin-left: \.4rem;\s*\n\s*padding-left: \.8rem;\s*\n\s*border-left: 1px solid var\(--line-strong\);/);
+    assert.match(estilos, /\.limiteCartaoNome\.cartao-nubank \{/);
+    assert.match(estilos, /\.limiteCartaoNome\.cartao-mp \{/);
+    assert.match(estilos, /\.limiteTeto,\s*\n\s*\.limiteGarantido \{\s*\n\s*font-style: italic;/);
 });

@@ -349,15 +349,50 @@
       white-space: nowrap;
   }
 
-  /* Com dois cartões, cada faixa de limite começa pelo nome do cartão. */
+  /* Com dois cartões, cada faixa de limite começa pelo nome do cartão, numa cor própria
+     (Total neutro; Nubank roxo; Mercado Pago azul) pra separar as faixas de relance. */
   .limiteCartaoNome {
       color: var(--fg);
-      font-weight: 600;
+      font-weight: 700;
+  }
+
+  .limiteCartaoNome.cartao-nubank {
+      color: #B79BF5;
+  }
+
+  .limiteCartaoNome.cartao-mp {
+      color: #6CC5EE;
+  }
+
+  /* Faixas separadas por um divisor vertical, igual Besteira/Isabella no Débito. */
+  .resumoDados > * + .limiteCartao {
+      margin-left: .4rem;
+      padding-left: .8rem;
+      border-left: 1px solid var(--line-strong);
+  }
+
+  /* Rótulos discretos, valores em negrito; o teto ("de R$ …") e os complementos ficam em
+     itálico, como contexto do número principal. */
+  .limiteRotulo {
+      color: var(--mu);
+      font-weight: 400;
+  }
+
+  .limiteUsado {
+      color: var(--fg);
+  }
+
+  .limiteTeto,
+  .limiteGarantido {
+      font-style: italic;
   }
 
   /* Campo propositalmente parecido com texto: só revela que é editável ao interagir. */
   .limiteCartaoEditavel {
       width: 5.9em;
+      /* Onde houver suporte, o campo encolhe ao tamanho do valor, sem vão antes de Aprovado. */
+      field-sizing: content;
+      min-width: 3em;
       padding: 0 .08em;
       color: inherit;
       font: inherit;
