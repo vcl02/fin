@@ -43,9 +43,10 @@
           </label>
           <button type=button id=cicloProximo class=btNavCiclo title="Próximo ciclo"
             aria-label="Próximo ciclo">›</button>
-          <!-- Ícone "Atual": volta ao ciclo de hoje e limpa os filtros (handler em interactions.js). -->
-          <button type=button id=cicloHoje class=btHoje title="Ciclo atual e limpar filtros"
-            aria-label="Ir para o ciclo atual e limpar filtros">
+          <!-- Ícone "Atual": volta ao ciclo de hoje, limpa os filtros e consolida tudo
+               (recarregando antes) — handler em interactions.js. -->
+          <button type=button id=cicloHoje class=btHoje title="Ciclo atual: limpa filtros, recarrega e consolida tudo"
+            aria-label="Ciclo atual, limpar filtros, recarregar e consolidar tudo">
             <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
               stroke-linejoin=round aria-hidden=true>
               <circle cx=12 cy=12 r=7 />
@@ -53,7 +54,7 @@
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
             </svg>
           </button>
-          <!-- Gráfico e Consolidar tudo: ícones ao lado do Atual (handlers em interactions.js e form.js). -->
+          <!-- Gráfico: ícone ao lado do Atual (handler em interactions.js). -->
           <button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">
             <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
               stroke-linejoin=round aria-hidden=true>
@@ -74,13 +75,6 @@
             </button>
             <div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden></div>
           </div>
-          <button type=button id=btConsolidarTudo class=btIcone title="Consolidar tudo: materializa Aporte sugerido e consolida Resgate necessário de hoje até o último ciclo com lançamentos" aria-label="Consolidar tudo">
-            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-              stroke-linejoin=round aria-hidden=true>
-              <path d="M18 6 7 17l-5-5" />
-              <path d="m22 10-7.5 7.5L13 16" />
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -408,7 +402,7 @@
       </section>
     </dialog>
 
-    <!-- Resultado detalhado de "Consolidar tudo" (ver btConsolidarTudo em form.js): abre
+    <!-- Resultado detalhado de "Consolidar tudo" (ver consolidarTudo em form.js): abre
          sozinho ao fim da varredura, pra listar ciclo a ciclo o que foi materializado,
          consolidado ou corrigido — a maioria dos ciclos varridos nem aparece na tela. Só
          leitura do que já foi gravado, não altera nada por si só. -->

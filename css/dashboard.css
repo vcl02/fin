@@ -1165,15 +1165,15 @@
       outline: none;
   }
 
-  /* Consolidar tudo rodando: o ícone gira (mesmo giro do Recarregar) no lugar do texto. */
-  .btIcone.carregando svg {
+  /* Atual rodando (recarga + Consolidar tudo): o ícone gira, mesmo giro do Recarregar. */
+  .btHoje.carregando svg {
       animation: girar 0.8s linear infinite;
   }
 
   /* .btFiltro (Visualizações) só tem estilo
      próprio dentro do media query mobile (ver mobile.css) — no desktop usa a aparência
      nativa do navegador, que nem sempre deixa claro que o botão está desabilitado durante
-     um processamento (ex.: "Consolidar tudo" enquanto roda, ver btConsolidarTudo em
+     um processamento (ex.: "Consolidar tudo" enquanto roda, ver consolidarTudo em
      form.js). Esta regra fica fora do media query de propósito, pra valer nas duas
      larguras, mesmo esquema de opacidade do Duplicar/Editar/Excluir acima. */
   .btFiltro:disabled {
@@ -1227,9 +1227,14 @@
       cursor: pointer;
   }
 
-  #navComparar .btHoje:hover {
+  #navComparar .btHoje:hover:not(:disabled) {
       background: var(--field-hover);
       border-color: var(--fg);
+  }
+
+  #navComparar .btHoje:disabled {
+      opacity: .5;
+      cursor: default;
   }
 
   .btNavCiclo {

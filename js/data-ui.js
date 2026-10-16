@@ -128,7 +128,7 @@ function mostrarDiagnostico(titulo, texto, diagnostico) {
     if (!el('modalDiagnostico').open) el('modalDiagnostico').showModal();
 }
 
-// Resultado detalhado de "Consolidar tudo" (ver btConsolidarTudo em form.js): diferente do
+// Resultado detalhado de "Consolidar tudo" (ver consolidarTudo em form.js): diferente do
 // diagnóstico de carga, este abre SOZINHO ao fim da varredura — é a resposta direta a um
 // clique explícito do próprio usuário, não um aviso de fundo, então não há por que escondê-lo
 // atrás de um botão. Mesmo esquema de lista do diagnóstico, só que com o que a varredura

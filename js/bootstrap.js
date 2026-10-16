@@ -92,7 +92,7 @@ const telaLivreParaRecarregar = () =>
     el('app').style.display !== 'none' && !document.hidden && !Estado.simulando &&
     !document.querySelector('dialog[open]') && !Estado.selecionados.size &&
     !document.activeElement?.matches?.('input, select, textarea') &&
-    !el('recarregar').disabled && !el('btConsolidarTudo').disabled;
+    !el('recarregar').disabled && !el('cicloHoje').disabled;
 setInterval(() => {
     if (!Estado.ultimaCarga || Date.now() - Estado.ultimaCarga < INTERVALO_RECARGA_AUTOMATICA_MS) return;
     if (telaLivreParaRecarregar()) el('recarregar').onclick();

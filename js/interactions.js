@@ -106,11 +106,9 @@ function desenhar() {
     // simulação. Nada disso depende de largura de tela: continua assim em qualquer
     // dispositivo, inclusive desktop.
     el('rowVis').hidden = simples;
-    // Gráfico, Visualizações e Consolidar tudo moram na navegação de ciclo (fora de #rowVis):
-    // escondem à parte.
+    // Gráfico e Visualizações moram na navegação de ciclo (fora de #rowVis): escondem à parte.
     el('btGrafico').hidden = simples;
     el('visIcone').hidden = simples;
-    el('btConsolidarTudo').hidden = simples;
     popularAlvosVisualizacao();   // reordena do mais perto de acabar pro mais longe a cada redesenho
     el('abreNovo').hidden = simples;
     el('toggleSimulacao').hidden = simples;
@@ -1007,11 +1005,14 @@ el('btGrafico').onclick = () => {
     if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
     else abrirGraficoEvolucao(+de, +ate);
 };
-// Botão Atual (ícone): devolve a tela ao estado em que ela abre — limpa os filtros (antigo
-// botão "Limpar filtros", que saiu) e volta pro ciclo atual (De=Até=hoje). Sem ciclo atual,
-// só limpa: limparFiltros já deixa De/Até vazios, que é como a página abriria. Por isso
-// nunca fica desabilitado.
-el('cicloHoje').onclick = () => {
+// Botão Atual (ícone): faz numa só ação o que eram três botões — volta pro ciclo atual
+// (De=Até=hoje), limpa os filtros (antigo "Limpar filtros") e roda o Consolidar tudo, que
+// recarrega do banco antes de varrer (consolidarTudo em form.js). Navegar e limpar vêm
+// primeiro e redesenham na hora, sem esperar a rede. Sem ciclo atual, só limpa (limparFiltros
+// deixa De/Até vazios, como a página abriria). A conta restrita nunca grava: só recarrega.
+el('cicloHoje').onclick = async () => {
+    const botao = el('cicloHoje');
+    if (botao.disabled) return;
     limparFiltros();
     if (Estado.idxHoje >= 0) {
         abrirBlocosFinanceiros();
@@ -1019,6 +1020,14 @@ el('cicloHoje').onclick = () => {
         el('compAte').value = Estado.idxHoje;
     }
     desenhar();
+    if (!modoRestrito()) { await consolidarTudo(botao); return; }
+    if (Estado.simulando) return;
+    botao.disabled = true;
+    botao.classList.add('carregando');
+    try { await load(); } finally {
+        botao.disabled = false;
+        botao.classList.remove('carregando');
+    }
 };
 
 // ‹ / › navegam pro periodo anterior/seguinte. Anda pelas OPCOES reais do combo #compDe

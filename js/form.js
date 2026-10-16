@@ -767,7 +767,7 @@ modalNovo.addEventListener('close', () => {
 // Núcleo de "materializar/consolidar" um Aporte sugerido ou Resgate necessário de um ciclo
 // `idx`: sem movimento real no ciclo, INSERT (ou push local em simulação); com movimento
 // real, UPDATE consolidando os valores. Compartilhado entre o clique de uma linha só
-// (seldup) e "Consolidar tudo" (btConsolidarTudo), que repete isso ciclo a ciclo. O retorno
+// (seldup) e "Consolidar tudo" (consolidarTudo), que repete isso ciclo a ciclo. O retorno
 // ('consolidado'/'materializado') é só pro resumo de "Consolidar tudo" contar cada tipo.
 async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
     const data = dataISO(Estado.ciclos[idx].fat) || null;
@@ -861,7 +861,7 @@ el('seldup').onclick = async () => {
 // precisa refletir nos ajustes que o loop seguinte vai materializar/consolidar.
 async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
     let corrigidos = 0;
-    const log = [];   // uma linha por correção, pro modal de resultado (ver btConsolidarTudo)
+    const log = [];   // uma linha por correção, pro modal de resultado (ver consolidarTudo)
     for (let idx = idxInicio; idx <= idxFim; idx++) {
         const proximoCiclo = Estado.ciclos[idx + 1];
         if (!proximoCiclo) continue;   // sem próximo ciclo cadastrado, não há pra onde mover
@@ -886,14 +886,15 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 // último ciclo que tem algum lançamento, pra não exigir abrir um por um manualmente — e, de
 // quebra, corrige toda recorrência duplicada no mesmo intervalo (ver função acima). Cada
 // escrita muda Estado.lancamentos (logo o guardado disponível do ciclo seguinte), por isso
-// limpa os caches financeiros entre uma iteração e a próxima, não só no fim.
-el('btConsolidarTudo').onclick = async () => {
-    if (el('btConsolidarTudo').disabled || Estado.idxHoje < 0) return;
+// limpa os caches financeiros entre uma iteração e a próxima, não só no fim. Roda pelo
+// ícone Atual (ver cicloHoje em interactions.js), que antes navega e limpa os filtros.
+async function consolidarTudo(botao) {
+    if (botao.disabled) return;
     // disabled bloqueia clique duplo nativamente (botão desabilitado não dispara 'click'),
     // mas sozinho pode passar despercebido — o ícone gira e o title diz a etapa, pra deixar
     // claro que já está processando (o botão é só ícone; trocar o texto apagaria o desenho).
-    const botao = el('btConsolidarTudo');
     const tituloOriginal = botao.title;
+    const rotuloOriginal = botao.getAttribute('aria-label');
     const etapa = texto => { botao.title = texto; botao.setAttribute('aria-label', texto); };
     botao.disabled = true;
     botao.classList.add('carregando');
@@ -905,8 +906,9 @@ el('btConsolidarTudo').onclick = async () => {
         if (!Estado.simulando) {
             etapa('Recarregando…');
             if (!(await load())) return;
-            if (Estado.idxHoje < 0) return;
         }
+        // Hoje fora de qualquer ciclo: não há de onde partir a varredura.
+        if (Estado.idxHoje < 0) return;
         etapa('Consolidando…');
         const ultimoCicloAntesDaCorrecao = Estado.lancamentos.reduce(
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
@@ -952,9 +954,9 @@ el('btConsolidarTudo').onclick = async () => {
         botao.disabled = false;
         botao.classList.remove('carregando');
         botao.title = tituloOriginal;
-        botao.setAttribute('aria-label', 'Consolidar tudo');
+        botao.setAttribute('aria-label', rotuloOriginal);
     }
-};
+}
 
 // A confirmação explica se a remoção é real ou somente parte da simulação atual.
 // Simulação altera somente Estado.lancamentos: nunca chama DELETE para uma linha real.
