@@ -34,9 +34,22 @@ test('aporte sugerido absorve somente saldo positivo acima da tolerância', () =
 
 test('resgate necessário respeita o patrimônio disponível', () => {
     const r = regrasFinanceiras([{ fat: '2026-09-30' }]);
-    assert.deepEqual({ ...r.ajusteInvestimento(-300, 120) }, { tipo: 'resgate', nome: 'Resgate necessário', categ: 'Investimento', v: 120 });
+    // Déficit maior que o guardado: resgata tudo o que há e marca "Resgatou tudo".
+    assert.deepEqual({ ...r.ajusteInvestimento(-300, 120) }, { tipo: 'resgate', nome: 'Resgate necessário', categ: 'Investimento', v: 120, resgatouTudo: true });
+    // Guardado cobre o déficit: resgate comum, sem aviso.
+    assert.deepEqual({ ...r.ajusteInvestimento(-100, 120) }, { tipo: 'resgate', nome: 'Resgate necessário', categ: 'Investimento', v: 100 });
     assert.equal(r.ajusteInvestimento(-300, 0), null);
-    assert.equal(r.ajusteInvestimento(-300, -20), null);
+});
+
+test('guardado nunca fica negativo: resgate real acima do guardado é diminuído até zerar', () => {
+    const r = regrasFinanceiras([{ fat: '2026-09-30' }]);
+    // Resgates reais do ciclo levaram R$ 20 a mais do que havia: ajuste de -20 (diminui o
+    // resgate), com aviso — vale com déficit, com saldo zero e com sobra menor que o rombo.
+    for (const totalBase of [-300, 0, 15]) {
+        assert.deepEqual({ ...r.ajusteInvestimento(totalBase, -20) }, { tipo: 'resgate', nome: 'Resgate necessário', categ: 'Investimento', v: -20, resgatouTudo: true });
+    }
+    // Sobra do ciclo maior que o rombo: Aporte sugerido comum, que já cobre o rombo.
+    assert.deepEqual({ ...r.ajusteInvestimento(50, -20) }, { tipo: 'aporte', nome: 'Aporte sugerido', categ: 'Investimento', v: -50 });
 });
 
 test('saldo base carrega o anterior, débito e fatura líquida de antecipação', () => {
@@ -169,4 +182,26 @@ test('garantia Nubank não depende de recorte visual e não inclui aporte sugeri
     ];
     assert.equal(r.guardadoGarantidoAte(linhas, 1), 700);
     assert.equal(r.limiteCartaoTotal(r.guardadoGarantidoAte(linhas, 1)), 4450);
+});
+
+test('aviso "Resgatou tudo" na linha de resgate, calculada ou real', () => {
+    const tabelas = fs.readFileSync('js/tables.js', 'utf8');
+    const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
+    const graficos = fs.readFileSync('js/charts.js', 'utf8');
+    const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+    assert.match(visoes, /_res: 1,\s*\n\s*_resgatouTudo: !!ajuste\.resgatouTudo/);
+    assert.match(tabelas, /const resgatouTudo = r\._res \? r\._resgatouTudo\s*\n\s*: ehLinhaReal\(r\) && r\.inv && r\.v > 0 && r\.periodoIdx != null && guardadoAte\(r\.periodoIdx\) <= TOLERANCIA_FINANCEIRA;/);
+    assert.match(tabelas, /<span class=tagAviso title="O guardado acabou[^"]*">⚠ Resgatou tudo<\/span>/);
+    // Evolução separa por sinal: o resgate diminuído (negativo) não conta como resgatado.
+    assert.match(graficos, /linhasDe\[ajuste\.v > 0 \? 'Resgatado' : 'Aportado'\]/);
+    assert.match(regras, /O \*\*guardado nunca fica negativo\*\*/);
+    assert.match(regras, /a linha de resgate \(calculada ou real\) ganha o aviso laranja \*\*⚠ Resgatou tudo\*\*/);
+});
+
+test('no Nome só o texto é cortado com "…"; as marcas ficam inteiras', () => {
+    const tabelas = fs.readFileSync('js/tables.js', 'utf8');
+    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+    assert.match(tabelas, /return `<span class=nomeLinha>\$\{sim\}\$\{textoNome\}\$\{badgeFatura\}\$\{badgeCartao\}\$\{badgeResgate\}<\/span>`;/);
+    assert.match(estilos, /\.nomeLinha > \.nomeTexto \{\s*\n\s*flex: 0 1 auto;\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;/);
+    assert.match(estilos, /\.nomeLinha > \* \{\s*\n\s*flex: none;/);
 });

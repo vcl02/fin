@@ -486,6 +486,20 @@
       color: var(--mu);
   }
 
+  /* Aviso no Resgate que levou todo o guardado. */
+  .tagAviso {
+      display: inline-block;
+      margin-left: .3rem;
+      padding: 0 .4rem;
+      font-size: .75em;
+      font-weight: 600;
+      color: #F0A83A;
+      background: var(--orange-soft);
+      border: 1px solid #6A5330;
+      border-radius: 6px;
+      white-space: nowrap;
+  }
+
   /* "N registros · período" encaixado no fim da faixa Futuro do título, à direita. */
   .resumoMeta {
       margin-left: auto;
@@ -560,6 +574,33 @@
 
   table.larguraFixa td {
       overflow-wrap: anywhere;
+  }
+
+  /* No Nome, só o texto encolhe e ganha "…"; as marcas (MP, ↳ Fat., ⚠ Resgatou tudo) ficam
+     inteiras ao lado. */
+  .nomeLinha {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      min-width: 0;
+  }
+
+  .nomeLinha > * {
+      flex: none;
+  }
+
+  .nomeLinha > .nomeTexto {
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+  }
+
+  .nomeLinha .tagAviso,
+  .nomeLinha .tagFatura,
+  .nomeLinha .tagCartao {
+      margin-left: 0;
   }
 
   /* Nome e Obs: uma linha só, com "…" no que não couber; o texto inteiro fica no hover. */

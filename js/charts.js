@@ -797,7 +797,8 @@ function dadosEvolucao(de, ate) {
         // barra correspondente, do mesmo jeito que aparece no bloco Debito da visao Ciclo
         const ajuste = ajusteDoCiclo(i);
         if (ajuste) {
-            linhasDe[ajuste.tipo == 'resgate' ? 'Resgatado' : 'Aportado'].push({
+            // Pelo sinal, não pelo tipo: o Resgate corrigido pra caber no guardado é negativo.
+            linhasDe[ajuste.v > 0 ? 'Resgatado' : 'Aportado'].push({
                 data: dataISO(Estado.ciclos[i].fat), nome: ajuste.nome, categ: ajuste.categ, v: ajuste.v,
             });
         }

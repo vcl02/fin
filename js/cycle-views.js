@@ -94,7 +94,8 @@ function vCiclo() {
             _sid: `res:${i}`,
             v: ajuste.v,
             valor: ajuste.v,
-            _res: 1
+            _res: 1,
+            _resgatouTudo: !!ajuste.resgatouTudo
         }]
         : [];
 

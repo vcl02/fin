@@ -104,7 +104,8 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
     assert.match(trecho, /const logAjustes = \[\];/);
     assert.match(trecho, /const ehAporte = ajuste\.tipo == 'aporte';/);
-    assert.match(trecho, /logAjustes\.push\(`\$\{nomePeriodo\(Estado\.ciclos\[idx\]\)\}: \$\{resultado == 'consolidado' \? 'Consolidado' : 'Materializado'\} \$\{ehAporte \? 'Aporte' : 'Resgate'\} de \$\{brl\(Math\.abs\(ajuste\.v\)\)\}\.`\);/);
+    assert.match(trecho, /logAjustes\.push\(`\$\{nomePeriodo\(Estado\.ciclos\[idx\]\)\}: \$\{resultado == 'consolidado' \? 'Consolidado' : 'Materializado'\} \$\{ehAporte \? 'Aporte' : 'Resgate'\} de \$\{brl\(Math\.abs\(ajuste\.v\)\)\}\$\{limite\}\.`\);/);
+    assert.match(trecho, /const limite = ajuste\.resgatouTudo \? \(ajuste\.v < 0 \? ' \(resgate diminuído: o guardado não pode ficar negativo\)' : ' \(todo o guardado\)'\) : '';/);
     // Só abre quando algo foi gravado; sem nada a fazer, fica só o toast.
     assert.match(trecho, /if \(partes\.length\) mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logDatas, \.\.\.logAjustes\]\);/);
     assert.equal((trecho.match(/mostrarResultadoConsolidarTudo\(/g) || []).length, 1);

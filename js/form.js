@@ -932,7 +932,8 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}) {
             const ehAporte = ajuste.tipo == 'aporte';
             const resultado = await materializaOuConsolidaAjuste(idx, ehAporte, ajuste.categ, ajuste.v);
             if (resultado == 'consolidado') consolidados++; else materializados++;
-            logAjustes.push(`${nomePeriodo(Estado.ciclos[idx])}: ${resultado == 'consolidado' ? 'Consolidado' : 'Materializado'} ${ehAporte ? 'Aporte' : 'Resgate'} de ${brl(Math.abs(ajuste.v))}.`);
+            const limite = ajuste.resgatouTudo ? (ajuste.v < 0 ? ' (resgate diminuído: o guardado não pode ficar negativo)' : ' (todo o guardado)') : '';
+            logAjustes.push(`${nomePeriodo(Estado.ciclos[idx])}: ${resultado == 'consolidado' ? 'Consolidado' : 'Materializado'} ${ehAporte ? 'Aporte' : 'Resgate'} de ${brl(Math.abs(ajuste.v))}${limite}.`);
             limparCachesFinanceiros();
         }
         Estado.selecionados.clear();

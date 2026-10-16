@@ -139,12 +139,27 @@ function lancamentosComPrevistas() {
 // o resgate: nao da' pra resgatar mais do que existe guardado. Se o deficit for maior que o
 // guardado, resgata so' o que tem — o resto do deficit fica negativo de verdade no saldo do
 // ciclo, em vez de fingir (via um resgate maior que o patrimonio real) que o mes fechou em zero.
+// O guardado nunca pode ficar negativo: se os resgates REAIS do ciclo já levaram mais do que
+// havia guardado (guardadoDisponivel < 0), o ajuste DIMINUI o resgate (valor negativo,
+// consolidado no Resgate do ciclo) até o guardado voltar a zero — o déficit que sobrar fica
+// negativo no saldo do ciclo, que é a verdade. `resgatouTudo` marca os dois casos em que o
+// guardado acaba no ciclo (o resgate levou tudo, ou foi corrigido pra caber), pra a linha
+// ganhar o aviso "Resgatou tudo".
 function ajusteInvestimento(totalBase, guardadoDisponivel = Infinity) {
+    if (guardadoDisponivel < -TOLERANCIA_FINANCEIRA) {
+        const v = Math.round(Math.min(guardadoDisponivel, -Math.max(0, totalBase)) * 100) / 100;
+        // Sobra do ciclo maior que o rombo: é um Aporte sugerido comum, que já zera o rombo.
+        if (v < guardadoDisponivel - TOLERANCIA_FINANCEIRA) return { tipo: 'aporte', nome: 'Aporte sugerido', categ: CATEGORIA_INVESTIMENTO, v };
+        return { tipo: 'resgate', nome: 'Resgate necessário', categ: CATEGORIA_INVESTIMENTO, v, resgatouTudo: true };
+    }
     if (totalBase < -0.005) {
         const deficit = -totalBase;
         const resgate = Math.min(deficit, Math.max(0, guardadoDisponivel));
         if (resgate <= 0.005) return null;   // sem nada guardado pra resgatar — o mes fica negativo, sem linha de ajuste
-        return { tipo: 'resgate', nome: 'Resgate necessário', categ: CATEGORIA_INVESTIMENTO, v: resgate };
+        // Resgate menor que o déficit: levou todo o guardado.
+        const ajuste = { tipo: 'resgate', nome: 'Resgate necessário', categ: CATEGORIA_INVESTIMENTO, v: resgate };
+        if (resgate < deficit - TOLERANCIA_FINANCEIRA) ajuste.resgatouTudo = true;
+        return ajuste;
     }
     if (totalBase > TOLERANCIA_FINANCEIRA) return { tipo: 'aporte', nome: 'Aporte sugerido', categ: CATEGORIA_INVESTIMENTO, v: -totalBase };
     return null;

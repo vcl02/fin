@@ -253,10 +253,19 @@ const celNome = r => {
     const badgeCartao = r.cred && ehMercadoPago
         ? ' <span class="tagCartao" title="Mercado Pago" aria-label="Mercado Pago">MP</span>'
         : '';
-    const texto = `${nome}${badgeFatura}${badgeCartao}`;
-    return ehLinhaReal(r) && !modoRestrito()
-        ? `${sim}<span class="togNome" data-tog-nome="${escapeHtml(String(r.id))}">${texto}</span>`
-        : `${sim}${texto}`;
+    // Resgate que levou todo o guardado (ou foi diminuído pra não deixá-lo negativo): na linha
+    // calculada vem marcado pelo ajuste; no Resgate real, o guardado do ciclo terminou em zero.
+    const resgatouTudo = r._res ? r._resgatouTudo
+        : ehLinhaReal(r) && r.inv && r.v > 0 && r.periodoIdx != null && guardadoAte(r.periodoIdx) <= TOLERANCIA_FINANCEIRA;
+    const badgeResgate = resgatouTudo
+        ? ' <span class=tagAviso title="O guardado acabou: o resgate foi limitado ao que havia guardado, e o que faltar fica negativo no saldo do ciclo">⚠ Resgatou tudo</span>'
+        : '';
+    // Só o nome é cortado com "…" quando não cabe; as marcas ficam sempre inteiras ao lado
+    // (senão o aviso "Resgatou tudo" sumia dentro das reticências).
+    const textoNome = ehLinhaReal(r) && !modoRestrito()
+        ? `<span class="nomeTexto togNome" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
+        : `<span class=nomeTexto>${nome}</span>`;
+    return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeCartao}${badgeResgate}</span>`;
 };
 // Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
 // clique-pra-editar do Nome/Data, só pra linha REAL e fora da conta restrita.
