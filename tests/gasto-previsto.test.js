@@ -107,11 +107,11 @@ test('Débito, saldo diário, Comparar, evolução e pizza usam as mesmas linhas
 
 test('teto editável no título do ciclo atual e seguintes; grava na âncora, vazio = padrão', () => {
     assert.match(visoes, /data-limite-categoria="\$\{limite\.chave\}" data-ciclo="\$\{i\}"/);
-    assert.match(visoes, /const tetoDoIndicador = limite => modoRestrito\(\) \? brl\(limite\.teto\)/);
-    assert.match(interacoes, /const campo = input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
+    assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*if \(modoRestrito\(\)\) return brl\(limite\.teto\);/);
+    assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
     assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
     assert.match(interacoes, /if \(!Estado\.simulando && !ancora\._sim\) await atualizarLancamento\(ancora\.id, \{ \[campo\]: valor \}\);/);
-    assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) confirmarLimiteCategoria\(input\);/);
+    assert.match(interacoes, /if \(input\) confirmarLimiteNaAncora\(input\);/);
 });
 
 test('migration 23 só adiciona colunas nulas e não negativas na própria fin', () => {

@@ -46,13 +46,16 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(dominio, /let LIMITE_CARTAO = 3350;/);
     assert.match(dominio, /let LIMITE_CARTAO_MP = 1100;/);
     assert.match(visoes, /const guardadoGarantido = guardadoGarantidoAte\(Estado\.lancamentos, i\)/);
-    assert.match(visoes, /const garantidoDoCartao = cartao === CARTAO_NUBANK \? guardadoGarantido : 0;/);
-    assert.match(visoes, /limiteTotal: limiteCartaoTotal\(garantidoDoCartao, cartao\),/);
-    assert.match(visoes, /limiteLivreHoje: limiteCartaoLivre\(Estado\.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao\),/);
+    assert.match(visoes, /const garantiaNubank = garantiaDoCiclo\(i, guardadoGarantido\);/);
+    assert.match(visoes, /const garantidoDoCartao = cartao === CARTAO_NUBANK \? garantiaNubank\.efetiva : 0;/);
+    assert.match(visoes, /const aprovado = aprovadoDoCiclo\(i, cartao\);/);
+    assert.match(visoes, /limiteTotal: limiteCartaoTotal\(garantidoDoCartao, cartao, aprovado\),/);
+    assert.match(visoes, /limiteLivreHoje: limiteCartaoLivre\(Estado\.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao, aprovado\),/);
     assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(/);
     assert.match(visoes, /Estado\.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao/);
     assert.match(visoes, /data-limite-cartao/);
-    assert.doesNotMatch(visoes, /data-garantia-cartao/);
+    // Garantia editável no próprio título (quanto do guardado vira garantia no ciclo).
+    assert.match(visoes, /data-garantia-cartao data-ciclo="\$\{i\}"/);
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
@@ -63,12 +66,14 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(visoes, /'Gasto acima do limite'/);
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
     assert.match(visoes, /: `\$\{brl\(l\.limiteTotal\)\} <span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<span class=limiteCartaoRotulo>Aprovado<\/span><\/span>`\)/);
-    assert.match(visoes, /value="\$\{limiteContratadoEditavel\(l\.cartao\)\}"/);
+    assert.match(visoes, /value="\$\{emReais\(l\.aprovado\)\}"/);
+    // Largura pelo próprio valor, sem vão até Aprovado/Garantido sem field-sizing.
+    assert.match(visoes, /const larguraDoCampo = texto => `style="width:\$\{Math\.max\(4, String\(texto\)\.length \+ 1\)\}ch"`;/);
     // Teto igual ao Aprovado (sem garantia): só o campo editável depois do "de", sem repetir.
-    assert.match(visoes, /const tetoSemGarantia = l => Math\.abs\(l\.limiteTotal - limiteCartaoContratado\(l\.cartao\)\) < TOLERANCIA_FINANCEIRA;/);
+    assert.match(visoes, /const tetoSemGarantia = l => Math\.abs\(l\.limiteTotal - l\.aprovado\) < TOLERANCIA_FINANCEIRA;/);
     assert.match(visoes, /\? `<span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<\/span>`/);
-    assert.match(visoes, /const garantiaExibida = i === Estado\.idxHoje \? garantia : Math\.floor\(garantia \/ 100\) \* 100/);
-    assert.match(visoes, /\$\{l\.cartao === CARTAO_NUBANK && garantiaExibida \? `<span class=limiteGarantido> \+ \$\{brl\(garantiaExibida\)\} Garantido/);
+    assert.match(visoes, /const garantiaExibida = garantiaNubank\.escolhida != null \|\| i === Estado\.idxHoje\s*\n\s*\? garantiaNubank\.efetiva : Math\.floor\(garantiaNubank\.efetiva \/ 100\) \* 100;/);
+    assert.match(visoes, /\$\{l\.cartao === CARTAO_NUBANK && mostraGarantia \? `<span class=limiteGarantido> \+ R\$ \$\{campoGarantia\(\)\} Garantido<\/span>`/);
     assert.doesNotMatch(visoes, /Garantido<\/span>` : ''\}\)<\/span>/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
@@ -77,8 +82,7 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(estilos, /gap: \.1rem/);
     assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
     assert.match(interacoes, /input\.select\(\)/);
-    assert.match(interacoes, /const aprovado = numeroDoLimiteDigitado\(input\.value\);/);
-    assert.match(interacoes, /definirLimiteCartao\(aprovado, cartao\)/);
+    assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
     assert.doesNotMatch(estilos, /\.limiteTotal/);
     assert.match(estilos, /\.alertaTitulo/);
     assert.match(estilos, /\.alertaTitulo\.vazio/);

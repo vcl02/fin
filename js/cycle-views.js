@@ -154,10 +154,14 @@ function vCiclo() {
     ] : [];
     // Teto editável no próprio indicador, como o Aprovado do cartão: grava na linha âncora
     // do ciclo (ver confirmarLimiteCategoria em interactions.js). Conta restrita só lê.
-    const tetoDoIndicador = limite => modoRestrito() ? brl(limite.teto)
-        : `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-categoria="${limite.chave}" data-ciclo="${i}" ` +
-        `value="${limite.teto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}" placeholder="padrão" inputmode=decimal ` +
+    // Largura pelo próprio valor (ver larguraDoCampo no título do Crédito, definido depois).
+    const tetoDoIndicador = limite => {
+        if (modoRestrito()) return brl(limite.teto);
+        const texto = limite.teto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-categoria="${limite.chave}" data-ciclo="${i}" ` +
+        `style="width:${Math.max(4, texto.length + 1)}ch" value="${texto}" placeholder="padrão" inputmode=decimal ` +
         `title="Editar limite de ${limite.rotulo} deste ciclo (vazio volta ao padrão)" aria-label="Limite de ${limite.rotulo} deste ciclo"></span>`;
+    };
     // Além do %, quanto ainda dá pra gastar até o teto (ou quanto já passou dele), com o
     // mesmo valor da linha: Hoje usa só o pago; Futuro, pago + aberto.
     const spansLimitesCategoria = chave => limitesCategoria.map(limite => {
@@ -270,34 +274,39 @@ function vCiclo() {
     // A prévia é a fatura do próximo ciclo. O Livre futuro parte do teto menos essa fatura
     // inteira (paga e aberta), como se a anterior já tivesse sido quitada; compras
     // confirmadas de faturas posteriores também continuam ocupando o cartão.
+    // Aprovado e garantia são os do ciclo (herdados do anterior quando não definidos; ver
+    // aprovadoDoCiclo/garantiaDoCiclo em finance.js). A garantia é só a parte escolhida do
+    // guardado, nunca acima dele.
+    const garantiaNubank = garantiaDoCiclo(i, guardadoGarantido);
     const limitesDosCartoes = cartoesNoTitulo.map(cartao => {
-        const garantidoDoCartao = cartao === CARTAO_NUBANK ? guardadoGarantido : 0;
+        const garantidoDoCartao = cartao === CARTAO_NUBANK ? garantiaNubank.efetiva : 0;
+        const aprovado = aprovadoDoCiclo(i, cartao);
         const abatidoNoCartao = abatimentoDoCartao(abatidoDoCartao, cartao);
         const totalExibidoDoCartao = totalCreditoExibidoAposAntecipacoes(
             doCartao(creditosExibidos, cartao), abatimentoDoCartao(abatido, cartao)[idxCreditoExibido] || 0
         );
         return {
-            cartao,
-            limiteTotal: limiteCartaoTotal(garantidoDoCartao, cartao),
+            cartao, aprovado,
+            limiteTotal: limiteCartaoTotal(garantidoDoCartao, cartao, aprovado),
             totalHoje: totalCreditoExibidoAposAntecipacoes(
                 doCartao(creditosExibidosNoCiclo(pagosAteHoje, i), cartao),
                 abatimentoDoCartao(abatidoAteHoje, cartao)[idxCreditoExibido] || 0
             ),
-            limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao),
+            limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao, aprovado),
             limiteLivreFuturo: limiteCartaoLivreFuturo(
-                Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao
+                Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao, aprovado
             ),
         };
     });
-    const garantia = Math.max(0, guardadoGarantido);
-    // Fora do ciclo atual, o valor visível é conservador e só exibe centenas completas.
-    // O ciclo atual, o teto e o Livre mantêm a garantia exata, sem perder centavos no cálculo.
-    const garantiaExibida = i === Estado.idxHoje ? garantia : Math.floor(garantia / 100) * 100;
-    // O teto total é somente leitura no "de"; o campo discreto ao lado edita a parte
-    // aprovada/contratada de cada cartão sem misturá-la com a garantia variável do ciclo.
-    const limiteContratadoEditavel = cartao => limiteCartaoContratado(cartao).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
+    // Sem escolha (todo o guardado), fora do ciclo atual o valor visível é conservador e só
+    // exibe centenas completas; com escolha, mostra exatamente a garantia usada. O teto e o
+    // Livre usam sempre a garantia exata, sem perder centavos no cálculo.
+    const garantiaExibida = garantiaNubank.escolhida != null || i === Estado.idxHoje
+        ? garantiaNubank.efetiva : Math.floor(garantiaNubank.efetiva / 100) * 100;
+    const emReais = valor => valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Largura do campo pelo próprio valor (em ch, dígitos tabulares): sem vão até o rótulo ao
+    // lado em navegador que não suporta field-sizing. Redesenhar ao sair do campo reajusta.
+    const larguraDoCampo = texto => `style="width:${Math.max(4, String(texto).length + 1)}ch"`;
     // O teto e a garantia são contexto do cartão. Só o Livre muda: Hoje retrata o uso real,
     // enquanto Futuro já considera quitada a fatura anterior à prévia.
     // O aviso compara cada gasto líquido com o teto utilizável do próprio cartão, não com o
@@ -312,11 +321,20 @@ function vCiclo() {
     // A classe por cartão dá a cor do nome (ver .limiteCartaoNome em dashboard.css).
     const nomeNoTitulo = cartao => cartoesNoTitulo.length > 1
         ? `<span class="limiteCartaoNome cartao-${cartao}">${NOME_CARTAO[cartao]}</span> ` : '';
-    const campoAprovado = l => `<input class=limiteCartaoEditavel data-limite-cartao="${l.cartao}" ` +
-        `value="${limiteContratadoEditavel(l.cartao)}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado ${NOME_CARTAO[l.cartao]}" aria-label="Limite aprovado ${NOME_CARTAO[l.cartao]}">`;
-    // Sem garantia (Mercado Pago sempre; Nubank quando não há guardado), o teto É o Aprovado:
+    // O teto total é somente leitura no "de"; os campos discretos editam o Aprovado de cada
+    // cartão e a Garantia do Nubank DESTE ciclo (valem também pros seguintes até outro ciclo
+    // definir outro). Gravam na linha âncora do ciclo (ver confirmarLimiteNaAncora em
+    // interactions.js); vazio volta a herdar.
+    const campoAprovado = l => `<input class=limiteCartaoEditavel data-limite-cartao="${l.cartao}" data-ciclo="${i}" ${larguraDoCampo(emReais(l.aprovado))} ` +
+        `value="${emReais(l.aprovado)}" placeholder="0,00" inputmode=decimal title="Limite aprovado ${NOME_CARTAO[l.cartao]} a partir deste ciclo (vazio herda o anterior)" aria-label="Limite aprovado ${NOME_CARTAO[l.cartao]}">`;
+    const campoGarantia = () => `<input class=limiteCartaoEditavel data-garantia-cartao data-ciclo="${i}" ${larguraDoCampo(emReais(garantiaExibida))} ` +
+        `value="${emReais(garantiaExibida)}" placeholder="todo" inputmode=decimal ` +
+        `title="Quanto do guardado (${brl(garantiaNubank.disponivel)}) vira garantia a partir deste ciclo — vazio usa todo o guardado" aria-label="Garantia do Nubank">`;
+    // Garantia aparece quando há guardado pra garantir ou uma escolha feita (inclusive zero).
+    const mostraGarantia = garantiaNubank.disponivel > TOLERANCIA_FINANCEIRA || garantiaNubank.escolhida != null;
+    // Sem garantia (Mercado Pago sempre; Nubank quando ela é zero), o teto É o Aprovado:
     // o próprio campo editável ocupa o lugar do "de", sem repetir o mesmo valor ao lado.
-    const tetoSemGarantia = l => Math.abs(l.limiteTotal - limiteCartaoContratado(l.cartao)) < TOLERANCIA_FINANCEIRA;
+    const tetoSemGarantia = l => Math.abs(l.limiteTotal - l.aprovado) < TOLERANCIA_FINANCEIRA;
     // Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em
     // Futuro, a fatura exibida inteira mais o uso confirmado posterior. Mesma conta do Livre,
     // só mostrada pelo outro lado, pra ver quanto já foi gasto sem fazer a subtração de cabeça.
@@ -327,7 +345,7 @@ function vCiclo() {
         (tetoSemGarantia(l)
             ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>`
             : `${brl(l.limiteTotal)} <span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span>`) +
-        `</span>${l.cartao === CARTAO_NUBANK && garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''}</span>`;
+        `</span>${l.cartao === CARTAO_NUBANK && mostraGarantia ? `<span class=limiteGarantido> + R$ ${campoGarantia()} Garantido</span>` : ''}</span>`;
     // Com dois cartões, a primeira faixa soma os dois: quanto ainda dá pra gastar no crédito
     // inteiro e o teto somado (com a garantia do Nubank, como o teto dele).
     const resumoTotalDosCartoes = chaveLivre => {

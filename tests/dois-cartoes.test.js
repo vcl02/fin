@@ -113,7 +113,9 @@ test('o limite do Mercado Pago é editável sem mexer no do Nubank', () => {
 test('preferência local separada por cartão; a do Nubank mantém a chave antiga', () => {
     assert.match(interacoes, /const CHAVE_LIMITE_CARTAO_LOCAL = 'fin\.limite-cartao';/);
     assert.match(interacoes, /const chaveLimiteCartaoLocal = cartao => cartao === CARTAO_NUBANK\s*\n\s*\? CHAVE_LIMITE_CARTAO_LOCAL : `\$\{CHAVE_LIMITE_CARTAO_LOCAL\}\.\$\{cartao\}`;/);
-    assert.match(interacoes, /const cartao = input\.dataset\.limiteCartao \|\| CARTAO_NUBANK;/);
+    // O Aprovado editado no título agora vai pra âncora do ciclo (migration 24); a chave local
+    // antiga só é lida como padrão de quem ainda não definiu nenhum ciclo.
+    assert.match(interacoes, /return input\.dataset\.limiteCartao === CARTAO_MERCADO_PAGO \? 'limite_aprovado_mp' : 'limite_aprovado_nubank';/);
     assert.match(visoes, /data-limite-cartao="\$\{l\.cartao\}"/);
 });
 

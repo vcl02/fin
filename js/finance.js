@@ -36,14 +36,46 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
 // Limites de Besteira/Isabella de um ciclo: o valor gravado na linha âncora "Faturamento PJ"
 // que abre o ciclo (fin.limite_besteira / fin.limite_isabella, migration 23) ou, sem valor,
 // o padrão do código. Cada ciclo é independente: mudar um não mexe nos outros.
-function limitesCategoriaDoCiclo(idx) {
+function ancoraDoCiclo(idx) {
     const ancoraId = Estado.ciclos[idx]?.ancoraId;
-    const ancora = ancoraId == null ? null : Estado.lancamentos.find(r => r.id === ancoraId);
+    return ancoraId == null ? null : Estado.lancamentos.find(r => r.id === ancoraId) || null;
+}
+
+const ehValorDeLimite = valor => valor != null && valor !== '' && Number.isFinite(+valor);
+
+function limitesCategoriaDoCiclo(idx) {
+    const ancora = ancoraDoCiclo(idx);
     const valorOuPadrao = (valor, padrao) => valor == null || valor === '' || !Number.isFinite(+valor) ? padrao : +valor;
     return {
         besteira: valorOuPadrao(ancora?.limite_besteira, LIMITE_BESTEIRA),
         isabella: valorOuPadrao(ancora?.limite_isabella, LIMITE_ISABELLA),
     };
+}
+
+// Aprovado e garantia do cartão (migration 24) herdam: o valor definido num ciclo vale pra
+// ele e pros seguintes, até outro ciclo definir outro — limite de banco muda raramente, e
+// repetir o mesmo número em todo ciclo seria só trabalho. Nada definido até aqui = null.
+function valorDefinidoAteOCiclo(idx, campo) {
+    for (let j = idx; j >= 0; j--) {
+        const valor = ancoraDoCiclo(j)?.[campo];
+        if (ehValorDeLimite(valor)) return +valor;
+    }
+    return null;
+}
+
+// Aprovado de um cartão no ciclo; sem nenhum ciclo definindo, o padrão (LIMITE_CARTAO, que
+// ainda pode vir da preferência antiga salva no navegador, ou LIMITE_CARTAO_MP).
+function aprovadoDoCiclo(idx, cartao) {
+    const coluna = cartao === CARTAO_MERCADO_PAGO ? 'limite_aprovado_mp' : 'limite_aprovado_nubank';
+    return valorDefinidoAteOCiclo(idx, coluna) ?? limiteCartaoContratado(cartao);
+}
+
+// Quanto do guardado vira garantia do Nubank no ciclo: o valor escolhido (herdado como o
+// Aprovado), nunca acima do guardado real; sem escolha, todo o guardado positivo.
+function garantiaDoCiclo(idx, guardado) {
+    const escolhida = valorDefinidoAteOCiclo(idx, 'limite_garantia_nubank');
+    const disponivel = Math.max(0, +guardado || 0);
+    return { escolhida, disponivel, efetiva: escolhida == null ? disponivel : Math.min(escolhida, disponivel) };
 }
 
 // Do ciclo atual em diante, o ciclo assume que o teto de Besteira e de Isabella será gasto
@@ -337,20 +369,22 @@ function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}, cicloQuitadoAte = -In
 // Ele aumenta o teto utilizável do cartão no ciclo atual; valor negativo nunca reduz o limite
 // contratado, pois só dinheiro efetivamente guardado pode estar como garantia. O Mercado Pago
 // não tem garantia: o teto é só o limite contratado, qualquer que seja o guardado.
-function limiteCartaoTotal(guardadoDoCiclo = 0, cartao = CARTAO_NUBANK) {
-    if (cartao === CARTAO_MERCADO_PAGO) return LIMITE_CARTAO_MP;
-    return LIMITE_CARTAO + Math.max(0, +guardadoDoCiclo || 0);
+// `aprovado` é o do ciclo (aprovadoDoCiclo); sem ele, o padrão global de cada cartão.
+function limiteCartaoTotal(guardadoDoCiclo = 0, cartao = CARTAO_NUBANK,
+    aprovado = cartao === CARTAO_MERCADO_PAGO ? LIMITE_CARTAO_MP : LIMITE_CARTAO) {
+    if (cartao === CARTAO_MERCADO_PAGO) return aprovado;
+    return aprovado + Math.max(0, +guardadoDoCiclo || 0);
 }
 
-function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, cicloQuitadoAte = -Infinity, cartao = CARTAO_NUBANK) {
-    return limiteCartaoTotal(guardadoDoCiclo, cartao) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte, cartao);
+function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, cicloQuitadoAte = -Infinity, cartao = CARTAO_NUBANK, aprovado) {
+    return limiteCartaoTotal(guardadoDoCiclo, cartao, aprovado) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte, cartao);
 }
 
 // No Futuro, a fatura exibida é uma obrigação inteira (paga e aberta), então ela precisa
 // consumir o limite mesmo que uma parte ainda não esteja marcada como `pago`. As faturas até
 // ela já são descontadas como quitadas por `limiteCartaoLivre`; créditos confirmados depois
 // dela continuam ocupando. Antecipação acima do total não gera limite extra nesta projeção.
-function limiteCartaoLivreFuturo(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, idxFatura, totalFatura = 0, cartao = CARTAO_NUBANK) {
+function limiteCartaoLivreFuturo(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, idxFatura, totalFatura = 0, cartao = CARTAO_NUBANK, aprovado) {
     const faturaExibida = Math.max(0, -(+totalFatura || 0));
-    return limiteCartaoLivre(linhas, abatidoPorCiclo, guardadoDoCiclo, idxFatura, cartao) - faturaExibida;
+    return limiteCartaoLivre(linhas, abatidoPorCiclo, guardadoDoCiclo, idxFatura, cartao, aprovado) - faturaExibida;
 }
