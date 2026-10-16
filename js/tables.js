@@ -42,15 +42,50 @@ function cabecalhoTabela(idTabela) {
     // Conta restrita (modo simples) não tem busca — só ordenar pelo cabeçalho.
     if (modoSimples()) return linhaTitulos;
     const filtroAtual = estadoFiltroTexto(idTabela);
-    // colunas de texto + Valor tem campo de busca. Valor compara numero (ver
-    // passaFiltroTexto), nao texto, mas a caixinha e' a mesma das outras colunas —
-    // com a mesma mascara de dinheiro do cadastro por cima (ver filtrarColuna).
-    const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => tipo == 't' || chave == 'valor'
-        ? `<th class="${tipo == 'n' ? 'n' : ''}"><input type=text ${chave == 'valor' ? 'inputmode=numeric title="Digite + pra só positivos, - pra só negativos" ' : 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" '}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)"></th>`
-        : '<th>'
-    ).join('');
+    // Colunas de texto, Data e Valor têm campo de busca. Valor compara número (ver
+    // passaFiltroTexto), não texto, mas a caixinha é a mesma das outras colunas — com a
+    // mesma máscara de dinheiro do cadastro por cima (ver filtrarColuna) — e ganha ao lado
+    // o botão de sinal. Pago/Reserva/Comprometido (tipo 'b') têm um botão de 3 estados.
+    const campoBusca = (chave, rotulo, extra = '') =>
+        `<input type=text ${extra}data-filtro="${idTabela}|${chave}" placeholder="Filtrar ${rotulo.toLowerCase()}…" value="${escapeHtml(filtroAtual[chave] ?? '')}" oninput="filtrarColuna('${idTabela}','${chave}',this)">`;
+    const linhaBusca = '<tr class=filtros>' + cols.map(([chave, rotulo, tipo]) => {
+        if (chave == 'valor') {
+            return `<th class=n><span class=filtroValor>${botaoFiltroEstado(idTabela, 'sinal', filtroAtual.sinal)}` +
+                `${campoBusca(chave, rotulo, 'inputmode=numeric ')}</span></th>`;
+        }
+        if (tipo == 't' || tipo == 'd') {
+            return `<th>${campoBusca(chave, rotulo, 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" ')}</th>`;
+        }
+        if (tipo == 'b') return `<th>${botaoFiltroEstado(idTabela, chave, filtroAtual[chave])}</th>`;
+        return '<th>';
+    }).join('');
     return linhaTitulos + linhaBusca;
 }
+
+// Filtros por clique (sem digitar): cada clique avança Todos → 1º estado → 2º estado →
+// Todos. Sinal do Valor: positivos/negativos; Pago: pago/aberto; Reserva e Comprometido:
+// marcado/não marcado. O estado mora em Estado.filtroTexto junto das buscas digitadas, então
+// limparFiltros() (botão Recarregar) zera tudo de uma vez.
+const ESTADOS_FILTRO_CLIQUE = {
+    sinal: [['+', '+', 'Só positivos', 'vd'], ['-', '−', 'Só negativos', 'vm']],
+    pago: [['S', 'Pago', 'Só pagos', 'vd'], ['N', 'Aberto', 'Só abertos', 'vm']],
+    reserva: [['S', 'Reserva', 'Só com Reserva', 'flagReserva'], ['N', 'Sem', 'Só sem Reserva', '']],
+    comprometido: [['S', 'Compr.', 'Só comprometidos', 'flagComprometido'], ['N', 'Sem', 'Só não comprometidos', '']],
+};
+function botaoFiltroEstado(idTabela, chave, valorAtual) {
+    const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
+    const [, texto, titulo, cor] = estado || [null, chave == 'sinal' ? '±' : 'Todos', 'Todos', ''];
+    return `<button type=button class="filtroEstado${estado ? ' ligado' : ''}${cor ? ` ${cor}` : ''}" ` +
+        `data-filtro-estado="${idTabela}|${chave}" title="${titulo} (clique pra alternar)" aria-label="Filtro: ${titulo}" ` +
+        `onclick="alternarFiltroEstado('${idTabela}','${chave}')">${texto}</button>`;
+}
+window.alternarFiltroEstado = (idTabela, chave) => {
+    const filtro = estadoFiltroTexto(idTabela);
+    const ordem = [undefined, ...ESTADOS_FILTRO_CLIQUE[chave].map(([valor]) => valor)];
+    const proximo = ordem[(ordem.indexOf(filtro[chave] || undefined) + 1) % ordem.length];
+    if (proximo) filtro[chave] = proximo; else delete filtro[chave];
+    desenhar();
+};
 // chamado a cada tecla digitada num campo de busca de coluna.
 // desenhar() reescreve o innerHTML inteiro, o que tiraria o foco do campo a cada letra —
 // por isso guarda onde estava o cursor e restaura depois, achando o campo novo pelo
@@ -60,19 +95,12 @@ window.filtrarColuna = (idTabela, coluna, input) => {
     // digitos vao empurrando as casas decimais, tipo caixa eletronico. Assim a caixinha
     // mostra exatamente o numero procurado — digitar "15000" vira "150,00", sem duvida
     // sobre onde caem os centavos. Campo esvaziado tem que voltar pra vazio (filtro
-    // desligado), nunca virar "0,00" — que filtraria pelos valores zerados.
-    // "+" ou "-" sozinho (sem nenhum digito) e' um atalho isolado pra filtrar so' pelo
-    // sinal (ver passaFiltroTexto) — foge da mascara de proposito, senao o replace(/\D/g)
-    // abaixo apagaria o proprio caractere que faz esse atalho funcionar.
+    // desligado), nunca virar "0,00" — que filtraria pelos valores zerados. O sinal não se
+    // digita aqui: é o botão ± ao lado (botaoFiltroEstado).
     if (coluna == 'valor') {
-        const bruto = input.value.trim();
-        if (bruto === '+' || bruto === '-') {
-            input.value = bruto;
-        } else {
-            const cursorNoFim = input.selectionEnd == input.value.length;
-            input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
-            if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
-        }
+        const cursorNoFim = input.selectionEnd == input.value.length;
+        input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
+        if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
     }
     estadoFiltroTexto(idTabela)[coluna] = input.value;
     const posicaoCursor = document.activeElement === input ? input.selectionStart : null;
@@ -108,6 +136,16 @@ function passaFiltroTexto(r, idTabela) {
     const filtro = estadoFiltroTexto(idTabela);
     return Object.entries(filtro).every(([coluna, termo]) => {
         if (!termo) return true;
+        // Botões de clique (botaoFiltroEstado). Sinal olha o valor visível (r._sug na linha
+        // de Investimento sugerido); zero não é positivo nem negativo. Pago separa pago de
+        // aberto (linha sem status, "—", não entra em nenhum dos dois); Reserva/Comprometido
+        // tratam ausência como "não marcado".
+        if (coluna == 'sinal') {
+            const valorVisivel = r._sug != null ? r._sug : (r.v || 0);
+            return termo == '+' ? valorVisivel > 0 : valorVisivel < 0;
+        }
+        if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
+        if (coluna == 'reserva' || coluna == 'comprometido') return termo == 'S' ? !!r[coluna] : !r[coluna];
         // Valor nao e' texto: o campo sempre traz um numero ja mascarado (formataMascaraDinheiro),
         // entao compara por PROXIMIDADE em vez de substring — acha qualquer lancamento a ate
         // 5 centavos do valor digitado, pra nao exigir acertar o centavo exato. Ignora o sinal
@@ -115,21 +153,17 @@ function passaFiltroTexto(r, idTabela) {
         // Linha de Investimento sugerido mostra r._sug no lugar de r.v — busca no que esta visivel.
         if (coluna == 'valor') {
             const valorAssinado = r._sug != null ? r._sug : (r.v || 0);
-            // "+"/"-" sozinho (ver filtrarColuna, que foge da mascara pra esses dois
-            // caracteres) filtra so' pelo sinal, sem olhar a magnitude. Zero nao e' nem
-            // positivo nem negativo aqui — nao aparece em nenhum dos dois.
-            const termoLimpo = termo.trim();
-            if (termoLimpo === '+') return valorAssinado > 0;
-            if (termoLimpo === '-') return valorAssinado < 0;
             const alvo = valorMascaraParaNumero(termo);
             return Math.abs(Math.abs(valorAssinado) - alvo) <= TOLERANCIA_BUSCA_VALOR;
         }
-        const texto = semAcento(r[coluna]);
+        // Data busca no texto que a célula mostra (DD/MM/AAAA): "10/2026" acha outubro.
+        const valorDaCelula = coluna == 'data' ? (r.data ? dataBR(r.data) : '') : r[coluna];
+        const texto = semAcento(valorDaCelula);
         const termoNormalizado = semAcento(termo);
         // Termo especial "vazio" (sem acento/caixa, sozinho no campo) acha as linhas sem
         // nada preenchido naquela coluna — mesmo critério da célula "—" (ehVazioTextual).
         // Não combina com ! nem |: é um atalho isolado, igual aos outros desta função.
-        if (termoNormalizado.trim() == 'vazio') return ehVazioTextual(r[coluna]);
+        if (termoNormalizado.trim() == 'vazio') return ehVazioTextual(valorDaCelula);
         // Categoria (pode ser composta, ex.: "Casa, Reserva") e Nome aceitam "!" pra
         // excluir — um ou mais termos encadeados, em AND (ver termosExcluidosDoFiltro).
         // Frequência nunca entra aqui: mantém a busca literal normal. "!" isolado (ou só

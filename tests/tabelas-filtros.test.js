@@ -30,6 +30,7 @@ function filtroDeTexto() {
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
         valorMascaraParaNumero: () => 0,
         TOLERANCIA_BUSCA_VALOR: 0.05,
+        dataBR: s => s.split('-').reverse().join('/'),
         ehVazioTextual: v => {
             if (v == null) return true;
             const limpo = String(v).trim().toLowerCase().replace(/^<|>$/g, '');
@@ -156,9 +157,10 @@ test('"|" isolado ou com pedaço vazio não filtra por esse pedaço, igual ao "!
     );
 });
 
-test('campo de busca por coluna avisa sobre o atalho "vazio"; Valor avisa sobre + e - no lugar', () => {
+test('campo de busca por coluna avisa sobre o atalho "vazio"; Valor tem botão de sinal no lugar do aviso', () => {
     assert.match(fonte, /title="Digite \\'vazio\\' pra achar as linhas sem nada preenchido aqui"/);
-    assert.match(fonte, /inputmode=numeric title="Digite \+ pra só positivos, - pra só negativos"/);
+    assert.doesNotMatch(fonte, /Digite \+ pra só positivos/);
+    assert.match(fonte, /<span class=filtroValor>\$\{botaoFiltroEstado\(idTabela, 'sinal', filtroAtual\.sinal\)\}/);
 });
 
 test('"vazio" em qualquer coluna de texto acha só as linhas sem nada preenchido ali (null, string vazia ou "null"/"n/a" gravado por engano)', () => {
@@ -187,42 +189,62 @@ test('atalho "vazio" documentado em REGRAS.md', () => {
     assert.match(regras, /mesmo critério da célula "—" \(`ehVazioTextual`\)/);
 });
 
-test('"+" ou "-" sozinho em Valor filtra só pelo sinal, ignorando a magnitude; zero não entra em nenhum dos dois', () => {
+test('botão de sinal do Valor filtra só positivos ou só negativos; zero não entra em nenhum', () => {
     const c = filtroDeTexto();
     const linhasComValor = [
         { id: 40, v: 100 },
         { id: 41, v: -30 },
         { id: 42, v: 0 },
         { id: 43, v: 5000 },
+        { id: 50, v: -999, _sug: 300 },     // aporte sugerido: o visível é _sug, não v
     ];
-    c.Estado.filtroTexto.debito = { valor: '+' };
-    assert.deepEqual(
-        linhasComValor.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
-        [40, 43],
-    );
-    c.Estado.filtroTexto.debito = { valor: '-' };
-    assert.deepEqual(
-        linhasComValor.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
-        [41],
-    );
+    const ids = () => linhasComValor.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id);
+    c.Estado.filtroTexto.debito = { sinal: '+' };
+    assert.deepEqual(ids(), [40, 43, 50]);
+    c.Estado.filtroTexto.debito = { sinal: '-' };
+    assert.deepEqual(ids(), [41]);
+    // "+"/"-" digitado no campo não é mais atalho de sinal.
+    assert.doesNotMatch(fonte, /termoLimpo === '\+'|bruto === '\+'/);
 });
 
-test('"+"/"-" em Valor também olha r._sug (linha de Investimento sugerido), não só r.v', () => {
+test('Pago, Reserva e Comprometido filtram por clique; Data busca no texto da célula', () => {
     const c = filtroDeTexto();
-    const linhasComSugestao = [
-        { id: 50, v: -999, _sug: 300 },     // aporte sugerido: visual é _sug, não v
-        { id: 51, v: 999, _sug: -150 },     // resgate necessário
+    const base = [
+        { id: 1, pago: true, reserva: true, comprometido: false, data: '2026-10-15' },
+        { id: 2, pago: false, reserva: false, comprometido: true, data: '2026-11-02' },
+        { id: 3, pago: null, data: null },   // linha sem status (Saldo do mês anterior etc.)
     ];
-    c.Estado.filtroTexto.debito = { valor: '+' };
-    assert.deepEqual(
-        linhasComSugestao.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
-        [50],
-    );
-    c.Estado.filtroTexto.debito = { valor: '-' };
-    assert.deepEqual(
-        linhasComSugestao.filter(linha => c.regras.passaFiltroTexto(linha, 'debito')).map(linha => linha.id),
-        [51],
-    );
+    const ids = filtro => { c.Estado.filtroTexto.db = filtro; return base.filter(r => c.regras.passaFiltroTexto(r, 'db')).map(r => r.id); };
+    assert.deepEqual(ids({ pago: 'S' }), [1]);
+    assert.deepEqual(ids({ pago: 'N' }), [2]);
+    assert.deepEqual(ids({ reserva: 'S' }), [1]);
+    assert.deepEqual(ids({ reserva: 'N' }), [2, 3]);
+    assert.deepEqual(ids({ comprometido: 'S' }), [2]);
+    assert.deepEqual(ids({ comprometido: 'N' }), [1, 3]);
+    assert.deepEqual(ids({ data: '10/2026' }), [1]);
+    assert.deepEqual(ids({ data: '15/10|02/11' }), [1, 2]);
+    assert.deepEqual(ids({ data: 'vazio' }), [3]);
+    assert.deepEqual(ids({ pago: 'S', data: '11/2026' }), []);
+});
+
+test('botões de filtro por clique: Todos → 1º → 2º → Todos, guardados no filtro da tabela', () => {
+    const inicio = fonte.indexOf('const ESTADOS_FILTRO_CLIQUE');
+    const fimBotoes = fonte.indexOf('\n};', fonte.indexOf('window.alternarFiltroEstado')) + 3;
+    const contexto = { Estado: { filtroTexto: {} }, window: {}, desenhos: 0 };
+    contexto.estadoFiltroTexto = id => contexto.Estado.filtroTexto[id] || (contexto.Estado.filtroTexto[id] = {});
+    contexto.desenhar = () => { contexto.desenhos++; };
+    vm.createContext(contexto);
+    vm.runInContext(fonte.slice(inicio, fimBotoes) + '\nglobalThis.botao = botaoFiltroEstado;', contexto);
+    const clica = chave => contexto.window.alternarFiltroEstado('db', chave);
+    const sequencia = chave => [1, 2, 3].map(() => { clica(chave); return contexto.Estado.filtroTexto.db[chave]; });
+    assert.deepEqual(sequencia('sinal'), ['+', '-', undefined]);
+    assert.deepEqual(sequencia('pago'), ['S', 'N', undefined]);
+    assert.deepEqual(sequencia('reserva'), ['S', 'N', undefined]);
+    assert.equal(contexto.desenhos, 9);
+    assert.match(contexto.botao('db', 'pago', undefined), />Todos<\/button>$/);
+    assert.match(contexto.botao('db', 'pago', 'N'), /class="filtroEstado ligado vm"[\s\S]*>Aberto<\/button>$/);
+    assert.match(contexto.botao('db', 'sinal', undefined), />±<\/button>$/);
+    assert.match(contexto.botao('db', 'comprometido', 'S'), /flagComprometido[\s\S]*title="Só comprometidos/);
 });
 
 test('filtro numérico normal de Valor continua intacto, sem olhar o sinal', () => {
@@ -235,9 +257,10 @@ test('filtro numérico normal de Valor continua intacto, sem olhar o sinal', () 
     );
 });
 
-test('atalho "+"/"-" de Valor documentado em REGRAS.md', () => {
-    assert.match(regras, /Digitar exatamente `\+` ou `-` sozinho no campo \(sem nenhum dígito\) é um atalho isolado/);
-    assert.match(regras, /`\+` mostra somente positivos, `-` somente negativos. Zero não entra em nenhum dos dois/);
+test('filtros por clique e de Data documentados em REGRAS.md', () => {
+    assert.match(regras, /O sinal se escolhe por clique, no botão ao lado do campo: cada clique avança \*\*±\*\* \(todos\) → \*\*\+\*\* \(só positivos\) → \*\*−\*\* \(só negativos\)/);
+    assert.match(regras, /\*\*Data\*\* tem campo de busca como as colunas de texto/);
+    assert.match(regras, /\*\*Pago\*\*, \*\*Reserva\*\* e \*\*Comprometido\*\* filtram por clique, sem digitar/);
 });
 
 test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer outros filtros', () => {

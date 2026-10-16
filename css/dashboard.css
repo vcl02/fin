@@ -597,6 +597,43 @@
       color: #737B82;
   }
 
+  /* Valor: botão de sinal (±/+/−) colado à esquerda do campo de busca. */
+  thead tr.filtros .filtroValor {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+  }
+
+  /* Filtro por clique (sinal, Pago, Reserva, Comprometido): desligado fica discreto como
+     o placeholder dos campos; ligado ganha a cor do próprio estado e a borda. */
+  .filtroEstado {
+      flex: none;
+      padding: .12rem .45rem;
+      font: 12px/1.3 inherit;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      white-space: nowrap;
+      color: #737B82;
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+      cursor: pointer;
+  }
+
+  .filtroEstado:hover {
+      border-color: #68727A;
+  }
+
+  .filtroEstado.ligado {
+      font-weight: 600;
+      border-color: currentColor;
+  }
+
+  .filtroEstado.ligado:not(.vd):not(.vm):not(.flagReserva):not(.flagComprometido) {
+      color: var(--fg);
+  }
+
   th .ar {
       color: var(--fg);
       font-style: normal;
