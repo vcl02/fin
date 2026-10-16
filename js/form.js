@@ -770,7 +770,7 @@ modalNovo.addEventListener('close', () => {
 // (seldup) e "Consolidar tudo" (consolidarTudo), que repete isso ciclo a ciclo. O retorno
 // ('consolidado'/'materializado') é só pro resumo de "Consolidar tudo" contar cada tipo.
 async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
-    const data = dataISO(Estado.ciclos[idx].fat) || null;
+    const data = dataDeFechamentoDoCiclo(Estado.ciclos[idx]) || null;
     const existente = movimentoAporteOuResgateDoCiclo(idx);
     if (existente) {
         const consolidado = consolidarAjusteExistente(existente, valorAjuste);
@@ -889,8 +889,12 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 // limpa os caches financeiros entre uma iteração e a próxima, não só no fim. Roda pelo
 // botão Recarregar (bootstrap.js): `depoisDaCarga` volta ao ciclo atual e limpa os filtros
 // entre a recarga e a varredura.
-async function consolidarTudo(botao, depoisDaCarga = () => {}) {
+// `silencioso` (consolidação automática de 15 em 15 min, bootstrap.js): carga sem aviso, sem
+// toast quando não há nada a fazer, sem o modal de detalhe e falha só no console — mas, se
+// gravou algo, o toast avisa, porque o banco mudou sem um clique.
+async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = false } = {}) {
     if (botao.disabled) return;
+    Estado.ultimaConsolidacao = Date.now();   // tentativa conta: falhou, espera o próximo intervalo
     // disabled bloqueia clique duplo nativamente (botão desabilitado não dispara 'click'),
     // mas sozinho pode passar despercebido — o ícone gira e o title diz a etapa, pra deixar
     // claro que já está processando (o botão é só ícone; trocar o texto apagaria o desenho).
@@ -906,7 +910,7 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}) {
         // simulação não recarrega: isso apagaria os lançamentos simulados, que só existem aqui.
         if (!Estado.simulando) {
             etapa('Recarregando…');
-            if (!(await load())) return;
+            if (!(await load({ silencioso }))) return;
         }
         depoisDaCarga();
         // Hoje fora de qualquer ciclo: não há de onde partir a varredura.
@@ -947,11 +951,16 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}) {
         const resumo = partes.length
             ? `${partes.join('; ')}.`
             : 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente.';
-        mostrarToast('Consolidar tudo', resumo);
-        // Sem nada gravado, o toast já diz tudo: o modal só abre quando há o que detalhar.
-        if (partes.length) mostrarResultadoConsolidarTudo(resumo, [...logDatas, ...logAjustes]);
+        if (silencioso) {
+            if (partes.length) mostrarToast('Consolidado automaticamente', resumo);
+        } else {
+            mostrarToast('Consolidar tudo', resumo);
+            // Sem nada gravado, o toast já diz tudo: o modal só abre quando há o que detalhar.
+            if (partes.length) mostrarResultadoConsolidarTudo(resumo, [...logDatas, ...logAjustes]);
+        }
     } catch (err) {
-        mostrarToast('Falhou ao consolidar tudo', err.message);
+        if (silencioso) console.warn('[consolidação automática] falhou:', err.message);
+        else mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();
     } finally {
         botao.disabled = false;

@@ -92,17 +92,17 @@ test('sem ciclo atual: limpa os filtros e deixa De/Até vazios, como a página a
 });
 
 test('consolidarTudo chama depoisDaCarga entre a recarga e a varredura', () => {
-    const funcao = trechoAte(formulario, 'async function consolidarTudo(botao, depoisDaCarga = () => {}) {', '\n}\n');
-    assert.ok(funcao.indexOf('await load()') < funcao.indexOf('depoisDaCarga();'));
+    const funcao = trechoAte(formulario, 'async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = false } = {}) {', '\n}\n');
+    assert.ok(funcao.indexOf('await load({ silencioso })') < funcao.indexOf('depoisDaCarga();'));
     assert.ok(funcao.indexOf('depoisDaCarga();') < funcao.indexOf("etapa('Consolidando…');"));
     assert.ok(funcao.indexOf('depoisDaCarga();') < funcao.indexOf('if (Estado.idxHoje < 0) return;'));
 });
 
 test('recarga automática só lê: chama recarregarDados, nunca o clique do botão', () => {
     assert.match(inicializacao, /async function recarregarDados\(\) \{[\s\S]*?await load\(\{ silencioso: true \}\);[\s\S]*?\n\}/);
-    assert.match(inicializacao, /if \(telaLivreParaRecarregar\(\)\) recarregarDados\(\);/);
+    assert.match(inicializacao, /if \(Date\.now\(\) - Estado\.ultimaCarga >= INTERVALO_RECARGA_AUTOMATICA_MS\) recarregarDados\(\);/);
     assert.doesNotMatch(inicializacao, /el\('recarregar'\)\.onclick\(\)/);
-    assert.match(regras, /a recarga automática de 5 minutos continua só lendo/);
+    assert.match(regras, /a recarga automática de 5 minutos só lê, e a consolidação automática de 15 minutos/);
 });
 
 test('o botão verde é o único: sem Atual, Limpar filtros nem Consolidar tudo', () => {

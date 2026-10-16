@@ -159,6 +159,18 @@ function somaMeses(iso, n) {
     return alvo.toISOString().slice(0, 10);
 }
 
+// Data em que se lança o Aporte/Resgate de um ciclo (o fechamento dele). O ciclo aberto
+// (fim vazio em fin_ciclo) tem fim '9999-12-31' só pra caber tudo nele; gravar essa data no
+// banco seria lixo, então ele usa um fechamento provisório: a véspera do mesmo dia do mês
+// seguinte ao início (início 05/10 → 04/11), que continua dentro do próprio ciclo aberto.
+function dataDeFechamentoDoCiclo(ciclo) {
+    const fim = dataISO(ciclo?.fat);
+    if (!fim.startsWith('9999')) return fim;
+    const mesSeguinte = somaMeses(dataISO(ciclo.ini), 1);
+    const vespera = new Date(Date.UTC(+mesSeguinte.slice(0, 4), +mesSeguinte.slice(5, 7) - 1, +mesSeguinte.slice(8, 10) - 1));
+    return vespera.toISOString().slice(0, 10);
+}
+
 // Soma N dias corridos a uma data ISO (mesmo padrao UTC de proximoDia/menos30, so' que
 // com passo livre) — base das recorrencias que andam por semana, nao por mes.
 function somaDias(iso, n) {

@@ -86,7 +86,7 @@ function vCiclo() {
     // soma da barra flutuante ficava menor que o total do titulo, sem nenhum erro visivel.
     const linhaResgate = ajuste && ajuste.tipo == 'resgate'
         ? [{
-            data: dataISO(periodo.fat),
+            data: dataDeFechamentoDoCiclo(periodo),
             nome: ajuste.nome,
             categ: ajuste.categ,
             freq: '',
@@ -101,7 +101,7 @@ function vCiclo() {
 
     const linhaSugestao = ajuste && ajuste.tipo == 'aporte'
         ? [{
-            data: dataISO(periodo.fat),
+            data: dataDeFechamentoDoCiclo(periodo),
             nome: ajuste.nome,
             categ: ajuste.categ,
             freq: '',

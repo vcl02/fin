@@ -111,9 +111,22 @@ const telaLivreParaRecarregar = () =>
     !document.querySelector('dialog[open]') && !Estado.selecionados.size &&
     !document.activeElement?.matches?.('input, select, textarea') &&
     !el('recarregar').disabled;
+// Consolidação automática: de 15 em 15 min (contados da última consolidação, automática ou
+// pelo botão; a 1ª vem 15 min depois de abrir a tela), roda o Consolidar tudo — recarrega e
+// materializa/consolida Aporte/Resgate e datas duplicadas —, mas sem voltar ao ciclo atual
+// nem limpar filtros, e em silêncio (só avisa se gravou algo). Mesmas condições de tela livre
+// da recarga; nunca na conta restrita, que não grava. Quando vence, substitui a recarga
+// simples daquela verificação, pois já recarrega.
+const INTERVALO_CONSOLIDACAO_AUTOMATICA_MS = 15 * 60 * 1000;
 setInterval(() => {
-    if (!Estado.ultimaCarga || Date.now() - Estado.ultimaCarga < INTERVALO_RECARGA_AUTOMATICA_MS) return;
-    if (telaLivreParaRecarregar()) recarregarDados();
+    if (!Estado.ultimaCarga) return;
+    if (!Estado.ultimaConsolidacao) Estado.ultimaConsolidacao = Date.now();
+    if (!telaLivreParaRecarregar()) return;
+    if (!modoRestrito() && Date.now() - Estado.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS) {
+        consolidarTudo(el('recarregar'), () => {}, { silencioso: true });
+        return;
+    }
+    if (Date.now() - Estado.ultimaCarga >= INTERVALO_RECARGA_AUTOMATICA_MS) recarregarDados();
 }, 30 * 1000);
 
 if (API.includes('SEUPROJETO')) { mostraTela(1); load(); }   // sem chaves configuradas: pula o login (modo dev)
