@@ -294,3 +294,16 @@ test('sinal do filtro de Valor fica na mesma coluna dos botões +/− das linhas
     assert.match(estilos, /thead tr\.filtros th:has\(\.filtroValor\) \{\s*\n\s*padding-right: \.7rem;/);
     assert.match(regras, /alinhado exatamente na mesma coluna dos botões \+\/− das linhas/);
 });
+
+test('colunas de largura fixa: não mudam conforme o filtro', () => {
+    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+    assert.match(fonte, /const colunas = colunasAtivas\(idTabela\)\.map\(\(\[chave\]\) => `<col class=col-\$\{chave\}>`\)\.join\(''\);/);
+    assert.match(fonte, /<div class=wrap><table class=larguraFixa><colgroup>\$\{colunas\}<\/colgroup><thead>/);
+    assert.match(estilos, /table\.larguraFixa \{\s*\n\s*table-layout: fixed;\s*\n\s*min-width: 74rem;/);
+    for (const [coluna, largura] of [['data', '7rem'], ['valor', '9\\.75rem'], ['pago', '5rem'], ['reserva', '6rem'], ['comprometido', '8\\.25rem'], ['prio', '4\\.5rem'], ['id', '4rem']]) {
+        assert.match(estilos, new RegExp(`\\.col-${coluna} \\{ width: ${largura}; \\}`));
+    }
+    // Colunas de texto livre ficam sem largura própria: dividem o resto igualmente.
+    assert.doesNotMatch(estilos, /\.col-(nome|categ|freq|obs|canal) \{/);
+    assert.match(regras, /As tabelas de lançamentos \(Débito, Crédito, Backlog\) têm colunas de largura fixa, que não mudam conforme o filtro/);
+});

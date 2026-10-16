@@ -371,7 +371,10 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     // O toque/clique na linha sempre serve para somar valores, em qualquer dispositivo.
     // Só a conta restrita (modoRestrito) tem a barra limitada a soma e Limpar.
     const podeSelecionar = selecionavel;
-    return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
+    // <colgroup> com uma classe por coluna: as larguras são fixas no CSS (table.larguraFixa),
+    // então filtrar Reserva, Comprometido ou o sinal não faz as colunas "dançarem".
+    const colunas = colunasAtivas(idTabela).map(([chave]) => `<col class=col-${chave}>`).join('');
+    return `<div class=wrap><table class=larguraFixa><colgroup>${colunas}</colgroup><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
             const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);
             return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._prev ? 'prev ' : ''}${r._sim ? 'sim ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r, idTabela);

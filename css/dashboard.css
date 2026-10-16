@@ -523,6 +523,28 @@
       background: var(--pa);
   }
 
+  /* Tabelas de lançamentos (Débito, Crédito, Backlog): largura de coluna fixa, que não muda
+     conforme o filtro. As colunas de conteúdo previsível têm a largura do maior conteúdo
+     (cabeçalho, botão de filtro ou célula); as de texto livre (Nome, Categoria, Frequência,
+     Obs, Canal) dividem igualmente o que sobra e quebram linha dentro dela. O mínimo da
+     tabela evita espremer o texto: abaixo dele a própria .wrap rola de lado. */
+  table.larguraFixa {
+      table-layout: fixed;
+      min-width: 74rem;
+  }
+
+  .col-data { width: 7rem; }
+  .col-valor { width: 9.75rem; }
+  .col-pago { width: 5rem; }
+  .col-reserva { width: 6rem; }
+  .col-comprometido { width: 8.25rem; }
+  .col-prio { width: 4.5rem; }
+  .col-id { width: 4rem; }
+
+  table.larguraFixa td {
+      overflow-wrap: anywhere;
+  }
+
   /* evita a selecao de texto azul do navegador ao usar shift-click pra marcar um
      intervalo de linhas — o shift-click nativo seleciona texto, o que fica feio
      junto com o destaque das linhas marcadas. Inputs de filtro continuam selecionaveis. */
