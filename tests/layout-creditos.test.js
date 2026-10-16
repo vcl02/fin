@@ -62,9 +62,11 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(visoes, /l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
     assert.match(visoes, /'Gasto acima do limite'/);
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
-    assert.match(visoes, /de \$\{brl\(l\.limiteTotal\)\} ` \+/);
+    assert.match(visoes, /: `\$\{brl\(l\.limiteTotal\)\} <span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<span class=limiteCartaoRotulo>Aprovado<\/span><\/span>`\)/);
     assert.match(visoes, /value="\$\{limiteContratadoEditavel\(l\.cartao\)\}"/);
-    assert.match(visoes, /<span class=limiteCartaoRotulo>Aprovado<\/span>/);
+    // Teto igual ao Aprovado (sem garantia): só o campo editável depois do "de", sem repetir.
+    assert.match(visoes, /const tetoSemGarantia = l => Math\.abs\(l\.limiteTotal - limiteCartaoContratado\(l\.cartao\)\) < TOLERANCIA_FINANCEIRA;/);
+    assert.match(visoes, /\? `<span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<\/span>`/);
     assert.match(visoes, /const garantiaExibida = i === Estado\.idxHoje \? garantia : Math\.floor\(garantia \/ 100\) \* 100/);
     assert.match(visoes, /\$\{l\.cartao === CARTAO_NUBANK && garantiaExibida \? `<span class=limiteGarantido> \+ \$\{brl\(garantiaExibida\)\} Garantido/);
     assert.doesNotMatch(visoes, /Garantido<\/span>` : ''\}\)<\/span>/);

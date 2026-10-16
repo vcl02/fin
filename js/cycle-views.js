@@ -291,11 +291,26 @@ function vCiclo() {
     // Com um cartão só, o nome dele não acrescenta nada; com dois, cada faixa diz de quem é.
     const nomeNoTitulo = cartao => cartoesNoTitulo.length > 1
         ? `<span class=limiteCartaoNome>${NOME_CARTAO[cartao]}</span> ` : '';
-    const resumoLimiteCartao = (l, limiteLivre) => `<span class=limiteCartao>${nomeNoTitulo(l.cartao)}Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(l.limiteTotal)} ` +
-        `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao="${l.cartao}" ` +
-        `value="${limiteContratadoEditavel(l.cartao)}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado ${NOME_CARTAO[l.cartao]}" aria-label="Limite aprovado ${NOME_CARTAO[l.cartao]}"><span class=limiteCartaoRotulo>Aprovado</span></span>` +
+    const campoAprovado = l => `<input class=limiteCartaoEditavel data-limite-cartao="${l.cartao}" ` +
+        `value="${limiteContratadoEditavel(l.cartao)}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado ${NOME_CARTAO[l.cartao]}" aria-label="Limite aprovado ${NOME_CARTAO[l.cartao]}">`;
+    // Sem garantia (Mercado Pago sempre; Nubank quando não há guardado), o teto É o Aprovado:
+    // o próprio campo editável ocupa o lugar do "de", sem repetir o mesmo valor ao lado.
+    const tetoSemGarantia = l => Math.abs(l.limiteTotal - limiteCartaoContratado(l.cartao)) < TOLERANCIA_FINANCEIRA;
+    const resumoLimiteCartao = (l, limiteLivre) => `<span class=limiteCartao>${nomeNoTitulo(l.cartao)}Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+        (tetoSemGarantia(l)
+            ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>`
+            : `${brl(l.limiteTotal)} <span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span>`) +
         `${l.cartao === CARTAO_NUBANK && garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''}</span>`;
-    const resumoLimites = chaveLivre => limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('');
+    // Com dois cartões, a última faixa soma os dois: quanto ainda dá pra gastar no crédito
+    // inteiro e o teto somado (com a garantia do Nubank, como o teto dele).
+    const resumoTotalDosCartoes = chaveLivre => {
+        if (limitesDosCartoes.length < 2) return '';
+        const livre = limitesDosCartoes.reduce((soma, l) => soma + l[chaveLivre], 0);
+        const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
+        return `<span class=limiteCartao><span class=limiteCartaoNome>Total</span> Livre <b class="${corValor(livre)}">${brl(livre)}</b> de ${brl(teto)}</span>`;
+    };
+    const resumoLimites = chaveLivre =>
+        limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('') + resumoTotalDosCartoes(chaveLivre);
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :
