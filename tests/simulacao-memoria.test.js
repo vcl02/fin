@@ -18,7 +18,7 @@ test('simulação mantém update e exclusão de linhas reais somente em memória
     // inline, todos passando pela mesma guarda antes de chamar o Supabase.
     assert.equal((interacoes.match(/!Estado\.simulando && !\w+\._sim\) await atualizarLancamento/g) || []).length, 12);
     // Limites por ciclo (fin_ciclo) passam pela mesma guarda: simulação só altera a memória.
-    assert.match(interacoes, /!Estado\.simulando && !ancora\._sim \? await salvarLimiteDoCiclo\(/);
+    assert.match(interacoes, /!Estado\.simulando \? await salvarLimiteDoCiclo\(/);
     assert.doesNotMatch(graficos, /atualizarLancamento|inserirLancamento|excluirLancamento/);
 });
 

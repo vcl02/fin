@@ -6,8 +6,8 @@ const API = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
 // Nome técnico da tabela financeira no banco. O domínio continua chamando cada registro de lançamento.
 const TABELA_FIN = 'fin';
-// Escolhas por ciclo (tetos Besteira/Isabella, Aprovado, Garantia), uma linha por ciclo,
-// ligada pelo ancora_id ao lançamento "Faturamento PJ" que abre o ciclo (migration 25).
+// Ciclos (inicio/fim) e as escolhas de cada um (tetos Besteira/Isabella, Aprovado,
+// Garantia), uma linha por ciclo (migrations 25 e 26).
 const TABELA_FIN_CICLO = 'fin_ciclo';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -39,8 +39,8 @@ const Estado = {
     selecionados: new Map(), ordenacaoPorTabela: {}, filtroTexto: {}, linhasVisiveis: {},
     fechados: {}, cicloQuitadoRecolhido: null, ordComp: { k: 'total', d: 2 }, simulando: false,
     _proxIdSimulado: 0,
-    // ancora_id -> linha de fin_ciclo. Sem linha, o ciclo usa padrões/herança.
-    limitesPorAncora: new Map(),
+    // id do ciclo -> linha de fin_ciclo (escolhas vazias = padrões/herança).
+    limitesPorCiclo: new Map(),
 };
 
 // Única conta que enxerga a interface restrita: só Débito, só ciclo atual e próximo, somente

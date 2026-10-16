@@ -1,7 +1,7 @@
 // Regressão: as escolhas por ciclo (tetos Besteira/Isabella, Aprovado, Garantia) moram em
-// public.fin_ciclo (migration 25), uma linha por ciclo ligada à âncora "Faturamento PJ".
-// A migração copia o que já estava nas colunas de fin (23/24) e só então as remove; o acesso
-// segue a migration 20. O app grava por upsert e carrega mesmo sem a tabela.
+// public.fin_ciclo, uma linha por ciclo. A migration 25 criou a tabela (ainda ligada ao
+// "Faturamento PJ") copiando o que estava nas colunas de fin (23/24); o acesso segue a
+// migration 20. Depois da 26 (ver ciclo-inicio-fim.test.js) o app grava por id da linha.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -64,30 +64,35 @@ function carregaApi(fetch) {
 }
 const resposta = corpo => ({ ok: true, status: 200, text: async () => JSON.stringify(corpo) });
 
-test('grava por upsert na âncora: cria a linha na 1ª vez e depois muda só a coluna enviada', async () => {
-    const { api: a, chamadas } = carregaApi(() => resposta([{ ancora_id: 7, limite_garantia_nubank: 500 }]));
+test('grava a escolha na própria linha do ciclo (PATCH por id), mudando só a coluna enviada', async () => {
+    const { api: a, chamadas } = carregaApi(() => resposta([{ id: 7, limite_garantia_nubank: 500 }]));
     const linha = await a.salvarLimiteDoCiclo(7, 'limite_garantia_nubank', 500);
     assert.equal(linha.limite_garantia_nubank, 500);
-    assert.equal(chamadas[0].url, 'https://fin.supabase.test/rest/v1/fin_ciclo?on_conflict=ancora_id');
-    assert.equal(chamadas[0].opcoes.method, 'POST');
-    assert.equal(chamadas[0].opcoes.headers.Prefer, 'resolution=merge-duplicates,return=representation');
-    assert.deepEqual(JSON.parse(chamadas[0].opcoes.body), { ancora_id: 7, limite_garantia_nubank: 500 });
+    assert.equal(chamadas[0].url, 'https://fin.supabase.test/rest/v1/fin_ciclo?id=eq.7');
+    assert.equal(chamadas[0].opcoes.method, 'PATCH');
+    assert.deepEqual(JSON.parse(chamadas[0].opcoes.body), { limite_garantia_nubank: 500 });
 });
 
-test('fin_ciclo pagina pela âncora, não por id', async () => {
-    const { api: a, chamadas } = carregaApi(url => resposta(url.includes('ancora_id=gt.') ? [{ ancora_id: 9 }] : [{ ancora_id: 3 }, { ancora_id: 5 }]));
-    const linhas = await a.buscar('fin_ciclo', false, 'ancora_id');
+test('linha não devolvida (RLS) é erro, não sucesso silencioso', async () => {
+    const { api: a } = carregaApi(() => resposta([]));
+    await assert.rejects(a.salvarLimiteDoCiclo(7, 'limite_besteira', 300), /limite não gravado/);
+});
+
+test('fin_ciclo pagina por id, como fin', async () => {
+    const { api: a, chamadas } = carregaApi(url => resposta(url.includes('id=gt.') ? [{ id: 9 }] : [{ id: 3 }, { id: 5 }]));
+    const linhas = await a.buscar('fin_ciclo');
     assert.equal(linhas.length, 3);
-    assert.match(chamadas[0].url, /order=ancora_id\.asc&limit=2$/);
-    assert.match(chamadas[1].url, /&ancora_id=gt\.5$/);
+    assert.match(chamadas[0].url, /order=id\.asc&limit=2$/);
+    assert.match(chamadas[1].url, /&id=gt\.5$/);
 });
 
-test('sem fin_ciclo a carga continua, com aviso no diagnóstico', () => {
-    assert.match(api, /limitesCiclo = await buscar\(TABELA_FIN_CICLO, false, 'ancora_id'\);\s*\n\s*\} catch \(err\) \{\s*\n\s*diagnosticoDeDados\.avisos\.push\(`Limites por ciclo indisponíveis/);
-    assert.match(api, /Estado\.limitesPorAncora = new Map\(limitesCiclo\.map\(linha => \[linha\.ancora_id, linha\]\)\);/);
+test('sem fin_ciclo no formato de ciclos, a carga para com a instrução das migrations', () => {
+    assert.match(api, /throw Error\(`Tabela de ciclos indisponível \(\$\{err\.message\}\)\. Aplique migrations\/25-tabela-fin-ciclo\.sql e 26-ciclo-com-inicio-e-fim\.sql\.`\);/);
+    assert.match(api, /if \(linhasCiclo\.length && !\('inicio' in linhasCiclo\[0\]\)\) \{/);
+    assert.match(api, /Estado\.limitesPorCiclo = new Map\(linhasCiclo\.map\(linha => \[linha\.id, linha\]\)\);/);
 });
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`migrations\/25-tabela-fin-ciclo\.sql` cria `public\.fin_ciclo`/);
-    assert.match(regras, /uma linha por ciclo em `fin_ciclo`/);
+    assert.match(regras, /na própria linha do ciclo em `fin_ciclo`/);
 });

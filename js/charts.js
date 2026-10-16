@@ -192,13 +192,16 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
 
 // Comprometido é uma leitura do orçamento, não uma mudança de dado: ele lê o bit
 // `comprometido` do lançamento (coluna própria, não mais texto em categ — ver migration 22)
-// e compara ao teto único sobre o Faturamento PJ.
+// e compara ao teto único sobre as entradas do ciclo.
 const categoriaContemCompromisso = (categ, texto) => semAcento(categ).toLowerCase()
     .includes(semAcento(texto).toLowerCase());
 
+// Base do percentual: toda entrada positiva do ciclo, menos resgate de investimento (é o
+// próprio dinheiro guardado voltando, não renda) e transferências de fatura. O nome continua
+// `faturamento` porque é o que o ciclo ganhou; nenhum lançamento específico é procurado.
 function dadosCompromissosDoCiclo(linhas) {
     const faturamento = linhas
-        .filter(r => r.v > 0 && String(r.nome || '').trim() === NOME_ANCORA_CICLO)
+        .filter(r => r.v > 0 && !r.inv && !r._transferencia)
         .reduce((soma, r) => soma + r.v, 0);
     const resumo = limite => {
         const gastos = linhas.filter(r => r.v < 0 && !r._transferencia && r.comprometido);
@@ -419,10 +422,10 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     indicadorComprometido.className = `indicadorRegra ${classeIndicadorComprometido(comprometidos)}`;
     indicadorComprometido.innerHTML = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
         ? `Comprometido: <span class=indicadorPercentual>${pct1(comprometido.percentualFaturamento)}</span> do mês`
-        : 'Comprometido: <span class=indicadorPercentual>—</span> sem faturamento';
+        : 'Comprometido: <span class=indicadorPercentual>—</span> sem entradas';
     indicadorComprometido.title = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
         ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}`
-        : 'Sem Faturamento PJ no ciclo';
+        : 'Sem entradas no ciclo';
     atualizarLinhaVariacao(
         'variacaoComprometido', variacaoComprometido, variacaoValorComprometido,
         'Variação do valor comprometido sobre o ciclo anterior'

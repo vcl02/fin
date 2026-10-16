@@ -33,20 +33,15 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
     return anterior + doCiclo + fatura;
 }
 
-// Limites de Besteira/Isabella de um ciclo: o valor salvo em fin_ciclo pra âncora
-// "Faturamento PJ" que abre o ciclo (migration 25) ou, sem valor, o padrão do código. Cada
+// Limites de Besteira/Isabella de um ciclo: o valor salvo na linha dele em fin_ciclo ou, sem
+// valor, o padrão do código. Cada
 // ciclo é independente: mudar um não mexe nos outros.
-function ancoraDoCiclo(idx) {
-    const ancoraId = Estado.ciclos[idx]?.ancoraId;
-    return ancoraId == null ? null : Estado.lancamentos.find(r => r.id === ancoraId) || null;
-}
-
 const ehValorDeLimite = valor => valor != null && valor !== '' && Number.isFinite(+valor);
 
-// Escolhas salvas de um ciclo (linha de fin_ciclo da âncora dele, migration 25) ou null.
+// Escolhas salvas de um ciclo (a própria linha dele em fin_ciclo) ou null.
 function limitesSalvosDoCiclo(idx) {
-    const ancoraId = Estado.ciclos[idx]?.ancoraId;
-    return ancoraId == null ? null : Estado.limitesPorAncora?.get(ancoraId) || null;
+    const cicloId = Estado.ciclos[idx]?.cicloId;
+    return cicloId == null ? null : Estado.limitesPorCiclo?.get(cicloId) || null;
 }
 
 function limitesCategoriaDoCiclo(idx) {

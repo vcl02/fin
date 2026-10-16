@@ -31,22 +31,22 @@ function numeroDoLimiteDigitado(texto) {
 
 restaurarLimiteCartaoLocal();
 
-// Escolhas por ciclo gravadas em fin_ciclo (migration 25), uma linha por ciclo ligada à
-// âncora "Faturamento PJ": teto de Besteira/Isabella (título do Débito), Aprovado de cada
-// cartão e Garantia do Nubank (título do Crédito). Vão pro banco, e não só pro navegador,
-// pra valerem igual em qualquer aparelho (Besteira/Isabella ainda mudam o saldo). Campo
-// vazio grava null: Besteira/Isabella voltam ao padrão do código; Aprovado/Garantia voltam a
-// herdar do ciclo anterior. Simulação só altera a memória, como qualquer outra edição.
+// Escolhas por ciclo gravadas na linha do ciclo em fin_ciclo: teto de Besteira/Isabella
+// (título do Débito), Aprovado de cada cartão e Garantia do Nubank (título do Crédito). Vão
+// pro banco, e não só pro navegador, pra valerem igual em qualquer aparelho (Besteira/
+// Isabella ainda mudam o saldo). Campo vazio grava null: Besteira/Isabella voltam ao padrão
+// do código; Aprovado/Garantia voltam a herdar do ciclo anterior. Simulação só altera a
+// memória, como qualquer outra edição.
 function colunaDoCampoDeLimite(input) {
     if (input.dataset.limiteCategoria) return input.dataset.limiteCategoria === 'isabella' ? 'limite_isabella' : 'limite_besteira';
     if (input.dataset.garantiaCartao != null) return 'limite_garantia_nubank';
     return input.dataset.limiteCartao === CARTAO_MERCADO_PAGO ? 'limite_aprovado_mp' : 'limite_aprovado_nubank';
 }
 
-async function confirmarLimiteNaAncora(input) {
+async function confirmarLimiteDoCiclo(input) {
     const campo = colunaDoCampoDeLimite(input);
-    const ancora = ancoraDoCiclo(+input.dataset.ciclo);
-    if (!ancora) { mostrarToast('Limite não salvo', 'Ciclo sem lançamento Faturamento PJ.'); desenhar(); return; }
+    const cicloId = Estado.ciclos[+input.dataset.ciclo]?.cicloId;
+    if (cicloId == null) { mostrarToast('Limite não salvo', 'Ciclo não encontrado.'); desenhar(); return; }
     const texto = input.value.trim();
     const valor = texto ? Math.round(numeroDoLimiteDigitado(texto) * 100) / 100 : null;
     if (valor != null && !(Number.isFinite(valor) && valor >= 0)) {
@@ -54,12 +54,12 @@ async function confirmarLimiteNaAncora(input) {
         desenhar();
         return;
     }
-    const salvos = Estado.limitesPorAncora.get(ancora.id) || { ancora_id: ancora.id };
+    const salvos = Estado.limitesPorCiclo.get(cicloId) || { id: cicloId };
     if ((salvos[campo] ?? null) == valor) { desenhar(); return; }
     input.disabled = true;
     try {
-        const gravada = !Estado.simulando && !ancora._sim ? await salvarLimiteDoCiclo(ancora.id, campo, valor) : null;
-        Estado.limitesPorAncora.set(ancora.id, gravada || { ...salvos, [campo]: valor });
+        const gravada = !Estado.simulando ? await salvarLimiteDoCiclo(cicloId, campo, valor) : null;
+        Estado.limitesPorCiclo.set(cicloId, gravada || { ...salvos, [campo]: valor });
     } catch (err) {
         mostrarToast('Falhou ao salvar limite', err.message);
     }
@@ -343,7 +343,7 @@ el('out').addEventListener('click', async e => {
 
     // So' ao MARCAR como pago (nunca ao desmarcar) de um Débito com vencimento ainda nao
     // chegado: o pagamento aconteceu HOJE, antes do dia que a linha gravou (ex.: a conta de
-    // agua paga no dia do Faturamento PJ, com vencimento mais pra frente no mesmo ciclo).
+    // agua paga no inicio do ciclo, com vencimento mais pra frente no mesmo ciclo).
     // Dentro do MESMO ciclo isso e' so' adiantar um pagamento ja disponivel — ajusta a data
     // pra hoje sem perguntar. Fora do ciclo (atual ou outro ja fechado) e' o padrao exato do
     // bug de recorrencia que nasce paga (ver validarLancamentosCarregados em domain.js):
@@ -540,7 +540,7 @@ el('out').addEventListener('keydown', e => {
 });
 el('out').addEventListener('change', e => {
     const input = e.target.closest('[data-limite-cartao], [data-limite-categoria], [data-garantia-cartao]');
-    if (input) confirmarLimiteNaAncora(input);
+    if (input) confirmarLimiteDoCiclo(input);
 });
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial
@@ -940,7 +940,7 @@ el('out').addEventListener('click', e => {
 
 // clique no botão de corrigir a Data (ver celData em tables.js, _dupCiclo marcado em
 // marcaOcorrenciasDuplicadasNoCiclo no cycle-views.js): recorrência caiu 2x no mesmo ciclo
-// (ex.: dia 5 perto do fim, a janela entre Faturamento PJ corta o mês) — move a ocorrência
+// (ex.: dia 5 perto do fim, a janela do ciclo corta o mês) — move a ocorrência
 // mais recente pro 1º dia do PRÓXIMO ciclo, que já existe (senão o botão nem apareceria).
 // É um PATCH de verdade, por isso pede confirmação antes, igual ao padrão já usado pro badge
 // Pago fora do ciclo.

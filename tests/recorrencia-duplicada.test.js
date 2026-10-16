@@ -1,5 +1,5 @@
 // Regressão: recorrência (nome+categoria) que cai 2x no mesmo ciclo, em meses-calendário
-// diferentes — sintoma de a janela entre dois Faturamento PJ cortar o mês ao meio, não uma
+// diferentes — sintoma de a janela do ciclo cortar o mês ao meio, não uma
 // despesa nova. Em Comparar isso já virava só um aviso ("*"); aqui, na tabela Débito, a
 // ocorrência mais recente do grupo ganha um botão de corrigir a data pro 1º dia do próximo
 // ciclo, com confirmação antes do PATCH (altera dado real).

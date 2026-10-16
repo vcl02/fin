@@ -1,7 +1,7 @@
 // Regressão: do ciclo atual em diante, Besteira e Isabella contam como se o teto do ciclo
 // fosse gasto por inteiro — uma linha sintética completa o que falta até 100% e entra no
 // saldo e em tudo que deriva dele. O teto é individual por ciclo, gravado na linha âncora
-// "Faturamento PJ" pela tabela fin_ciclo (migration 25). Roda o código real de domain/shared/finance + a regra de
+// do ciclo em fin_ciclo (migrations 25/26). Roda o código real de domain/shared/finance + a regra de
 // categorias de charts.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -20,14 +20,14 @@ function carrega(lancamentos, idxHoje = 1) {
     const estado = {
         idxHoje,
         ciclos: [
-            { id: 'pj:1', ancoraId: 1, ini: '2026-09-05', fat: '2026-10-04' },
-            { id: 'pj:2', ancoraId: 2, ini: '2026-10-05', fat: '2026-11-04' },
-            { id: 'pj:3', ancoraId: 3, ini: '2026-11-05', fat: '2026-12-04' },
+            { id: 'c:1', cicloId: 1, ini: '2026-09-05', fat: '2026-10-04' },
+            { id: 'c:2', cicloId: 2, ini: '2026-10-05', fat: '2026-11-04' },
+            { id: 'c:3', cicloId: 3, ini: '2026-11-05', fat: '2026-12-04' },
         ],
         faturas: [],
         lancamentos,
-        // fin_ciclo: aqui, os campos limite_* de cada âncora fazem o papel da linha da tabela.
-        limitesPorAncora: new Map(lancamentos.filter(l => l.nome === 'Faturamento PJ').map(l => [l.id, { ancora_id: l.id, ...l }])),
+        // fin_ciclo: cada "ciclo" abaixo (ids 1..3) carrega os limite_* da linha da tabela.
+        limitesPorCiclo: new Map(lancamentos.filter(l => l.nome === 'Ciclo').map(l => [l.id, { ...l }])),
     };
     const contexto = { Estado: estado, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);
@@ -39,16 +39,17 @@ function carrega(lancamentos, idxHoje = 1) {
     return contexto.r;
 }
 
-const ancoras = [
-    { id: 1, nome: 'Faturamento PJ', data: '2026-09-05', v: 0, periodoIdx: 0 },
-    { id: 2, nome: 'Faturamento PJ', data: '2026-10-05', v: 0, periodoIdx: 1 },
-    { id: 3, nome: 'Faturamento PJ', data: '2026-11-05', v: 0, periodoIdx: 2 },
+// Linhas de fin_ciclo (marcadas "Ciclo" só pra montar o Map acima; v: 0 não altera conta).
+const linhasCiclo = [
+    { id: 1, nome: 'Ciclo', data: '2026-09-05', v: 0, periodoIdx: 0 },
+    { id: 2, nome: 'Ciclo', data: '2026-10-05', v: 0, periodoIdx: 1 },
+    { id: 3, nome: 'Ciclo', data: '2026-11-05', v: 0, periodoIdx: 2 },
 ];
 const resumo = linhas => JSON.parse(JSON.stringify(linhas.map(l => [l.nome, l.categ, l.v, l.data])));
 
 test('ciclo sem lançamento: linhas previstas com o teto inteiro, na data de fechamento', () => {
-    const r = carrega([...ancoras]);
-    assert.deepEqual(resumo(r.previstasDoCiclo(2, [...ancoras])), [
+    const r = carrega([...linhasCiclo]);
+    assert.deepEqual(resumo(r.previstasDoCiclo(2, [...linhasCiclo])), [
         ['Besteira prevista', 'Besteira', -250, '2026-12-04'],
         ['Isabella prevista', 'Lazer, Isabella', -700, '2026-12-04'],
     ]);
@@ -56,7 +57,7 @@ test('ciclo sem lançamento: linhas previstas com o teto inteiro, na data de fec
 
 test('completa só o que falta até 100% (pago ou aberto), e some quando já passou do teto', () => {
     const base = [
-        ...ancoras,
+        ...linhasCiclo,
         { id: 10, nome: 'Café', categ: 'Besteira', v: -100, pago: true, cred: false, periodoIdx: 1 },
         { id: 11, nome: 'Lanche', categ: 'Besteira', v: -50, pago: false, cred: false, periodoIdx: 1 },
         { id: 12, nome: 'Cinema', categ: 'Lazer, Isabella', v: -800, pago: true, cred: false, periodoIdx: 1 },
@@ -69,7 +70,7 @@ test('completa só o que falta até 100% (pago ou aberto), e some quando já pas
 
 test('crédito conta pela prévia (fatura do ciclo seguinte), como o indicador', () => {
     const base = [
-        ...ancoras,
+        ...linhasCiclo,
         { id: 20, nome: 'Café', categ: 'Besteira', v: -60, pago: true, cred: true, periodoIdx: 2 },   // fatura de novembro
     ];
     const r = carrega(base);
@@ -77,12 +78,12 @@ test('crédito conta pela prévia (fatura do ciclo seguinte), como o indicador',
 });
 
 test('ciclo passado não ganha previsão', () => {
-    const r = carrega([...ancoras]);
-    assert.equal(r.previstasDoCiclo(0, [...ancoras]).length, 0);
+    const r = carrega([...linhasCiclo]);
+    assert.equal(r.previstasDoCiclo(0, [...linhasCiclo]).length, 0);
 });
 
 test('teto individual por ciclo, salvo em fin_ciclo; vazio volta ao padrão', () => {
-    const base = [{ ...ancoras[0] }, { ...ancoras[1], limite_besteira: 400, limite_isabella: '0' }, { ...ancoras[2], limite_besteira: null }];
+    const base = [{ ...linhasCiclo[0] }, { ...linhasCiclo[1], limite_besteira: 400, limite_isabella: '0' }, { ...linhasCiclo[2], limite_besteira: null }];
     const r = carrega(base);
     assert.deepEqual({ ...r.limitesCategoriaDoCiclo(1) }, { besteira: 400, isabella: 0 });
     assert.deepEqual({ ...r.limitesCategoriaDoCiclo(2) }, { besteira: 250, isabella: 700 });
@@ -91,7 +92,7 @@ test('teto individual por ciclo, salvo em fin_ciclo; vazio volta ao padrão', ()
 });
 
 test('entra no saldo do ciclo (totalBaseDoCiclo), base de Aporte/Resgate e de tudo que deriva', () => {
-    const base = [...ancoras, { id: 30, nome: 'Salário', categ: 'Renda', v: 5000, pago: true, cred: false, periodoIdx: 2 }];
+    const base = [...linhasCiclo, { id: 30, nome: 'Salário', categ: 'Renda', v: 5000, pago: true, cred: false, periodoIdx: 2 }];
     const r = carrega(base);
     // 5000 − 250 − 700.
     assert.equal(r.totalBaseDoCiclo(2, base, {}, () => 0), 4050);
@@ -112,9 +113,9 @@ test('teto editável no título do ciclo atual e seguintes; grava em fin_ciclo, 
     assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*if \(modoRestrito\(\)\) return brl\(limite\.teto\);/);
     assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
     assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
-    assert.match(interacoes, /const gravada = !Estado\.simulando && !ancora\._sim \? await salvarLimiteDoCiclo\(ancora\.id, campo, valor\) : null;/);
-    assert.match(interacoes, /Estado\.limitesPorAncora\.set\(ancora\.id, gravada \|\| \{ \.\.\.salvos, \[campo\]: valor \}\);/);
-    assert.match(interacoes, /if \(input\) confirmarLimiteNaAncora\(input\);/);
+    assert.match(interacoes, /const gravada = !Estado\.simulando \? await salvarLimiteDoCiclo\(cicloId, campo, valor\) : null;/);
+    assert.match(interacoes, /Estado\.limitesPorCiclo\.set\(cicloId, gravada \|\| \{ \.\.\.salvos, \[campo\]: valor \}\);/);
+    assert.match(interacoes, /if \(input\) confirmarLimiteDoCiclo\(input\);/);
 });
 
 test('migration 23 só adiciona colunas nulas e não negativas na própria fin', () => {

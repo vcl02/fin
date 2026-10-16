@@ -17,18 +17,17 @@ const categoriasSeparadas = valor => {
 };
 
 const dominio = carregarFuncoes('js/domain.js', [
-    'validarLancamentosCarregados', 'NOME_ANCORA_CICLO', 'CATEGORIA_INVESTIMENTO',
+    'validarLancamentosCarregados', 'ciclosDeFinCiclo', 'CATEGORIA_INVESTIMENTO',
     'TOLERANCIA_FINANCEIRA', 'PREFIXO_LINHA_SINTETICA', 'definirLimiteCartao', 'limiteCartaoContratado',
 ], { categoriasSeparadas });
 
 // "Hoje" (pago sem olhar data, ver REGRAS.md) só faz sentido se o diagnóstico conseguir
 // avisar quando um pago cair fora do ciclo atual — por isso esse grupo injeta hojeISO.
 const dominioComHoje = carregarFuncoes('js/domain.js', [
-    'validarLancamentosCarregados', 'NOME_ANCORA_CICLO',
+    'validarLancamentosCarregados',
 ], { categoriasSeparadas, hojeISO: () => '2026-09-26' });
 
 test('centraliza nomes e tolerância usados pelas regras financeiras', () => {
-    assert.equal(dominio.NOME_ANCORA_CICLO, 'Faturamento PJ');
     assert.equal(dominio.CATEGORIA_INVESTIMENTO, 'Investimento');
     assert.equal(dominio.TOLERANCIA_FINANCEIRA, 0.005);
     assert.equal(dominio.PREFIXO_LINHA_SINTETICA.test('sug:4'), true);
@@ -100,11 +99,11 @@ test('Nubank dia 12 e Mercado Pago dia 13 no mesmo mês não geram aviso (um dia
 });
 
 test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos à frente (a prévia normal é 1)', () => {
+    // Os ciclos vêm de fin_ciclo (início de cada um), nunca de um lançamento.
+    const ciclos = ['2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01'].map(ini => ({ ini }));
     const diagnostico = dominioComHoje.validarLancamentosCarregados([
-        { id: 1, data: '2026-08-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
-        { id: 2, data: '2026-09-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
-        { id: 3, data: '2026-10-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
-        { id: 4, data: '2026-11-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
+        // entrada paga no início do próximo ciclo também é "pago no futuro": avisa como qualquer outra
+        { id: 4, data: '2026-10-01', nome: 'Faturamento PJ', categ: '', cred: false, pago: true, valor: 1 },
         // dentro do ciclo atual (01/09 a 30/09): não deve avisar
         { id: 50, data: '2026-09-20', valor: -100, nome: 'Mercado', categ: 'Casa', cred: false, pago: true },
         // débito pago com data no ciclo seguinte (a partir de 01/10): deve avisar
@@ -115,11 +114,27 @@ test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos �
         { id: 53, data: '2026-09-25', valor: -80, nome: 'Compra cartão', categ: 'Casa', cred: true, pago: true, fatura: '2026-10-12' },
         // crédito confirmado com fatura dois ciclos à frente (N+2): foge da prévia, deve avisar
         { id: 54, data: '2026-09-26', valor: -60, nome: 'Compra cartão 2', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-12' },
-    ]);
-    assert.equal(diagnostico.avisos.filter(a => a.includes('marcado como pago')).length, 2);
+    ], ciclos);
+    assert.equal(diagnostico.avisos.filter(a => a.includes('marcado como pago')).length, 3);
+    assert.ok(diagnostico.avisos.some(a => a.includes('id 4)')));
     assert.ok(diagnostico.avisos.some(a => a.includes('id 51') && a.includes('data em 2026-10-10') && a.includes('um ciclo futuro, fora do atual')));
     assert.ok(diagnostico.avisos.some(a => a.includes('id 54') && a.includes('vencimento de fatura em 2026-11-12') && a.includes('dois ciclos à frente')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 50')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 52')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 53')));
+});
+
+test('ciclos vêm de fin_ciclo: ordenados pelo início, fim vazio = aberto, buraco vira aviso', () => {
+    const { ciclos, avisos } = dominio.ciclosDeFinCiclo([
+        { id: 9, inicio: '2026-11-05', fim: null },
+        { id: 7, inicio: '2026-09-05', fim: '2026-10-04' },
+        { id: 8, inicio: '2026-10-10', fim: '2026-11-04' },   // 05 a 09/10 sem ciclo
+        { id: 10, inicio: null, fim: null },                  // sem início: ignorado
+    ]);
+    assert.deepEqual(JSON.parse(JSON.stringify(ciclos)), [
+        { id: 'c:7', cicloId: 7, ini: '2026-09-05', fat: '2026-10-04' },
+        { id: 'c:8', cicloId: 8, ini: '2026-10-10', fat: '2026-11-04' },
+        { id: 'c:9', cicloId: 9, ini: '2026-11-05', fat: '9999-12-31' },
+    ]);
+    assert.deepEqual(Array.from(avisos), ['Sem ciclo entre 2026-10-05 e a véspera de 2026-10-10: lançamentos nessas datas vão pro Backlog.']);
 });

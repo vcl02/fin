@@ -13,9 +13,28 @@
  * @property {string|null} fatura Vencimento escolhido para crédito/antecipação.
  */
 
-/** @typedef {{ ini: string, fat: string, id?: string }} Ciclo */
+/** @typedef {{ ini: string, fat: string, id?: string, cicloId?: number }} Ciclo */
 
-const NOME_ANCORA_CICLO = 'Faturamento PJ';
+// Ciclos vêm só da tabela fin_ciclo (migration 26): inicio/fim de cada linha, em ordem de
+// início. Fim vazio = ciclo aberto (o último), representado como '9999-12-31' pro resto do
+// app. Nenhum lançamento define ciclo. Datas que caem num intervalo sem ciclo vão pro
+// Backlog, por isso esse buraco vira aviso de diagnóstico.
+function ciclosDeFinCiclo(linhas) {
+    const avisos = [];
+    const ciclos = (linhas || [])
+        .filter(l => l && ehDataIso(l.inicio) && l.inicio)
+        .map(l => ({ id: `c:${l.id}`, cicloId: l.id, ini: String(l.inicio).slice(0, 10), fat: l.fim ? String(l.fim).slice(0, 10) : '9999-12-31' }))
+        .sort((a, b) => (a.ini < b.ini ? -1 : a.ini > b.ini ? 1 : 0));
+    const diaSeguinte = iso => new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + 1)).toISOString().slice(0, 10);
+    ciclos.forEach((ciclo, i) => {
+        const proximo = ciclos[i + 1];
+        if (proximo && ciclo.fat !== '9999-12-31' && diaSeguinte(ciclo.fat) < proximo.ini) {
+            avisos.push(`Sem ciclo entre ${diaSeguinte(ciclo.fat)} e a véspera de ${proximo.ini}: lançamentos nessas datas vão pro Backlog.`);
+        }
+    });
+    return { ciclos, avisos };
+}
+
 const CATEGORIA_INVESTIMENTO = 'Investimento';
 // Contabilidade é um custo intrínseco ao próprio faturamento PJ (a taxa de ter a empresa
 // aberta), não um gasto evitável/discricionário — por isso o gráfico de pizza (ver
@@ -82,7 +101,7 @@ const chaveCategoria = valor => String(valor ?? '').trim()
 // Diagnóstico conservador da resposta do Supabase. Ele não altera nem exclui linhas:
 // inconsistências apontam contrato de dados inválido; avisos são apenas sinais para revisão.
 // Toda nova regra personalizada entra aqui na lista adequada e aparece no mesmo modal.
-function validarLancamentosCarregados(lancamentos) {
+function validarLancamentosCarregados(lancamentos, ciclos = []) {
     const inconsistencias = [];
     const avisos = [];
     if (!Array.isArray(lancamentos)) return { inconsistencias: ['Supabase não retornou uma lista de lançamentos.'], avisos };
@@ -155,20 +174,14 @@ function validarLancamentosCarregados(lancamentos) {
     // normal esperado. Só fatura dois ciclos ou mais à frente foge dessa prévia e é sinal
     // de revisão (ex.: mesma falha de recorrência nascer paga, só que do lado do Crédito).
     if (typeof hojeISO === 'function') {
-        const ancorasOrdenadas = lancamentos
-            .filter(r => r && !r.cred && String(r.nome || '').trim() === NOME_ANCORA_CICLO && ehDataIso(r.data) && r.data)
-            .map(r => String(r.data).slice(0, 10))
-            .sort();
+        const iniciosOrdenados = ciclos.map(ciclo => ciclo.ini).sort();
         const hoje = hojeISO();
-        const idxHoje = ancorasOrdenadas.reduce((achado, data, i) => data <= hoje ? i : achado, -1);
-        const inicioProximoCiclo = idxHoje >= 0 ? ancorasOrdenadas[idxHoje + 1] : null;
-        const inicioDoisCiclosAFrente = idxHoje >= 0 ? ancorasOrdenadas[idxHoje + 2] : null;
+        const idxHoje = iniciosOrdenados.reduce((achado, data, i) => data <= hoje ? i : achado, -1);
+        const inicioProximoCiclo = idxHoje >= 0 ? iniciosOrdenados[idxHoje + 1] : null;
+        const inicioDoisCiclosAFrente = idxHoje >= 0 ? iniciosOrdenados[idxHoje + 2] : null;
         if (inicioProximoCiclo || inicioDoisCiclosAFrente) {
             lancamentos.forEach((lancamento, indice) => {
                 if (!lancamento || lancamento.pago !== true) return;
-                // A própria âncora do próximo ciclo sempre data exatamente nesse início —
-                // ela não é uma despesa pré-paga por engano, é o marcador estrutural do ciclo.
-                if (!lancamento.cred && String(lancamento.nome || '').trim() === NOME_ANCORA_CICLO) return;
                 const fronteira = lancamento.cred ? inicioDoisCiclosAFrente : inicioProximoCiclo;
                 if (!fronteira) return;
                 const dataRelevante = lancamento.cred ? lancamento.fatura : lancamento.data;

@@ -131,7 +131,7 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Clicar no badge Pago\/Aberto de um lançamento real de Débito \(nunca Crédito/);
     assert.match(regras, /para MARCAR como pago \(nunca ao desmarcar\) compara a data gravada com hoje/);
     assert.match(regras, /dentro do MESMO ciclo, com a data gravada ainda no futuro, ajustam a data para hoje automaticamente, sem perguntar/);
-    assert.match(regras, /a conta de água, paga no dia do próprio `Faturamento PJ`/);
+    assert.match(regras, /a conta de água, paga logo no início do ciclo/);
     assert.match(regras, /Dentro do mesmo ciclo mas já no passado, ou em qualquer ciclo diferente do de hoje \(incluindo um já encerrado\), a data nunca é tocada/);
     assert.match(regras, /só no caso de ciclo diferente, a ação pede confirmação antes de marcar como pago/);
 });

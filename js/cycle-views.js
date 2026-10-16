@@ -13,11 +13,11 @@ function vCiclo() {
 
     const debitos = filtrarLancamentos().filter(r => r.periodoIdx == i && !r.cred);
     // Recorrência que caiu 2x dentro do MESMO ciclo (ex.: Seguro Residencial dia 5, quando a
-    // janela entre dois Faturamento PJ atravessa a virada do mês) já tinha o aviso "*" em
+    // janela do ciclo atravessa a virada do mês) já tinha o aviso "*" em
     // Comparar; aqui, na própria tabela Débito, marca a ocorrência mais recente das duplicadas
     // com _dupCiclo = data do próximo ciclo, pra exibir a ação de corrigir (ver celData em
     // tables.js e o handler data-corrige-dup em interactions.js). Só se o próximo ciclo já
-    // existe (âncora Faturamento PJ seguinte cadastrada) — sem isso não há pra onde mover.
+    // existe (próximo ciclo cadastrado em fin_ciclo) — sem isso não há pra onde mover.
     marcaOcorrenciasDuplicadasNoCiclo(debitos, Estado.ciclos[i + 1]);
     const visiveis = filtrarLancamentos();
 

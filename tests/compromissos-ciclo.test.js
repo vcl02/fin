@@ -1,4 +1,5 @@
-// Regra de orçamento: Comprometido usa o Faturamento PJ do próprio ciclo.
+// Regra de orçamento: Comprometido compara ao que o ciclo ganhou — toda entrada positiva,
+// menos resgate de investimento e transferências. Nenhum lançamento é procurado pelo nome.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -10,7 +11,7 @@ const fim = fonte.indexOf('\nfunction dadosDoGraficoCiclo(', inicio);
 if (inicio < 0 || fim < 0) throw Error('Não encontrou o cálculo de compromissos do ciclo.');
 
 const contexto = {
-    NOME_ANCORA_CICLO: 'Faturamento PJ', TOLERANCIA_FINANCEIRA: 0.005,
+    TOLERANCIA_FINANCEIRA: 0.005,
     semAcento: valor => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
     MESES_MEDIA_LIBERDADE_FINANCEIRA: 12,
     TAXA_RETIRADA_LIBERDADE_FINANCEIRA: 0.035,
@@ -43,6 +44,16 @@ test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', (
     assert.equal(comprometido.percentualFaturamento, 44);
     assert.equal(comprometido.percentualDoTeto, 88);
     assert.equal(comprometido.excedido, false);
+});
+
+test('base são todas as entradas do ciclo, sem resgate de investimento nem transferência', () => {
+    const d = contexto.regras.calcular([
+        { nome: 'Faturamento PJ', v: 8000 },
+        { nome: 'Reembolso', v: 2000 },
+        { nome: 'Resgate', inv: true, v: 5000 },
+        { nome: 'Estorno de fatura', _transferencia: true, v: 300 },
+    ]);
+    assert.equal(d.faturamento, 10000);
 });
 
 test('sem faturamento o limite permanece zerado', () => {

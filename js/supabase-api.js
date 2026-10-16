@@ -61,7 +61,7 @@ const tokenAtual = async (forcar) => comTeto((async () => {
     return session?.access_token || KEY;
 })(), 'sessão');
 
-// `chave`: coluna única e ordenável usada na paginação (fin usa id; fin_ciclo, ancora_id).
+// `chave`: coluna única e ordenável usada na paginação (id nas duas tabelas).
 const buscar = async (tabela, retry, chave = 'id') => {
     // O limite de linhas da API vale por resposta, mesmo quando a URL pede um limite maior.
     // Paginar pela chave evita truncar silenciosamente a base e não depende de IDs contínuos.
@@ -147,14 +147,14 @@ const atualizarLancamentos = async (ids, campos) => comRetentativas(async () => 
 
 const atualizarLancamento = async (id, campos) => (await atualizarLancamentos([id], campos))[0];
 
-// Grava UMA escolha de um ciclo em fin_ciclo (upsert pela âncora): cria a linha do ciclo na
-// 1ª vez e, depois, muda só a coluna enviada. Repetir dá o mesmo resultado, então pode tentar
-// de novo sozinho quando não houver resposta, como UPDATE/DELETE.
-const salvarLimiteDoCiclo = async (ancoraId, campo, valor) => comRetentativas(async () => {
-    const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN_CICLO}?on_conflict=ancora_id`, {
-        method: 'POST',
-        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
-        body: JSON.stringify({ ancora_id: ancoraId, [campo]: valor }),
+// Grava UMA escolha de um ciclo na linha dele em fin_ciclo (a linha existe: é o próprio
+// ciclo). Repetir dá o mesmo resultado, então pode tentar de novo sozinho quando não houver
+// resposta, como qualquer UPDATE.
+const salvarLimiteDoCiclo = async (cicloId, campo, valor) => comRetentativas(async () => {
+    const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN_CICLO}?id=eq.${encodeURIComponent(cicloId)}`, {
+        method: 'PATCH',
+        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ [campo]: valor }),
     }, 'salvar limite');
     if (!r.ok) throw Error(`salvar limite: ${r.status} ${r.texto}`);
     const linhas = JSON.parse(r.texto);
@@ -164,26 +164,23 @@ const salvarLimiteDoCiclo = async (ancoraId, campo, valor) => comRetentativas(as
 
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);
-    const diagnosticoDeDados = validarLancamentosCarregados(lancamentosCrus);
-    // Sem fin_ciclo (migration 25 ainda não aplicada) a tela carrega igual, com os padrões
-    // e um aviso no diagnóstico — os limites por ciclo nunca podem impedir a carga.
-    let limitesCiclo = [];
+    // Os ciclos são as linhas de fin_ciclo (inicio/fim, migration 26). Sem a tabela nesse
+    // formato não há ciclo nenhum pra montar a tela: a carga para com a instrução do que falta.
+    let linhasCiclo;
     try {
-        limitesCiclo = await buscar(TABELA_FIN_CICLO, false, 'ancora_id');
+        linhasCiclo = await buscar(TABELA_FIN_CICLO);
     } catch (err) {
-        diagnosticoDeDados.avisos.push(`Limites por ciclo indisponíveis (${err.message}); usando os padrões. Aplique migrations/25-tabela-fin-ciclo.sql.`);
+        throw Error(`Tabela de ciclos indisponível (${err.message}). Aplique migrations/25-tabela-fin-ciclo.sql e 26-ciclo-com-inicio-e-fim.sql.`);
     }
-    Estado.limitesPorAncora = new Map(limitesCiclo.map(linha => [linha.ancora_id, linha]));
-    // Faturamento PJ não é uma despesa comum: ele ancora os intervalos de caixa. O último
-    // ciclo fica aberto até uma próxima âncora ser cadastrada.
-    const ancoras = lancamentosCrus
-        .filter(r => !r.cred && String(r.nome || '').trim() === NOME_ANCORA_CICLO && r.data)
-        .sort((a, b) => timestamp(a.data) - timestamp(b.data));
-    Estado.ciclos = ancoras.map((ancora, i) => ({
-        // ancoraId: a linha "Faturamento PJ" guarda os limites de Besteira/Isabella do ciclo.
-        id: `pj:${ancora.id}`, ancoraId: ancora.id, ini: dataISO(ancora.data),
-        fat: ancoras[i + 1] ? somaDias(dataISO(ancoras[i + 1].data), -1) : '9999-12-31',
-    }));
+    if (linhasCiclo.length && !('inicio' in linhasCiclo[0])) {
+        throw Error('fin_ciclo ainda sem início/fim. Aplique migrations/26-ciclo-com-inicio-e-fim.sql.');
+    }
+    const { ciclos, avisos: avisosDosCiclos } = ciclosDeFinCiclo(linhasCiclo);
+    Estado.ciclos = ciclos;
+    // id do ciclo -> linha de fin_ciclo (as escolhas: tetos, Aprovado, Garantia).
+    Estado.limitesPorCiclo = new Map(linhasCiclo.map(linha => [linha.id, linha]));
+    const diagnosticoDeDados = validarLancamentosCarregados(lancamentosCrus, ciclos);
+    diagnosticoDeDados.avisos.push(...avisosDosCiclos);
     Estado.lancamentos = lancamentosCrus.map(r => {
         const faturaRef = r.fatura;
         const periodoIdx = !r.data && !faturaRef ? null

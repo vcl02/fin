@@ -1,5 +1,5 @@
 // Regressão: Aprovado de cada cartão e quanto do guardado vira garantia do Nubank são
-// definidos por ciclo, na linha âncora "Faturamento PJ" (migration 24), e herdam do ciclo
+// definidos por ciclo, na linha do ciclo em fin_ciclo (migrations 25/26), e herdam do ciclo
 // anterior até outro ciclo definir outro. A garantia usada nunca passa do guardado real.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -10,13 +10,13 @@ const ler = arquivo => fs.readFileSync(arquivo, 'utf8');
 const regras = ler('docs/REGRAS.md');
 const migration = ler('migrations/24-aprovado-garantia-por-ciclo.sql');
 
-function carrega(ancoras) {
+function carrega(linhasCiclo) {
     const estado = {
         idxHoje: 0, faturas: [],
-        ciclos: ancoras.map((a, i) => ({ id: `pj:${a.id}`, ancoraId: a.id, ini: `2026-1${i}-05`, fat: `2026-1${i}-28` })),
-        lancamentos: ancoras,
-        // fin_ciclo: os campos limite_* de cada âncora fazem o papel da linha da tabela.
-        limitesPorAncora: new Map(ancoras.map(a => [a.id, { ancora_id: a.id, ...a }])),
+        ciclos: linhasCiclo.map((a, i) => ({ id: `c:${a.id}`, cicloId: a.id, ini: `2026-1${i}-05`, fat: `2026-1${i}-28` })),
+        lancamentos: linhasCiclo,
+        // Cada item de `linhasCiclo` faz o papel de uma linha de fin_ciclo.
+        limitesPorCiclo: new Map(linhasCiclo.map(a => [a.id, { ...a }])),
     };
     const contexto = { Estado: estado, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);
@@ -27,10 +27,10 @@ function carrega(ancoras) {
 
 test('Aprovado herda do ciclo anterior; sem nenhum definido usa o padrão do cartão', () => {
     const r = carrega([
-        { id: 1, nome: 'Faturamento PJ' },
-        { id: 2, nome: 'Faturamento PJ', limite_aprovado_nubank: 5000, limite_aprovado_mp: '1500' },
-        { id: 3, nome: 'Faturamento PJ' },
-        { id: 4, nome: 'Faturamento PJ', limite_aprovado_nubank: 6000 },
+        { id: 1, nome: 'Ciclo' },
+        { id: 2, nome: 'Ciclo', limite_aprovado_nubank: 5000, limite_aprovado_mp: '1500' },
+        { id: 3, nome: 'Ciclo' },
+        { id: 4, nome: 'Ciclo', limite_aprovado_nubank: 6000 },
     ]);
     assert.equal(r.aprovadoDoCiclo(0, 'nubank'), 3350);
     assert.equal(r.aprovadoDoCiclo(0, 'mp'), 1100);
@@ -43,10 +43,10 @@ test('Aprovado herda do ciclo anterior; sem nenhum definido usa o padrão do car
 
 test('garantia escolhida herda e nunca passa do guardado; sem escolha é todo o guardado', () => {
     const r = carrega([
-        { id: 1, nome: 'Faturamento PJ' },
-        { id: 2, nome: 'Faturamento PJ', limite_garantia_nubank: 2000 },
-        { id: 3, nome: 'Faturamento PJ' },
-        { id: 4, nome: 'Faturamento PJ', limite_garantia_nubank: 0 },
+        { id: 1, nome: 'Ciclo' },
+        { id: 2, nome: 'Ciclo', limite_garantia_nubank: 2000 },
+        { id: 3, nome: 'Ciclo' },
+        { id: 4, nome: 'Ciclo', limite_garantia_nubank: 0 },
     ]);
     assert.deepEqual({ ...r.garantiaDoCiclo(0, 5000) }, { escolhida: null, disponivel: 5000, efetiva: 5000 });
     assert.equal(r.garantiaDoCiclo(1, 5000).efetiva, 2000);
@@ -57,7 +57,7 @@ test('garantia escolhida herda e nunca passa do guardado; sem escolha é todo o 
 });
 
 test('teto usa o Aprovado do ciclo; Mercado Pago nunca soma garantia', () => {
-    const r = carrega([{ id: 1, nome: 'Faturamento PJ' }]);
+    const r = carrega([{ id: 1, nome: 'Ciclo' }]);
     assert.equal(r.limiteCartaoTotal(2000, 'nubank', 5000), 7000);
     assert.equal(r.limiteCartaoTotal(2000, 'mp', 1500), 1500);
     assert.equal(r.limiteCartaoTotal(2000), 3350 + 2000);     // padrão sem Aprovado do ciclo
