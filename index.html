@@ -67,6 +67,28 @@
         </div>
       </div>
 
+      <!-- Indicadores na mesma linha dos botões do cabeçalho, entre a navegação e as ações. -->
+      <div id=rowVis>
+        <div id=acoesAcompanhamento>
+          <!-- Indicadores calculados do ciclo Até; o JS atualiza resumo, cor e variação abaixo. -->
+          <div id=indicadoresFinanceiros>
+            <div id=indicadoresResumo>
+              <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
+              <span class=indicadorPipe aria-hidden=true>|</span>
+              <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
+              <span class=indicadorPipe aria-hidden=true>|</span>
+              <span id=indicadorProporcaoReserva class="indicadorRegra neutro" title="Proporção dos gastos em Reserva">Gastos —</span>
+              <span class=indicadorPipe aria-hidden=true>|</span>
+              <span id=indicadorLiberdade class="indicadorRegra neutro" title="Progresso para liberdade financeira">Liberdade —</span>
+            </div>
+            <div id=indicadoresVariacao>
+              <span id=variacaoReserva class=variacaoLinha hidden></span>
+              <span id=variacaoComprometido class=variacaoLinha hidden></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button id=toggleSimulacao
         title="Simular (não salva)"
         aria-label="Ativar modo simulação">
@@ -127,26 +149,6 @@
             <option value=D>Diferentes
           </select>
         </label>
-      <div id=rowVis>
-        <div id=acoesAcompanhamento>
-          <!-- Indicadores calculados do ciclo Até; o JS atualiza resumo, cor e variação abaixo. -->
-          <div id=indicadoresFinanceiros>
-            <div id=indicadoresResumo>
-              <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
-              <span class=indicadorPipe aria-hidden=true>|</span>
-              <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
-              <span class=indicadorPipe aria-hidden=true>|</span>
-              <span id=indicadorProporcaoReserva class="indicadorRegra neutro" title="Proporção dos gastos em Reserva">Gastos —</span>
-              <span class=indicadorPipe aria-hidden=true>|</span>
-              <span id=indicadorLiberdade class="indicadorRegra neutro" title="Progresso para liberdade financeira">Liberdade —</span>
-            </div>
-            <div id=indicadoresVariacao>
-              <span id=variacaoReserva class=variacaoLinha hidden></span>
-              <span id=variacaoComprometido class=variacaoLinha hidden></span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     </div>
     <div id=out></div>

@@ -116,16 +116,19 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
-test('indicadores financeiros ficam na barra própria, separados por pipe', () => {
+test('indicadores financeiros ficam no cabeçalho, entre a navegação e os botões, separados por pipe', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
     assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
     assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorLiberdade'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('class=indicadorPipe'));
     assert.ok(acoes.indexOf('class=indicadorPipe') < acoes.indexOf('id=indicadorComprometido'));
-    assert.match(pagina, /id=fdif[\s\S]*?<\/label>\s*<div id=rowVis>/);
+    // No cabeçalho: depois da navegação de ciclo e antes dos botões de ação.
+    const cabecalho = pagina.slice(pagina.indexOf('<div class=head>'), pagina.indexOf('<p class=sub>'));
+    assert.ok(cabecalho.indexOf('id=fciclNav') < cabecalho.indexOf('id=rowVis'));
+    assert.ok(cabecalho.indexOf('id=rowVis') < cabecalho.indexOf('id=toggleSimulacao'));
+    assert.doesNotMatch(pagina.slice(pagina.indexOf('<div class=tool>'), pagina.indexOf('<div id=out>')), /id=rowVis/);
     assert.doesNotMatch(pagina, /id=fpago|id=origem|id=fsit|id=forigem/);
-    assert.match(pagina, /id=rowVis[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<div id=out>/);
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
     assert.match(pagina, /class=indicadorPipe aria-hidden=true>\|/);
@@ -149,11 +152,17 @@ test('indicadores financeiros ficam na barra própria, separados por pipe', () =
     const blocoIndicadores = estilosPainel.slice(
         estilosPainel.indexOf('#indicadoresFinanceiros'), estilosPainel.indexOf('/* Reserva e Comprometido')
     );
-    assert.match(blocoIndicadores, /grid-template-rows:\s*auto auto/);
+    // Bloco compacto de 3 linhas: Reserva | Comprometido, variações, Gastos | Liberdade.
+    assert.match(blocoIndicadores, /grid-template-columns:\s*max-content min-content max-content;\s*\n\s*grid-template-rows:\s*auto auto auto/);
     assert.match(estilosPainel, /#variacaoReserva\s*\{\s*grid-column:\s*1;\s*grid-row:\s*2/);
     assert.match(estilosPainel, /#variacaoComprometido\s*\{\s*grid-column:\s*3;\s*grid-row:\s*2/);
-    assert.match(estilosPainel, /#indicadorProporcaoReserva\s*\{\s*grid-column:\s*5;\s*grid-row:\s*1/);
-    assert.match(estilosPainel, /#indicadorLiberdade\s*\{\s*grid-column:\s*7;\s*grid-row:\s*1/);
+    assert.match(estilosPainel, /#indicadorComprometido \+ \.indicadorPipe\s*\{\s*display:\s*none/);
+    assert.match(estilosPainel, /#indicadorProporcaoReserva\s*\{\s*grid-column:\s*1;\s*grid-row:\s*3/);
+    assert.match(estilosPainel, /#indicadorLiberdade\s*\{\s*grid-column:\s*3;\s*grid-row:\s*3/);
+    // Janela estreita: o bloco desce pra uma linha própria, navegação e botões seguem juntos.
+    assert.match(estilosPainel, /@media \(max-width: 1250px\) \{\s*\n\s*#rowVis \{\s*\n\s*order: 1;\s*\n\s*flex-basis: 100%;/);
+    assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.head \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
+    assert.match(regras, /Os indicadores ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação/);
     assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
     assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
     assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);

@@ -39,12 +39,25 @@
       padding-bottom: .1rem;
   }
 
-  /* Os comandos e os indicadores ficam em uma faixa compacta. */
+  /* Indicadores na mesma linha do cabeçalho, entre a navegação de ciclo e os botões de
+     ação: ocupam o espaço do meio e empurram os botões pra direita. */
   #rowVis {
       display: flex;
-      flex: 0 0 auto;
+      flex: 1 1 auto;
       align-items: center;
       gap: .55rem;
+      margin-left: .6rem;
+  }
+
+  /* Janela estreita demais pra navegação + indicadores + botões numa linha só (os
+     indicadores têm ~400px): eles descem pra uma linha própria logo abaixo, e a navegação e
+     os botões continuam juntos em cima — nunca passam um por cima do outro. */
+  @media (max-width: 1250px) {
+      #rowVis {
+          order: 1;
+          flex-basis: 100%;
+          margin-left: 0;
+      }
   }
 
   #acoesAcompanhamento {
@@ -53,13 +66,16 @@
       gap: .55rem;
   }
 
+  /* Bloco compacto de 3 linhas (~400px) pra caber na linha do cabeçalho: Reserva |
+     Comprometido em cima, as variações deles logo abaixo de cada um e Gastos | Liberdade na
+     última. Numa linha só ocupava ~850px e não cabia ao lado da navegação e dos botões. */
   #indicadoresFinanceiros {
       display: grid;
-      grid-template-columns: max-content min-content max-content min-content max-content min-content max-content;
-      grid-template-rows: auto auto;
+      grid-template-columns: max-content min-content max-content;
+      grid-template-rows: auto auto auto;
       align-items: center;
       column-gap: .45rem;
-      row-gap: .1rem;
+      row-gap: .05rem;
   }
 
   /* Os wrappers não ocupam célula: resumo e respectivas variações compartilham colunas. */
@@ -69,12 +85,13 @@
   #indicadorReserva { grid-column: 1; grid-row: 1; }
   #indicadorReserva + .indicadorPipe { grid-column: 2; grid-row: 1; }
   #indicadorComprometido { grid-column: 3; grid-row: 1; }
-  #indicadorComprometido + .indicadorPipe { grid-column: 4; grid-row: 1; }
-  #indicadorProporcaoReserva { grid-column: 5; grid-row: 1; }
-  #indicadorProporcaoReserva + .indicadorPipe { grid-column: 6; grid-row: 1; }
-  #indicadorLiberdade { grid-column: 7; grid-row: 1; }
+  /* Comprometido e Gastos ficam em linhas diferentes: o pipe entre eles sobra. */
+  #indicadorComprometido + .indicadorPipe { display: none; }
   #variacaoReserva { grid-column: 1; grid-row: 2; }
   #variacaoComprometido { grid-column: 3; grid-row: 2; }
+  #indicadorProporcaoReserva { grid-column: 1; grid-row: 3; }
+  #indicadorProporcaoReserva + .indicadorPipe { grid-column: 2; grid-row: 3; }
+  #indicadorLiberdade { grid-column: 3; grid-row: 3; }
 
   /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto
      compacto e colorido para não competir com os controles reais da barra. */
@@ -1188,9 +1205,9 @@
       align-items: center;
       justify-content: flex-start;
 
-      flex: 1;
+      flex: 0 1 auto;
       min-width: 0;
-      margin: 0;
+      margin: 0 auto 0 0;
       padding: .3rem 0;
   }
 

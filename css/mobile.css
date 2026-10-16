@@ -16,6 +16,16 @@
           flex-wrap: wrap;
       }
 
+      /* Indicadores numa linha própria: rolam de lado dentro dela em vez de alargar a página. */
+      #rowVis {
+          min-width: 0;
+          overflow-x: auto;
+      }
+
+      #rowVis .indicadorRegra {
+          font-size: .78rem;
+      }
+
       /* fciclNav (as setas + De/Até + Atual) ganha a linha inteira pra si; min-width:0
          deixa os filhos flex encolherem de verdade em vez de forçar a linha a estourar
          pra fora da tela. */
@@ -79,7 +89,9 @@
           overflow-x: auto;
       }
 
+      /* No mobile o Simular fica sozinho à esquerda e as demais ações à direita. */
       #abreNovo {
+          margin-left: auto;
           padding: .5rem;
           width: 2rem;
           height: 2rem;

@@ -52,6 +52,7 @@
 
   .head {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: .7rem;
       margin: 0 0 1.8rem;
@@ -233,7 +234,6 @@
       width: 2rem;
       height: 2rem;
       padding: 0;
-      margin-left: auto;
       color: #111315;
       background: var(--fg);
       border: 0;
