@@ -101,8 +101,7 @@ function desenhar() {
     if (modoBlocos) el('ciclo').value = ehBacklog ? -1 : el('compDe').value;   // vCiclo() le o combo interno
     sincronizarCicloNaUrl();
 
-    el('flimpar').hidden = simples;   // no modo simples quase nao ha filtro pra limpar
-    // Conta restrita (modo simples) não tem Visualizações, Gráfico, Limpar filtros,
+    // Conta restrita (modo simples) não tem Visualizações, Gráfico,
     // Consolidar tudo nem indicadores — e nenhum fluxo de alteração, nem cadastro nem
     // simulação. Nada disso depende de largura de tela: continua assim em qualquer
     // dispositivo, inclusive desktop.
@@ -156,7 +155,6 @@ function desenhar() {
     // filtro, digitar em busca, etc), senao a barra de soma nunca fica de pe' no Comparar.
     if (trocouModo) Estado.selecionados.clear();
     if (typeof atualizaBarraSelecao == 'function') atualizaBarraSelecao();
-    if (typeof atualizaBtCicloHoje == 'function') atualizaBtCicloHoje();
     if (typeof atualizaBtsNavCiclo == 'function') atualizaBtsNavCiclo();
 }
 
@@ -1004,16 +1002,17 @@ el('btGrafico').onclick = () => {
     if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
     else abrirGraficoEvolucao(+de, +ate);
 };
-// volta pro ciclo atual (De=Ate=hoje) — mesmo padrao com que a pagina abre. Fica
-// desabilitado quando hoje nao cai em periodo nenhum.
-function atualizaBtCicloHoje() {
-    el('cicloHoje').disabled = Estado.idxHoje < 0;
-}
+// Botão Atual (ícone): devolve a tela ao estado em que ela abre — limpa os filtros (antigo
+// botão "Limpar filtros", que saiu) e volta pro ciclo atual (De=Até=hoje). Sem ciclo atual,
+// só limpa: limparFiltros já deixa De/Até vazios, que é como a página abriria. Por isso
+// nunca fica desabilitado.
 el('cicloHoje').onclick = () => {
-    if (Estado.idxHoje < 0) return;
-    abrirBlocosFinanceiros();
-    el('compDe').value = Estado.idxHoje;
-    el('compAte').value = Estado.idxHoje;
+    limparFiltros();
+    if (Estado.idxHoje >= 0) {
+        abrirBlocosFinanceiros();
+        el('compDe').value = Estado.idxHoje;
+        el('compAte').value = Estado.idxHoje;
+    }
     desenhar();
 };
 

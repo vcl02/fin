@@ -83,7 +83,7 @@ test('Contabilidade (CATEGORIA_EXCLUIDA_GRAFICO_PADRAO) é intrínseca ao fatura
 
 test('o modal Gráfico abre toda vez com Contabilidade excluída por padrão, mostrando o líquido', () => {
     assert.match(fonte, /excluidasDoGrafico = \[CATEGORIA_EXCLUIDA_GRAFICO_PADRAO\];/);
-    // "Limpar filtros" também repõe esse mesmo padrão, não a lista vazia de antes.
+    // O botão Atual (que limpa os filtros) também repõe esse mesmo padrão, não a lista vazia de antes.
     assert.match(fonte, /excluidasDoGrafico = \[CATEGORIA_EXCLUIDA_GRAFICO_PADRAO\];\s*\/\/ volta ao padrão: só Contabilidade fora/);
     assert.doesNotMatch(fonte, /excluidasDoGrafico = \[\];/);
 });

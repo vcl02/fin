@@ -2,6 +2,7 @@
 
 const FILTROS_PADRAO = { somenteDif: 'N' };
 
+// Sem desenhar(): quem chama (o botão Atual) ainda posiciona De/Até antes de redesenhar.
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
     Estado.filtroTexto = {};      // buscas por coluna (Data/Nome/Valor/Categoria/Frequência)
@@ -14,9 +15,7 @@ function limparFiltros() {
     // 1a carga). Sem ciclo atual, ficam em "Todos" — que tambem e' como a pagina abriria.
     el('compDe').value = '';
     el('compAte').value = '';
-    desenhar();
 }
-el('btLimparFiltros').onclick = limparFiltros;
 
 // ===================================================================
 // VISUALIZAÇÕES — acompanhamentos fixos escolhidos pelo mantenedor

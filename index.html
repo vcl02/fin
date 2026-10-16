@@ -43,8 +43,16 @@
           </label>
           <button type=button id=cicloProximo class=btNavCiclo title="Próximo ciclo"
             aria-label="Próximo ciclo">›</button>
-          <button type=button id=cicloHoje class=btHoje title="Ir para o ciclo atual"
-            aria-label="Ir para o ciclo atual">Atual</button>
+          <!-- Ícone "Atual": volta ao ciclo de hoje e limpa os filtros (handler em interactions.js). -->
+          <button type=button id=cicloHoje class=btHoje title="Ciclo atual e limpar filtros"
+            aria-label="Ir para o ciclo atual e limpar filtros">
+            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+              stroke-linejoin=round aria-hidden=true>
+              <circle cx=12 cy=12 r=7 />
+              <circle cx=12 cy=12 r=2.5 fill=currentColor stroke=none />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -112,9 +120,6 @@
             <option value="">Visualizações</option>
           </select>
           <button type=button id=btGrafico class=btFiltro>Gráfico</button>
-          <div id=flimpar>
-            <button type=button id=btLimparFiltros class=btFiltro title="Limpar filtros">Limpar filtros</button>
-          </div>
           <button type=button id=btConsolidarTudo class=btFiltro title="Materializa Aporte sugerido e consolida Resgate necessário de hoje até o último ciclo com lançamentos, sem precisar abrir ciclo por ciclo">Consolidar tudo</button>
           <!-- Indicadores calculados do ciclo Até; o JS atualiza resumo, cor e variação abaixo. -->
           <div id=indicadoresFinanceiros>

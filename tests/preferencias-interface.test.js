@@ -30,7 +30,7 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
 test('mantém tooltips e descrições auxiliares curtos', () => {
     assert.match(regras, /Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos/);
     assert.match(pagina, /title="Simular \(não salva\)"/);
-    assert.match(pagina, /title="Limpar filtros"/);
+    assert.match(pagina, /title="Ciclo atual e limpar filtros"/);
     assert.doesNotMatch(pagina, /injeta lançamentos hipotéticos|ignora os filtros acima/);
     assert.match(tabelas, /title="Editar data"/);
     assert.match(visoes, /Possível recorrência duplicada/);
@@ -115,11 +115,11 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
-test('indicadores financeiros ficam ao lado de Limpar filtros, separados por pipe', () => {
+test('indicadores financeiros ficam depois de Consolidar tudo, separados por pipe', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
     assert.ok(acoes.indexOf('id=visAlvo') < acoes.indexOf('id=btGrafico'));
-    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=flimpar'));
-    assert.ok(acoes.indexOf('id=flimpar') < acoes.indexOf('id=indicadoresFinanceiros'));
+    assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=btConsolidarTudo'));
+    assert.ok(acoes.indexOf('id=btConsolidarTudo') < acoes.indexOf('id=indicadoresFinanceiros'));
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
     assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
     assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorLiberdade'));
