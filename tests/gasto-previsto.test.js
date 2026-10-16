@@ -157,6 +157,8 @@ test('previstas e faturas: Mensal, Aberto e Comprometido só na exibição, some
     assert.match(visoes, /freq: 'Mensal', pago: false, comprometido: true,\s*\n\s*id: f\.cartao === CARTAO_NUBANK \? -3 : -4,/);
     // Pago clicável só em lançamento real; linha calculada mostra texto.
     assert.match(ler('js/tables.js'), /modoRestrito\(\) \|\| !ehLinhaReal\(r\) \? `<span class="\$\{r\[chave\] \? 'vd' : 'vm'\}">/);
+    // Marcado em linha só leitura fica no mesmo verde das linhas reais.
+    assert.match(ler('js/tables.js'), /: \(marcado \? `<span class=vd>\$\{texto\}<\/span>` : texto\);/);
     // O indicador Comprometido continua lendo só lançamentos reais.
     assert.match(graficos, /const linhas = Estado\.lancamentos\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
     assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\* e \*\*Comprometido\*\*/);

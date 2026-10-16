@@ -274,9 +274,10 @@ const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido' };
 const celFlag = (r, chave) => {
     const marcado = !!r[chave];
     const texto = marcado ? ROTULO_FLAG[chave] : '—';
+    // Somente leitura (linha calculada, conta restrita) mantém o mesmo verde quando marcada.
     return !r._sid && !modoRestrito()
         ? `<span class="${marcado ? 'vd' : ''} togFlag" data-tog-flag="${chave}:${escapeHtml(String(r.id))}" title="Alternar ${ROTULO_FLAG[chave]}">${texto}</span>`
-        : texto;
+        : (marcado ? `<span class=vd>${texto}</span>` : texto);
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
