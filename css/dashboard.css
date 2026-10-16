@@ -597,11 +597,35 @@
       color: #737B82;
   }
 
-  /* Valor: botão de sinal (±/+/−) colado à esquerda do campo de busca. */
+  /* Valor: mesmo desenho das células de baixo (.valorLinha) — botão de sinal num quadrado
+     fixo de 1.5rem e o campo na largura fixa do valor (6.5rem), encostados à direita —, pra
+     o sinal do filtro ficar na mesma coluna dos botões +/− das linhas. */
   thead tr.filtros .filtroValor {
       display: flex;
       align-items: center;
-      gap: .3rem;
+      justify-content: flex-end;
+  }
+
+  /* A célula de Valor das linhas tem folga direita de .7rem (td); a do filtro, .5rem (th).
+     Igualar só aqui põe o sinal e o campo exatamente sobre o botão e o número de baixo. */
+  thead tr.filtros th:has(.filtroValor) {
+      padding-right: .7rem;
+  }
+
+  thead tr.filtros .filtroValor .filtroEstado {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-right: .35rem;
+      padding: 0;
+      font-size: .9rem;
+  }
+
+  thead tr.filtros .filtroValor input {
+      flex: none;
+      width: 6.5rem;
   }
 
   /* Filtro por clique (sinal, Pago, Reserva, Comprometido): desligado fica discreto como

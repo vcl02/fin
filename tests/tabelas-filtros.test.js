@@ -258,7 +258,7 @@ test('filtro numérico normal de Valor continua intacto, sem olhar o sinal', () 
 });
 
 test('filtros por clique e de Data documentados em REGRAS.md', () => {
-    assert.match(regras, /O sinal se escolhe por clique, no botão ao lado do campo: cada clique avança \*\*±\*\* \(todos\) → \*\*\+\*\* \(só positivos\) → \*\*−\*\* \(só negativos\)/);
+    assert.match(regras, /O sinal se escolhe por clique, no botão ao lado do campo[^:]*: cada clique avança \*\*±\*\* \(todos\) → \*\*\+\*\* \(só positivos\) → \*\*−\*\* \(só negativos\)/);
     assert.match(regras, /\*\*Data\*\* tem campo de busca como as colunas de texto/);
     assert.match(regras, /\*\*Pago\*\*, \*\*Reserva\*\* e \*\*Comprometido\*\* filtram por clique, sem digitar/);
 });
@@ -281,4 +281,16 @@ test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer
 test('exclusão por ! de Categoria/Nome (uma ou mais) documentada em REGRAS.md', () => {
     assert.match(regras, /\*\*Categoria\*\* e \*\*Nome\*\* aceitam o prefixo `!` para inverter a busca/);
     assert.match(regras, /Mais de um `!` encadeia exclusões em AND — `!Besteira!Assinatura` mostra só as linhas que não contêm nem uma nem a outra/);
+});
+
+test('sinal do filtro de Valor fica na mesma coluna dos botões +/− das linhas', () => {
+    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+    // Mesmas medidas da célula: botão 1.5rem + .35rem de folga, valor 6.5rem, folga direita .7rem.
+    assert.match(fs.readFileSync('css/forms.css', 'utf8'), /\.sinalBt\.compacto \{[\s\S]*?width: 1\.5rem;[\s\S]*?margin-right: \.35rem;/);
+    assert.match(estilos, /\.valorLinha \.togValor,\s*\n\s*\.valorLinha \.valorFixo \{\s*\n\s*width: 6\.5rem;/);
+    assert.match(estilos, /thead tr\.filtros \.filtroValor \.filtroEstado \{[\s\S]*?width: 1\.5rem;[\s\S]*?margin-right: \.35rem;/);
+    assert.match(estilos, /thead tr\.filtros \.filtroValor input \{\s*\n\s*flex: none;\s*\n\s*width: 6\.5rem;/);
+    assert.match(estilos, /td \{\s*\n\s*padding: \.5rem \.7rem;/);
+    assert.match(estilos, /thead tr\.filtros th:has\(\.filtroValor\) \{\s*\n\s*padding-right: \.7rem;/);
+    assert.match(regras, /alinhado exatamente na mesma coluna dos botões \+\/− das linhas/);
 });
