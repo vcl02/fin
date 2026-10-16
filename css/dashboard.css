@@ -677,6 +677,12 @@
       font-weight: 600;
   }
 
+  /* Laranja: perto do teto (indicadores de limite por categoria). */
+  .am {
+      color: #F0A83A;
+      font-weight: 600;
+  }
+
   /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
      #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
      tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. togFlag

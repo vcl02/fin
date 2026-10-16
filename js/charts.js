@@ -241,6 +241,13 @@ function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite) {
     };
 }
 
+// Cor do indicador de limite por categoria: verde com folga, laranja chegando perto
+// (a partir de 70% — limiar escolhido pra dar aviso antes de estourar), vermelho acima do teto.
+function corDoLimiteCategoria(percentual) {
+    if (percentual > 100) return 'vm';
+    return percentual >= 70 ? 'am' : 'vd';
+}
+
 function dadosCompromissosCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
     const linhas = Estado.lancamentos

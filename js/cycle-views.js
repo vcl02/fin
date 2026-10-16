@@ -142,12 +142,19 @@ function vCiclo() {
     // (o que está planejado gastar).
     const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)];
     const limitesCategoria = cicloAtual ? [
-        { rotulo: 'Besteira', ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA) },
-        { rotulo: 'Isabella', ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_ISABELLA) },
+        { rotulo: 'Besteira', teto: LIMITE_BESTEIRA, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA) },
+        { rotulo: 'Isabella', teto: LIMITE_ISABELLA, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_ISABELLA) },
     ] : [];
-    const spansLimitesCategoria = chave => limitesCategoria.map(limite =>
-        `<span class=besteiraIndicador>${limite.rotulo} <b class="${limite[chave] > 100 ? 'vm' : 'vd'}">${Math.round(limite[chave])}%</b></span>`
-    ).join('');
+    // Além do %, quanto ainda dá pra gastar até o teto (ou quanto já passou dele), com o
+    // mesmo valor da linha: Hoje usa só o pago; Futuro, pago + aberto.
+    const spansLimitesCategoria = chave => limitesCategoria.map(limite => {
+        const cor = corDoLimiteCategoria(limite[chave]);
+        const restante = limite.teto - (chave === 'percentualPago' ? limite.valorPago : limite.valorTotal);
+        const sobra = restante >= -TOLERANCIA_FINANCEIRA
+            ? `<span class=limiteRotulo>Livre</span> <b class="${cor}">${brl(Math.max(0, restante))}</b>`
+            : `<span class=limiteRotulo>Acima</span> <b class=vm>${brl(-restante)}</b>`;
+        return `<span class=besteiraIndicador>${limite.rotulo} <b class="${cor}">${Math.round(limite[chave])}%</b> · ${sobra}</span>`;
+    }).join('');
     const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
         Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&

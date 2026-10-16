@@ -107,11 +107,17 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
     assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\];/);
-    assert.match(visoes, /rotulo: 'Besteira', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA\)/);
-    assert.match(visoes, /rotulo: 'Isabella', \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_ISABELLA\)/);
+    assert.match(visoes, /rotulo: 'Besteira', teto: LIMITE_BESTEIRA, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, LIMITE_BESTEIRA\)/);
+    assert.match(visoes, /rotulo: 'Isabella', teto: LIMITE_ISABELLA, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, LIMITE_ISABELLA\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualPago'\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
-    assert.match(visoes, /limite\[chave\] > 100 \? 'vm' : 'vd'/);
+    assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
+    // Além do %, quanto ainda cabe no teto (Hoje: pago; Futuro: pago + aberto) ou quanto passou.
+    assert.match(visoes, /const restante = limite\.teto - \(chave === 'percentualPago' \? limite\.valorPago : limite\.valorTotal\);/);
+    assert.match(visoes, /<span class=limiteRotulo>Livre<\/span> <b class="\$\{cor\}">\$\{brl\(Math\.max\(0, restante\)\)\}<\/b>/);
+    assert.match(visoes, /<span class=limiteRotulo>Acima<\/span> <b class=vm>\$\{brl\(-restante\)\}<\/b>/);
+    assert.match(visoes, /rotulo: 'Besteira', teto: LIMITE_BESTEIRA,/);
+    assert.match(visoes, /rotulo: 'Isabella', teto: LIMITE_ISABELLA,/);
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
@@ -153,4 +159,21 @@ test('botão de ajuda ao lado de Categorias abre um guia com as regras de catego
     assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias,\s*\n\s*dialog#modalConsolidarTudo \{/);
     assert.match(estilosForm, /\.btAjudaMini\s*\{/);
     assert.match(estilosForm, /\.ajudaCategorias\s*\{/);
+});
+
+test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima do teto', () => {
+    const graficos = fs.readFileSync('js/charts.js', 'utf8');
+    const inicio = graficos.indexOf('function corDoLimiteCategoria(');
+    const fim = graficos.indexOf('\n}\n', inicio) + 3;
+    const contexto = {};
+    require('node:vm').createContext(contexto);
+    require('node:vm').runInContext(`${graficos.slice(inicio, fim)}\nglobalThis.cor = corDoLimiteCategoria;`, contexto);
+    assert.equal(contexto.cor(0), 'vd');
+    assert.equal(contexto.cor(69.9), 'vd');
+    assert.equal(contexto.cor(70), 'am');
+    assert.equal(contexto.cor(100), 'am');
+    assert.equal(contexto.cor(100.1), 'vm');
+    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.am \{\s*\n\s*color: #F0A83A;/);
+    assert.match(regras, /verde até 70%, laranja de 70% a 100% e vermelho acima do teto/);
+    assert.match(regras, /mostra também quanto ainda cabe no teto \(\*\*Livre R\$ …\*\*\) ou, se já passou, \*\*Acima R\$ …\*\*/);
 });
