@@ -887,8 +887,9 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 // quebra, corrige toda recorrência duplicada no mesmo intervalo (ver função acima). Cada
 // escrita muda Estado.lancamentos (logo o guardado disponível do ciclo seguinte), por isso
 // limpa os caches financeiros entre uma iteração e a próxima, não só no fim. Roda pelo
-// ícone Atual (ver cicloHoje em interactions.js), que antes navega e limpa os filtros.
-async function consolidarTudo(botao) {
+// botão Recarregar (bootstrap.js): `depoisDaCarga` volta ao ciclo atual e limpa os filtros
+// entre a recarga e a varredura.
+async function consolidarTudo(botao, depoisDaCarga = () => {}) {
     if (botao.disabled) return;
     // disabled bloqueia clique duplo nativamente (botão desabilitado não dispara 'click'),
     // mas sozinho pode passar despercebido — o ícone gira e o title diz a etapa, pra deixar
@@ -907,6 +908,7 @@ async function consolidarTudo(botao) {
             etapa('Recarregando…');
             if (!(await load())) return;
         }
+        depoisDaCarga();
         // Hoje fora de qualquer ciclo: não há de onde partir a varredura.
         if (Estado.idxHoje < 0) return;
         etapa('Consolidando…');

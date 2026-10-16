@@ -66,16 +66,32 @@ el('btDiagnostico').onclick = abrirDiagnosticoDeDados;
 el('modalConsolidarTudo').addEventListener('click', e => {
     if (e.target == el('modalConsolidarTudo')) el('modalConsolidarTudo').close();
 });
-el('recarregar').onclick = async () => {
+// Só recarrega do banco (sem navegar nem gravar): base da recarga automática abaixo.
+async function recarregarDados() {
     const bt = el('recarregar');
-
-    if (bt.classList.contains('carregando')) return;
-
+    if (bt.disabled) return;
     bt.classList.add('carregando');
     bt.disabled = true;
-
     try {
         await load();
+    } finally {
+        bt.classList.remove('carregando');
+        bt.disabled = false;
+    }
+}
+
+// Botão Recarregar (verde, no cabeçalho): numa só ação, recarrega do banco, volta ao ciclo
+// atual, limpa os filtros e roda o Consolidar tudo (consolidarTudo em form.js, que recarrega
+// primeiro e chama voltarAoCicloAtualELimpar entre a carga e a varredura). A conta restrita
+// nunca grava: recarrega, volta ao ciclo atual e limpa, sem consolidar.
+el('recarregar').onclick = async () => {
+    const bt = el('recarregar');
+    if (bt.disabled) return;
+    if (!modoRestrito()) { await consolidarTudo(bt, voltarAoCicloAtualELimpar); return; }
+    bt.classList.add('carregando');
+    bt.disabled = true;
+    try {
+        if (await load()) voltarAoCicloAtualELimpar();
     } finally {
         bt.classList.remove('carregando');
         bt.disabled = false;
@@ -83,7 +99,8 @@ el('recarregar').onclick = async () => {
 };
 
 // Recarga automática: 5 min depois da última carga bem-sucedida, os dados voltam do banco
-// (o que mudou em outro aparelho ou no DataGrip aparece sozinho). Nunca no meio de algo:
+// (o que mudou em outro aparelho ou no DataGrip aparece sozinho). Só lê: nunca navega, limpa
+// filtro nem consolida — isso é só do clique no botão Recarregar. Nunca no meio de algo:
 // só com a tela logada e visível, sem modal aberto, sem campo em edição, sem linha
 // selecionada, sem simulação (recarregar apagaria os lançamentos simulados) e sem outra
 // carga/gravação em andamento. Ocupado, tenta de novo na próxima verificação (30 s).
@@ -92,10 +109,10 @@ const telaLivreParaRecarregar = () =>
     el('app').style.display !== 'none' && !document.hidden && !Estado.simulando &&
     !document.querySelector('dialog[open]') && !Estado.selecionados.size &&
     !document.activeElement?.matches?.('input, select, textarea') &&
-    !el('recarregar').disabled && !el('cicloHoje').disabled;
+    !el('recarregar').disabled;
 setInterval(() => {
     if (!Estado.ultimaCarga || Date.now() - Estado.ultimaCarga < INTERVALO_RECARGA_AUTOMATICA_MS) return;
-    if (telaLivreParaRecarregar()) el('recarregar').onclick();
+    if (telaLivreParaRecarregar()) recarregarDados();
 }, 30 * 1000);
 
 if (API.includes('SEUPROJETO')) { mostraTela(1); load(); }   // sem chaves configuradas: pula o login (modo dev)

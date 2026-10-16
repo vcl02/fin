@@ -1165,11 +1165,6 @@
       outline: none;
   }
 
-  /* Atual rodando (recarga + Consolidar tudo): o ícone gira, mesmo giro do Recarregar. */
-  .btHoje.carregando svg {
-      animation: girar 0.8s linear infinite;
-  }
-
   /* .btFiltro (Visualizações) só tem estilo
      próprio dentro do media query mobile (ver mobile.css) — no desktop usa a aparência
      nativa do navegador, que nem sempre deixa claro que o botão está desabilitado durante
@@ -1209,32 +1204,6 @@
       align-items: center;
       gap: .8rem;
       row-gap: .5rem;
-  }
-
-  /* Ícone quadrado, mesmo tamanho das setas ‹ › ao lado. */
-  #navComparar .btHoje {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 2.2rem;
-      height: 2.2rem;
-      padding: 0;
-
-      color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
-      border-radius: 9px;
-      cursor: pointer;
-  }
-
-  #navComparar .btHoje:hover:not(:disabled) {
-      background: var(--field-hover);
-      border-color: var(--fg);
-  }
-
-  #navComparar .btHoje:disabled {
-      opacity: .5;
-      cursor: default;
   }
 
   .btNavCiclo {

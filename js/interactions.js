@@ -1005,14 +1005,10 @@ el('btGrafico').onclick = () => {
     if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
     else abrirGraficoEvolucao(+de, +ate);
 };
-// Botão Atual (ícone): faz numa só ação o que eram três botões — volta pro ciclo atual
-// (De=Até=hoje), limpa os filtros (antigo "Limpar filtros") e roda o Consolidar tudo, que
-// recarrega do banco antes de varrer (consolidarTudo em form.js). Navegar e limpar vêm
-// primeiro e redesenham na hora, sem esperar a rede. Sem ciclo atual, só limpa (limparFiltros
-// deixa De/Até vazios, como a página abriria). A conta restrita nunca grava: só recarrega.
-el('cicloHoje').onclick = async () => {
-    const botao = el('cicloHoje');
-    if (botao.disabled) return;
+// Volta a tela ao estado em que ela abre: ciclo atual (De=Até=hoje) e filtros limpos. Etapa
+// do botão Recarregar (bootstrap.js), que antes recarrega do banco. Sem ciclo atual, só limpa
+// (limparFiltros deixa De/Até vazios, como a página abriria).
+function voltarAoCicloAtualELimpar() {
     limparFiltros();
     if (Estado.idxHoje >= 0) {
         abrirBlocosFinanceiros();
@@ -1020,15 +1016,7 @@ el('cicloHoje').onclick = async () => {
         el('compAte').value = Estado.idxHoje;
     }
     desenhar();
-    if (!modoRestrito()) { await consolidarTudo(botao); return; }
-    if (Estado.simulando) return;
-    botao.disabled = true;
-    botao.classList.add('carregando');
-    try { await load(); } finally {
-        botao.disabled = false;
-        botao.classList.remove('carregando');
-    }
-};
+}
 
 // ‹ / › navegam pro periodo anterior/seguinte. Anda pelas OPCOES reais do combo #compDe
 // (com Backlog como primeira opção), não por

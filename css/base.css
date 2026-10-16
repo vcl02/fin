@@ -102,7 +102,7 @@
       cursor: pointer;
   }
 
-  #recarregar:hover {
+  #recarregar:hover:not(:disabled) {
       color: #10231A;
       border-color: var(--vd);
       background: var(--vd);

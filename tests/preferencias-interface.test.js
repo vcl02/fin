@@ -30,7 +30,7 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
 test('mantém tooltips e descrições auxiliares curtos', () => {
     assert.match(regras, /Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos/);
     assert.match(pagina, /title="Simular \(não salva\)"/);
-    assert.match(pagina, /title="Ciclo atual: limpa filtros, recarrega e consolida tudo"/);
+    assert.match(pagina, /title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"/);
     assert.doesNotMatch(pagina, /injeta lançamentos hipotéticos|ignora os filtros acima/);
     assert.match(tabelas, /title="Editar data"/);
     assert.match(visoes, /Possível recorrência duplicada/);

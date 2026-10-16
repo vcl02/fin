@@ -122,7 +122,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);
     assert.doesNotMatch(interacoes, /voltouDoAtualParaHistorico/);
     assert.match(interacoes, /if \(direcao > 0 && \+novoValor >= Estado\.idxHoje\) abrirBlocosFinanceiros\(\)/);
-    assert.match(interacoes, /el\('cicloHoje'\)\.onclick = async \(\) => \{[\s\S]*abrirBlocosFinanceiros\(\)/);
+    assert.match(interacoes, /function voltarAoCicloAtualELimpar\(\) \{[\s\S]*abrirBlocosFinanceiros\(\)/);
 });
 
 test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura vence depois', () => {

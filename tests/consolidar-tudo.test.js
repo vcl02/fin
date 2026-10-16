@@ -12,9 +12,9 @@ const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
-test('Consolidar tudo não tem botão próprio: roda no clique do ícone Atual', () => {
+test('Consolidar tudo não tem botão próprio: roda no clique do Recarregar', () => {
     assert.doesNotMatch(pagina, /btConsolidarTudo/);
-    assert.match(pagina, /id=cicloHoje class=btHoje title="Ciclo atual: limpa filtros, recarrega e consolida tudo"/);
+    assert.match(fs.readFileSync('js/bootstrap.js', 'utf8'), /await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
     // .tool tem paridade total com o desktop: fica sempre visível, em qualquer largura —
     // sem regra própria escondendo este botão no mobile (só a conta restrita o esconde,
     // junto com o resto de #rowVis, testado em preferencias-interface.test.js).
@@ -31,7 +31,7 @@ test('materializar/consolidar foi extraído pra uma função única, reaproveita
 });
 
 test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca o passado', () => {
-    assert.match(formulario, /async function consolidarTudo\(botao\) \{\s*\n\s*if \(botao\.disabled\) return;/);
+    assert.match(formulario, /async function consolidarTudo\(botao, depoisDaCarga = \(\) => \{\}\) \{\s*\n\s*if \(botao\.disabled\) return;/);
     // Hoje fora de qualquer ciclo: não varre nada (checado depois da recarga, que pode mudar o dia).
     assert.match(formulario, /\/\/ Hoje fora de qualquer ciclo: não há de onde partir a varredura\.\s*\n\s*if \(Estado\.idxHoje < 0\) return;/);
     assert.match(formulario, /const ultimoCicloAntesDaCorrecao = Estado\.lancamentos\.reduce\(\s*\(max, r\) => r\.periodoIdx != null && r\.periodoIdx > max \? r\.periodoIdx : max,\s*Estado\.idxHoje\s*\);/);
@@ -41,7 +41,7 @@ test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca
 });
 
 test('botão fica desabilitado e com texto "Consolidando…" durante a varredura, bloqueando clique duplo', () => {
-    const inicio = formulario.indexOf("async function consolidarTudo(botao) {");
+    const inicio = formulario.indexOf("async function consolidarTudo(botao, depoisDaCarga = () => {}) {");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
     // Botão só de ícone: trocar textContent apagaria o SVG; a etapa vai pro title/aria-label.
     assert.doesNotMatch(trecho, /textContent/);
@@ -91,7 +91,7 @@ test('núcleo retorna consolidado/materializado pro resumo contar cada tipo sepa
 });
 
 test('conclusão sempre aparece em toast, juntando materialização/consolidação e correção de datas num só resumo', () => {
-    const inicio = formulario.indexOf("async function consolidarTudo(botao) {");
+    const inicio = formulario.indexOf("async function consolidarTudo(botao, depoisDaCarga = () => {}) {");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
     assert.match(trecho, /const partes = \[\];\s*\n\s*if \(materializados \|\| consolidados\) partes\.push\(`\$\{materializados\} materializado\(s\), \$\{consolidados\} consolidado\(s\)`\);\s*\n\s*if \(corrigidos\) partes\.push\(`\$\{corrigidos\} data\(s\) de recorrência duplicada corrigida\(s\)`\);/);
     assert.match(trecho, /const resumo = partes\.length\s*\n\s*\? `\$\{partes\.join\('; '\)\}\.`\s*\n\s*: 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente\.';/);
@@ -100,7 +100,7 @@ test('conclusão sempre aparece em toast, juntando materialização/consolidaç�
 });
 
 test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao clique, não escondida atrás de outro botão', () => {
-    const inicio = formulario.indexOf("async function consolidarTudo(botao) {");
+    const inicio = formulario.indexOf("async function consolidarTudo(botao, depoisDaCarga = () => {}) {");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
     assert.match(trecho, /const logAjustes = \[\];/);
     assert.match(trecho, /const ehAporte = ajuste\.tipo == 'aporte';/);
@@ -129,9 +129,9 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
 });
 
 test('regra documentada em REGRAS.md', () => {
-    assert.match(regras, /\*\*Consolidar tudo\*\* \(hoje parte do clique no ícone \*\*Atual\*\* da navegação de ciclo\) repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
+    assert.match(regras, /\*\*Consolidar tudo\*\* \(hoje parte do clique no botão verde \*\*Recarregar\*\* do cabeçalho\) repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
     assert.match(regras, /o próprio botão fica desabilitado \(`disabled`, de verdade bloqueado pro navegador — mesmo esquema visual apagado do Salvar do cadastro e do Duplicar\/Editar\/Excluir da barra de seleção/);
-    assert.match(regras, /e o ícone do Atual gira, com o title\/aria-label passando a "Recarregando…" e depois "Consolidando…", pra bloquear clique duplo/);
+    assert.match(regras, /e o ícone do Recarregar gira, com o title\/aria-label passando a "Recarregando…" e depois "Consolidando…", pra bloquear clique duplo/);
     assert.match(regras, /volta ao normal ao final, com sucesso ou falha/);
     assert.match(regras, /ela também corrige toda recorrência duplicada nesse mesmo intervalo \(mesma regra do botão "↷" ao lado da Data/);
     assert.match(regras, /sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira/);
@@ -145,7 +145,7 @@ test('regra documentada em REGRAS.md', () => {
 });
 
 test('sempre recarrega do banco antes de varrer; carga com falha para tudo; simulação não recarrega', () => {
-    const inicio = formulario.indexOf("async function consolidarTudo(botao) {");
+    const inicio = formulario.indexOf("async function consolidarTudo(botao, depoisDaCarga = () => {}) {");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
     assert.match(trecho, /if \(!Estado\.simulando\) \{\s*\n\s*etapa\('Recarregando…'\);\s*\n\s*if \(!\(await load\(\)\)\) return;\s*\n\s*\}/);
     // A recarga vem antes de qualquer leitura de Estado.lancamentos pela varredura.
@@ -162,8 +162,8 @@ test('recarga automática a cada 5 min, só com a tela livre', () => {
     assert.match(inicializacao, /!document\.hidden && !Estado\.simulando &&/);
     assert.match(inicializacao, /!document\.querySelector\('dialog\[open\]'\) && !Estado\.selecionados\.size &&/);
     assert.match(inicializacao, /!document\.activeElement\?\.matches\?\.\('input, select, textarea'\) &&/);
-    assert.match(inicializacao, /!el\('recarregar'\)\.disabled && !el\('cicloHoje'\)\.disabled;/);
-    assert.match(inicializacao, /if \(telaLivreParaRecarregar\(\)\) el\('recarregar'\)\.onclick\(\);\s*\n\s*\}, 30 \* 1000\);/);
+    assert.match(inicializacao, /!el\('recarregar'\)\.disabled;/);
+    assert.match(inicializacao, /if \(telaLivreParaRecarregar\(\)\) recarregarDados\(\);\s*\n\s*\}, 30 \* 1000\);/);
     assert.match(fs.readFileSync('js/data-ui.js', 'utf8'), /Estado\.ultimaCarga = Date\.now\(\);/);
     assert.match(regras, /Recarga automática: 5 minutos depois da última carga bem-sucedida/);
 });

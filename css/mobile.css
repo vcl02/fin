@@ -46,10 +46,9 @@
           min-width: 9rem;
       }
 
-      /* Botões da navegação um pouco menores no mobile, pra › e os quatro ícones caberem
-         na mesma linha do Até. */
+      /* Botões da navegação um pouco menores no mobile, pra › e os ícones caberem na mesma
+         linha do Até. */
       #navComparar .btNavCiclo,
-      #navComparar .btHoje,
       #navComparar .btIcone {
           width: 2rem;
           height: 2rem;
