@@ -68,6 +68,33 @@ async function confirmarLimiteDoCiclo(input) {
 
 // redesenha a tela conforme o modo ativo (blocos Debito/Credito vs matriz de comparacao),
 // escondendo/mostrando os filtros que fazem sentido em cada um
+// Hoje e Futuro dos títulos (Débito/Crédito) têm os mesmos itens na mesma ordem, mas
+// números de largura diferente (R$ 617,32 × R$ 2.043,52) empurravam tudo o que vinha
+// depois, desalinhando as duas faixas. Aqui cada item (e cada valor/rótulo dentro dele)
+// ganha a largura do maior entre as faixas, então ficam um embaixo do outro. Só alinha
+// quando as faixas têm a mesma estrutura; "N registros" (.resumoMeta) fica de fora.
+function alinharResumosDosTitulos() {
+    const igualarLarguras = grupos => grupos.forEach(elementos => {
+        const largura = Math.max(...elementos.map(e => e.getBoundingClientRect().width));
+        elementos.forEach(e => { e.style.minWidth = `${Math.ceil(largura)}px`; });
+    });
+    const emColunas = listas => listas[0].map((_, i) => listas.map(lista => lista[i]));
+    el('out').querySelectorAll('.resumoTitulo').forEach(titulo => {
+        const faixas = [...titulo.querySelectorAll(':scope > .resumoLinha > .resumoDados')];
+        if (faixas.length < 2) return;
+        const celulas = faixas.map(f => [...f.children].filter(c => !c.classList.contains('resumoMeta')));
+        if (celulas.some(c => c.length != celulas[0].length)) return;
+        const colunas = emColunas(celulas);
+        // Primeiro os valores e rótulos variáveis de dentro de cada item ("Livre"/"Acima"),
+        // depois o item inteiro (que cresce junto).
+        colunas.forEach(coluna => {
+            const valores = coluna.map(c => [...c.querySelectorAll('b, .limiteRotulo')]);
+            if (valores.every(v => v.length == valores[0].length)) igualarLarguras(emColunas(valores));
+        });
+        igualarLarguras(colunas);
+    });
+}
+
 function desenhar() {
     limparCachesFinanceiros();   // recalcula 1x neste render
     const simples = modoSimples();
@@ -138,6 +165,7 @@ function desenhar() {
     // de verdade (blocos <-> matriz), onde nao ha posicao antiga que faca sentido.
     const scrollsAntigos = [...el('out').querySelectorAll('.wx, .wrap')].map(e => [e.scrollTop, e.scrollLeft]);
     el('out').innerHTML = modoBlocos ? vCiclo() : vComp();
+    alinharResumosDosTitulos();
     if (!trocouModo) {
         [...el('out').querySelectorAll('.wx, .wrap')].forEach((e, i) => {
             if (!scrollsAntigos[i]) return;

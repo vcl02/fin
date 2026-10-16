@@ -346,6 +346,23 @@
       align-items: baseline;
       gap: .15rem .8rem;
       min-width: 0;
+      font-variant-numeric: tabular-nums;
+  }
+
+  /* Larguras igualadas entre Hoje e Futuro (alinharResumosDosTitulos): os valores em negrito
+     viram blocos de largura mínima, alinhados à direita como numa tabela. */
+  .resumoDados b {
+      display: inline-block;
+      text-align: right;
+  }
+
+  .resumoDados .limiteRotulo {
+      display: inline-block;
+  }
+
+  /* Lugar do valor da fatura na faixa que não o mostra, pra a outra continuar alinhada. */
+  .celulaReservada {
+      display: inline-block;
   }
 
   /* Fica visivelmente separado de Saldo/Guardado (gap maior + divisor), pois é uma leitura

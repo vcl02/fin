@@ -367,13 +367,20 @@ function vCiclo() {
     const valorDaFaturaNaLinha = (total, chaveLivre) =>
         Math.abs(Math.abs(total) - usadoNaPrimeiraFaixa(chaveLivre)) < TOLERANCIA_FINANCEIRA ? ''
             : `<b class="${corSoma(total)}">${brl(Math.abs(total))}</b>`;
-    const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :
+    // Hoje e Futuro são alinhados coluna a coluna (alinharResumosDosTitulos): quando só uma
+    // das faixas abre com o valor da fatura, a outra ganha uma célula vazia no lugar, pra
+    // Total/Nubank/Mercado Pago continuarem um embaixo do outro.
+    const faturaHoje = valorDaFaturaNaLinha(totalCreditoHoje, 'limiteLivreHoje');
+    const faturaFuturo = valorDaFaturaNaLinha(totalCreditoExibido, 'limiteLivreFuturo');
+    const temHoje = !(cicloDebitoFuturo || cicloDebitoPassado);
+    const celulaReservada = '<b class=celulaReservada aria-hidden=true></b>';
+    const linhaHojeCredito = !temHoje ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
-        valorDaFaturaNaLinha(totalCreditoHoje, 'limiteLivreHoje') +
+        (faturaHoje || (exibeFuturoCredito && faturaFuturo ? celulaReservada : '')) +
         resumoLimites('limiteLivreHoje') + `</span></span>`;
     const linhaFuturoCredito = exibeFuturoCredito ?
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
-        valorDaFaturaNaLinha(totalCreditoExibido, 'limiteLivreFuturo') +
+        (faturaFuturo || (temHoje && faturaHoje ? celulaReservada : '')) +
         resumoLimites('limiteLivreFuturo') + `</span></span>` : '';
     const resumoCredito = cicloDebitoPassado ? '' :
         `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;

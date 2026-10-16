@@ -99,7 +99,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /linhaHojeDebito \+ linhaFuturoDebito/);
     assert.match(visoes, /linhaHojeCredito \+ linhaFuturoCredito/);
     assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
-    assert.match(visoes, /const linhaHojeCredito = cicloDebitoFuturo \|\| cicloDebitoPassado \? ''/);
+    assert.match(visoes, /const temHoje = !\(cicloDebitoFuturo \|\| cicloDebitoPassado\);[\s\S]*?const linhaHojeCredito = !temHoje \? ''/);
     assert.match(visoes, /const resumoCredito = cicloDebitoPassado \? '' :/);
     assert.match(visoes, /const totalCreditoHistorico = creditosExibidos\.reduce\(\(soma, r\) => soma \+ r\.v, 0\)/);
     assert.match(visoes, /const totalTituloCredito = cicloDebitoPassado \? totalCreditoHistorico : totalCreditoExibido/);
