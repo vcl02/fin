@@ -176,8 +176,14 @@ test('com dois cartões, Hoje e Futuro começam pelo Total somado dos dois', () 
     assert.match(visoes, /if \(limitesDosCartoes\.length < 2\) return '';/);
     assert.match(visoes, /const livre = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\[chaveLivre\], 0\);/);
     assert.match(visoes, /const teto = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal, 0\);/);
-    assert.match(visoes, /<span class=limiteCartaoNome>Total<\/span> Livre/);
+    assert.match(visoes, /<span class=limiteCartaoNome>Total<\/span> \$\{usadoELivre\(teto - livre, livre\)\}\$\{brl\(teto\)\}/);
     assert.match(visoes, /resumoTotalDosCartoes\(chaveLivre\) \+ limitesDosCartoes\.map\(l => resumoLimiteCartao\(l, l\[chaveLivre\]\)\)\.join\(''\);/);
     assert.match(regras, /Com os dois cartões no título, Hoje e Futuro começam por uma faixa \*\*Total\*\*, antes das faixas de cada cartão/);
     assert.match(regras, /o próprio campo editável fica depois de "de"/);
+});
+
+test('cada faixa (Total, Nubank, Mercado Pago) mostra Usado e Livre do mesmo teto', () => {
+    assert.match(visoes, /const usadoELivre = \(usado, livre\) =>\s*\n\s*`Usado <b>\$\{brl\(usado\)\}<\/b> · Livre <b class="\$\{corValor\(livre\)\}">\$\{brl\(livre\)\}<\/b> de `;/);
+    assert.match(visoes, /\$\{usadoELivre\(l\.limiteTotal - limiteLivre, limiteLivre\)\}/);
+    assert.match(regras, /Cada faixa \(Total, Nubank, Mercado Pago\) mostra \*\*Usado\*\* e \*\*Livre\*\* do mesmo teto/);
 });

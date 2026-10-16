@@ -296,7 +296,12 @@ function vCiclo() {
     // Sem garantia (Mercado Pago sempre; Nubank quando não há guardado), o teto É o Aprovado:
     // o próprio campo editável ocupa o lugar do "de", sem repetir o mesmo valor ao lado.
     const tetoSemGarantia = l => Math.abs(l.limiteTotal - limiteCartaoContratado(l.cartao)) < TOLERANCIA_FINANCEIRA;
-    const resumoLimiteCartao = (l, limiteLivre) => `<span class=limiteCartao>${nomeNoTitulo(l.cartao)}Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ` +
+    // Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em
+    // Futuro, a fatura exibida inteira mais o uso confirmado posterior. Mesma conta do Livre,
+    // só mostrada pelo outro lado, pra ver quanto já foi gasto sem fazer a subtração de cabeça.
+    const usadoELivre = (usado, livre) =>
+        `Usado <b>${brl(usado)}</b> · Livre <b class="${corValor(livre)}">${brl(livre)}</b> de `;
+    const resumoLimiteCartao = (l, limiteLivre) => `<span class=limiteCartao>${nomeNoTitulo(l.cartao)}${usadoELivre(l.limiteTotal - limiteLivre, limiteLivre)}` +
         (tetoSemGarantia(l)
             ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>`
             : `${brl(l.limiteTotal)} <span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span>`) +
@@ -307,7 +312,7 @@ function vCiclo() {
         if (limitesDosCartoes.length < 2) return '';
         const livre = limitesDosCartoes.reduce((soma, l) => soma + l[chaveLivre], 0);
         const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
-        return `<span class=limiteCartao><span class=limiteCartaoNome>Total</span> Livre <b class="${corValor(livre)}">${brl(livre)}</b> de ${brl(teto)}</span>`;
+        return `<span class=limiteCartao><span class=limiteCartaoNome>Total</span> ${usadoELivre(teto - livre, livre)}${brl(teto)}</span>`;
     };
     const resumoLimites = chaveLivre =>
         resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('');
