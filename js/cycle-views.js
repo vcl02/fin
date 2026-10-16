@@ -30,13 +30,17 @@ function vCiclo() {
         // fatura quitada nao aparece: nao ha mais nada pra sair da conta
         .filter(f => Math.abs(f.liquido) >= 0.005)
         .map(f => {
-            // O Nubank mantém a chave de sempre; o Mercado Pago ganha sufixo próprio.
+            // O Nubank mantém a chave de sempre; o Mercado Pago ganha sufixo próprio (e id
+            // próprio na coluna ID, pra as duas faturas não aparecerem com o mesmo -3).
             const sid = f.cartao === CARTAO_NUBANK ? `fat:${i}` : `fat:${i}:${f.cartao}`;
             Estado.valorFaturaPorCiclo[sid] = f.liquido;
             return {
                 data: f.vencimento || periodo.fat, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura',
-                // Fatura é mensal por natureza; freq aqui é só o texto da coluna Frequência.
-                freq: 'Mensal', id: -3, v: f.liquido, valor: f.liquido, _fat: 1, _sid: sid,
+                // Só exibição, nenhum cálculo lê estes campos da linha calculada: fatura é mensal
+                // por natureza, fica sempre Aberto (o pagamento real é a antecipação/débito) e é
+                // um compromisso do mês.
+                freq: 'Mensal', pago: false, comprometido: true,
+                id: f.cartao === CARTAO_NUBANK ? -3 : -4, v: f.liquido, valor: f.liquido, _fat: 1, _sid: sid,
             };
         });
 

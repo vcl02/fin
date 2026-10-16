@@ -150,9 +150,14 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`migrations\/23-limites-categoria-por-ciclo\.sql`/);
 });
 
-test('previstas e linhas de fatura mostram Frequência Mensal (só texto da coluna)', () => {
+test('previstas e faturas: Mensal, Aberto e Comprometido só na exibição, somente leitura, ids distintos', () => {
     const r = carrega([...linhasCiclo]);
-    assert.equal(r.previstasDoCiclo(1, [...linhasCiclo])[0].freq, 'Mensal');
-    assert.match(visoes, /freq: 'Mensal', id: -3, v: f\.liquido, valor: f\.liquido, _fat: 1, _sid: sid,/);
-    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, assim como as linhas calculadas Fatura Nubank\/Fatura Mercado Pago/);
+    const [besteira, isabella] = r.previstasDoCiclo(1, [...linhasCiclo]);
+    assert.deepEqual([besteira.freq, besteira.pago, besteira.comprometido, besteira.id, isabella.id], ['Mensal', false, true, -6, -7]);
+    assert.match(visoes, /freq: 'Mensal', pago: false, comprometido: true,\s*\n\s*id: f\.cartao === CARTAO_NUBANK \? -3 : -4,/);
+    // Pago clicável só em lançamento real; linha calculada mostra texto.
+    assert.match(ler('js/tables.js'), /modoRestrito\(\) \|\| !ehLinhaReal\(r\) \? `<span class="\$\{r\[chave\] \? 'vd' : 'vm'\}">/);
+    // O indicador Comprometido continua lendo só lançamentos reais.
+    assert.match(graficos, /const linhas = Estado\.lancamentos\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
+    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\* e \*\*Comprometido\*\*/);
 });

@@ -280,8 +280,9 @@ const celFlag = (r, chave) => {
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
-// clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; só a conta restrita
-// (modoRestrito) vê tudo como texto simples, nunca editável.
+// clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; a conta restrita
+// (modoRestrito) e as linhas calculadas (fatura, previstas — não existem no banco) veem tudo
+// como texto simples, nunca editável.
 const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , tipo]) => chave == 'valor'
     ? (r._sug != null
         ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
@@ -289,7 +290,7 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' && chave != 'pago' ? `<td>${celFlag(r, chave)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
-        : (modoRestrito() ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
+        : (modoRestrito() || !ehLinhaReal(r) ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
     : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
