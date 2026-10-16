@@ -225,21 +225,19 @@ function opcoesFaturasDisponiveis() {
         .map(venc => ({ vencimento: venc, rotulo: rotuloFaturaComCartao(venc) }));
 }
 
-// No modo de simulacao, cada prestacao ja nasce apontando para a fatura disponivel
-// mais proxima da sua propria data. E' apenas um palpite: os <select>s continuam
-// independentes para que a pessoa possa trocar qualquer parcela antes de simular.
-function faturasSugeridasParaParcelas(faturas, data, parcelas, freq) {
-    if (!data || !faturas.length) return Array(parcelas).fill(null);
-    const vencimentos = faturas
-        .map(f => dataISO(f.vencimento))
-        .sort((a, b) => timestamp(a) - timestamp(b));
-    return Array.from({ length: parcelas }, (_, p) => {
-        const dataParcela = dataDaOcorrencia(data, p, freq);
-        return vencimentos.find(vencimento => vencimento >= dataParcela)
-            // Se a simulacao ultrapassar a ultima fatura ja conhecida, deixa a
-            // ultima como ponto de partida editavel em vez de abrir um campo vazio.
-            || vencimentos[vencimentos.length - 1];
-    });
+// Fatura padrão de uma compra: a do cartão no MÊS SEGUINTE ao da data, sempre — compra em
+// 05/10 ou 30/10 vai pra 12/11 no Nubank. Não depende de existir fatura cadastrada.
+function faturaDoMesSeguinte(data, cartao = CARTAO_NUBANK) {
+    const [ano, mes] = dataISO(data).split('-').map(Number);
+    const mesSeguinte = new Date(Date.UTC(ano, mes, 1)).toISOString().slice(0, 7);
+    return `${mesSeguinte}-${String(DIA_VENCIMENTO_CARTAO[cartao]).padStart(2, '0')}`;
+}
+
+// Cada prestação nasce apontando pra fatura do mês seguinte à sua própria data (Nubank por
+// padrão). É só o ponto de partida: os <select>s continuam editáveis antes de salvar.
+function faturasSugeridasParaParcelas(data, parcelas, freq, cartao = CARTAO_NUBANK) {
+    if (!data) return Array(parcelas).fill(null);
+    return Array.from({ length: parcelas }, (_, p) => faturaDoMesSeguinte(dataDaOcorrencia(data, p, freq), cartao));
 }
 
 // Credito nao tem mais inferencia por fechamento: cada parcela recebe seu vencimento
@@ -258,7 +256,8 @@ function animaTrocaDeEstado(select) {
     select.addEventListener('animationend', () => select.classList.remove('trocaEstado'), { once: true });
 }
 
-function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()) {
+// `cartaoPadrao`: cartão da sugestão quando nenhuma 1ª parcela foi escolhida à mão.
+function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario(), cartaoPadrao = CARTAO_NUBANK) {
     const principal = el('faturaPrincipal');
     // O seletor é recriado a cada chamada; compara com o estado anterior pra só animar troca real.
     const estavaDesativada = !!principal.querySelector('select:disabled');
@@ -305,13 +304,16 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
         .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
     // O mesmo preenchimento inicial vale no cadastro real e na simulação. A sugestão
     // nunca substitui uma fatura que a pessoa já escolheu manualmente, e fica no cartão da
-    // 1ª parcela escolhida à mão (Nubank enquanto nada foi escolhido): sem isso, uma compra
-    // feita dia 13 viraria sugestão do Mercado Pago, que vence nesse dia.
-    const cartaoDaSugestao = idsSelecionados[0] ? cartaoDaFatura(idsSelecionados[0]) : CARTAO_NUBANK;
+    // 1ª parcela escolhida à mão (Nubank enquanto nada foi escolhido).
+    const cartaoDaSugestao = idsSelecionados[0] ? cartaoDaFatura(idsSelecionados[0]) : cartaoPadrao;
     const sugestoes = cred
-        ? faturasSugeridasParaParcelas(
-            faturas.filter(f => cartaoDaFatura(f.vencimento) === cartaoDaSugestao), el('fData').value, parcelas, freq)
+        ? faturasSugeridasParaParcelas(el('fData').value, parcelas, freq, cartaoDaSugestao)
         : [];
+    // A sugestão sai da data, então pode cair fora da lista (ex.: depois de dez/2029).
+    sugestoes.forEach(venc => {
+        if (venc && !faturas.some(f => f.vencimento === venc)) faturas.push({ vencimento: venc, rotulo: rotuloFaturaComCartao(venc) });
+    });
+    faturas.sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento));
 
     const opcoes = faturas.map(f =>
         `<option value="${dataISO(f.vencimento)}">${escapeHtml(f.rotulo || nomeFatura(f))}</option>`
@@ -364,11 +366,18 @@ el('fCateg').addEventListener('input', () => atualizarFaturasDoFormulario());
 
 // Uma sugestao ainda automatica acompanha a data da venda; uma fatura escolhida
 // manualmente nunca e' substituida por esse recálculo.
+// No cadastro e no Duplicar, a fatura fica presa à data: trocar a data refaz TODAS as
+// faturas (mês seguinte de cada parcela), inclusive uma escolhida à mão — só o cartão dessa
+// escolha é mantido. Em Editar (a mesma linha) a fatura gravada não muda sozinha.
 el('fData').addEventListener('change', () => {
     atualizaModoFrequencia();   // a contagem da série mostrada em Vezes sai da data
-    if (el('fCred').checked) {
+    if (!el('fCred').checked) return;
+    if (modalNovo.dataset.editandoId) {
         atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
+        return;
     }
+    const atual = idsFaturasDoFormulario(true)[0];
+    atualizarFaturasDoFormulario([], atual ? cartaoDaFatura(atual) : CARTAO_NUBANK);
 });
 // Frequência escolhida = série até DATA_LIMITE_RECORRENCIA: a quantidade sai da própria
 // data, então Vezes fica desativado mostrando essa contagem (ex.: "39x até 2029") — nunca
@@ -447,7 +456,9 @@ function abreModalNovo(prefill, modoEdicao) {
         el('fCateg').value = prefill.categ || '';
         el('fData').value = dataISO(prefill.data) || '';
         el('fCred').checked = !!prefill.cred;
-        const fatRef = prefill.fatura;
+        // Editar mantém a fatura da própria linha; Duplicar recomeça pela fatura do mês
+        // seguinte à data (Nubank), como um cadastro novo — não copia a do original.
+        const fatRef = modoEdicao ? prefill.fatura : null;
         atualizarFaturasDoFormulario(fatRef ? [fatRef] : []);
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
         el('fReserva').checked = !!prefill.reserva;

@@ -146,7 +146,19 @@ test('sempre recarrega do banco antes de varrer; carga com falha para tudo; simu
     // A recarga vem antes de qualquer leitura de Estado.lancamentos pela varredura.
     assert.ok(trecho.indexOf('await load()') < trecho.indexOf('corrigeRecorrenciasDuplicadasNoIntervalo('));
     const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
-    assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\);\s*\n\s*return true;/);
+    assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\);\s*\n.*\n\s*return true;/);
     assert.match(dadosUi, /mostrarToast\('Não foi possível carregar', e\.message\);\s*\n\s*return false;/);
     assert.match(regras, /Antes de varrer, \*\*Consolidar tudo\*\* sempre recarrega os dados do banco/);
+});
+
+test('recarga automática a cada 5 min, só com a tela livre', () => {
+    const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
+    assert.match(inicializacao, /const INTERVALO_RECARGA_AUTOMATICA_MS = 5 \* 60 \* 1000;/);
+    assert.match(inicializacao, /!document\.hidden && !Estado\.simulando &&/);
+    assert.match(inicializacao, /!document\.querySelector\('dialog\[open\]'\) && !Estado\.selecionados\.size &&/);
+    assert.match(inicializacao, /!document\.activeElement\?\.matches\?\.\('input, select, textarea'\) &&/);
+    assert.match(inicializacao, /!el\('recarregar'\)\.disabled && !el\('btConsolidarTudo'\)\.disabled;/);
+    assert.match(inicializacao, /if \(telaLivreParaRecarregar\(\)\) el\('recarregar'\)\.onclick\(\);\s*\n\s*\}, 30 \* 1000\);/);
+    assert.match(fs.readFileSync('js/data-ui.js', 'utf8'), /Estado\.ultimaCarga = Date\.now\(\);/);
+    assert.match(regras, /Recarga automática: 5 minutos depois da última carga bem-sucedida/);
 });

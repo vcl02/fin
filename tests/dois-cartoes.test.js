@@ -161,8 +161,9 @@ test('cadastro oferece os vencimentos dos dois cartões, do mês passado até de
 });
 
 test('sugestão de fatura fica no cartão da 1ª parcela escolhida (Nubank por padrão)', () => {
-    assert.match(formulario, /const cartaoDaSugestao = idsSelecionados\[0\] \? cartaoDaFatura\(idsSelecionados\[0\]\) : CARTAO_NUBANK;/);
-    assert.match(formulario, /faturas\.filter\(f => cartaoDaFatura\(f\.vencimento\) === cartaoDaSugestao\)/);
+    assert.match(formulario, /const cartaoDaSugestao = idsSelecionados\[0\] \? cartaoDaFatura\(idsSelecionados\[0\]\) : cartaoPadrao;/);
+    assert.match(formulario, /function atualizarFaturasDoFormulario\(idsSelecionados = idsFaturasDoFormulario\(\), cartaoPadrao = CARTAO_NUBANK\)/);
+    assert.match(formulario, /faturasSugeridasParaParcelas\(el\('fData'\)\.value, parcelas, freq, cartaoDaSugestao\)/);
     assert.match(formulario, /if \(parcela === 0\) atualizarFaturasDoFormulario\(idsFaturasDoFormulario\(false\)\);/);
 });
 

@@ -231,6 +231,7 @@ async function load() {
         console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
         if (cargaMs >= LIMIAR_CARGA_LENTA_MS) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
         atualizarBotaoDiagnostico(diagnosticoDeDados);
+        Estado.ultimaCarga = Date.now();   // base da recarga automática (bootstrap.js)
         return true;
     } catch (e) {
         el('st').textContent = '';

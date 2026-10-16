@@ -82,5 +82,21 @@ el('recarregar').onclick = async () => {
     }
 };
 
+// Recarga automática: 5 min depois da última carga bem-sucedida, os dados voltam do banco
+// (o que mudou em outro aparelho ou no DataGrip aparece sozinho). Nunca no meio de algo:
+// só com a tela logada e visível, sem modal aberto, sem campo em edição, sem linha
+// selecionada, sem simulação (recarregar apagaria os lançamentos simulados) e sem outra
+// carga/gravação em andamento. Ocupado, tenta de novo na próxima verificação (30 s).
+const INTERVALO_RECARGA_AUTOMATICA_MS = 5 * 60 * 1000;
+const telaLivreParaRecarregar = () =>
+    el('app').style.display !== 'none' && !document.hidden && !Estado.simulando &&
+    !document.querySelector('dialog[open]') && !Estado.selecionados.size &&
+    !document.activeElement?.matches?.('input, select, textarea') &&
+    !el('recarregar').disabled && !el('btConsolidarTudo').disabled;
+setInterval(() => {
+    if (!Estado.ultimaCarga || Date.now() - Estado.ultimaCarga < INTERVALO_RECARGA_AUTOMATICA_MS) return;
+    if (telaLivreParaRecarregar()) el('recarregar').onclick();
+}, 30 * 1000);
+
 if (API.includes('SEUPROJETO')) { mostraTela(1); load(); }   // sem chaves configuradas: pula o login (modo dev)
 else boot();

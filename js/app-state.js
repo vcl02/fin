@@ -41,6 +41,7 @@ const Estado = {
     _proxIdSimulado: 0,
     // id do ciclo -> linha de fin_ciclo (escolhas vazias = padrões/herança).
     limitesPorCiclo: new Map(),
+    ultimaCarga: 0,
 };
 
 // Única conta que enxerga a interface restrita: só Débito, só ciclo atual e próximo, somente
