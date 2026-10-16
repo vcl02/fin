@@ -172,12 +172,12 @@ test('regra e decisão documentadas', () => {
     assert.doesNotMatch(regras, /O único cartão atual é o Nubank/);
 });
 
-test('com dois cartões, Hoje e Futuro terminam com o Total somado dos dois', () => {
+test('com dois cartões, Hoje e Futuro começam pelo Total somado dos dois', () => {
     assert.match(visoes, /if \(limitesDosCartoes\.length < 2\) return '';/);
     assert.match(visoes, /const livre = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\[chaveLivre\], 0\);/);
     assert.match(visoes, /const teto = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal, 0\);/);
     assert.match(visoes, /<span class=limiteCartaoNome>Total<\/span> Livre/);
-    assert.match(visoes, /\.join\(''\) \+ resumoTotalDosCartoes\(chaveLivre\);/);
-    assert.match(regras, /Com os dois cartões no título, Hoje e Futuro terminam com uma faixa \*\*Total\*\*/);
+    assert.match(visoes, /resumoTotalDosCartoes\(chaveLivre\) \+ limitesDosCartoes\.map\(l => resumoLimiteCartao\(l, l\[chaveLivre\]\)\)\.join\(''\);/);
+    assert.match(regras, /Com os dois cartões no título, Hoje e Futuro começam por uma faixa \*\*Total\*\*, antes das faixas de cada cartão/);
     assert.match(regras, /o próprio campo editável fica depois de "de"/);
 });

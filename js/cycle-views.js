@@ -301,7 +301,7 @@ function vCiclo() {
             ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>`
             : `${brl(l.limiteTotal)} <span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span>`) +
         `${l.cartao === CARTAO_NUBANK && garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''}</span>`;
-    // Com dois cartões, a última faixa soma os dois: quanto ainda dá pra gastar no crédito
+    // Com dois cartões, a primeira faixa soma os dois: quanto ainda dá pra gastar no crédito
     // inteiro e o teto somado (com a garantia do Nubank, como o teto dele).
     const resumoTotalDosCartoes = chaveLivre => {
         if (limitesDosCartoes.length < 2) return '';
@@ -310,7 +310,7 @@ function vCiclo() {
         return `<span class=limiteCartao><span class=limiteCartaoNome>Total</span> Livre <b class="${corValor(livre)}">${brl(livre)}</b> de ${brl(teto)}</span>`;
     };
     const resumoLimites = chaveLivre =>
-        limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('') + resumoTotalDosCartoes(chaveLivre);
+        resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('');
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :
