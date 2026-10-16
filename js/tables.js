@@ -350,7 +350,8 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
 // de visao (Ciclo <-> Comparar) fica impercetivel, os blocos sao visualmente identicos.
 // 'corpoFn' e' chamada so' quando o bloco esta aberto (evita montar a tabela/matriz a
 // toa quando esta fechado).
-const textoMetaBloco = (n, subtitulo) => `${n} ${n == 1 ? 'registro' : 'registros'} · ${subtitulo}`;
+// Sem subtítulo (Crédito), só a contagem — sem o " · " pendurado.
+const textoMetaBloco = (n, subtitulo) => `${n} ${n == 1 ? 'registro' : 'registros'}${subtitulo ? ` · ${subtitulo}` : ''}`;
 // `metaNoTitulo`: a contagem/período já foi encaixada na última faixa do título (ver
 // renderBloco), então não ganha a linha própria embaixo.
 function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn, metaNoTitulo = false) {

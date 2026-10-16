@@ -26,7 +26,7 @@ function carregaRegras(estado = { ciclos: [], faturas: [] }) {
     vm.createContext(contexto);
     ['js/domain.js', 'js/shared.js', 'js/finance.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
     vm.runInContext(`globalThis.r = { cartaoDaFatura, alocacaoAntecipacoes, abatimentoDoCartao, faturasLiquidasDoCiclo,
-        tituloFaturaDoCiclo, vencimentoDoCiclo, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre,
+        vencimentoDoCiclo, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre,
         definirLimiteCartao, limiteCartaoContratado };`, contexto);
     return contexto.r;
 }
@@ -75,15 +75,13 @@ test('uma fatura líquida por cartão, cada uma no seu vencimento', () => {
     const faturas = JSON.parse(JSON.stringify(r.faturasLiquidasDoCiclo(base, r.alocacaoAntecipacoes(base), 0)
         .map(f => [f.cartao, f.liquido, f.vencimento])));
     assert.deepEqual(faturas, [['nubank', -300, '2026-11-12'], ['mp', -60, '2026-11-13']]);
-    assert.equal(r.tituloFaturaDoCiclo(0), '12/11/2026 · 13/11/2026');
     assert.equal(r.vencimentoDoCiclo(0, 'mp'), '2026-11-13');
 });
 
-test('só Nubank no ciclo: uma fatura, título igual ao de antes', () => {
+test('só Nubank no ciclo: uma fatura', () => {
     const r = carregaRegras({ ciclos: [{ ini: '2026-11-01', fat: '2026-11-30' }], faturas: [{ vencimento: '2026-11-12' }] });
     const base = [{ cred: true, periodoIdx: 0, v: -300, fatura: '2026-11-12' }];
     assert.equal(r.faturasLiquidasDoCiclo(base, r.alocacaoAntecipacoes(base), 0).length, 1);
-    assert.equal(r.tituloFaturaDoCiclo(0), '12/11/2026');
 });
 
 test('cada cartão ocupa o próprio limite; Mercado Pago sem garantia', () => {

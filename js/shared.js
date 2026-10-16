@@ -300,12 +300,6 @@ function vencimentoDoCiclo(idx, cartao) {
     return fatura ? dataISO(fatura.vencimento) : dataISO(Estado.ciclos[idx]?.fat);
 }
 
-// Uma data por cartão (12/11/2026 · 13/11/2026 quando os dois têm fatura no ciclo).
-function tituloFaturaDoCiclo(idx) {
-    const nomes = CARTOES.map(cartao => faturasDoCiclo(idx, cartao)[0]).filter(Boolean).map(nomeFatura);
-    return nomes.length ? nomes.join(' · ') : '—';
-}
-
 // Distribui as antecipacoes de cada cartao pelas faturas DELE, da mais antiga pra mais nova:
 // antecipacao do Mercado Pago nunca abate fatura do Nubank e vice-versa (o cartao sai do
 // vencimento da fatura apontada; sem fatura, e' Nubank). A fatura da Isabella e' um

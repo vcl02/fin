@@ -381,7 +381,7 @@ function vCiclo() {
 
     const blocoCredito = renderBloco(
         `Crédito${alertaTituloCredito}`, totalTituloCredito,
-        tituloFaturaDoCiclo(idxCreditoExibido),
+        '',   // Crédito mostra só a contagem de registros, sem as datas das faturas
         creditosExibidos, 'cr', true, '', resumoCredito,
         // Só o título compacto do Crédito histórico não usa ponto entre nome e total.
         cicloDebitoPassado ? ' ' : undefined
