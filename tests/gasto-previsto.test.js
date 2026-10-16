@@ -149,3 +149,10 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /por estarem em aberto, nunca ocupam o limite de \*\*Hoje\*\*/);
     assert.match(regras, /`migrations\/23-limites-categoria-por-ciclo\.sql`/);
 });
+
+test('previstas e linhas de fatura mostram Frequência Mensal (só texto da coluna)', () => {
+    const r = carrega([...linhasCiclo]);
+    assert.equal(r.previstasDoCiclo(1, [...linhasCiclo])[0].freq, 'Mensal');
+    assert.match(visoes, /freq: 'Mensal', id: -3, v: f\.liquido, valor: f\.liquido, _fat: 1, _sid: sid,/);
+    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, assim como as linhas calculadas Fatura Nubank\/Fatura Mercado Pago/);
+});

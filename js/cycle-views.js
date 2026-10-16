@@ -35,7 +35,8 @@ function vCiclo() {
             Estado.valorFaturaPorCiclo[sid] = f.liquido;
             return {
                 data: f.vencimento || periodo.fat, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura',
-                freq: '', id: -3, v: f.liquido, valor: f.liquido, _fat: 1, _sid: sid,
+                // Fatura é mensal por natureza; freq aqui é só o texto da coluna Frequência.
+                freq: 'Mensal', id: -3, v: f.liquido, valor: f.liquido, _fat: 1, _sid: sid,
             };
         });
 

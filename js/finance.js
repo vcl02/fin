@@ -109,7 +109,8 @@ function previstasDoCiclo(idx, base) {
         if (falta <= TOLERANCIA_FINANCEIRA) return null;
         const v = -Math.round(falta * 100) / 100;
         return {
-            data: dataISO(ciclo.fat), nome: c.nome, categ: c.categ, freq: '', pago: false, cred: true, fatura,
+            // freq só aparece na coluna Frequência (é uma previsão de todo ciclo); nenhum cálculo lê.
+            data: dataISO(ciclo.fat), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, cred: true, fatura,
             id: -6, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx + 1,
         };
     }).filter(Boolean);
