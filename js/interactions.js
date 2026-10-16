@@ -109,6 +109,7 @@ function desenhar() {
     // Gráfico e Visualizações moram na navegação de ciclo (fora de #rowVis): escondem à parte.
     el('btGrafico').hidden = simples;
     el('visIcone').hidden = simples;
+    el('btSomenteDif').hidden = simples;   // conta restrita não compara: nem o lugar reservado
     popularAlvosVisualizacao();   // reordena do mais perto de acabar pro mais longe a cada redesenho
     el('abreNovo').hidden = simples;
     el('toggleSimulacao').hidden = simples;
@@ -143,10 +144,11 @@ function desenhar() {
             [e.scrollTop, e.scrollLeft] = scrollsAntigos[i];
         });
     }
-    // "Somente Diferentes" so faz sentido comparando EXATAMENTE 2 periodos — vComp()
-    // deixa a informacao pronta em Estado._comparacao2Periodos como efeito colateral,
-    // porque so' ali se sabe quantos periodos a matriz de fato usou.
-    mostraComFade('fdif', !modoBlocos && !simples && !!Estado._comparacao2Periodos);
+    // Ícone Todas/Diferentes: aparece comparando mais de um ciclo; fora disso o lugar fica
+    // reservado (invisível) pra navegação não pular. "Diferentes" só faz sentido com
+    // EXATAMENTE 2 períodos — vComp() deixa isso em Estado._comparacao2Periodos, porque só
+    // ali se sabe quantos períodos a matriz de fato usou —; com 3 ou mais fica desabilitado.
+    atualizarBotaoSomenteDif(!modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
     if (trocouModo) {
         el('out').classList.remove('fadeIn');
         void el('out').offsetWidth;   // forca reflow pra reiniciar a animacao mesmo se ja rodou antes
@@ -1005,6 +1007,24 @@ el('btGrafico').onclick = () => {
     if (modoBlocos) abrirGraficoGastos(+el('btGrafico').dataset.idx);
     else abrirGraficoEvolucao(+de, +ate);
 };
+function atualizarBotaoSomenteDif(comparando) {
+    const botao = el('btSomenteDif');
+    const doisCiclos = comparando && !!Estado._comparacao2Periodos;
+    const diferentes = el('somenteDif').value == 'D';
+    const rotulo = !doisCiclos ? 'Linhas diferentes: só comparando 2 ciclos'
+        : diferentes ? 'Mostrar todas as linhas' : 'Mostrar só as linhas diferentes';
+    botao.classList.toggle('reservado', !comparando);
+    botao.disabled = !doisCiclos;
+    botao.classList.toggle('ativo', doisCiclos && diferentes);
+    botao.setAttribute('aria-pressed', String(doisCiclos && diferentes));
+    botao.title = rotulo;
+    botao.setAttribute('aria-label', rotulo);
+}
+el('btSomenteDif').onclick = () => {
+    el('somenteDif').value = el('somenteDif').value == 'D' ? 'N' : 'D';
+    desenhar();
+};
+
 // Volta a tela ao estado em que ela abre: ciclo atual (De=Até=hoje) e filtros limpos. Etapa
 // do botão Recarregar (bootstrap.js), que antes recarrega do banco. Sem ciclo atual, só limpa
 // (limparFiltros deixa De/Até vazios, como a página abriria).

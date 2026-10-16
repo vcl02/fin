@@ -209,6 +209,12 @@ test('botão Excluir aceita várias linhas reais selecionadas, ignorando sintét
 
 test('comparar mantém apenas todas ou diferentes confirmados sem recorrência duplicada', () => {
     assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
+    // O select virou estado interno; o controle visível é o ícone depois de Visualizações.
+    assert.match(pagina, /<label class=f id=fdif hidden>/);
+    const nav = pagina.slice(pagina.indexOf('id=navComparar'), pagina.indexOf('id=rowVis'));
+    assert.ok(nav.indexOf('id=visIcone') < nav.indexOf('id=btSomenteDif'));
+    assert.match(nav, /<button type=button id=btSomenteDif class="btIcone reservado" title="Mostrar só as linhas diferentes"\s*\n\s*aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>/);
+    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.btIcone\.reservado \{\s*\n\s*visibility: hidden;/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
     assert.doesNotMatch(pagina, /Diferentes \(ignorar repetidas\)/);
     assert.match(visoes, /const somenteDif = comparacao2Periodos && modoLinhas == 'D';/);
@@ -287,4 +293,47 @@ test('Liberdade fica oculta atrás de um olho fechado que mostra e esconde', () 
     assert.equal(atributos['aria-label'], 'Mostrar Liberdade');
     assert.match(svg.innerHTML, /M3 3l18 18/);
     assert.match(regras, /\*\*Liberdade\*\* fica oculta por padrão: no lugar dela aparece só um ícone de olho fechado/);
+});
+
+test('ícone Todas/Diferentes: lugar reservado fora da comparação, só funciona com 2 ciclos e alterna o filtro', () => {
+    const vm = require('node:vm');
+    const inicio = interacoes.indexOf('function atualizarBotaoSomenteDif(comparando) {');
+    const codigo = interacoes.slice(inicio, interacoes.indexOf('\n};', interacoes.indexOf("el('btSomenteDif').onclick")) + 3);
+    const classes = new Set(['btIcone', 'reservado']);
+    const atributos = {};
+    const botao = {
+        disabled: true, title: '',
+        classList: { toggle: (c, ligar) => (ligar ? classes.add(c) : classes.delete(c)) },
+        setAttribute: (k, v) => { atributos[k] = v; },
+    };
+    const ctx = { Estado: { _comparacao2Periodos: false }, desenhos: 0 };
+    const filtro = { value: 'N' };
+    ctx.el = id => ({ btSomenteDif: botao, somenteDif: filtro })[id];
+    ctx.desenhar = () => { ctx.desenhos++; };
+    vm.runInNewContext(`${codigo}\nthis.atualizar = atualizarBotaoSomenteDif;\nthis.clica = () => el('btSomenteDif').onclick();`, ctx);
+
+    ctx.atualizar(false);   // um ciclo só: invisível, mas o lugar continua reservado
+    assert.ok(classes.has('reservado'));
+    assert.equal(botao.disabled, true);
+
+    ctx.atualizar(true);    // comparando 3+ ciclos: aparece, desabilitado
+    assert.ok(!classes.has('reservado'));
+    assert.equal(botao.disabled, true);
+    assert.equal(botao.title, 'Linhas diferentes: só comparando 2 ciclos');
+
+    ctx.Estado._comparacao2Periodos = true;
+    ctx.atualizar(true);    // exatamente 2 ciclos: habilitado
+    assert.equal(botao.disabled, false);
+    assert.equal(atributos['aria-pressed'], 'false');
+    ctx.clica();
+    assert.equal(filtro.value, 'D');
+    assert.equal(ctx.desenhos, 1);
+    ctx.atualizar(true);
+    assert.ok(classes.has('ativo'));
+    assert.equal(atributos['aria-pressed'], 'true');
+    assert.equal(botao.title, 'Mostrar todas as linhas');
+    ctx.clica();
+    assert.equal(filtro.value, 'N');
+    assert.match(interacoes, /el\('btSomenteDif'\)\.hidden = simples;/);
+    assert.match(regras, /a escolha entre \*\*Todas\*\* e \*\*Diferentes\*\* é um ícone \(sinal de diferente, ≠\) na navegação de ciclo, logo depois de Visualizações/);
 });

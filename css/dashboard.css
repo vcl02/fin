@@ -1165,6 +1165,19 @@
       cursor: default;
   }
 
+  /* Lugar guardado: o botão some mas continua ocupando o espaço (ex.: Todas/Diferentes fora
+     da comparação), pra os botões ao redor não mudarem de posição. */
+  .btIcone.reservado {
+      visibility: hidden;
+  }
+
+  /* Ligado (ex.: só as linhas diferentes): mesmo verde de "ativo" do restante da tela. */
+  .btIcone.ativo {
+      color: var(--vd);
+      background: var(--green-soft);
+      border-color: var(--vd);
+  }
+
   /* Menu do ícone Visualizações: cartão escuro solto abaixo do ícone (não colado), com
      cantos arredondados e itens com folga, no lugar da lista nativa do <select>. */
   .visWrap {

@@ -64,6 +64,16 @@
             </button>
             <div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden></div>
           </div>
+          <!-- Todas/Diferentes ao comparar ciclos (handler em interactions.js). O lugar fica
+               sempre reservado: fora da comparação o botão só fica invisível. -->
+          <button type=button id=btSomenteDif class="btIcone reservado" title="Mostrar só as linhas diferentes"
+            aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>
+            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+              stroke-linejoin=round aria-hidden=true>
+              <path d="M5 9h14M5 15h14" />
+              <path d="M16 4 8 20" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -158,7 +168,8 @@
         <label class=f id=fciclo><span>Ciclo</span>
           <select id=ciclo></select>
         </label>
-        <label class=f id=fdif><span>Linhas</span>
+        <!-- Estado interno de Todas/Diferentes: o controle visível é o ícone #btSomenteDif. -->
+        <label class=f id=fdif hidden><span>Linhas</span>
           <select id=somenteDif>
             <option value=N>Todas
             <option value=D>Diferentes
