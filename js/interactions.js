@@ -75,8 +75,10 @@ async function confirmarLimiteDoCiclo(input) {
 // quando as faixas têm a mesma estrutura; "N registros" (.resumoMeta) fica de fora.
 function alinharResumosDosTitulos() {
     const igualarLarguras = grupos => grupos.forEach(elementos => {
-        const largura = Math.max(...elementos.map(e => e.getBoundingClientRect().width));
-        elementos.forEach(e => { e.style.minWidth = `${Math.ceil(largura)}px`; });
+        const larguras = elementos.map(e => e.getBoundingClientRect().width);
+        const largura = Math.max(...larguras);
+        // Só mexe em quem é mais estreito: os valores já no tamanho fixo do CSS ficam como estão.
+        elementos.forEach((e, i) => { if (larguras[i] < largura - .5) e.style.minWidth = `${largura}px`; });
     });
     const emColunas = listas => listas[0].map((_, i) => listas.map(lista => lista[i]));
     el('out').querySelectorAll('.resumoTitulo').forEach(titulo => {

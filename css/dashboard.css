@@ -353,7 +353,20 @@
      viram blocos de largura mínima, alinhados à direita como numa tabela. */
   .resumoDados b {
       display: inline-block;
+      min-width: 13ch;
       text-align: right;
+  }
+
+  /* Tamanho fixo dos valores nas faixas: todo valor em reais reserva a largura de
+     "-R$ 99.999,99" e todo percentual a de "100%", então o layout não muda de largura quando
+     os números mudam (outro ciclo, um lançamento novo). O que passar disso ainda cabe: é
+     mínimo, e alinharResumosDosTitulos iguala as duas faixas. */
+  .resumoDados b.pct {
+      min-width: 5ch;
+  }
+
+  .resumoDados b.celulaReservada {
+      min-width: 0;
   }
 
   .resumoDados .limiteRotulo {

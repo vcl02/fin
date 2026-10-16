@@ -172,7 +172,7 @@ function vCiclo() {
         const sobra = restante >= -TOLERANCIA_FINANCEIRA
             ? `<span class=limiteRotulo>Livre</span> <b class="${cor}">${brl(Math.max(0, restante))}</b>`
             : `<span class=limiteRotulo>Acima</span> <b class=vm>${brl(-restante)}</b>`;
-        return `<span class=besteiraIndicador>${limite.rotulo} <b class="${cor}">${Math.round(limite[chave])}%</b> · ${sobra} <span class=limiteTeto>de ${tetoDoIndicador(limite)}</span></span>`;
+        return `<span class=besteiraIndicador>${limite.rotulo} <b class="pct ${cor}">${Math.round(limite[chave])}%</b> · ${sobra} <span class=limiteTeto>de ${tetoDoIndicador(limite)}</span></span>`;
     }).join('');
     const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&

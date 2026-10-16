@@ -34,11 +34,12 @@ test('itens e valores das duas faixas ficam com a largura do maior', () => {
     const futuro = [elemento(180, { internos: [rotuloFuturo, livreFuturo] }), elemento(120)];
     const meta = elemento(90, { classes: ['resumoMeta'] });
     rodar([hoje, [...futuro, meta]]);
-    assert.equal(livreHoje.style.minWidth, '70px');
+    // Só o mais estreito de cada par ganha largura mínima; o maior fica como está.
+    assert.equal(livreHoje.style.minWidth, undefined);
     assert.equal(livreFuturo.style.minWidth, '70px');
-    assert.equal(rotuloFuturo.style.minWidth, '38px');
+    assert.equal(rotuloFuturo.style.minWidth, undefined);
     assert.equal(rotuloHoje.style.minWidth, '38px');
-    assert.equal(hoje[0].style.minWidth, '200px');
+    assert.equal(hoje[0].style.minWidth, undefined);
     assert.equal(futuro[0].style.minWidth, '200px');
     assert.equal(hoje[1].style.minWidth, '120px');
     // "N registros" fica fora do alinhamento.
@@ -57,6 +58,12 @@ test('alinhamento roda a cada desenho; Crédito reserva o lugar do valor da fatu
     assert.match(visoes, /\(faturaHoje \|\| \(exibeFuturoCredito && faturaFuturo \? celulaReservada : ''\)\)/);
     assert.match(visoes, /\(faturaFuturo \|\| \(temHoje && faturaHoje \? celulaReservada : ''\)\)/);
     assert.match(estilos, /\.resumoDados \{[\s\S]*?font-variant-numeric: tabular-nums;/);
-    assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*text-align: right;/);
     assert.match(regras, /cada item fica exatamente embaixo do correspondente da outra faixa/);
+});
+
+test('valores das faixas têm tamanho fixo: reais e percentuais reservam a largura do maior possível', () => {
+    assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*min-width: 13ch;\s*\n\s*text-align: right;/);
+    assert.match(estilos, /\.resumoDados b\.pct \{\s*\n\s*min-width: 5ch;/);
+    assert.match(visoes, /\$\{limite\.rotulo\} <b class="pct \$\{cor\}">/);
+    assert.match(regras, /todo valor em reais nas faixas reserva a largura de `-R\$ 99\.999,99` e todo percentual a de `100%`/);
 });
