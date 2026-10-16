@@ -499,6 +499,14 @@
       color: var(--mu);
   }
 
+  /* Nome com explicação no hover (Besteira, Isabella): sublinhado pontilhado discreto. */
+  .rotuloComDica {
+      cursor: help;
+      text-decoration: underline dotted;
+      text-decoration-color: var(--line-strong);
+      text-underline-offset: .2em;
+  }
+
   /* Aviso no Resgate que levou todo o guardado. */
   .tagAviso {
       display: inline-block;

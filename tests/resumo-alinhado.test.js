@@ -64,6 +64,6 @@ test('alinhamento roda a cada desenho; Crédito reserva o lugar do valor da fatu
 test('valores das faixas têm tamanho fixo: reais e percentuais reservam a largura do maior possível', () => {
     assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*min-width: 13ch;\s*\n\s*text-align: right;/);
     assert.match(estilos, /\.resumoDados b\.pct \{\s*\n\s*min-width: 5ch;/);
-    assert.match(visoes, /\$\{limite\.rotulo\} <b class="pct \$\{cor\}">/);
+    assert.match(visoes, /\$\{rotulo\} <b class="pct \$\{cor\}">/);
     assert.match(regras, /todo valor em reais nas faixas reserva a largura de `-R\$ 99\.999,99` e todo percentual a de `100%`/);
 });

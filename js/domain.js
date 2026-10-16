@@ -61,6 +61,11 @@ const LIMITE_BESTEIRA = 250;
 // — ver Faturas); "Lazer" sozinho também nunca conta, pois pode ser lazer com qualquer outra
 // pessoa. Ver ehGastoIsabella em js/charts.js para a regra completa.
 const LIMITE_ISABELLA = 700;
+// Tooltip do nome de cada indicador no título do Débito: o que entra em cada teto.
+const DESCRICAO_LIMITE_CATEGORIA = {
+    besteira: 'Besteira: gastos pequenos e evitáveis feitos sozinho — café, milkshake, lanche/doce, Uber não essencial (categoria Besteira).',
+    isabella: 'Isabella: saídas com a Isabella — lançamentos com Lazer e Isabella juntas na categoria, pelo valor inteiro da conta. Isabella sozinha ou Lazer sozinho não contam.',
+};
 // Dois cartões de crédito, identificados SÓ pelo dia de vencimento da fatura (regra
 // provisória, ver docs/DECISOES.md): dia 13 = Mercado Pago; qualquer outro dia = Nubank,
 // que cobre todo o histórico. Vale enquanto os dois vencimentos forem dias diferentes.

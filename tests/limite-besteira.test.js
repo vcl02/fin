@@ -179,3 +179,12 @@ test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima
     assert.match(regras, /verde até 70%, laranja de 70% a 100% e vermelho acima do teto/);
     assert.match(regras, /mostra também quanto ainda cabe no teto \(\*\*Livre R\$ …\*\*\) ou, se já passou, \*\*Acima R\$ …\*\*/);
 });
+
+test('nome de Besteira e Isabella no título explica o que entra no teto (tooltip)', () => {
+    const dominio = fs.readFileSync('js/domain.js', 'utf8');
+    const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
+    const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+    assert.match(dominio, /const DESCRICAO_LIMITE_CATEGORIA = \{\s*\n\s*besteira: 'Besteira: [^']*café[^']*',\s*\n\s*isabella: 'Isabella: [^']*Lazer e Isabella juntas[^']*',/);
+    assert.match(visoes, /<span class=rotuloComDica title="\$\{escapeHtml\(descricao\)\}">\$\{limite\.rotulo\}<\/span>/);
+    assert.match(regras, /Passar o mouse no nome \*\*Besteira\*\* ou \*\*Isabella\*\* do indicador mostra o que entra naquele teto/);
+});
