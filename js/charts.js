@@ -401,9 +401,9 @@ function htmlVariacaoIndicador(percentual, valor, tituloValor) {
     const pontos = percentual.diferenca.toLocaleString('pt-BR', {
         minimumFractionDigits: 1, maximumFractionDigits: 1,
     });
-    // Entre parênteses, logo depois do próprio indicador: sem isso, quando os itens quebram
-    // de linha, a variação solta podia parecer de outro indicador.
-    return `(<span class="variacaoIndicador ${percentual.classe}" title="Variação sobre o ciclo anterior">${percentual.seta}${pontos} p.p.</span><span class=separadorVariacao aria-hidden=true> · </span><span class="variacaoIndicador ${valor.classe}" title="${tituloValor}">${valor.seta}${brl(valor.diferenca)}</span>)`;
+    // Num selo discreto (.variacaoLinha) logo depois do próprio indicador, no mesmo item:
+    // quando os itens quebram de linha, a variação nunca parece de outro indicador.
+    return `<span class="variacaoIndicador ${percentual.classe}" title="Variação sobre o ciclo anterior">${percentual.seta}${pontos} p.p.</span><span class=separadorVariacao aria-hidden=true> · </span><span class="variacaoIndicador ${valor.classe}" title="${tituloValor}">${valor.seta}${brl(valor.diferenca)}</span>`;
 }
 
 function atualizarLinhaVariacao(id, percentual, valor, tituloValor) {

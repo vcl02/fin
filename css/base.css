@@ -55,7 +55,7 @@
       flex-wrap: wrap;
       align-items: center;
       gap: .7rem;
-      margin: 0 0 1.8rem;
+      margin: 0 0 1rem;
   }
 
   .sub {
@@ -63,6 +63,11 @@
       color: var(--mu);
       font-style: italic;
       margin: 0 0 1.8rem;
+  }
+
+  /* Linha de status vazia (o caso comum) não reserva espaço entre o cabeçalho e a tabela. */
+  .sub:has(#st:empty) {
+      display: none;
   }
 
   /* =========================================================

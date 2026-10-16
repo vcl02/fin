@@ -158,7 +158,14 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     assert.match(estilosPainel, /#indicadoresFinanceiros \{\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;/);
     assert.match(estilosPainel, /margin-left: calc\(-\.55rem - 1px\);/);
     assert.match(estilosPainel, /#rowVis \{\s*\n\s*display: flex;\s*\n\s*flex: 1 1 0;/);
-    assert.match(graficos, /return `\(<span class="variacaoIndicador \$\{percentual\.classe\}"[\s\S]*?\$\{brl\(valor\.diferenca\)\}<\/span>\)`;/);
+    // Variação num selo (.variacaoLinha) colado no indicador, sem parênteses.
+    assert.match(graficos, /return `<span class="variacaoIndicador \$\{percentual\.classe\}"[\s\S]*?\$\{brl\(valor\.diferenca\)\}<\/span>`;/);
+    assert.match(estilosPainel, /\.variacaoLinha \{\s*\n\s*white-space: nowrap;\s*\n\s*padding: \.05rem \.4rem;\s*\n\s*background: var\(--field\);\s*\n\s*border-radius: 6px;/);
+    // Sem divisor nem folga antes da tabela Débito.
+    assert.doesNotMatch(estilosPainel.slice(estilosPainel.indexOf('  .tool {'), estilosPainel.indexOf('  .row {')), /border-bottom/);
+    assert.match(estilosPainel, /\.tool:not\(:has\(\.f:not\(\[hidden\]\)\)\) \{\s*\n\s*display: none;/);
+    assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.sub:has\(#st:empty\) \{\s*\n\s*display: none;/);
+    assert.match(regras, /A tabela Débito começa logo abaixo do cabeçalho, sem linha divisória nem espaço reservado/);
     // Janela estreita: o bloco desce pra uma linha própria, navegação e botões seguem juntos.
     assert.match(estilosPainel, /@media \(max-width: 1250px\) \{\s*\n\s*#rowVis \{\s*\n\s*order: 1;\s*\n\s*flex-basis: 100%;/);
     assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.head \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);

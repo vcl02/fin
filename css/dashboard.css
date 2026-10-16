@@ -2,13 +2,18 @@
        FILTROS / TOOLBAR
        ========================================================= */
 
+  /* Só sobrou o filtro Linhas (aparece ao comparar dois ciclos): sem divisor nem folga, e
+     sem ocupar espaço nenhum quando não há filtro visível — a tabela Débito vem logo depois
+     do cabeçalho. */
   .tool {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--ln);
+      margin-bottom: 1rem;
+  }
+
+  .tool:not(:has(.f:not([hidden]))) {
+      display: none;
   }
 
   .row {
@@ -135,7 +140,14 @@
   .variacaoIndicador.vd { color: var(--vd); }
   .variacaoIndicador.vm { color: var(--vm); }
   .separadorVariacao { color: var(--mu); }
-  .variacaoLinha { white-space: nowrap; }
+  /* Selo da variação, colado no indicador: fundo levemente mais claro que o cabeçalho e
+     cantos arredondados, no lugar de parênteses. */
+  .variacaoLinha {
+      white-space: nowrap;
+      padding: .05rem .4rem;
+      background: var(--field);
+      border-radius: 6px;
+  }
 
   .indicadorRegra.neutro { color: var(--mu); }
   .indicadorRegra.vd { color: var(--vd); }
