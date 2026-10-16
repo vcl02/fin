@@ -5,7 +5,8 @@ function vCiclo() {
 
     if (i < 0) {   // Backlog: lancamentos sem data ou fora de qualquer periodo
         const linhas = filtrarLancamentos().filter(r => r.periodoIdx == null);
-        return renderBloco('Backlog', linhas.reduce((s, r) => s + r.v, 0), 'Sem data ou fora dos ciclos', linhas, 'bk', true);
+        // Sem subtítulo: a linha de baixo do título mostra só a quantidade de registros.
+        return renderBloco('Backlog', linhas.reduce((s, r) => s + r.v, 0), '', linhas, 'bk', true);
     }
 
     const periodo = Estado.ciclos[i];

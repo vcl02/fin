@@ -358,6 +358,10 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
     assert.ok(unica.includes(faixa('Passado', 'a<span class=resumoMeta>1 registro · x</span>')));
     // Título compacto (sem faixas) mantém a linha própria.
     assert.match(ctx.renderBloco('Backlog', 10, 'Sem data', [{}], 'bk'), /<p class=meta>1 registro · Sem data<\/p>/);
+    // Backlog também sem subtítulo: só a contagem.
+    assert.match(fs.readFileSync('js/cycle-views.js', 'utf8'), /renderBloco\('Backlog', linhas\.reduce\(\(s, r\) => s \+ r\.v, 0\), '', linhas, 'bk', true\)/);
+    assert.match(ctx.renderBloco('Backlog', 10, '', [{}, {}], 'bk'), /<p class=meta>2 registros<\/p>/);
+    assert.match(regras, /No Backlog essa linha mostra só a quantidade de registros, sem texto explicativo\./);
     // Crédito não passa subtítulo: só a contagem, sem datas nem " · " sobrando.
     const credito = ctx.renderBloco('Crédito', 0, '', [{}, {}, {}], 'cr', true, '', `<span class=resumoTitulo>${faixa('Futuro', 'b')}</span>`);
     assert.ok(credito.includes('<span class=resumoMeta>3 registros</span>'));
