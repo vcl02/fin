@@ -461,7 +461,7 @@
       color: var(--vd);
   }
 
-  /* "(N registros)" logo depois do valor nos títulos compactos (Backlog, Crédito histórico). */
+  /* "N registros" logo depois do valor nos títulos compactos (Backlog, Crédito histórico). */
   .blk h3 .contagemTitulo {
       margin-left: .2rem;
       font-size: .78em;

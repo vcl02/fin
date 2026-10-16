@@ -385,12 +385,12 @@ const renderBloco = (titulo, total, subtitulo, linhas, idTabela, selecionavel = 
     // (Futuro), em vez de ocupar uma linha própria entre o título e a tabela.
     const resumoComMeta = resumoTitulo && encaixaMetaNoResumo(resumoTitulo, textoMetaBloco(linhas.length, subtitulo));
     // Título compacto sem subtítulo (Backlog, Crédito histórico): a contagem vira um
-    // "(N registros)" cinza logo depois do valor, em vez de uma linha só pra ela.
+    // "N registros" cinza logo depois do valor, em vez de uma linha só pra ela.
     const contagemNoTitulo = !resumoTitulo && !subtitulo;
     const tituloCompleto = resumoTitulo
         ? `<span class=tituloBloco>${titulo}</span>${resumoComMeta || resumoTitulo}`
         : `${titulo}${separadorTotal}${valor}` +
-            (contagemNoTitulo ? ` <span class=contagemTitulo>(${textoMetaBloco(linhas.length, '')})</span>` : '');
+            (contagemNoTitulo ? ` <span class=contagemTitulo>${textoMetaBloco(linhas.length, '')}</span>` : '');
     return blocoCasca(tituloCompleto, subtitulo, linhas.length, idTabela,
         () => renderTabela(linhas, idTabela, selecionavel), !!resumoComMeta || contagemNoTitulo);
 };
