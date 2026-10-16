@@ -493,8 +493,11 @@ function abreModalNovo(prefill, modoEdicao) {
         setTimeout(() => el(prefill ? 'fValor' : 'fNome').focus(), 50);
     }
 }
+// "Hoje" é uma troca de data como outra qualquer: dispara o mesmo `change` do campo, pra a
+// fatura (presa à data) e a contagem da série acompanharem.
 el('fDataHoje').onclick = () => {
     el('fData').value = hojeISO();
+    el('fData').dispatchEvent(new Event('change'));
 };
 
 // ===================================================================

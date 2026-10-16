@@ -61,3 +61,8 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /a fatura sugerida é sempre a do mês seguinte à data de cada prestação/);
     assert.match(regras, /Duplicar não copia a fatura do original/);
 });
+
+test('o botão Hoje troca a data como qualquer outra: a fatura acompanha', () => {
+    assert.match(script, /el\('fDataHoje'\)\.onclick = \(\) => \{\s*\n\s*el\('fData'\)\.value = hojeISO\(\);\s*\n\s*el\('fData'\)\.dispatchEvent\(new Event\('change'\)\);/);
+    assert.match(regras, /digitando, no calendário ou pelo botão \*\*Hoje\*\*/);
+});
