@@ -271,9 +271,11 @@ const celCanal = r => {
 // repetir um texto negativo em toda linha; só "verdadeiro" ganha destaque. Mesma permissão
 // de Pago (nunca em linha sintética nem na conta restrita), clicável pra alternar na hora.
 const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido' };
-// Cada marca tem a sua cor pra não se confundir com o verde de Pago: Comprometido laranja,
-// Reserva amarelo. Só o texto marcado ganha cor; "—" fica neutro.
-const COR_FLAG = { reserva: 'amarelo', comprometido: 'am' };
+// Cada marca tem a sua cor pra não se confundir com o verde de Pago: Comprometido laranja
+// escuro, Reserva amarelo claro — tons afastados pros dois não se confundirem lado a lado.
+// Classes próprias (não o .am dos indicadores) pra mudar o tom sem mexer nos indicadores.
+// Só o texto marcado ganha cor; "—" fica neutro.
+const COR_FLAG = { reserva: 'flagReserva', comprometido: 'flagComprometido' };
 const celFlag = (r, chave) => {
     const marcado = !!r[chave];
     const texto = marcado ? ROTULO_FLAG[chave] : '—';

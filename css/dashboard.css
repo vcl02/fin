@@ -684,9 +684,15 @@
       font-weight: 600;
   }
 
-  /* Amarelo: marca Reserva nas tabelas (Comprometido usa o laranja .am). */
-  .amarelo {
-      color: #E8CF4A;
+  /* Marcas Reserva/Comprometido nas tabelas (COR_FLAG em tables.js): laranja escuro e
+     amarelo claro, afastados entre si e do laranja .am dos indicadores. */
+  .flagComprometido {
+      color: #D9741E;
+      font-weight: 600;
+  }
+
+  .flagReserva {
+      color: #F6E58D;
       font-weight: 600;
   }
 
