@@ -140,16 +140,13 @@ function ajusteDoCicloParaSaldoDiario(base, abat) {
 
 function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
 
-    // faturas em aberto de todos os ciclos, ja liquidas de antecipacao
+    // faturas em aberto de todos os ciclos, ja liquidas de antecipacao — uma por cartao, cada
+    // uma no seu proprio vencimento (Nubank dia 12, Mercado Pago dia 13)
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
-        const bruto = base
-            .filter(r => r.cred && r.periodoIdx === idx)
-            .reduce((s, r) => s + r.v, 0);
-        if (!bruto) return;
-        const liquido = bruto + (abat[idx] || 0);
-        const venc = vencimentoDoCiclo(idx);
-        if (Math.abs(liquido) > 0.005) faturas.push({ data: venc, v: liquido });
+        faturasLiquidasDoCiclo(base, abat, idx).forEach(f => {
+            if (Math.abs(f.liquido) > 0.005) faturas.push({ data: f.vencimento, v: f.liquido });
+        });
     });
 
     // um evento de Resgate/Aporte por ciclo, na data de fechamento (usa o cache — nunca
@@ -271,11 +268,13 @@ function guardadoGarantidoAte(linhas, idx) {
 // libera esse valor, até o saldo chegar a zero. `cicloQuitadoAte` é usado exclusivamente
 // pela projeção Futuro: os créditos até esse ciclo são tratados como faturas já quitadas,
 // liberando o limite antes de avaliar a próxima. `abatidoPorCiclo` vem da mesma alocação
-// usada pela fatura para nunca liberar mais que o pagamento realmente abateu.
-function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}, cicloQuitadoAte = -Infinity) {
+// usada pela fatura para nunca liberar mais que o pagamento realmente abateu. Cada cartão
+// conta só as próprias compras (cartaoDaFatura) contra o próprio abatimento.
+function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}, cicloQuitadoAte = -Infinity, cartao = CARTAO_NUBANK) {
     const confirmadoPorCiclo = new Map();
     linhas.forEach(r => {
         if (!r.cred || !r.pago || r.periodoIdx == null) return;
+        if (cartaoDaFatura(r.fatura) !== cartao) return;
         if (r.periodoIdx <= cicloQuitadoAte) return;
         confirmadoPorCiclo.set(r.periodoIdx, (confirmadoPorCiclo.get(r.periodoIdx) || 0) + (+r.v || 0));
     });
@@ -286,20 +285,22 @@ function limiteCartaoOcupado(linhas, abatidoPorCiclo = {}, cicloQuitadoAte = -In
 
 // O guardado positivo que aparece no título de Débito é aplicado na garantia da Nubank.
 // Ele aumenta o teto utilizável do cartão no ciclo atual; valor negativo nunca reduz o limite
-// contratado, pois só dinheiro efetivamente guardado pode estar como garantia.
-function limiteCartaoTotal(guardadoDoCiclo = 0) {
+// contratado, pois só dinheiro efetivamente guardado pode estar como garantia. O Mercado Pago
+// não tem garantia: o teto é só o limite contratado, qualquer que seja o guardado.
+function limiteCartaoTotal(guardadoDoCiclo = 0, cartao = CARTAO_NUBANK) {
+    if (cartao === CARTAO_MERCADO_PAGO) return LIMITE_CARTAO_MP;
     return LIMITE_CARTAO + Math.max(0, +guardadoDoCiclo || 0);
 }
 
-function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, cicloQuitadoAte = -Infinity) {
-    return limiteCartaoTotal(guardadoDoCiclo) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte);
+function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, cicloQuitadoAte = -Infinity, cartao = CARTAO_NUBANK) {
+    return limiteCartaoTotal(guardadoDoCiclo, cartao) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte, cartao);
 }
 
 // No Futuro, a fatura exibida é uma obrigação inteira (paga e aberta), então ela precisa
 // consumir o limite mesmo que uma parte ainda não esteja marcada como `pago`. As faturas até
 // ela já são descontadas como quitadas por `limiteCartaoLivre`; créditos confirmados depois
 // dela continuam ocupando. Antecipação acima do total não gera limite extra nesta projeção.
-function limiteCartaoLivreFuturo(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, idxFatura, totalFatura = 0) {
+function limiteCartaoLivreFuturo(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, idxFatura, totalFatura = 0, cartao = CARTAO_NUBANK) {
     const faturaExibida = Math.max(0, -(+totalFatura || 0));
-    return limiteCartaoLivre(linhas, abatidoPorCiclo, guardadoDoCiclo, idxFatura) - faturaExibida;
+    return limiteCartaoLivre(linhas, abatidoPorCiclo, guardadoDoCiclo, idxFatura, cartao) - faturaExibida;
 }

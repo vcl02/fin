@@ -42,29 +42,31 @@ test('o título do Crédito mostra o saldo após antecipações da mesma fatura'
     );
 });
 
-test('o único título de Crédito exibe limite livre com a garantia do Débito, sem outra tabela', () => {
+test('o único título de Crédito exibe o limite livre de cada cartão, com a garantia só no Nubank', () => {
     assert.match(dominio, /let LIMITE_CARTAO = 3350;/);
+    assert.match(dominio, /let LIMITE_CARTAO_MP = 1100;/);
     assert.match(visoes, /const guardadoGarantido = guardadoGarantidoAte\(Estado\.lancamentos, i\)/);
-    assert.match(visoes, /const limiteTotal = limiteCartaoTotal\(guardadoGarantido\)/);
-    assert.match(visoes, /const limiteLivreHoje = limiteCartaoLivre\(Estado\.lancamentos, abatidoDoCartao, guardadoGarantido\)/);
-    assert.match(visoes, /const limiteLivreFuturo = limiteCartaoLivreFuturo\(/);
-    assert.match(visoes, /guardadoGarantido, idxCreditoExibido, totalCreditoExibido/);
+    assert.match(visoes, /const garantidoDoCartao = cartao === CARTAO_NUBANK \? guardadoGarantido : 0;/);
+    assert.match(visoes, /limiteTotal: limiteCartaoTotal\(garantidoDoCartao, cartao\),/);
+    assert.match(visoes, /limiteLivreHoje: limiteCartaoLivre\(Estado\.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao\),/);
+    assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(/);
+    assert.match(visoes, /Estado\.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao/);
     assert.match(visoes, /data-limite-cartao/);
     assert.doesNotMatch(visoes, /data-garantia-cartao/);
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
-    assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal \|\| \(exibeFuturoCredito && limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\)\);/);
+    assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado && limitesDosCartoes\.some\(l =>\s*Math\.abs\(l\.totalHoje\) > l\.limiteTotal \|\| \(exibeFuturoCredito && l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\)\);/);
     assert.match(visoes, /const alertaTituloCredito = alertaTitulo\('alertaLimite', creditoAcimaLimite,/);
-    assert.match(visoes, /Math\.abs\(totalCreditoHoje\) > limiteTotal/);
-    assert.match(visoes, /limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
+    assert.match(visoes, /Math\.abs\(l\.totalHoje\) > l\.limiteTotal/);
+    assert.match(visoes, /l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
     assert.match(visoes, /'Gasto acima do limite'/);
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
-    assert.match(visoes, /de \$\{brl\(limiteTotal\)\} ` \+/);
-    assert.match(visoes, /value="\$\{limiteContratadoEditavel\}"/);
+    assert.match(visoes, /de \$\{brl\(l\.limiteTotal\)\} ` \+/);
+    assert.match(visoes, /value="\$\{limiteContratadoEditavel\(l\.cartao\)\}"/);
     assert.match(visoes, /<span class=limiteCartaoRotulo>Aprovado<\/span>/);
     assert.match(visoes, /const garantiaExibida = i === Estado\.idxHoje \? garantia : Math\.floor\(garantia \/ 100\) \* 100/);
-    assert.match(visoes, /\+ \$\{brl\(garantiaExibida\)\} Garantido/);
+    assert.match(visoes, /\$\{l\.cartao === CARTAO_NUBANK && garantiaExibida \? `<span class=limiteGarantido> \+ \$\{brl\(garantiaExibida\)\} Garantido/);
     assert.doesNotMatch(visoes, /Garantido<\/span>` : ''\}\)<\/span>/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);
@@ -74,7 +76,7 @@ test('o único título de Crédito exibe limite livre com a garantia do Débito,
     assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
     assert.match(interacoes, /input\.select\(\)/);
     assert.match(interacoes, /const aprovado = numeroDoLimiteDigitado\(input\.value\);/);
-    assert.match(interacoes, /definirLimiteCartao\(aprovado\)/);
+    assert.match(interacoes, /definirLimiteCartao\(aprovado, cartao\)/);
     assert.doesNotMatch(estilos, /\.limiteTotal/);
     assert.match(estilos, /\.alertaTitulo/);
     assert.match(estilos, /\.alertaTitulo\.vazio/);
@@ -101,7 +103,7 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
     assert.match(visoes, /'Saldo negativo após usar o guardado'/);
     assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoNaLinhaUnica == 'vm' \|\| \(exibeFuturo && classeSaldoFuturo == 'vm'\)/);
-    assert.match(visoes, /!cicloDebitoPassado &&\s*\(Math\.abs\(totalCreditoHoje\) > limiteTotal/);
+    assert.match(visoes, /!cicloDebitoPassado && limitesDosCartoes\.some\(l =>\s*Math\.abs\(l\.totalHoje\) > l\.limiteTotal/);
     assert.match(visoes, /const alertaTituloDebito = alertaTitulo\('alertaSaldo', debitoTemSaldoVermelho,/);
     assert.match(visoes, /`Débito\$\{alertaTituloDebito\}`/);
     assert.doesNotMatch(visoes, /Pago \+ aberto/);
@@ -173,9 +175,11 @@ test('resumos iguais no ciclo atual recolhem apenas o bloco repetido e ocultam s
     assert.match(regras, /cada bloco é avaliado separadamente[\s\S]*Hoje e Futuro forem iguais/);
 });
 
-test('documenta Nubank como cartão único e exige separação explícita antes de outro cartão', () => {
-    assert.match(regras, /único cartão atual é o Nubank/);
+test('documenta o cartão pelo dia do vencimento como regra provisória, com saída por migration', () => {
+    // Decisão do mantenedor: dois cartões sem coluna nova. A identidade explícita continua
+    // sendo o caminho quando os vencimentos coincidirem ou entrar um terceiro cartão.
+    assert.match(regras, /Identificar o cartão pelo dia do vencimento é uma regra provisória/);
     assert.match(regras, /identificação explícita de cartão/);
     assert.match(decisoes, /identidade explícita de cartão em crédito e antecipação/);
-    assert.match(decisoes, /Não se deve usar marca, categoria, nome do lançamento ou vencimento/);
+    assert.match(decisoes, /Nome e categoria continuam sem identificar cartão/);
 });

@@ -349,6 +349,12 @@
       white-space: nowrap;
   }
 
+  /* Com dois cartões, cada faixa de limite começa pelo nome do cartão. */
+  .limiteCartaoNome {
+      color: var(--fg);
+      font-weight: 600;
+  }
+
   /* Campo propositalmente parecido com texto: só revela que é editável ao interagir. */
   .limiteCartaoEditavel {
       width: 5.9em;

@@ -727,19 +727,14 @@ function dadosEvolucao(de, ate) {
             Aportado: investimento.filter(r => r.v < 0),
         };
 
-        // uma linha da unica fatura detalhada, liquida de antecipacao (mesmo criterio de
-        // vCiclo: fatura ja quitada — liquido ~0 — nao vira linha nenhuma)
-        const brutoFatura = base
-            .filter(r => r.cred && r.periodoIdx == i)
-            .reduce((s, r) => s + r.v, 0);
-        if (brutoFatura) {
-            const liquido = brutoFatura + (abat[i] || 0);
-            if (Math.abs(liquido) >= 0.005) {
-                linhasDe[liquido < 0 ? 'Gasto' : 'Ganho'].push({
-                    data: vencimentoDoCiclo(i), nome: 'Fatura do cartão', categ: 'Fatura', v: liquido,
-                });
-            }
-        }
+        // uma linha por fatura de cartao, liquida de antecipacao (mesmo criterio de vCiclo:
+        // fatura ja quitada — liquido ~0 — nao vira linha nenhuma)
+        faturasLiquidasDoCiclo(base, abat, i).forEach(f => {
+            if (Math.abs(f.liquido) < 0.005) return;
+            linhasDe[f.liquido < 0 ? 'Gasto' : 'Ganho'].push({
+                data: f.vencimento, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura', v: f.liquido,
+            });
+        });
 
         // o Resgate necessario / Aporte sugerido do ciclo entra como uma linha sintetica na
         // barra correspondente, do mesmo jeito que aparece no bloco Debito da visao Ciclo

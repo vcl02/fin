@@ -42,22 +42,33 @@ const LIMITE_BESTEIRA = 250;
 // — ver Faturas); "Lazer" sozinho também nunca conta, pois pode ser lazer com qualquer outra
 // pessoa. Ver ehGastoIsabella em js/charts.js para a regra completa.
 const LIMITE_ISABELLA = 700;
-// Limite único contratado do cartão. A tela permite ajustá-lo como preferência local;
-// garantia positiva do ciclo é somada separadamente, sem alterar este valor-base.
+// Dois cartões de crédito, identificados SÓ pelo dia de vencimento da fatura (regra
+// provisória, ver docs/DECISOES.md): dia 13 = Mercado Pago; qualquer outro dia = Nubank,
+// que cobre todo o histórico. Vale enquanto os dois vencimentos forem dias diferentes.
+const CARTAO_NUBANK = 'nubank';
+const CARTAO_MERCADO_PAGO = 'mp';
+const CARTOES = [CARTAO_NUBANK, CARTAO_MERCADO_PAGO];
+const NOME_CARTAO = { [CARTAO_NUBANK]: 'Nubank', [CARTAO_MERCADO_PAGO]: 'Mercado Pago' };
+const DIA_VENCIMENTO_CARTAO = { [CARTAO_NUBANK]: 12, [CARTAO_MERCADO_PAGO]: 13 };
+// Limite contratado de cada cartão. A tela permite ajustá-los como preferência local;
+// só o Nubank soma garantia positiva do ciclo, sem alterar este valor-base.
 let LIMITE_CARTAO = 3350;
+let LIMITE_CARTAO_MP = 1100;
 
-function definirLimiteCartao(valor) {
+function definirLimiteCartao(valor, cartao = CARTAO_NUBANK) {
     const numero = Number(valor);
     if (!Number.isFinite(numero) || numero < 0) return false;
-    LIMITE_CARTAO = Math.round(numero * 100) / 100;
+    const arredondado = Math.round(numero * 100) / 100;
+    if (cartao === CARTAO_MERCADO_PAGO) LIMITE_CARTAO_MP = arredondado;
+    else LIMITE_CARTAO = arredondado;
     return true;
 }
 
-// Sem uso em produção: todo outro módulo lê LIMITE_CARTAO direto, já que scripts
-// classicos compartilham o mesmo escopo global. Existe só pra teste poder ler o valor
-// atual de volta depois de definirLimiteCartao() — um `let` sandboxado em vm não vira
-// propriedade legível do contexto, só um closure (esta função) consegue ver a mutação.
-const limiteCartaoContratado = () => LIMITE_CARTAO;
+// Leitura do limite contratado de um cartão. Também permite que teste leia o valor atual
+// depois de definirLimiteCartao() — um `let` sandboxado em vm não vira propriedade legível
+// do contexto, só um closure (esta função) consegue ver a mutação.
+const limiteCartaoContratado = (cartao = CARTAO_NUBANK) =>
+    cartao === CARTAO_MERCADO_PAGO ? LIMITE_CARTAO_MP : LIMITE_CARTAO;
 const TOLERANCIA_FINANCEIRA = 0.005;
 const PREFIXO_LINHA_SINTETICA = /^(fat|cp|sal|res|sug|abt):/;
 

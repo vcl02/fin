@@ -20,28 +20,24 @@ function vCiclo() {
     // existe (âncora Faturamento PJ seguinte cadastrada) — sem isso não há pra onde mover.
     marcaOcorrenciasDuplicadasNoCiclo(debitos, Estado.ciclos[i + 1]);
     const visiveis = filtrarLancamentos();
-    const creditosDaFatura = visiveis.filter(r => r.periodoIdx == i && r.cred);
 
-    // Ha um unico cartao detalhado. A fatura da Isabella e' um lancamento comum no bloco
-    // Debito, com valor atualizado manualmente, e nunca vira uma linha sintetica aqui.
-    // O vencimento vem da fatura escolhida manualmente em cada credito.
-    const vencimentoDaFatura = vencimentoDoCiclo(i);
+    // Uma linha de fatura por cartão (Nubank, Mercado Pago), cada uma no seu vencimento —
+    // são dois pagamentos de verdade, em dias diferentes. A fatura da Isabella e' um
+    // lancamento comum no bloco Debito, com valor atualizado manualmente, e nunca vira uma
+    // linha sintetica aqui. O vencimento vem da fatura escolhida manualmente em cada credito.
     const abatido = alocacaoAntecipacoes(visiveis);
-    const montaLinhaFatura = () => {
-        const total = creditosDaFatura.reduce((s, r) => s + r.v, 0);
-        if (!total) return null;   // sem compras no cartao, sem linha
-        const liquido = total + (abatido[i] || 0);
+    const linhasFatura = faturasLiquidasDoCiclo(visiveis, abatido, i)
         // fatura quitada nao aparece: nao ha mais nada pra sair da conta
-        if (Math.abs(liquido) < 0.005) return null;
-        const venc = vencimentoDaFatura;
-        const sid = `fat:${i}`;
-        Estado.valorFaturaPorCiclo[sid] = liquido;
-        return {
-            data: venc || periodo.fat, nome: 'Fatura do cartão', categ: 'Fatura',
-            freq: '', id: -3, v: liquido, valor: liquido, _fat: 1, _sid: sid,
-        };
-    };
-    const linhasFatura = [montaLinhaFatura()].filter(Boolean);
+        .filter(f => Math.abs(f.liquido) >= 0.005)
+        .map(f => {
+            // O Nubank mantém a chave de sempre; o Mercado Pago ganha sufixo próprio.
+            const sid = f.cartao === CARTAO_NUBANK ? `fat:${i}` : `fat:${i}:${f.cartao}`;
+            Estado.valorFaturaPorCiclo[sid] = f.liquido;
+            return {
+                data: f.vencimento || periodo.fat, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura',
+                freq: '', id: -3, v: f.liquido, valor: f.liquido, _fat: 1, _sid: sid,
+            };
+        });
 
     const simples = modoSimples();
     // saldo que veio do ciclo anterior — positivo ou negativo, entra como uma linha
@@ -239,53 +235,77 @@ function vCiclo() {
     }
     const exibeFuturoDebito = !cicloDebitoPassado && !resumoDebitoIgual;
     const exibeFuturoCredito = !cicloDebitoPassado && !resumoCreditoIgual;
-    // Limite não segue os filtros da tela: é o retrato do único cartão real. A mesma
+    // Limite não segue os filtros da tela: é o retrato de cada cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
     // A garantia Nubank usa aportes/resgates REAIS de todos os status. Ela não pode seguir
     // o filtro Pago da tela nem contar Aporte sugerido, pois ambos fariam o limite variar
-    // sem que o dinheiro efetivamente aplicado na Nubank tivesse mudado.
+    // sem que o dinheiro efetivamente aplicado na Nubank tivesse mudado. O Mercado Pago não
+    // tem garantia. Ele só aparece no título depois da 1ª compra nele: antes disso a tela fica
+    // exatamente como era com um cartão só.
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
     const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
-    const limiteTotal = limiteCartaoTotal(guardadoGarantido);
-    const limiteLivreHoje = limiteCartaoLivre(Estado.lancamentos, abatidoDoCartao, guardadoGarantido);
+    const cartoesNoTitulo = CARTOES.filter(cartao => cartao === CARTAO_NUBANK ||
+        Estado.lancamentos.some(r => r.cred && cartaoDaFatura(r.fatura) === cartao));
+    const doCartao = (linhas, cartao) => linhas.filter(r => cartaoDaFatura(r.fatura) === cartao);
     // A prévia é a fatura do próximo ciclo. O Livre futuro parte do teto menos essa fatura
     // inteira (paga e aberta), como se a anterior já tivesse sido quitada; compras
     // confirmadas de faturas posteriores também continuam ocupando o cartão.
-    const limiteLivreFuturo = limiteCartaoLivreFuturo(
-        Estado.lancamentos, abatidoDoCartao, guardadoGarantido, idxCreditoExibido, totalCreditoExibido
-    );
+    const limitesDosCartoes = cartoesNoTitulo.map(cartao => {
+        const garantidoDoCartao = cartao === CARTAO_NUBANK ? guardadoGarantido : 0;
+        const abatidoNoCartao = abatimentoDoCartao(abatidoDoCartao, cartao);
+        const totalExibidoDoCartao = totalCreditoExibidoAposAntecipacoes(
+            doCartao(creditosExibidos, cartao), abatimentoDoCartao(abatido, cartao)[idxCreditoExibido] || 0
+        );
+        return {
+            cartao,
+            limiteTotal: limiteCartaoTotal(garantidoDoCartao, cartao),
+            totalHoje: totalCreditoExibidoAposAntecipacoes(
+                doCartao(creditosExibidosNoCiclo(pagosAteHoje, i), cartao),
+                abatimentoDoCartao(abatidoAteHoje, cartao)[idxCreditoExibido] || 0
+            ),
+            limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao),
+            limiteLivreFuturo: limiteCartaoLivreFuturo(
+                Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao
+            ),
+        };
+    });
     const garantia = Math.max(0, guardadoGarantido);
     // Fora do ciclo atual, o valor visível é conservador e só exibe centenas completas.
     // O ciclo atual, o teto e o Livre mantêm a garantia exata, sem perder centavos no cálculo.
     const garantiaExibida = i === Estado.idxHoje ? garantia : Math.floor(garantia / 100) * 100;
     // O teto total é somente leitura no "de"; o campo discreto ao lado edita a parte
-    // aprovada/contratada sem misturá-la com a garantia variável do ciclo.
-    const limiteContratadoEditavel = LIMITE_CARTAO.toLocaleString('pt-BR', {
+    // aprovada/contratada de cada cartão sem misturá-la com a garantia variável do ciclo.
+    const limiteContratadoEditavel = cartao => limiteCartaoContratado(cartao).toLocaleString('pt-BR', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
     // O teto e a garantia são contexto do cartão. Só o Livre muda: Hoje retrata o uso real,
     // enquanto Futuro já considera quitada a fatura anterior à prévia.
-    // O aviso compara cada gasto líquido com o teto utilizável, não com o limite livre.
-    // Uma única marca no título indica excesso em Hoje ou Futuro sem deslocar a tabela.
+    // O aviso compara cada gasto líquido com o teto utilizável do próprio cartão, não com o
+    // limite livre; basta um cartão estourar. Uma única marca no título indica excesso em
+    // Hoje ou Futuro sem deslocar a tabela.
     // O limite é um alerta operacional, então ciclos encerrados não exibem aviso retrospectivo.
-    const creditoAcimaLimite = !cicloDebitoPassado &&
-        (Math.abs(totalCreditoHoje) > limiteTotal || (exibeFuturoCredito && limiteLivreFuturo < -TOLERANCIA_FINANCEIRA));
+    const creditoAcimaLimite = !cicloDebitoPassado && limitesDosCartoes.some(l =>
+        Math.abs(l.totalHoje) > l.limiteTotal || (exibeFuturoCredito && l.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA));
     const alertaTituloCredito = alertaTitulo('alertaLimite', creditoAcimaLimite,
         'Acima do limite', 'Gasto acima do limite');
-    const resumoLimiteCartao = limiteLivre => `<span class=limiteCartao>Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(limiteTotal)} ` +
-        `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao ` +
-        `value="${limiteContratadoEditavel}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado" aria-label="Limite aprovado"><span class=limiteCartaoRotulo>Aprovado</span></span>` +
-        `${garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''}</span>`;
+    // Com um cartão só, o nome dele não acrescenta nada; com dois, cada faixa diz de quem é.
+    const nomeNoTitulo = cartao => cartoesNoTitulo.length > 1
+        ? `<span class=limiteCartaoNome>${NOME_CARTAO[cartao]}</span> ` : '';
+    const resumoLimiteCartao = (l, limiteLivre) => `<span class=limiteCartao>${nomeNoTitulo(l.cartao)}Livre <b class="${corValor(limiteLivre)}">${brl(limiteLivre)}</b> de ${brl(l.limiteTotal)} ` +
+        `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-cartao="${l.cartao}" ` +
+        `value="${limiteContratadoEditavel(l.cartao)}" placeholder="0,00" inputmode=decimal title="Editar limite aprovado ${NOME_CARTAO[l.cartao]}" aria-label="Limite aprovado ${NOME_CARTAO[l.cartao]}"><span class=limiteCartaoRotulo>Aprovado</span></span>` +
+        `${l.cartao === CARTAO_NUBANK && garantiaExibida ? `<span class=limiteGarantido> + ${brl(garantiaExibida)} Garantido</span>` : ''}</span>`;
+    const resumoLimites = chaveLivre => limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('');
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     const linhaHojeCredito = cicloDebitoFuturo || cicloDebitoPassado ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoHoje)}">${brl(Math.abs(totalCreditoHoje))}</b>` +
-        resumoLimiteCartao(limiteLivreHoje) + `</span></span>`;
+        resumoLimites('limiteLivreHoje') + `</span></span>`;
     const linhaFuturoCredito = exibeFuturoCredito ?
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
         `<b class="${corSoma(totalCreditoExibido)}">${brl(Math.abs(totalCreditoExibido))}</b>` +
-        resumoLimiteCartao(limiteLivreFuturo) + `</span></span>` : '';
+        resumoLimites('limiteLivreFuturo') + `</span></span>` : '';
     const resumoCredito = cicloDebitoPassado ? '' :
         `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;
 

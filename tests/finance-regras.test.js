@@ -14,6 +14,9 @@ function regrasFinanceiras(ciclos) {
     const contexto = {
         Estado: { ciclos }, SALDO_DESDE: '2026-01-01',
         CATEGORIA_INVESTIMENTO: 'Investimento', LIMITE_CARTAO: 3750, TOLERANCIA_FINANCEIRA: 0.005,
+        CARTAO_NUBANK: 'nubank', CARTAO_MERCADO_PAGO: 'mp', LIMITE_CARTAO_MP: 1100,
+        // Linhas destes testes não têm fatura: são todas do Nubank, como antes do 2º cartão.
+        cartaoDaFatura: () => 'nubank',
         dataISO: valor => String(valor).slice(0, 10),
         hojeISO: () => '2026-09-26',
     };
@@ -66,7 +69,7 @@ test('saldo diário alternativo recalcula eventos e ajustes só com a categoria 
         CATEGORIA_INVESTIMENTO: 'Investimento', TOLERANCIA_FINANCEIRA: 0.005,
         dataISO: valor => String(valor).slice(0, 10),
         alocacaoAntecipacoes: () => ({}),
-        vencimentoDoCiclo: () => '2026-01-31',
+        faturasLiquidasDoCiclo: () => [],
         filtrarLancamentos: () => contexto.Estado.lancamentos,
     };
     vm.createContext(contexto);

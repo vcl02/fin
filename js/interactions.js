@@ -2,16 +2,21 @@
 
 // Controlador da interface: comandos, modais, gráficos, formulário e boot.
 
+// Uma chave por cartão; a do Nubank é a de sempre, pra quem já salvou não perder o valor.
 const CHAVE_LIMITE_CARTAO_LOCAL = 'fin.limite-cartao';
+const chaveLimiteCartaoLocal = cartao => cartao === CARTAO_NUBANK
+    ? CHAVE_LIMITE_CARTAO_LOCAL : `${CHAVE_LIMITE_CARTAO_LOCAL}.${cartao}`;
 
 // O limite contratado é uma preferência desta instalação, não um lançamento financeiro.
 // Guardá-lo localmente evita criar coluna/configuração no Supabase e mantém o ajuste após
 // recarregar; falha de armazenamento nunca pode impedir o uso da tela.
 function restaurarLimiteCartaoLocal() {
-    try {
-        const salvo = localStorage.getItem(CHAVE_LIMITE_CARTAO_LOCAL);
-        if (salvo != null) definirLimiteCartao(salvo);
-    } catch { /* Ambiente sem armazenamento local: mantém o padrão do código. */ }
+    CARTOES.forEach(cartao => {
+        try {
+            const salvo = localStorage.getItem(chaveLimiteCartaoLocal(cartao));
+            if (salvo != null) definirLimiteCartao(salvo, cartao);
+        } catch { /* Ambiente sem armazenamento local: mantém o padrão do código. */ }
+    });
 }
 
 function numeroDoLimiteDigitado(texto) {
@@ -24,13 +29,14 @@ function numeroDoLimiteDigitado(texto) {
 }
 
 function confirmarLimiteCartao(input) {
+    const cartao = input.dataset.limiteCartao || CARTAO_NUBANK;
     const aprovado = numeroDoLimiteDigitado(input.value);
-    if (!definirLimiteCartao(aprovado)) {
+    if (!definirLimiteCartao(aprovado, cartao)) {
         mostrarToast('Limite inválido', 'Informe um valor igual ou maior que zero.');
         desenhar();
         return;
     }
-    try { localStorage.setItem(CHAVE_LIMITE_CARTAO_LOCAL, String(LIMITE_CARTAO)); } catch { /* preferência só desta sessão */ }
+    try { localStorage.setItem(chaveLimiteCartaoLocal(cartao), String(limiteCartaoContratado(cartao))); } catch { /* preferência só desta sessão */ }
     desenhar();
 }
 

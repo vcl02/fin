@@ -9,6 +9,8 @@ const fonte = fs.readFileSync('js/shared.js', 'utf8');
 function regrasCompartilhadas(estado = { ciclos: [], faturas: [] }) {
     const contexto = {
         Estado: estado,
+        CARTAO_NUBANK: 'nubank', CARTAO_MERCADO_PAGO: 'mp', CARTOES: ['nubank', 'mp'],
+        DIA_VENCIMENTO_CARTAO: { nubank: 12, mp: 13 },
         MESES: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
         document: { getElementById: () => ({}) },
         setTimeout, clearTimeout,

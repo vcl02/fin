@@ -238,7 +238,10 @@
       color: #F0A83A;
   }
 
-  .tagFatura {
+  /* tagCartao marca compra/antecipação do Mercado Pago na tabela única de Crédito/Débito:
+     mesmo formato discreto da tag de antecipação. */
+  .tagFatura,
+  .tagCartao {
       display: inline-flex;
       align-items: center;
       font-size: 0.72rem;

@@ -269,43 +269,56 @@ function periodoDaFatura(faturaVenc) {
     return periodoDoDebito(dataISO(faturaVenc));
 }
 
-function vencimentoDoCiclo(idx) {
-    const faturas = Estado.faturas
-        .filter(f => periodoDaFatura(f.vencimento) === idx)
+// Cartão de uma fatura pelo dia do vencimento (ver CARTOES em js/domain.js). Sem fatura
+// (antecipação antiga, crédito no Backlog) é Nubank, dono de todo o histórico.
+function cartaoDaFatura(vencimento) {
+    return vencimento && +dataISO(vencimento).slice(8, 10) === DIA_VENCIMENTO_CARTAO[CARTAO_MERCADO_PAGO]
+        ? CARTAO_MERCADO_PAGO : CARTAO_NUBANK;
+}
+
+// Faturas conhecidas de um ciclo, opcionalmente só as de um cartão, da mais antiga pra nova.
+function faturasDoCiclo(idx, cartao) {
+    return Estado.faturas
+        .filter(f => periodoDaFatura(f.vencimento) === idx && (!cartao || cartaoDaFatura(f.vencimento) === cartao))
         .sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento));
-    return faturas[0] ? dataISO(faturas[0].vencimento) : dataISO(Estado.ciclos[idx]?.fat);
 }
 
+function vencimentoDoCiclo(idx, cartao) {
+    const fatura = faturasDoCiclo(idx, cartao)[0];
+    return fatura ? dataISO(fatura.vencimento) : dataISO(Estado.ciclos[idx]?.fat);
+}
+
+// Uma data por cartão (12/11/2026 · 13/11/2026 quando os dois têm fatura no ciclo).
 function tituloFaturaDoCiclo(idx) {
-    const fatura = Estado.faturas
-        .filter(f => periodoDaFatura(f.vencimento) === idx)
-        .sort((a, b) => timestamp(a.vencimento) - timestamp(b.vencimento))[0];
-    return fatura ? nomeFatura(fatura) : '—';
+    const nomes = CARTOES.map(cartao => faturasDoCiclo(idx, cartao)[0]).filter(Boolean).map(nomeFatura);
+    return nomes.length ? nomes.join(' · ') : '—';
 }
 
-// Distribui as antecipacoes do unico cartao detalhado pelas faturas, da mais antiga pra
-// mais nova. A fatura da Isabella e' um lancamento comum e nao participa deste calculo.
-// Antecipacoes com fatura explícita vao direto para a fatura apontada (sem depender de
-// ordenacao cronologica). Antecipacoes antigas sem fatura continuam usando o fallback
-// cronologico (ponteiro p na lista de faturas com saldo).
-function alocacaoAntecipacoes(linhas) {
+// Distribui as antecipacoes de cada cartao pelas faturas DELE, da mais antiga pra mais nova:
+// antecipacao do Mercado Pago nunca abate fatura do Nubank e vice-versa (o cartao sai do
+// vencimento da fatura apontada; sem fatura, e' Nubank). A fatura da Isabella e' um
+// lancamento comum e nao participa deste calculo. Antecipacoes com fatura explícita vao
+// direto para a fatura apontada (sem depender de ordenacao cronologica). Antecipacoes
+// antigas sem fatura continuam usando o fallback cronologico (ponteiro p na lista de
+// faturas com saldo).
+function alocacaoAntecipacoesDoCartao(linhas, cartao) {
     // saldo devido de cada fatura, na ordem em que aparecem na tela.
     // vencimento e' a data PK da fatura (para cruzar com r.fatura das antecipacoes novas).
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
         const bruto = linhas
-            .filter(r => r.cred && r.periodoIdx === idx)
+            .filter(r => r.cred && r.periodoIdx === idx && cartaoDaFatura(r.fatura) === cartao)
             .reduce((s, r) => s + r.v, 0);
         if (bruto < 0) {
             // descobre qual fatura do banco corresponde a este ciclo (pode ser null se nao houver)
-            const faturasDoCiclo = Estado.faturas.filter(f => periodoDaFatura(f.vencimento) === idx);
-            const vencimento = faturasDoCiclo.length === 1 ? dataISO(faturasDoCiclo[0].vencimento) : null;
+            const faturasDoCartao = faturasDoCiclo(idx, cartao);
+            const vencimento = faturasDoCartao.length === 1 ? dataISO(faturasDoCartao[0].vencimento) : null;
             faturas.push({ idx, saldo: -bruto, vencimento });
         }
     });
 
     const antecipacoes = linhas
-        .filter(r => ehTransferenciaFatura(r) && r.data && r.v < 0)
+        .filter(r => ehTransferenciaFatura(r) && r.data && r.v < 0 && cartaoDaFatura(r.fatura) === cartao)
         .sort((a, b) => timestamp(a.data) - timestamp(b.data));
 
     const abatido = {};
@@ -335,6 +348,43 @@ function alocacaoAntecipacoes(linhas) {
         }
     });
     return abatido;
+}
+
+// Abatimento total por ciclo (soma dos cartões), no mesmo formato de sempre — o saldo e a
+// fatura do ciclo continuam usando o total. O detalhe por cartão vai junto em `porCartao`
+// (não enumerável: não aparece ao espalhar/comparar o mapa), pra limite e linhas de fatura
+// de cada cartão não recalcularem a alocação.
+function alocacaoAntecipacoes(linhas) {
+    const porCartao = Object.fromEntries(CARTOES.map(cartao => [cartao, alocacaoAntecipacoesDoCartao(linhas, cartao)]));
+    const total = {};
+    Object.values(porCartao).forEach(abatido => Object.entries(abatido).forEach(([idx, valor]) => {
+        total[idx] = (total[idx] || 0) + valor;
+    }));
+    Object.defineProperty(total, 'porCartao', { value: porCartao });
+    return total;
+}
+
+// Abatimento de um cartão a partir do resultado de alocacaoAntecipacoes. Sem o detalhe
+// (mapa montado à mão), tudo é do Nubank, como antes de existir o segundo cartão.
+function abatimentoDoCartao(abatido, cartao) {
+    return abatido?.porCartao?.[cartao] || (cartao === CARTAO_NUBANK ? (abatido || {}) : {});
+}
+
+// Fatura líquida de cada cartão num ciclo (compras do cartão + antecipações alocadas a ele),
+// com o vencimento daquele cartão. Base única das linhas "Fatura Nubank"/"Fatura Mercado
+// Pago" no Débito, no saldo por dia e no gráfico de evolução.
+function faturasLiquidasDoCiclo(base, abatido, idx) {
+    return CARTOES.map(cartao => {
+        const bruto = base
+            .filter(r => r.cred && r.periodoIdx === idx && cartaoDaFatura(r.fatura) === cartao)
+            .reduce((s, r) => s + r.v, 0);
+        if (!bruto) return null;
+        return {
+            cartao, bruto,
+            liquido: bruto + (abatimentoDoCartao(abatido, cartao)[idx] || 0),
+            vencimento: vencimentoDoCiclo(idx, cartao),
+        };
+    }).filter(Boolean);
 }
 
 // Em qual PERIODO uma movimentacao de DEBITO cai: o periodo cujo intervalo [ini, fat] contem a data. Retorna null se a data for vazia (Backlog) ou nao cair em nenhum periodo cadastrado.

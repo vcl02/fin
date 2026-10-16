@@ -201,10 +201,16 @@ const celNome = r => {
     const sim = r._sim ? '<span class=simIco title="Simulado">✦</span> ' : '';
     const nome = escapeHtml(textoOuTraco(r.nome));
     const fatRef = r.fatura;
+    const ehMercadoPago = !!fatRef && cartaoDaFatura(fatRef) === CARTAO_MERCADO_PAGO;
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
-        ? ` <span class="tagFatura" title="Abate fatura">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}</span>`
+        ? ` <span class="tagFatura" title="Abate fatura${ehMercadoPago ? ' do Mercado Pago' : ''}">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}${ehMercadoPago ? ' MP' : ''}</span>`
         : '';
-    const texto = `${nome}${badgeFatura}`;
+    // Compra do Mercado Pago na tabela única de Crédito: o Nubank (todo o histórico) fica
+    // sem marca, pra tabela de um cartão só continuar igual.
+    const badgeCartao = r.cred && ehMercadoPago
+        ? ' <span class="tagCartao" title="Mercado Pago" aria-label="Mercado Pago">MP</span>'
+        : '';
+    const texto = `${nome}${badgeFatura}${badgeCartao}`;
     return ehLinhaReal(r) && !modoRestrito()
         ? `${sim}<span class="togNome" data-tog-nome="${escapeHtml(String(r.id))}" title="Editar nome">${texto}</span>`
         : `${sim}${texto}`;

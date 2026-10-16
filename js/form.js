@@ -179,6 +179,24 @@ function nomeFatura(fatura) {
     return dataBR(fatura.vencimento);
 }
 
+// No seletor do cadastro cada fatura diz de qual cartão é (o dia do vencimento decide).
+const rotuloFaturaComCartao = vencimento =>
+    `${nomeFatura({ vencimento })} · ${NOME_CARTAO[cartaoDaFatura(vencimento)]}`;
+
+// Próximos vencimentos dos dois cartões, do mês passado até o fim da série
+// (DATA_LIMITE_RECORRENCIA), mesmo sem compra cadastrada neles: sem isso a 1ª compra num
+// cartão novo (ou num mês ainda vazio) não teria fatura pra escolher.
+function vencimentosPrevistosDosCartoes(hoje = hojeISO()) {
+    const [ano, mes] = hoje.split('-').map(Number);
+    const ultimoMes = DATA_LIMITE_RECORRENCIA.slice(0, 7);
+    const vencimentos = [];
+    for (let i = -1; ; i++) {
+        const mesISO = new Date(Date.UTC(ano, mes - 1 + i, 1)).toISOString().slice(0, 7);
+        if (mesISO > ultimoMes) return vencimentos;
+        CARTOES.forEach(cartao => vencimentos.push(`${mesISO}-${String(DIA_VENCIMENTO_CARTAO[cartao]).padStart(2, '0')}`));
+    }
+}
+
 // A 1ª parcela fica no cadastro e as demais em #modalFaturasParcelas: a ordem vem do
 // data-fatura-parcela, não da posição no documento.
 function seletoresDeFatura() {
@@ -194,8 +212,9 @@ function idsFaturasDoFormulario(incluirSugestoes = true) {
 }
 
 function opcoesFaturasDisponiveis() {
-    // DISTINCT estrito de todas as datas de vencimento que realmente existem nos lancamentos
-    const faturasSet = new Set();
+    // DISTINCT de todas as datas de vencimento que realmente existem nos lancamentos, mais
+    // os vencimentos previstos dos dois cartões
+    const faturasSet = new Set(vencimentosPrevistosDosCartoes());
     Estado.lancamentos.forEach(r => {
         const v = r.fatura;
         if (v) faturasSet.add(dataISO(v));
@@ -203,7 +222,7 @@ function opcoesFaturasDisponiveis() {
 
     return [...faturasSet]
         .sort((a, b) => timestamp(a) - timestamp(b))
-        .map(venc => ({ vencimento: venc, rotulo: nomeFatura({ vencimento: venc }) }));
+        .map(venc => ({ vencimento: venc, rotulo: rotuloFaturaComCartao(venc) }));
 }
 
 // No modo de simulacao, cada prestacao ja nasce apontando para a fatura disponivel
@@ -277,7 +296,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     idsSelecionados.forEach(sel => {
         if (sel && !faturasMap.has(dataISO(sel))) {
             const iso = dataISO(sel);
-            faturasMap.set(iso, nomeFatura({ vencimento: iso }));
+            faturasMap.set(iso, rotuloFaturaComCartao(iso));
         }
     });
 
@@ -285,9 +304,13 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
         .sort((a, b) => timestamp(a[0]) - timestamp(b[0]))
         .map(([venc, rotulo]) => ({ vencimento: venc, rotulo }));
     // O mesmo preenchimento inicial vale no cadastro real e na simulação. A sugestão
-    // nunca substitui uma fatura que a pessoa já escolheu manualmente.
+    // nunca substitui uma fatura que a pessoa já escolheu manualmente, e fica no cartão da
+    // 1ª parcela escolhida à mão (Nubank enquanto nada foi escolhido): sem isso, uma compra
+    // feita dia 13 viraria sugestão do Mercado Pago, que vence nesse dia.
+    const cartaoDaSugestao = idsSelecionados[0] ? cartaoDaFatura(idsSelecionados[0]) : CARTAO_NUBANK;
     const sugestoes = cred
-        ? faturasSugeridasParaParcelas(faturas, el('fData').value, parcelas, freq)
+        ? faturasSugeridasParaParcelas(
+            faturas.filter(f => cartaoDaFatura(f.vencimento) === cartaoDaSugestao), el('fData').value, parcelas, freq)
         : [];
 
     const opcoes = faturas.map(f =>
@@ -315,7 +338,12 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
         if (sel) {
             select.value = dataISO(sel);
         }
-        select.addEventListener('change', () => { select.dataset.faturaSugerida = '0'; });
+        select.addEventListener('change', () => {
+            select.dataset.faturaSugerida = '0';
+            // Trocar a 1ª parcela pode trocar o cartão: as demais, ainda só sugeridas, seguem
+            // o mesmo cartão; as escolhidas à mão ficam como estão.
+            if (parcela === 0) atualizarFaturasDoFormulario(idsFaturasDoFormulario(false));
+        });
     });
 }
 
