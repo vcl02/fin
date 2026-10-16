@@ -98,7 +98,9 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
     assert.match(trecho, /const logAjustes = \[\];/);
     assert.match(trecho, /const ehAporte = ajuste\.tipo == 'aporte';/);
     assert.match(trecho, /logAjustes\.push\(`\$\{nomePeriodo\(Estado\.ciclos\[idx\]\)\}: \$\{resultado == 'consolidado' \? 'Consolidado' : 'Materializado'\} \$\{ehAporte \? 'Aporte' : 'Resgate'\} de \$\{brl\(Math\.abs\(ajuste\.v\)\)\}\.`\);/);
-    assert.match(trecho, /mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logDatas, \.\.\.logAjustes\]\);/);
+    // Só abre quando algo foi gravado; sem nada a fazer, fica só o toast.
+    assert.match(trecho, /if \(partes\.length\) mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logDatas, \.\.\.logAjustes\]\);/);
+    assert.equal((trecho.match(/mostrarResultadoConsolidarTudo\(/g) || []).length, 1);
 
     assert.match(pagina, /<dialog id=modalConsolidarTudo>/);
     assert.match(pagina, /<p class=meta id=textoConsolidarTudo><\/p>/);
@@ -129,6 +131,7 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Ciclos anteriores ao atual nunca entram nessa varredura\./);
     assert.match(regras, /a conclusão sempre aparece em toast contando quantos foram materializados, quantos foram consolidados e quantas datas de recorrência duplicada foram corrigidas/);
     assert.match(regras, /abre sozinho um modal \(`#modalConsolidarTudo`\) com o mesmo resumo e uma linha por ação de verdade executada/);
+    assert.match(regras, /Quando a varredura não encontra nada a fazer, aparece só o toast \("Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente\."\), sem modal/);
     assert.match(regras, /Diferente do modal de diagnóstico de carga \(que só abre por escolha do usuário, pra não interromper a consulta\), este abre automaticamente porque é resposta direta a um clique explícito do próprio usuário/);
     assert.match(regras, /sem botão de fechar, mesmo padrão de clicar fora ou Esc/);
     assert.match(regras, /Não altera nem recalcula nada: só lê o que a varredura já gravou\./);

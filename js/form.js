@@ -917,7 +917,8 @@ el('btConsolidarTudo').onclick = async () => {
             ? `${partes.join('; ')}.`
             : 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente.';
         mostrarToast('Consolidar tudo', resumo);
-        mostrarResultadoConsolidarTudo(resumo, [...logDatas, ...logAjustes]);
+        // Sem nada gravado, o toast já diz tudo: o modal só abre quando há o que detalhar.
+        if (partes.length) mostrarResultadoConsolidarTudo(resumo, [...logDatas, ...logAjustes]);
     } catch (err) {
         mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();
