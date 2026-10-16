@@ -68,6 +68,15 @@ const celValorEditavel = r => {
         `<button type=button class="sinalBt compacto${positivoVisual ? ' pos' : ''}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${positivoVisual ? '+' : '−'}</button>` +
         `<span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brl(r.v)}</span></span>`;
 };
+// Linha calculada (fatura, previstas, aporte/resgate…) ou simulada: mesmo desenho do
+// celValorEditavel, pra a coluna Valor ficar alinhada com as linhas reais, mas o botão de
+// sinal vem desabilitado e o valor não abre edição — essas linhas não existem no banco.
+const celValorSomenteLeitura = (r, v = r.v, cor = corValorLancamento(r)) => {
+    const positivoVisual = valorMonetarioExibivel(v) > 0;
+    return `<td class="n ${cor}"><span class=valorLinha>` +
+        `<button type=button class="sinalBt compacto${positivoVisual ? ' pos' : ''}" disabled title="Somente leitura" aria-label="Sinal (somente leitura)">${positivoVisual ? '+' : '−'}</button>` +
+        `<span class=valorFixo>${brl(v)}</span></span>`;
+};
 
 // Zona morta pra SOMAS/TOTAIS (nunca pra valor de lancamento individual): entre -R$50 e +R$50 (inclusive) fica cinza,
 // porque uma diferenca tao pequena nao muda decisao nenhuma — so pinta vermelho/verde quando o total realmente sai desse intervalo.

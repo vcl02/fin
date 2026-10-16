@@ -288,9 +288,11 @@ const celFlag = (r, chave) => {
 // (modoRestrito) e as linhas calculadas (fatura, previstas — não existem no banco) veem tudo
 // como texto simples, nunca editável.
 const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , tipo]) => chave == 'valor'
-    ? (r._sug != null
-        ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}`
-        : (ehLinhaReal(r) && !modoRestrito() ? celValorEditavel(r) : celValorLancamento(r))).replace(/$/,
+    ? (modoRestrito()
+        ? (r._sug != null ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}` : celValorLancamento(r))
+        // Fora da conta restrita, toda linha mostra o botão de sinal; só a real o usa.
+        : r._sug != null ? celValorSomenteLeitura(r, r._sug, corValor(r._sug))
+        : ehLinhaReal(r) ? celValorEditavel(r) : celValorSomenteLeitura(r)).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' && chave != 'pago' ? `<td>${celFlag(r, chave)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'

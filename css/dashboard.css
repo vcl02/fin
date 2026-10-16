@@ -577,7 +577,8 @@
       width: 100%;
   }
 
-  .valorLinha .togValor {
+  .valorLinha .togValor,
+  .valorLinha .valorFixo {
       width: 6.5rem;
       text-align: right;
   }

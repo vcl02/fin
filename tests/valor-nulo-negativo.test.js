@@ -17,18 +17,20 @@ const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 // contexto isolado, com os poucos globais de que dependem simulados.
 function carregaCelulasDeValor() {
     const inicio = compartilhado.indexOf('const valorMonetarioExibivel');
-    const fim = compartilhado.indexOf('\n};', compartilhado.indexOf('const celValorEditavel')) + 3;
+    const fim = compartilhado.indexOf('\n};', compartilhado.indexOf('const celValorSomenteLeitura')) + 3;
     if (inicio < 0 || fim < 3) throw Error('Não encontrou as células de valor em shared.js.');
     const contexto = { escapeHtml: v => String(v) };
     vm.createContext(contexto);
     vm.runInContext(`${compartilhado.slice(inicio, fim)}
 globalThis.corValorLancamento = corValorLancamento;
 globalThis.celValorLancamento = celValorLancamento;
-globalThis.celValorEditavel = celValorEditavel;`, contexto);
+globalThis.celValorEditavel = celValorEditavel;
+globalThis.celValorSomenteLeitura = celValorSomenteLeitura;`, contexto);
     return {
         corValorLancamento: contexto.corValorLancamento,
         celValorLancamento: contexto.celValorLancamento,
         celValorEditavel: contexto.celValorEditavel,
+        celValorSomenteLeitura: contexto.celValorSomenteLeitura,
     };
 }
 
@@ -77,7 +79,9 @@ test('célula editável: valor positivo de verdade continua mostrando "+" verde 
 });
 
 test('Débito/Crédito (linha não editável) e o detalhamento de categoria do gráfico usam celValorLancamento, não a antiga celValor genérica', () => {
-    assert.match(tabelas, /: \(ehLinhaReal\(r\) && !modoRestrito\(\) \? celValorEditavel\(r\) : celValorLancamento\(r\)\)/);
+    // Conta restrita: texto puro. Fora dela, real edita e calculada/simulada fica só leitura.
+    assert.match(tabelas, /\? \(modoRestrito\(\)\s*\n\s*\? \(r\._sug != null \? `<td class="n \$\{corValor\(r\._sug\)\}">\$\{brl\(r\._sug\)\}` : celValorLancamento\(r\)\)/);
+    assert.match(tabelas, /: ehLinhaReal\(r\) \? celValorEditavel\(r\) : celValorSomenteLeitura\(r\)\)/);
     assert.match(graficos, /\$\{celNome\(r\)\}\$\{celValorLancamento\(r\)\}/);
     assert.doesNotMatch(compartilhado, /const celValor = /);
 });
@@ -105,4 +109,15 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /zero conta como negativo na aparência/);
     assert.match(regras, /só estritamente positivo \(`> 0`\) pinta de verde; negativo ou zero ficam vermelhos/);
     assert.match(regras, /confirmar sem usar o botão de sinal mantém negativo, nunca vira positivo por engano/);
+});
+
+test('linha calculada mostra o botão de sinal desabilitado e o valor sem edição', () => {
+    const { celValorSomenteLeitura } = carregaCelulasDeValor();
+    const fatura = celValorSomenteLeitura({ id: -3, _sid: 'fat:1', v: -500 });
+    assert.match(fatura, /^<td class="n vm"><span class=valorLinha><button type=button class="sinalBt compacto" disabled title="Somente leitura" aria-label="Sinal \(somente leitura\)">−<\/button><span class=valorFixo>/);
+    assert.doesNotMatch(fatura, /data-tog-/);
+    // Aporte sugerido usa o próprio valor sugerido e a cor que a tela já dava a ele.
+    const sugerido = celValorSomenteLeitura({ id: -5, _sid: 'sug:1', _sug: 300 }, 300, 'vd');
+    assert.match(sugerido, /^<td class="n vd">.*class="sinalBt compacto pos" disabled[^>]*>\+<\/button>/);
+    assert.doesNotMatch(sugerido, /data-tog-/);
 });

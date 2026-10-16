@@ -31,7 +31,8 @@ test('clique no botão de sinal inverte na hora (UPDATE imediato), igual ao togg
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /botão \+\/− ao lado do Valor \(mesmo ícone do cadastro\) que inverte o sinal na hora/);
-    assert.match(regras, /Indisponível para a conta restrita e para linhas sintéticas\/simuladas sem `id` real\./);
+    assert.match(regras, /Indisponível para a conta restrita e para linhas sintéticas\/simuladas sem `id` real: nelas \(fora da conta restrita\) o botão aparece no mesmo lugar, só que desabilitado/);
+    assert.match(estilosPainel, /\.valorLinha \.togValor,\s*\n\s*\.valorLinha \.valorFixo \{/);
 });
 
 test('sinal embutido no campo de edição de Valor foi removido por não funcionar de verdade', () => {
