@@ -307,3 +307,16 @@ test('colunas de largura fixa: não mudam conforme o filtro', () => {
     assert.doesNotMatch(estilos, /\.col-(nome|categ|freq|obs|canal) \{/);
     assert.match(regras, /As tabelas de lançamentos \(Débito, Crédito, Backlog\) têm colunas de largura fixa, que não mudam conforme o filtro/);
 });
+
+test('busca por ID é exata e aceita vários com |', () => {
+    const c = filtroDeTexto();
+    const base = [{ id: 4 }, { id: 14 }, { id: 40 }, { id: -3, _sid: 'fat:1' }];
+    const ids = termo => { c.Estado.filtroTexto.db = { id: termo }; return base.filter(r => c.regras.passaFiltroTexto(r, 'db')).map(r => r.id); };
+    assert.deepEqual(ids('4'), [4]);
+    assert.deepEqual(ids('14|40'), [14, 40]);
+    assert.deepEqual(ids(' 40 | '), [40]);
+    assert.deepEqual(ids('-3'), [-3]);
+    assert.deepEqual(ids('|'), [4, 14, 40, -3]);
+    assert.match(fonte, /if \(chave == 'id'\) return `<th class=n>\$\{campoBusca\(chave, 'ID', 'inputmode=numeric title="ID exato; use \| pra vários \(ex\.: 12\|40\)" '\)\.replace\('Filtrar id…', 'ID'\)\}<\/th>`;/);
+    assert.match(regras, /\*\*ID\*\* tem campo de busca exata: `4` acha só o lançamento de id 4 \(nunca 14 ou 40\)/);
+});

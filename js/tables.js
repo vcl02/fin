@@ -57,6 +57,8 @@ function cabecalhoTabela(idTabela) {
             return `<th>${campoBusca(chave, rotulo, 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" ')}</th>`;
         }
         if (tipo == 'b') return `<th>${botaoFiltroEstado(idTabela, chave, filtroAtual[chave])}</th>`;
+        // ID: busca exata (coluna estreita, placeholder curto); "|" aceita vários ids.
+        if (chave == 'id') return `<th class=n>${campoBusca(chave, 'ID', 'inputmode=numeric title="ID exato; use | pra vários (ex.: 12|40)" ').replace('Filtrar id…', 'ID')}</th>`;
         return '<th>';
     }).join('');
     return linhaTitulos + linhaBusca;
@@ -146,6 +148,12 @@ function passaFiltroTexto(r, idTabela) {
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido') return termo == 'S' ? !!r[coluna] : !r[coluna];
+        // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
+        // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
+        if (coluna == 'id') {
+            const ids = termo.split('|').map(t => t.trim()).filter(Boolean);
+            return !ids.length || ids.includes(String(r.id));
+        }
         // Valor nao e' texto: o campo sempre traz um numero ja mascarado (formataMascaraDinheiro),
         // entao compara por PROXIMIDADE em vez de substring — acha qualquer lancamento a ate
         // 5 centavos do valor digitado, pra nao exigir acertar o centavo exato. Ignora o sinal
