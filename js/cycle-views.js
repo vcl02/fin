@@ -51,17 +51,12 @@ function vCiclo() {
         }]
         : [];
 
-    // Besteira/Isabella previstas (do ciclo atual em diante): o que falta até o teto do ciclo
-    // entra como gasto, igual a qualquer débito, no fechamento (ver previstasDoCiclo).
-    const linhasPrevistas = previstasDoCiclo(i, visiveis);
-
-    const debitosComFatura = [...linhaAnterior, ...debitos, ...linhasFatura, ...linhasPrevistas];
+    const debitosComFatura = [...linhaAnterior, ...debitos, ...linhasFatura];
 
     const movimentosDoSaldo = [
         ...linhaAnterior,
         ...debitos,
-        ...linhasFatura,
-        ...linhasPrevistas
+        ...linhasFatura
     ];
 
 
@@ -146,7 +141,7 @@ function vCiclo() {
     // se ajusta o teto de cada ciclo), nunca no histórico. Hoje usa só o pago; Futuro usa
     // pago + aberto (o que está planejado gastar). Só lançamentos reais: a linha prevista é
     // justamente o que falta até o teto, então nunca entra nesta conta.
-    const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)];
+    const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)].filter(r => !r._prev);
     const tetosDoCiclo = limitesCategoriaDoCiclo(i);
     const limitesCategoria = Estado.idxHoje >= 0 && i >= Estado.idxHoje ? [
         { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo.besteira) },
@@ -172,7 +167,7 @@ function vCiclo() {
             : `<span class=limiteRotulo>Acima</span> <b class=vm>${brl(-restante)}</b>`;
         return `<span class=besteiraIndicador>${limite.rotulo} <b class="${cor}">${Math.round(limite[chave])}%</b> · ${sobra} <span class=limiteTeto>de ${tetoDoIndicador(limite)}</span></span>`;
     }).join('');
-    const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0 || linhasPrevistas.length > 0;
+    const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
         Math.abs(debitoHoje.saldo - totalDebito) <= TOLERANCIA_FINANCEIRA &&
         Math.abs(debitoHoje.guardado - guardado) <= TOLERANCIA_FINANCEIRA;
@@ -548,9 +543,6 @@ function vComp() {
                 v: anterior, valor: anterior, periodoIdx: idx,
             });
         }
-        // Besteira/Isabella previstas são gasto do ciclo como qualquer outro (Besteira em si
-        // continua fora da matriz pela lista de exclusões; Isabella prevista entra como Lazer).
-        sinteticas.push(...previstasDoCiclo(idx, visiveis));
         const ajuste = ajusteDoCiclo(idx);
         if (!ajuste) return;
         sinteticas.push({

@@ -2,7 +2,8 @@
 
 // A barra não filtra mais por Pago nem Origem. Mantemos esta função como porta única para as
 // tabelas e cálculos comuns, para uma eventual regra futura não espalhar acessos ao estado.
-const filtrarLancamentos = () => Estado.lancamentos;
+// Reais + compras previstas de Besteira/Isabella (ver lancamentosComPrevistas em finance.js).
+const filtrarLancamentos = () => lancamentosComPrevistas();
 
 // ===================================================================
 // ORDENAÇÃO DE TABELAS — cada tabela (id) guarda seu proprio estado

@@ -16,10 +16,8 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
     if (idx < 0 || !Estado.ciclos[idx]) return 0;
     if (dataISO(Estado.ciclos[idx].fat) < SALDO_DESDE) return 0;
 
-    // Besteira/Isabella previstas (linhas sintéticas do ciclo atual em diante) contam como
-    // qualquer débito do ciclo — por aqui elas chegam ao saldo, ao Aporte sugerido/Resgate
-    // necessário e a tudo que deriva deles.
-    const doCiclo = [...base.filter(r => r.periodoIdx === idx && !r.cred), ...previstasDoCiclo(idx, base)]
+    const doCiclo = base
+        .filter(r => r.periodoIdx === idx && !r.cred)
         .reduce((s, r) => s + r.v, 0);
 
     const brutoFatura = base
@@ -80,17 +78,27 @@ function garantiaDoCiclo(idx, guardado) {
 }
 
 // Do ciclo atual em diante, o ciclo assume que o teto de Besteira e de Isabella será gasto
-// por inteiro: uma linha sintética completa o que falta até 100% (limite − já lançado, pago
-// ou aberto, nunca negativa; nada se o ciclo já passou do teto). "Já lançado" é a mesma base
-// do indicador: débitos do ciclo + créditos da prévia (fatura de idx+1). Entra na data de
-// fechamento do ciclo, como o Aporte sugerido. Ciclos passados não ganham previsão.
+// por inteiro, no Crédito: uma compra sintética EM ABERTO no Nubank completa o que falta até
+// 100% (limite − já lançado, pago ou aberto, nunca negativa; nada se o ciclo já passou do
+// teto). "Já lançado" é a mesma base do indicador: débitos do ciclo + créditos da prévia
+// (fatura do ciclo seguinte). A compra cai nessa mesma prévia — fatura Nubank do ciclo
+// idx+1 —, então entra na tabela Crédito, na fatura (e por ela no saldo e no Aporte/Resgate)
+// e no Livre Futuro; por estar em aberto, nunca ocupa o limite de Hoje. Ciclos passados não
+// ganham previsão, nem o último ciclo aberto (sem ciclo seguinte pra fatura cair).
 function previstasDoCiclo(idx, base) {
     const ciclo = Estado.ciclos[idx];
-    if (!ciclo || Estado.idxHoje == null || Estado.idxHoje < 0 || idx < Estado.idxHoje) return [];
-    const linhas = [...base.filter(r => r.periodoIdx === idx && !r.cred), ...creditosExibidosNoCiclo(base, idx)];
+    const proximo = Estado.ciclos[idx + 1];
+    if (!ciclo || !proximo || Estado.idxHoje == null || Estado.idxHoje < 0 || idx < Estado.idxHoje) return [];
+    const reais = base.filter(r => !r._prev);
+    const linhas = [...reais.filter(r => r.periodoIdx === idx && !r.cred), ...creditosExibidosNoCiclo(reais, idx)];
     const tetos = limitesCategoriaDoCiclo(idx);
+    // 1º vencimento do Nubank dentro do ciclo seguinte (dia 12 do mês do início, ou do mês
+    // depois se o ciclo começa depois do dia 12).
+    const dia = String(DIA_VENCIMENTO_CARTAO[CARTAO_NUBANK]).padStart(2, '0');
+    let fatura = `${dataISO(proximo.ini).slice(0, 7)}-${dia}`;
+    if (fatura < dataISO(proximo.ini)) fatura = `${somaMeses(fatura, 1).slice(0, 7)}-${dia}`;
     // A Isabella prevista leva "Lazer, Isabella" pra continuar sendo gasto com ela em qualquer
-    // leitura (ehGastoIsabella, Comparar, pizza). Montada aqui, e não no topo do arquivo, porque
+    // leitura (ehGastoIsabella, Comparar). Montada aqui, e não no topo do arquivo, porque
     // ehGastoIsabella vem de js/charts.js, carregado depois deste.
     const categorias = [
         { chave: 'besteira', nome: 'Besteira prevista', categ: CATEGORIA_BESTEIRA, combina: CATEGORIA_BESTEIRA },
@@ -101,10 +109,22 @@ function previstasDoCiclo(idx, base) {
         if (falta <= TOLERANCIA_FINANCEIRA) return null;
         const v = -Math.round(falta * 100) / 100;
         return {
-            data: dataISO(ciclo.fat), nome: c.nome, categ: c.categ, freq: '', pago: null, cred: false,
-            id: -6, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx,
+            data: dataISO(ciclo.fat), nome: c.nome, categ: c.categ, freq: '', pago: false, cred: true, fatura,
+            id: -6, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx + 1,
         };
     }).filter(Boolean);
+}
+
+// Base de todos os cálculos e tabelas (filtrarLancamentos): os lançamentos reais mais as
+// compras previstas de Besteira/Isabella. Montada uma vez por desenho (limparCachesFinanceiros
+// zera junto com os demais caches), nunca persistida.
+let _lancamentosComPrevistas = null;
+function lancamentosComPrevistas() {
+    if (!_lancamentosComPrevistas) {
+        const reais = Estado.lancamentos;
+        _lancamentosComPrevistas = [...reais, ...Estado.ciclos.flatMap((_, idx) => previstasDoCiclo(idx, reais))];
+    }
+    return _lancamentosComPrevistas;
 }
 
 // Linha sintetica de Resgate necessario / Aporte sugerido de um ciclo, a partir do seu saldo
@@ -167,6 +187,7 @@ function limparCachesFinanceiros() {
     Object.keys(_cacheSaldo).forEach(k => delete _cacheSaldo[k]);
     Object.keys(_cacheAjuste).forEach(k => delete _cacheAjuste[k]);
     _baseFiltrada = _abatFiltrada = null;
+    _lancamentosComPrevistas = null;
 }
 
 // Saldo em conta ao fim de cada dia, acumulado desde SALDO_INICIAL. Considera o que
@@ -225,12 +246,6 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
         });
     });
 
-    // Besteira/Isabella previstas, na data de fechamento de cada ciclo (ver previstasDoCiclo)
-    const previstas = [];
-    Estado.ciclos.forEach((per, idx) => {
-        previstasDoCiclo(idx, base).forEach(p => previstas.push({ data: p.data, v: p.v }));
-    });
-
     // um evento de Resgate/Aporte por ciclo, na data de fechamento (usa o cache — nunca
     // recalcula alocacaoAntecipacoes por periodo)
     const ajustes = [];
@@ -244,7 +259,6 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
             .filter(r => !r.cred && r.data)
             .map(r => ({ data: dataISO(r.data), v: r.v })),
         ...faturas,
-        ...previstas,
         ...ajustes,
     ]
         .filter(e => e.data >= SALDO_DESDE)

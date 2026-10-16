@@ -1,6 +1,6 @@
 // Regressão: do ciclo atual em diante, Besteira e Isabella contam como se o teto do ciclo
-// fosse gasto por inteiro — uma linha sintética completa o que falta até 100% e entra no
-// saldo e em tudo que deriva dele. O teto é individual por ciclo, gravado na linha âncora
+// fosse gasto por inteiro — uma compra sintética EM ABERTO no Crédito (Nubank, fatura do
+// ciclo seguinte) completa o que falta até 100% e entra na fatura, no saldo e no Futuro. O teto é individual por ciclo, gravado na linha âncora
 // do ciclo em fin_ciclo (migrations 25/26). Roda o código real de domain/shared/finance + a regra de
 // categorias de charts.js.
 const assert = require('node:assert/strict');
@@ -16,14 +16,15 @@ const regras = ler('docs/REGRAS.md');
 const migration = ler('migrations/23-limites-categoria-por-ciclo.sql');
 
 // Três ciclos: setembro (passado), outubro (atual) e novembro (futuro).
-function carrega(lancamentos, idxHoje = 1) {
+const CICLOS = [
+    { id: 'c:1', cicloId: 1, ini: '2026-09-05', fat: '2026-10-04' },
+    { id: 'c:2', cicloId: 2, ini: '2026-10-05', fat: '2026-11-04' },
+    { id: 'c:3', cicloId: 3, ini: '2026-11-05', fat: '2026-12-04' },
+];
+function carrega(lancamentos, idxHoje = 1, ciclos = CICLOS) {
     const estado = {
         idxHoje,
-        ciclos: [
-            { id: 'c:1', cicloId: 1, ini: '2026-09-05', fat: '2026-10-04' },
-            { id: 'c:2', cicloId: 2, ini: '2026-10-05', fat: '2026-11-04' },
-            { id: 'c:3', cicloId: 3, ini: '2026-11-05', fat: '2026-12-04' },
-        ],
+        ciclos: ciclos.map(c => ({ ...c })),
         faturas: [],
         lancamentos,
         // fin_ciclo: cada "ciclo" abaixo (ids 1..3) carrega os limite_* da linha da tabela.
@@ -35,7 +36,7 @@ function carrega(lancamentos, idxHoje = 1) {
     const inicio = graficos.indexOf('const categoriaContemCompromisso');
     const fim = graficos.indexOf('function dadosCompromissosCiclo(');
     vm.runInContext(graficos.slice(inicio, fim), contexto);
-    vm.runInContext('globalThis.r = { previstasDoCiclo, limitesCategoriaDoCiclo, totalBaseDoCiclo };', contexto);
+    vm.runInContext('globalThis.r = { previstasDoCiclo, limitesCategoriaDoCiclo, totalBaseDoCiclo, lancamentosComPrevistas, limparCachesFinanceiros };', contexto);
     return contexto.r;
 }
 
@@ -47,12 +48,27 @@ const linhasCiclo = [
 ];
 const resumo = linhas => JSON.parse(JSON.stringify(linhas.map(l => [l.nome, l.categ, l.v, l.data])));
 
-test('ciclo sem lançamento: linhas previstas com o teto inteiro, na data de fechamento', () => {
+test('ciclo sem lançamento: compras previstas em aberto no Crédito, com o teto inteiro, na fatura Nubank do ciclo seguinte', () => {
     const r = carrega([...linhasCiclo]);
-    assert.deepEqual(resumo(r.previstasDoCiclo(2, [...linhasCiclo])), [
-        ['Besteira prevista', 'Besteira', -250, '2026-12-04'],
-        ['Isabella prevista', 'Lazer, Isabella', -700, '2026-12-04'],
+    const [besteira, isabella] = r.previstasDoCiclo(1, [...linhasCiclo]);
+    assert.deepEqual(resumo([besteira, isabella]), [
+        ['Besteira prevista', 'Besteira', -250, '2026-11-04'],
+        ['Isabella prevista', 'Lazer, Isabella', -700, '2026-11-04'],
     ]);
+    // Crédito, em aberto (não ocupa limite de Hoje), na prévia: fatura do ciclo 2 (05/11 a 04/12).
+    assert.equal(besteira.cred, true);
+    assert.equal(besteira.pago, false);
+    assert.equal(besteira.fatura, '2026-11-12');
+    assert.equal(besteira.periodoIdx, 2);
+});
+
+test('fatura cai no 1º dia 12 dentro do ciclo seguinte; último ciclo (sem seguinte) não prevê', () => {
+    const r = carrega([...linhasCiclo]);
+    // O ciclo 2 é o último aqui: não há ciclo 3 pra fatura cair.
+    assert.equal(r.previstasDoCiclo(2, [...linhasCiclo]).length, 0);
+    // Ciclo seguinte começando depois do dia 12: a fatura é a do dia 12 do mês seguinte.
+    const tardio = carrega([...linhasCiclo], 1, [CICLOS[0], { ...CICLOS[1], fat: '2026-11-19' }, { ...CICLOS[2], ini: '2026-11-20', fat: '2026-12-19' }]);
+    assert.equal(tardio.previstasDoCiclo(1, [...linhasCiclo])[0].fatura, '2026-12-12');
 });
 
 test('completa só o que falta até 100% (pago ou aberto), e some quando já passou do teto', () => {
@@ -91,20 +107,21 @@ test('teto individual por ciclo, salvo em fin_ciclo; vazio volta ao padrão', ()
     assert.deepEqual(resumo(r.previstasDoCiclo(1, base)), [['Besteira prevista', 'Besteira', -400, '2026-11-04']]);
 });
 
-test('entra no saldo do ciclo (totalBaseDoCiclo), base de Aporte/Resgate e de tudo que deriva', () => {
-    const base = [...linhasCiclo, { id: 30, nome: 'Salário', categ: 'Renda', v: 5000, pago: true, cred: false, periodoIdx: 2 }];
-    const r = carrega(base);
-    // 5000 − 250 − 700.
-    assert.equal(r.totalBaseDoCiclo(2, base, {}, () => 0), 4050);
+test('a base dos cálculos (filtrarLancamentos) inclui as previstas, montada uma vez por desenho', () => {
+    const r = carrega([...linhasCiclo]);
+    const base = r.lancamentosComPrevistas();
+    assert.equal(base.filter(l => l._prev).length, 2);          // ciclo atual (1); o 2 é o último
+    assert.equal(r.lancamentosComPrevistas(), base);           // mesma lista até limpar os caches
+    r.limparCachesFinanceiros();
+    assert.notEqual(r.lancamentosComPrevistas(), base);
+    // Pela fatura do ciclo seguinte, o saldo desse ciclo já sente as previstas: 0 − 250 − 700.
+    assert.equal(r.totalBaseDoCiclo(2, r.lancamentosComPrevistas(), {}, () => 0), -950);
 });
 
-test('Débito, saldo diário, Comparar, evolução e pizza usam as mesmas linhas previstas', () => {
-    assert.match(visoes, /const linhasPrevistas = previstasDoCiclo\(i, visiveis\);/);
-    assert.match(visoes, /\.\.\.linhasFatura, \.\.\.linhasPrevistas\]/);
-    assert.match(visoes, /sinteticas\.push\(\.\.\.previstasDoCiclo\(idx, visiveis\)\);/);
-    assert.match(ler('js/finance.js'), /previstasDoCiclo\(idx, base\)\.forEach\(p => previstas\.push/);
-    assert.match(graficos, /previstasDoCiclo\(i, base\)\.forEach\(p => linhasDe\.Gasto\.push\(p\)\);/);
-    assert.match(graficos, /\.\.\.previstasDoCiclo\(idxPeriodo, visiveis\),/);
+test('tabelas e cálculos usam a mesma base; o indicador ignora a prevista', () => {
+    assert.match(ler('js/tables.js'), /const filtrarLancamentos = \(\) => lancamentosComPrevistas\(\);/);
+    assert.match(ler('js/finance.js'), /_lancamentosComPrevistas = null;\s*\n\}/);
+    assert.doesNotMatch(visoes + graficos, /previstasDoCiclo\(/);
     assert.match(ler('js/domain.js'), /const PREFIXO_LINHA_SINTETICA = \/\^\(fat\|cp\|sal\|res\|sug\|abt\|prev\):\/;/);
 });
 
@@ -128,5 +145,7 @@ test('migration 23 só adiciona colunas nulas e não negativas na própria fin',
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Do ciclo atual em diante, Besteira e Isabella contam como se o teto do ciclo fosse gasto por inteiro/);
+    assert.match(regras, /cada ciclo ganha compras sintéticas \*\*no Crédito, em aberto\*\*/);
+    assert.match(regras, /por estarem em aberto, nunca ocupam o limite de \*\*Hoje\*\*/);
     assert.match(regras, /`migrations\/23-limites-categoria-por-ciclo\.sql`/);
 });

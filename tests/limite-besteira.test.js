@@ -106,7 +106,8 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     // Igual à regra geral de Crédito ("no ciclo N ela mostra os créditos da competência
     // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
-    assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\];/);
+    // A compra prevista (_prev) é justamente o que falta até o teto: nunca entra no indicador.
+    assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\]\.filter\(r => !r\._prev\);/);
     assert.match(visoes, /rotulo: 'Besteira', teto: tetosDoCiclo\.besteira, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo\.besteira\)/);
     assert.match(visoes, /rotulo: 'Isabella', teto: tetosDoCiclo\.isabella, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo\.isabella\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualPago'\)/);

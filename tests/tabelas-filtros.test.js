@@ -12,6 +12,8 @@ if (fim < 0) throw Error('Não encontrou os filtros de tabela.');
 function filtros() {
     const contexto = {
         Estado: { lancamentos: [] },
+        // Sem ciclos não há previsão de Besteira/Isabella: a base é só o que veio do banco.
+        lancamentosComPrevistas: () => contexto.Estado.lancamentos,
     };
     vm.createContext(contexto);
     vm.runInContext(`${fonte.slice(0, fim)}\nglobalThis.regras = { filtrarLancamentos };`, contexto);
