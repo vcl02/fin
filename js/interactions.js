@@ -404,7 +404,7 @@ el('out').addEventListener('click', async e => {
     const nomeChave = semAcento(r.nome).trim();
     const mesmoNome = Estado.lancamentos.filter(x => !x._sid && semAcento(x.nome).trim() === nomeChave);
 
-    badge.classList.toggle('vd', novoValor);
+    badge.classList.toggle(COR_FLAG[campo], novoValor);
     badge.textContent = novoValor ? ROTULO_FLAG_TOGGLE[campo] : '—';
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
 

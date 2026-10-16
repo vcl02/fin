@@ -92,3 +92,25 @@ test('migration 22 cria os dois bits e extrai dos tokens exatos em categ, sem de
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /checkbox.*Reserva.*Comprometido|Reserva.*Comprometido.*checkbox/);
 });
+
+test('Comprometido marcado em laranja e Reserva em amarelo, inclusive ao alternar e em linha só leitura', () => {
+    const vm = require('node:vm');
+    const inicio = tabelas.indexOf('const ROTULO_FLAG =');
+    const fim = tabelas.indexOf('\n};', inicio) + 3;
+    const ctx = { escapeHtml: String, restrito: false };
+    ctx.modoRestrito = () => ctx.restrito;
+    vm.runInNewContext(`${tabelas.slice(inicio, fim)}\nthis.celFlag = celFlag;`, ctx);
+    assert.match(ctx.celFlag({ id: 5, comprometido: true }, 'comprometido'), /^<span class="am togFlag"[^>]*>Comprometido<\/span>$/);
+    assert.match(ctx.celFlag({ id: 5, reserva: true }, 'reserva'), /^<span class="amarelo togFlag"[^>]*>Reserva<\/span>$/);
+    // Desmarcado: "—" sem cor.
+    assert.match(ctx.celFlag({ id: 5, reserva: false }, 'reserva'), /^<span class=" togFlag"[^>]*>—<\/span>$/);
+    // Linha calculada e conta restrita: mesma cor, sem toggle.
+    assert.equal(ctx.celFlag({ id: -3, _sid: 'fat:1', comprometido: true }, 'comprometido'), '<span class=am>Comprometido</span>');
+    ctx.restrito = true;
+    assert.equal(ctx.celFlag({ id: 5, reserva: true }, 'reserva'), '<span class=amarelo>Reserva</span>');
+    // O clique troca a mesma classe da marca, nunca o verde de Pago.
+    assert.match(interacoes, /badge\.classList\.toggle\(COR_FLAG\[campo\], novoValor\);/);
+    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+    assert.match(estilos, /\.amarelo \{\s*\n\s*color: #E8CF4A;/);
+    assert.match(regras, /\*\*Comprometido em laranja\*\* e \*\*Reserva em amarelo\*\*/);
+});

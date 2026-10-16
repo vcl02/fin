@@ -271,13 +271,16 @@ const celCanal = r => {
 // repetir um texto negativo em toda linha; só "verdadeiro" ganha destaque. Mesma permissão
 // de Pago (nunca em linha sintética nem na conta restrita), clicável pra alternar na hora.
 const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido' };
+// Cada marca tem a sua cor pra não se confundir com o verde de Pago: Comprometido laranja,
+// Reserva amarelo. Só o texto marcado ganha cor; "—" fica neutro.
+const COR_FLAG = { reserva: 'amarelo', comprometido: 'am' };
 const celFlag = (r, chave) => {
     const marcado = !!r[chave];
     const texto = marcado ? ROTULO_FLAG[chave] : '—';
-    // Somente leitura (linha calculada, conta restrita) mantém o mesmo verde quando marcada.
+    // Somente leitura (linha calculada, conta restrita) mantém a mesma cor quando marcada.
     return !r._sid && !modoRestrito()
-        ? `<span class="${marcado ? 'vd' : ''} togFlag" data-tog-flag="${chave}:${escapeHtml(String(r.id))}" title="Alternar ${ROTULO_FLAG[chave]}">${texto}</span>`
-        : (marcado ? `<span class=vd>${texto}</span>` : texto);
+        ? `<span class="${marcado ? COR_FLAG[chave] : ''} togFlag" data-tog-flag="${chave}:${escapeHtml(String(r.id))}" title="Alternar ${ROTULO_FLAG[chave]}">${texto}</span>`
+        : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
