@@ -41,7 +41,9 @@ test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca
 test('botão fica desabilitado e com texto "Consolidando…" durante a varredura, bloqueando clique duplo', () => {
     const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
-    assert.match(trecho, /const textoOriginal = el\('btConsolidarTudo'\)\.textContent;\s*\n\s*el\('btConsolidarTudo'\)\.disabled = true;\s*\n\s*el\('btConsolidarTudo'\)\.textContent = 'Consolidando…';/);
+    assert.match(trecho, /const textoOriginal = el\('btConsolidarTudo'\)\.textContent;\s*\n\s*el\('btConsolidarTudo'\)\.disabled = true;/);
+    assert.match(trecho, /el\('btConsolidarTudo'\)\.textContent = 'Recarregando…';/);
+    assert.match(trecho, /el\('btConsolidarTudo'\)\.textContent = 'Consolidando…';/);
     // finally roda tanto no caminho feliz quanto no catch, então o texto e o disabled
     // voltam ao normal nos dois casos — sucesso ou falha.
     assert.match(trecho, /\} finally \{\s*\n\s*el\('btConsolidarTudo'\)\.disabled = false;\s*\n\s*el\('btConsolidarTudo'\)\.textContent = textoOriginal;\s*\n\s*\}/);
@@ -124,7 +126,7 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /\*\*Consolidar tudo\*\* repete essa mesma ação \(materializar\/consolidar\) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento/);
     assert.match(regras, /o próprio botão fica desabilitado \(`disabled`, de verdade bloqueado pro navegador — mesmo esquema visual apagado do Salvar do cadastro e do Duplicar\/Editar\/Excluir da barra de seleção/);
-    assert.match(regras, /e o texto muda pra "Consolidando…", pra bloquear clique duplo/);
+    assert.match(regras, /e o texto muda pra "Recarregando…" e depois "Consolidando…", pra bloquear clique duplo/);
     assert.match(regras, /volta ao normal \("Consolidar tudo"\) ao final, com sucesso ou falha/);
     assert.match(regras, /ela também corrige toda recorrência duplicada nesse mesmo intervalo \(mesma regra do botão "↷" ao lado da Data/);
     assert.match(regras, /sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira/);
@@ -135,4 +137,16 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Diferente do modal de diagnóstico de carga \(que só abre por escolha do usuário, pra não interromper a consulta\), este abre automaticamente porque é resposta direta a um clique explícito do próprio usuário/);
     assert.match(regras, /sem botão de fechar, mesmo padrão de clicar fora ou Esc/);
     assert.match(regras, /Não altera nem recalcula nada: só lê o que a varredura já gravou\./);
+});
+
+test('sempre recarrega do banco antes de varrer; carga com falha para tudo; simulação não recarrega', () => {
+    const inicio = formulario.indexOf("el('btConsolidarTudo').onclick");
+    const trecho = formulario.slice(inicio, formulario.indexOf('\n};', inicio) + 3);
+    assert.match(trecho, /if \(!Estado\.simulando\) \{\s*\n\s*el\('btConsolidarTudo'\)\.textContent = 'Recarregando…';\s*\n\s*if \(!\(await load\(\)\)\) return;\s*\n\s*if \(Estado\.idxHoje < 0\) return;\s*\n\s*\}/);
+    // A recarga vem antes de qualquer leitura de Estado.lancamentos pela varredura.
+    assert.ok(trecho.indexOf('await load()') < trecho.indexOf('corrigeRecorrenciasDuplicadasNoIntervalo('));
+    const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
+    assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\);\s*\n\s*return true;/);
+    assert.match(dadosUi, /mostrarToast\('Não foi possível carregar', e\.message\);\s*\n\s*return false;/);
+    assert.match(regras, /Antes de varrer, \*\*Consolidar tudo\*\* sempre recarrega os dados do banco/);
 });

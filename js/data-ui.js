@@ -214,8 +214,10 @@ function mostrarToast(titulo, texto) {
     setTimeout(remover, 7000);
 }
 
+// Devolve true quando a carga deu certo — quem depende de dados frescos (Consolidar tudo)
+// não segue em cima de uma carga que falhou.
 async function load() {
-    if (API.includes('SEUPROJETO')) return el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>';
+    if (API.includes('SEUPROJETO')) { el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>'; return false; }
     const inicioCarga = performance.now();
     try {
         const { lancamentosCrus, diagnosticoDeDados } = await carregarDados();
@@ -229,6 +231,7 @@ async function load() {
         console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
         if (cargaMs >= LIMIAR_CARGA_LENTA_MS) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
         atualizarBotaoDiagnostico(diagnosticoDeDados);
+        return true;
     } catch (e) {
         el('st').textContent = '';
         // e.message pode trazer texto crudo da resposta do Supabase (ver buscar() em
@@ -236,6 +239,7 @@ async function load() {
         // como HTML em vez de aparecer como texto.
         el('out').innerHTML = '<p class=empty>Falhou: ' + escapeHtml(e.message) + '</p>';
         mostrarToast('Não foi possível carregar', e.message);
+        return false;
     }
 }
 

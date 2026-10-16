@@ -880,8 +880,17 @@ el('btConsolidarTudo').onclick = async () => {
     // processando, mesmo esquema do "Salvando…" de #seldup.
     const textoOriginal = el('btConsolidarTudo').textContent;
     el('btConsolidarTudo').disabled = true;
-    el('btConsolidarTudo').textContent = 'Consolidando…';
     try {
+        // Sempre recarrega do banco antes: a varredura grava em cima do que lê, então nunca
+        // pode partir de uma tela velha (outro aparelho, DataGrip ou aba aberta há horas).
+        // Carga que falhou para tudo — não consolida em cima de dado desatualizado. Na
+        // simulação não recarrega: isso apagaria os lançamentos simulados, que só existem aqui.
+        if (!Estado.simulando) {
+            el('btConsolidarTudo').textContent = 'Recarregando…';
+            if (!(await load())) return;
+            if (Estado.idxHoje < 0) return;
+        }
+        el('btConsolidarTudo').textContent = 'Consolidando…';
         const ultimoCicloAntesDaCorrecao = Estado.lancamentos.reduce(
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
             Estado.idxHoje
