@@ -562,6 +562,13 @@
       overflow-wrap: anywhere;
   }
 
+  /* Nome e Obs: uma linha só, com "…" no que não couber; o texto inteiro fica no hover. */
+  table.larguraFixa td.corta {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+  }
+
   /* evita a selecao de texto azul do navegador ao usar shift-click pra marcar um
      intervalo de linhas — o shift-click nativo seleciona texto, o que fica feio
      junto com o destaque das linhas marcadas. Inputs de filtro continuam selecionaveis. */

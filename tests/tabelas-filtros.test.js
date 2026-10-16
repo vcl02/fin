@@ -320,3 +320,12 @@ test('busca por ID é exata e aceita vários com |', () => {
     assert.match(fonte, /if \(chave == 'id'\) return `<th class=n>\$\{campoBusca\(chave, 'ID', 'inputmode=numeric title="ID exato; use \| pra vários \(ex\.: 12\|40\)" '\)\.replace\('Filtrar id…', 'ID'\)\}<\/th>`;/);
     assert.match(regras, /\*\*ID\*\* tem campo de busca exata: `4` acha só o lançamento de id 4 \(nunca 14 ou 40\)/);
 });
+
+test('Nome e Obs numa linha só, com "…" e texto inteiro no hover', () => {
+    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+    assert.match(fonte, /: chave == 'nome' \|\| chave == 'obs'\s*\n\s*\? `<td class=corta title="\$\{escapeHtml\(ehVazioTextual\(r\[chave\]\) \? '' : String\(r\[chave\]\)\)\}">/);
+    // O title da célula (texto inteiro) não pode ser encoberto pelo do span de edição.
+    assert.doesNotMatch(fonte, /title="Editar nome"|title="Editar observação"/);
+    assert.match(estilos, /table\.larguraFixa td\.corta \{\s*\n\s*overflow: hidden;\s*\n\s*white-space: nowrap;\s*\n\s*text-overflow: ellipsis;/);
+    assert.match(regras, /\*\*Nome\*\* e \*\*Obs\*\* ficam numa linha só, cortados com "…" quando não cabem, e mostram o texto inteiro ao passar o mouse/);
+});

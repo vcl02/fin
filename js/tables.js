@@ -255,7 +255,7 @@ const celNome = r => {
         : '';
     const texto = `${nome}${badgeFatura}${badgeCartao}`;
     return ehLinhaReal(r) && !modoRestrito()
-        ? `${sim}<span class="togNome" data-tog-nome="${escapeHtml(String(r.id))}" title="Editar nome">${texto}</span>`
+        ? `${sim}<span class="togNome" data-tog-nome="${escapeHtml(String(r.id))}">${texto}</span>`
         : `${sim}${texto}`;
 };
 // Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
@@ -278,7 +278,7 @@ const celPrio = r => ehLinhaReal(r) && !modoRestrito()
 // e' uma URL http(s) — clicar nele não entra em edição nem seleciona a linha (mesmo truque
 // de stopPropagation de abrirDetalheCelComparar em cycle-views.js).
 const celObs = r => ehLinhaReal(r) && !modoRestrito()
-    ? `<span class="togObs" data-tog-obs="${escapeHtml(String(r.id))}" title="Editar observação">${escapeHtml(textoOuTraco(r.obs))}</span>`
+    ? `<span class="togObs" data-tog-obs="${escapeHtml(String(r.id))}">${escapeHtml(textoOuTraco(r.obs))}</span>`
     : textoOuTraco(r.obs);
 const ehUrlHttp = texto => /^https?:\/\//i.test(String(texto ?? '').trim());
 const celCanal = r => {
@@ -342,6 +342,10 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (modoRestrito() || !ehLinhaReal(r) ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
+    // Nome e Obs ficam numa linha só, cortados com "…"; o texto inteiro aparece no hover
+    // (title da célula). Clicar continua editando o texto completo.
+    : chave == 'nome' || chave == 'obs'
+        ? `<td class=corta title="${escapeHtml(ehVazioTextual(r[chave]) ? '' : String(r[chave]))}">${chave == 'nome' ? celNome(r) : celObs(r)}`
     : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r)
