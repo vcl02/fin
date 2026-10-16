@@ -70,20 +70,35 @@
       <!-- Indicadores na mesma linha dos botões do cabeçalho, entre a navegação e as ações. -->
       <div id=rowVis>
         <div id=acoesAcompanhamento>
-          <!-- Indicadores calculados do ciclo Até; o JS atualiza resumo, cor e variação abaixo. -->
+          <!-- Indicadores calculados do ciclo Até; o JS atualiza texto, cor e variação. Cada item
+               fica inteiro numa linha; se não couberem todos, os itens quebram pra linha de baixo.
+               A variação vai entre parênteses logo depois do próprio indicador. -->
           <div id=indicadoresFinanceiros>
-            <div id=indicadoresResumo>
-              <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
-              <span class=indicadorPipe aria-hidden=true>|</span>
-              <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
-              <span class=indicadorPipe aria-hidden=true>|</span>
-              <span id=indicadorProporcaoReserva class="indicadorRegra neutro" title="Proporção dos gastos em Reserva">Gastos —</span>
-              <span class=indicadorPipe aria-hidden=true>|</span>
-              <span id=indicadorLiberdade class="indicadorRegra neutro" title="Progresso para liberdade financeira">Liberdade —</span>
-            </div>
-            <div id=indicadoresVariacao>
-              <span id=variacaoReserva class=variacaoLinha hidden></span>
-              <span id=variacaoComprometido class=variacaoLinha hidden></span>
+            <div class=listaIndicadores>
+              <span class=indicadorItem>
+                <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
+                <span id=variacaoReserva class=variacaoLinha hidden></span>
+              </span>
+              <span class=indicadorItem>
+                <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
+                <span id=variacaoComprometido class=variacaoLinha hidden></span>
+              </span>
+              <span class=indicadorItem>
+                <span id=indicadorProporcaoReserva class="indicadorRegra neutro" title="Proporção dos gastos em Reserva">Gastos —</span>
+              </span>
+              <!-- Liberdade fica oculta: o olho fechado mostra/esconde (handler em charts.js). -->
+              <span class=indicadorItem>
+                <button type=button id=btLiberdade class=btOlho title="Mostrar Liberdade" aria-label="Mostrar Liberdade"
+                  aria-pressed=false aria-controls=indicadorLiberdade>
+                  <svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2
+                    stroke-linecap=round stroke-linejoin=round aria-hidden=true>
+                    <path d="M3 3l18 18" />
+                    <path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.9 9.9 0 0 0 5.4-1.6" />
+                    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                  </svg>
+                </button>
+                <span id=indicadorLiberdade class="indicadorRegra neutro" title="Progresso para liberdade financeira" hidden>Liberdade —</span>
+              </span>
             </div>
           </div>
         </div>

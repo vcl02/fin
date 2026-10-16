@@ -16,10 +16,9 @@
           flex-wrap: wrap;
       }
 
-      /* Indicadores numa linha própria: rolam de lado dentro dela em vez de alargar a página. */
+      /* Indicadores numa linha própria, quebrando item a item dentro da largura da tela. */
       #rowVis {
           min-width: 0;
-          overflow-x: auto;
       }
 
       #rowVis .indicadorRegra {

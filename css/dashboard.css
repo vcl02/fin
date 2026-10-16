@@ -41,17 +41,19 @@
 
   /* Indicadores na mesma linha do cabeçalho, entre a navegação de ciclo e os botões de
      ação: ocupam o espaço do meio e empurram os botões pra direita. */
+  /* Base 0: o bloco entra na linha do cabeçalho desde que caiba o maior item; o resto do
+     espaço livre é dele, e os itens que não couberem quebram pra baixo dentro do bloco. */
   #rowVis {
       display: flex;
-      flex: 1 1 auto;
+      flex: 1 1 0;
       align-items: center;
       gap: .55rem;
       margin-left: .6rem;
   }
 
   /* Janela estreita demais pra navegação + indicadores + botões numa linha só (os
-     indicadores têm ~400px): eles descem pra uma linha própria logo abaixo, e a navegação e
-     os botões continuam juntos em cima — nunca passam um por cima do outro. */
+     maior indicador, com a variação, tem ~400px): eles descem pra uma linha própria logo
+     abaixo, e a navegação e os botões continuam juntos em cima — nunca um por cima do outro. */
   @media (max-width: 1250px) {
       #rowVis {
           order: 1;
@@ -66,32 +68,46 @@
       gap: .55rem;
   }
 
-  /* Bloco compacto de 3 linhas (~400px) pra caber na linha do cabeçalho: Reserva |
-     Comprometido em cima, as variações deles logo abaixo de cada um e Gastos | Liberdade na
-     última. Numa linha só ocupava ~850px e não cabia ao lado da navegação e dos botões. */
+  /* Indicadores em fluxo: cabem todos numa linha quando há espaço; senão os itens quebram
+     pra linha de baixo, cada um inteiro (com a variação entre parênteses logo depois dele).
+     O divisor é a borda esquerda de cada item; a lista recua uma borda+folga e o contêiner
+     corta o que sobra, então o primeiro item de cada linha nunca começa com divisor. */
   #indicadoresFinanceiros {
-      display: grid;
-      grid-template-columns: max-content min-content max-content;
-      grid-template-rows: auto auto auto;
-      align-items: center;
-      column-gap: .45rem;
-      row-gap: .05rem;
+      min-width: 0;
+      overflow: hidden;
   }
 
-  /* Os wrappers não ocupam célula: resumo e respectivas variações compartilham colunas. */
-  #indicadoresResumo,
-  #indicadoresVariacao { display: contents; }
+  .listaIndicadores {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      row-gap: .15rem;
+      margin-left: calc(-.55rem - 1px);
+  }
 
-  #indicadorReserva { grid-column: 1; grid-row: 1; }
-  #indicadorReserva + .indicadorPipe { grid-column: 2; grid-row: 1; }
-  #indicadorComprometido { grid-column: 3; grid-row: 1; }
-  /* Comprometido e Gastos ficam em linhas diferentes: o pipe entre eles sobra. */
-  #indicadorComprometido + .indicadorPipe { display: none; }
-  #variacaoReserva { grid-column: 1; grid-row: 2; }
-  #variacaoComprometido { grid-column: 3; grid-row: 2; }
-  #indicadorProporcaoReserva { grid-column: 1; grid-row: 3; }
-  #indicadorProporcaoReserva + .indicadorPipe { grid-column: 2; grid-row: 3; }
-  #indicadorLiberdade { grid-column: 3; grid-row: 3; }
+  .indicadorItem {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: 0 .55rem;
+      white-space: nowrap;
+      border-left: 1px solid var(--line-strong);
+  }
+
+  /* Olho que mostra/esconde Liberdade: só o ícone, sem caixa de botão. */
+  .btOlho {
+      display: inline-flex;
+      align-items: center;
+      padding: 0;
+      color: var(--mu);
+      background: none;
+      border: 0;
+      cursor: pointer;
+  }
+
+  .btOlho:hover {
+      color: var(--fg);
+  }
 
   /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto
      compacto e colorido para não competir com os controles reais da barra. */
@@ -111,7 +127,6 @@
 
   /* A variação possui cor semântica própria, independente da situação atual do indicador. */
   .variacaoIndicador {
-      margin-left: .25rem;
       font-size: .76rem;
       font-variant-numeric: tabular-nums;
   }
@@ -121,8 +136,6 @@
   .variacaoIndicador.vm { color: var(--vm); }
   .separadorVariacao { color: var(--mu); }
   .variacaoLinha { white-space: nowrap; }
-
-  .indicadorPipe { color: var(--mu); }
 
   .indicadorRegra.neutro { color: var(--mu); }
   .indicadorRegra.vd { color: var(--vd); }

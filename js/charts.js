@@ -137,6 +137,21 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && !el('visMenu').hidden) { fecharMenuVis(); el('btVis').focus(); }
 });
+
+// Liberdade fica oculta por padrão (pedido do mantenedor): o olho fechado ao lado mostra o
+// indicador e vira olho aberto; outro clique esconde de novo. Só apresentação, sem gravar.
+const ICONE_OLHO_FECHADO = '<path d="M3 3l18 18" /><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.9 9.9 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />';
+const ICONE_OLHO_ABERTO = '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx=12 cy=12 r=3 />';
+el('btLiberdade').onclick = () => {
+    const mostrar = el('indicadorLiberdade').hidden;
+    const rotulo = mostrar ? 'Ocultar Liberdade' : 'Mostrar Liberdade';
+    el('indicadorLiberdade').hidden = !mostrar;
+    const botao = el('btLiberdade');
+    botao.title = rotulo;
+    botao.setAttribute('aria-label', rotulo);
+    botao.setAttribute('aria-pressed', String(mostrar));
+    botao.querySelector('svg').innerHTML = mostrar ? ICONE_OLHO_ABERTO : ICONE_OLHO_FECHADO;
+};
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
 el('modalVisualizacao').addEventListener('click', e => {
     if (e.target == el('modalVisualizacao')) el('modalVisualizacao').close();
@@ -386,7 +401,9 @@ function htmlVariacaoIndicador(percentual, valor, tituloValor) {
     const pontos = percentual.diferenca.toLocaleString('pt-BR', {
         minimumFractionDigits: 1, maximumFractionDigits: 1,
     });
-    return ` <span class="variacaoIndicador ${percentual.classe}" title="Variação sobre o ciclo anterior">${percentual.seta}${pontos} p.p.</span><span class=separadorVariacao aria-hidden=true> · </span><span class="variacaoIndicador ${valor.classe}" title="${tituloValor}">${valor.seta}${brl(valor.diferenca)}</span>`;
+    // Entre parênteses, logo depois do próprio indicador: sem isso, quando os itens quebram
+    // de linha, a variação solta podia parecer de outro indicador.
+    return `(<span class="variacaoIndicador ${percentual.classe}" title="Variação sobre o ciclo anterior">${percentual.seta}${pontos} p.p.</span><span class=separadorVariacao aria-hidden=true> · </span><span class="variacaoIndicador ${valor.classe}" title="${tituloValor}">${valor.seta}${brl(valor.diferenca)}</span>)`;
 }
 
 function atualizarLinhaVariacao(id, percentual, valor, tituloValor) {

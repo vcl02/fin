@@ -121,8 +121,6 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
     assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
     assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorLiberdade'));
-    assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('class=indicadorPipe'));
-    assert.ok(acoes.indexOf('class=indicadorPipe') < acoes.indexOf('id=indicadorComprometido'));
     // No cabeçalho: depois da navegação de ciclo e antes dos botões de ação.
     const cabecalho = pagina.slice(pagina.indexOf('<div class=head>'), pagina.indexOf('<p class=sub>'));
     assert.ok(cabecalho.indexOf('id=fciclNav') < cabecalho.indexOf('id=rowVis'));
@@ -131,8 +129,10 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     assert.doesNotMatch(pagina, /id=fpago|id=origem|id=fsit|id=forigem/);
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
-    assert.match(pagina, /class=indicadorPipe aria-hidden=true>\|/);
-    assert.match(pagina, /id=indicadoresResumo[\s\S]*id=indicadoresVariacao/);
+    // Cada variação mora no mesmo item do seu indicador, logo depois dele.
+    assert.match(pagina, /<span class=indicadorItem>\s*\n\s*<span id=indicadorReserva [^>]*>Reserva —<\/span>\s*\n\s*<span id=variacaoReserva class=variacaoLinha hidden><\/span>/);
+    assert.match(pagina, /<span class=indicadorItem>\s*\n\s*<span id=indicadorComprometido [^>]*>Comprometido —<\/span>\s*\n\s*<span id=variacaoComprometido class=variacaoLinha hidden><\/span>/);
+    assert.doesNotMatch(pagina, /indicadorPipe|indicadoresResumo|indicadoresVariacao/);
     assert.match(pagina, /id=variacaoReserva class=variacaoLinha hidden/);
     assert.match(pagina, /id=variacaoComprometido class=variacaoLinha hidden/);
     assert.match(estilosPainel, /\.indicadorRegra\s*\{[\s\S]*font-weight:\s*400/);
@@ -152,13 +152,13 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     const blocoIndicadores = estilosPainel.slice(
         estilosPainel.indexOf('#indicadoresFinanceiros'), estilosPainel.indexOf('/* Reserva e Comprometido')
     );
-    // Bloco compacto de 3 linhas: Reserva | Comprometido, variações, Gastos | Liberdade.
-    assert.match(blocoIndicadores, /grid-template-columns:\s*max-content min-content max-content;\s*\n\s*grid-template-rows:\s*auto auto auto/);
-    assert.match(estilosPainel, /#variacaoReserva\s*\{\s*grid-column:\s*1;\s*grid-row:\s*2/);
-    assert.match(estilosPainel, /#variacaoComprometido\s*\{\s*grid-column:\s*3;\s*grid-row:\s*2/);
-    assert.match(estilosPainel, /#indicadorComprometido \+ \.indicadorPipe\s*\{\s*display:\s*none/);
-    assert.match(estilosPainel, /#indicadorProporcaoReserva\s*\{\s*grid-column:\s*1;\s*grid-row:\s*3/);
-    assert.match(estilosPainel, /#indicadorLiberdade\s*\{\s*grid-column:\s*3;\s*grid-row:\s*3/);
+    // Fluxo com quebra de linha: itens inteiros, divisor na borda esquerda cortado no início da linha.
+    assert.match(estilosPainel, /\.listaIndicadores \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
+    assert.match(estilosPainel, /\.indicadorItem \{[\s\S]*?white-space: nowrap;\s*\n\s*border-left: 1px solid/);
+    assert.match(estilosPainel, /#indicadoresFinanceiros \{\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;/);
+    assert.match(estilosPainel, /margin-left: calc\(-\.55rem - 1px\);/);
+    assert.match(estilosPainel, /#rowVis \{\s*\n\s*display: flex;\s*\n\s*flex: 1 1 0;/);
+    assert.match(graficos, /return `\(<span class="variacaoIndicador \$\{percentual\.classe\}"[\s\S]*?\$\{brl\(valor\.diferenca\)\}<\/span>\)`;/);
     // Janela estreita: o bloco desce pra uma linha própria, navegação e botões seguem juntos.
     assert.match(estilosPainel, /@media \(max-width: 1250px\) \{\s*\n\s*#rowVis \{\s*\n\s*order: 1;\s*\n\s*flex-basis: 100%;/);
     assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.head \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
@@ -254,4 +254,30 @@ test('conta restrita fica só no Débito, ciclo atual/próximo, somente leitura 
     assert.match(interacoes, /el\('abreNovo'\)\.hidden = simples;/);
     assert.match(interacoes, /el\('toggleSimulacao'\)\.hidden = simples;/);
     assert.match(regras, /só vê o bloco Débito \(sem Crédito\), e só navega entre o ciclo atual e o próximo/);
+});
+
+test('Liberdade fica oculta atrás de um olho fechado que mostra e esconde', () => {
+    assert.match(pagina, /<button type=button id=btLiberdade class=btOlho title="Mostrar Liberdade" aria-label="Mostrar Liberdade"\s*\n\s*aria-pressed=false aria-controls=indicadorLiberdade>/);
+    assert.match(pagina, /<span id=indicadorLiberdade class="indicadorRegra neutro" title="Progresso para liberdade financeira" hidden>/);
+    const vm = require('node:vm');
+    const inicio = graficos.indexOf('const ICONE_OLHO_FECHADO');
+    const codigo = graficos.slice(inicio, graficos.indexOf('\n};', graficos.indexOf("el('btLiberdade').onclick")) + 3);
+    const svg = { innerHTML: '' };
+    const atributos = {};
+    const elementos = {
+        indicadorLiberdade: { hidden: true },
+        btLiberdade: { title: '', setAttribute: (k, v) => { atributos[k] = v; }, querySelector: () => svg },
+    };
+    const ctx = { el: id => elementos[id] };
+    vm.runInNewContext(`${codigo}\nthis.clica = () => el('btLiberdade').onclick();`, ctx);
+    ctx.clica();
+    assert.equal(elementos.indicadorLiberdade.hidden, false);
+    assert.equal(atributos['aria-pressed'], 'true');
+    assert.equal(elementos.btLiberdade.title, 'Ocultar Liberdade');
+    assert.match(svg.innerHTML, /<circle cx=12 cy=12 r=3 \/>/);
+    ctx.clica();
+    assert.equal(elementos.indicadorLiberdade.hidden, true);
+    assert.equal(atributos['aria-label'], 'Mostrar Liberdade');
+    assert.match(svg.innerHTML, /M3 3l18 18/);
+    assert.match(regras, /\*\*Liberdade\*\* fica oculta por padrão: no lugar dela aparece só um ícone de olho fechado/);
 });
