@@ -165,18 +165,24 @@ function vCiclo() {
         `title="Editar limite de ${limite.rotulo} deste ciclo (vazio volta ao padrão)" aria-label="Limite de ${limite.rotulo} deste ciclo"></span>`;
     };
     // Além do %, quanto ainda dá pra gastar até o teto (ou quanto já passou dele), com o
-    // mesmo valor da linha: Hoje usa só o pago; Futuro, pago + aberto.
+    // mesmo valor da linha: Hoje usa só o pago; Futuro, pago + aberto. Cada número leva o
+    // próprio rótulo DEPOIS dele ("74% Usado · R$ 64,02 Livre de R$ 250,00"): com o rótulo
+    // solto entre dois números, "74% · Livre" parecia "74% livre". Acima do teto, o % passa a
+    // ser o quanto ultrapassou (127% do teto → "27% Ultrapassado · R$ 13,41 Acima dos R$ 50,00").
     const spansLimitesCategoria = chave => limitesCategoria.map(limite => {
         const cor = corDoLimiteCategoria(limite[chave]);
         const restante = limite.teto - (chave === 'percentualPago' ? limite.valorPago : limite.valorTotal);
-        const sobra = restante >= -TOLERANCIA_FINANCEIRA
-            ? `<span class=limiteRotulo>Livre</span> <b class="${cor}">${brl(Math.max(0, restante))}</b>`
-            : `<span class=limiteRotulo>Acima</span> <b class=vm>${brl(-restante)}</b>`;
+        const dentro = restante >= -TOLERANCIA_FINANCEIRA;
+        // Sem teto (zero), não há "quanto ultrapassou" em %: só o valor acima aparece.
+        const percentual = dentro ? `${Math.round(limite[chave])}%`
+            : limite.teto > 0 ? `${Math.max(1, Math.round(limite[chave] - 100))}%` : '—';
         const descricao = DESCRICAO_LIMITE_CATEGORIA[limite.chave];
         const rotulo = descricao ? `<span class=rotuloComDica title="${escapeHtml(descricao)}">${limite.rotulo}</span>` : limite.rotulo;
-        // Em pedaços que nunca se partem: com a faixa estreita, o item quebra antes do "de".
-        return `<span class="besteiraIndicador temPedacos"><span class=pedaco>${rotulo} <b class="pct ${cor}">${Math.round(limite[chave])}%</b></span><span class=pedaco>· ${sobra}</span>` +
-            `<span class="pedaco limiteTeto">de ${tetoDoIndicador(limite)}</span></span>`;
+        // Em pedaços que nunca se partem: com a faixa estreita, o item quebra entre eles.
+        return `<span class="besteiraIndicador temPedacos"><span class=pedaco>${rotulo} <b class="pct ${cor}">${percentual}</b> ` +
+            `<span class=limiteRotulo>${dentro ? 'Usado' : 'Ultrapassado'}</span></span>` +
+            `<span class=pedaco>· <b class="${dentro ? cor : 'vm'}">${brl(dentro ? Math.max(0, restante) : -restante)}</b> <span class=limiteRotulo>${dentro ? 'Livre' : 'Acima'}</span></span>` +
+            `<span class="pedaco limiteTeto">${dentro ? 'de' : 'dos'} ${tetoDoIndicador(limite)}</span></span>`;
     }).join('');
     const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&

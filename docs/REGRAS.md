@@ -396,7 +396,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   O cálculo soma o Débito do próprio ciclo (`periodoIdx == i`) com o Crédito da MESMA prévia que a tabela Crédito já mostra pra esse ciclo (`creditosExibidosNoCiclo`, fatura de `i+1`): um ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro — igual à regra geral de Crédito ("no ciclo N ela mostra os créditos da competência N+1"), nunca pela data da compra nem pelo `periodoIdx` cru do lançamento de Crédito.
   Mesma regra de despesa das demais leituras de orçamento (`dadosCompromissosDoCiclo`): só `valor < 0`, exclui antecipação de fatura, valor absoluto.
   A cor do percentual segue a folga: verde até 70%, laranja de 70% a 100% e vermelho acima do teto (`corDoLimiteCategoria` em `js/charts.js`).
-  Ao lado do percentual, cada indicador mostra também quanto ainda cabe no teto (**Livre R$ …**) ou, se já passou, **Acima R$ …** — calculado com o mesmo valor da linha (Hoje: só pago; Futuro: pago + aberto).
+  Ao lado do percentual, cada indicador mostra também quanto ainda cabe no teto ou, se já passou, quanto está acima — calculado com o mesmo valor da linha (Hoje: só pago; Futuro: pago + aberto).
+  Para não confundir o rótulo de um número com o do outro, cada número vem com o próprio rótulo depois dele: `Besteira 74% Usado · R$ 64,02 Livre de R$ 250,00`.
+  Acima do teto, o percentual passa a ser o quanto ultrapassou (127% do teto → 27%): `Isabella 27% Ultrapassado · R$ 13,41 Acima dos R$ 50,00`; sem teto (zero), o percentual fica `—`.
   Hoje existem dois indicadores, cada um com seu próprio teto fixo em código (`js/domain.js`, não editável pela tela): `Besteira` (cafés, milkshakes, lanches/doces, Uber não essencial — feitos **sozinho**) contra `LIMITE_BESTEIRA`, R$ 250; e o rótulo `Isabella` contra `LIMITE_ISABELLA`, R$ 700 (`ehGastoIsabella` em `js/charts.js`).
   A categoria `Besteira Isabella` (antigo par do `Besteira` solo) foi descontinuada e substituída por `Lazer`+`Isabella`; não há mais rastro dela em código — um lançamento antigo ainda taggeado assim precisa ser corrigido pela edição inline de Categoria pra voltar a contar em algum teto.
   Convenção de categorização: todo lançamento com a categoria `Isabella` (comparada como item inteiro da lista de categorias) conta pro teto dela — junto com `Lazer` (sair com ela, lanches, estacionamento, ingresso, Uber compartilhado, cover…, o valor inteiro da conta, sem dividir) ou sozinha (presente, mimo).
@@ -443,9 +445,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Títulos em faixas
 
-- Nas faixas **Hoje** e **Futuro** (ou Passado) dos títulos de Débito e Crédito, cada item fica exatamente embaixo do correspondente da outra faixa: cada item, e cada valor ou rótulo variável dentro dele (`Livre`/`Acima`), ocupa a largura do maior entre as faixas, com números de largura uniforme e alinhados à direita.
+- Nas faixas **Hoje** e **Futuro** (ou Passado) dos títulos de Débito e Crédito, cada item fica exatamente embaixo do correspondente da outra faixa: cada item, e cada valor ou rótulo variável dentro dele (`Usado`/`Ultrapassado`, `Livre`/`Acima`), ocupa a largura do maior entre as faixas, com números de largura uniforme e alinhados à direita.
   Esse alinhamento é refeito quando a largura da janela muda.
-  Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome %`, `· Livre/Acima valor` e `de teto`; cada cartão (e o Total) em `nome`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
+  Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome % Usado/Ultrapassado`, `· valor Livre/Acima` e `de/dos teto`; cada cartão (e o Total) em `nome`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
   O divisor vertical entre itens nunca aparece no começo de uma linha.
   Os valores também têm tamanho fixo: todo valor em reais nas faixas reserva a largura de `-R$ 99.999,99` e todo percentual a de `100%`, então a faixa não muda de largura quando os números mudam (outro ciclo, um lançamento novo).
   Quando só uma faixa do Crédito abre com o valor da fatura, a outra reserva esse lugar vazio.

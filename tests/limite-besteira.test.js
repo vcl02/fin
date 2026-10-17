@@ -118,8 +118,7 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
     // Além do %, quanto ainda cabe no teto (Hoje: pago; Futuro: pago + aberto) ou quanto passou.
     assert.match(visoes, /const restante = limite\.teto - \(chave === 'percentualPago' \? limite\.valorPago : limite\.valorTotal\);/);
-    assert.match(visoes, /<span class=limiteRotulo>Livre<\/span> <b class="\$\{cor\}">\$\{brl\(Math\.max\(0, restante\)\)\}<\/b>/);
-    assert.match(visoes, /<span class=limiteRotulo>Acima<\/span> <b class=vm>\$\{brl\(-restante\)\}<\/b>/);
+    assert.match(visoes, /<b class="\$\{dentro \? cor : 'vm'\}">\$\{brl\(dentro \? Math\.max\(0, restante\) : -restante\)\}<\/b> <span class=limiteRotulo>\$\{dentro \? 'Livre' : 'Acima'\}<\/span>/);
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
     assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
     assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje && !modoRestrito\(\) \? \[/);
@@ -180,7 +179,8 @@ test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima
     assert.equal(contexto.cor(100.1), 'vm');
     assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.am \{\s*\n\s*color: #F0A83A;/);
     assert.match(regras, /verde até 70%, laranja de 70% a 100% e vermelho acima do teto/);
-    assert.match(regras, /mostra também quanto ainda cabe no teto \(\*\*Livre R\$ …\*\*\) ou, se já passou, \*\*Acima R\$ …\*\*/);
+    assert.match(regras, /cada número vem com o próprio rótulo depois dele: `Besteira 74% Usado · R\$ 64,02 Livre de R\$ 250,00`/);
+    assert.match(regras, /`Isabella 27% Ultrapassado · R\$ 13,41 Acima dos R\$ 50,00`/);
 });
 
 test('nome de Besteira e Isabella no título explica o que entra no teto (tooltip)', () => {
@@ -190,4 +190,8 @@ test('nome de Besteira e Isabella no título explica o que entra no teto (toolti
     assert.match(dominio, /const DESCRICAO_LIMITE_CATEGORIA = \{\s*\n\s*besteira: 'Besteira: [^']*café[^']*',\s*\n\s*isabella: 'Isabella: tudo com a categoria Isabella[^']*fatura do cartão dela e o que estiver marcado Comprometido[^']*',/);
     assert.match(visoes, /<span class=rotuloComDica title="\$\{escapeHtml\(descricao\)\}">\$\{limite\.rotulo\}<\/span>/);
     assert.match(regras, /Passar o mouse no nome \*\*Besteira\*\* ou \*\*Isabella\*\* do indicador mostra o que entra naquele teto/);
+});
+
+test('em Besteira/Isabella o valor fica colado no rótulo, sem a largura fixa das outras faixas', () => {
+    assert.match(estilos, /\.resumoDados \.besteiraIndicador b:not\(\.pct\) \{\s*\n\s*min-width: 0;\s*\n\s*text-align: left;/);
 });

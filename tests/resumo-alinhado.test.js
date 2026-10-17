@@ -86,6 +86,6 @@ test('faixa estreita quebra entre pedaços inteiros, sem divisor no começo da l
     // Recuo de borda+folga cortado pelo clip: o divisor do item que abre a linha some.
     assert.match(estilos, /margin-left: calc\(-\.8rem - 1px\);\s*\n\s*clip-path: inset\(0 0 0 calc\(\.8rem \+ 1px\)\);/);
     assert.match(visoes, /<span class="besteiraIndicador temPedacos"><span class=pedaco>\$\{rotulo\} <b class="pct \$\{cor\}">/);
-    assert.match(visoes, /`<span class="pedaco limiteTeto">de \$\{tetoDoIndicador\(limite\)\}<\/span><\/span>`/);
+    assert.match(visoes, /`<span class="pedaco limiteTeto">\$\{dentro \? 'de' : 'dos'\} \$\{tetoDoIndicador\(limite\)\}<\/span><\/span>`/);
     assert.match(regras, /quebra só entre seus pedaços[^.]*nunca no meio de um valor ou separando "de" do teto\.\s+O divisor vertical entre itens nunca aparece no começo de uma linha\./);
 });

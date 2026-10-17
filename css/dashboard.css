@@ -425,6 +425,14 @@
       color: var(--mu);
   }
 
+  /* Em Besteira/Isabella o rótulo vem DEPOIS do número ("R$ 60,00 Livre"): o valor fica
+     colado no "·" e no próprio rótulo, sem a largura fixa alinhada à direita das demais
+     faixas — que soltava o "·" longe do número. O alinhamento Hoje/Futuro ainda iguala. */
+  .resumoDados .besteiraIndicador b:not(.pct) {
+      min-width: 0;
+      text-align: left;
+  }
+
   /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */
   .limiteCartao {
       color: var(--mu);
