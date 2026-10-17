@@ -133,3 +133,16 @@ test('migrations 28 e 29: sequência alinhada, número só do dono, séries marc
     }
     assert.match(regras, /`migrations\/29-marcar-series-sem-recorrencia\.sql` dá `freq` e um `recorrencia_id` novo/);
 });
+
+test('migration 30: renumera de 1 em diante, na mesma ordem, e alinha a sequência ao último', () => {
+    const m30 = fs.readFileSync('migrations/30-renumerar-recorrencias.sql', 'utf8');
+    assert.match(m30, /lock table public\.fin in share row exclusive mode;/);
+    assert.match(m30, /row_number\(\) over \(order by recorrencia_id\) novo/);
+    assert.match(m30, /from \(select distinct recorrencia_id from public\.fin where recorrencia_id is not null\) d/);
+    assert.match(m30, /and f\.recorrencia_id <> n\.novo;/);
+    assert.match(m30, /select setval\('public\.fin_recorrencia_seq',\s*\n\s*greatest\(\(select coalesce\(max\(recorrencia_id\), 0\) from public\.fin\), 1\),/);
+    const semComentarios = m30.replace(/--[^\n]*/g, '');
+    assert.doesNotMatch(semComentarios, /\$\$/);
+    assert.ok(!m30.split('\n').some(l => /^\s*--.*;/.test(l)));
+    assert.match(regras, /`migrations\/30-renumerar-recorrencias\.sql` renumera `recorrencia_id` de 1 em diante, sem buracos/);
+});

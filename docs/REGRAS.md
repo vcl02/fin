@@ -554,6 +554,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Nunca entram Investimento (Aporte/Resgate), antecipação/pagamento de fatura e Ajuste.
   As duas são escritas sem `;` dentro de bloco `$$` (o DataGrip parte o script em cada `;` e quebrava função/`do` no meio).
   A 29 exige a 28 (aborta sem alterar nada se ela faltar), não toca linha que já tem `freq` ou `recorrencia_id` (rodar de novo não muda nada) e lista ao final as séries marcadas; o histórico (migration 27) guarda o antes de cada linha.
+- `migrations/30-renumerar-recorrencias.sql` renumera `recorrencia_id` de 1 em diante, sem buracos, mantendo a ordem (o menor vira 1, o seguinte 2…) e os lotes juntos, e põe `fin_recorrencia_seq` no último número, pra o próximo lote continuar a contagem.
+  Trava gravações em `fin` durante a transação (rodar com o app fechado), não muda saldo nem tela (o número é só marca de lote) e rodar de novo não muda nada; o histórico (migration 27) guarda o número antigo.
 
 ## Testes
 
