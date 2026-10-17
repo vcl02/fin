@@ -58,7 +58,8 @@ test('fica visualmente apagado enquanto desabilitado, igual Duplicar/Editar/Excl
     // .btFiltro só tinha estilo dentro do media query mobile (ver css/mobile.css); esta
     // regra fica em dashboard.css, fora de qualquer media query, pra também valer no
     // desktop — onde "Consolidar tudo" realmente roda.
-    assert.match(estilos, /\.btFiltro:disabled \{\s*\n\s*opacity: \.5;\s*\n\s*cursor: default;\s*\n\s*\}/);
+    // O cursor vem da regra global de :disabled (bloqueado vermelho, em base.css).
+    assert.match(estilos, /\.btFiltro:disabled \{\s*\n\s*opacity: \.5;\s*\n\s*\}/);
     assert.doesNotMatch(estilosMobile, /\.btFiltro:disabled/);
 });
 

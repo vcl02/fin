@@ -99,11 +99,6 @@
       border-left: 1px solid var(--line-strong);
   }
 
-  /* Liberdade sempre numa linha própria, abaixo dos demais indicadores, aberta ou fechada. */
-  #itemLiberdade {
-      flex-basis: 100%;
-  }
-
   /* Indicador fechado: só o olho e o nome; aberto, o nome some (o próprio texto já o traz). */
   .indicadorItem.fechado > :not(.btOlho, .nomeOlho) {
       display: none;
@@ -1328,7 +1323,6 @@
   #selbar #seledit:disabled,
   #selbar #seldup:disabled {
       opacity: .6;
-      cursor: default;
   }
 
   /* Excluir: mesma forma discreta do Duplicar, so' que em vermelho — a acao e'
@@ -1346,7 +1340,6 @@
 
   #selbar #seldel:disabled {
       opacity: .6;
-      cursor: default;
   }
 
   /* Botões de ação só com ícone na barra (Gráfico, Consolidar tudo): quadrados, no mesmo
@@ -1373,7 +1366,6 @@
 
   .btIcone:disabled {
       opacity: .5;
-      cursor: default;
   }
 
   /* Ligado (ex.: só as linhas diferentes): mesmo verde de "ativo" do restante da tela. */
@@ -1433,7 +1425,6 @@
      larguras, mesmo esquema de opacidade do Duplicar/Editar/Excluir acima. */
   .btFiltro:disabled {
       opacity: .5;
-      cursor: default;
   }
 
   /* =========================================================
@@ -1486,7 +1477,6 @@
 
   .btNavCiclo:disabled {
       opacity: .3;
-      cursor: default;
   }
 
   /* visualmente escondido mas ainda lido por leitor de tela — usado no "De"/"Até", que
@@ -1516,5 +1506,4 @@
   /* Até desabilitado quando De=Backlog (nao da' pra comparar Backlog com outro periodo) */
   .fInline select:disabled {
       opacity: .4;
-      cursor: default;
   }

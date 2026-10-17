@@ -279,8 +279,8 @@ test('cada indicador tem um olho; abre na ordem enquanto couber e o clique preva
     const vm = require('node:vm');
     const inicio = graficos.indexOf('const ICONE_OLHO_FECHADO');
     const codigo = graficos.slice(inicio, graficos.indexOf('\n});', graficos.indexOf('ITENS_COM_OLHO.forEach')) + 4);
-    // Layout falso: largura de cada item aberto/fechado; a 1ª linha (sem Liberdade) cabe
-    // enquanto a soma não passa da largura da lista; Liberdade, na linha dela, sempre cabe.
+    // Layout falso: largura de cada item aberto/fechado; a linha cabe enquanto a soma não
+    // passa da largura da lista (Liberdade também, sem linha própria).
     const larguras = { itemReserva: [300, 80], itemComprometido: [330, 120], itemProporcaoReserva: [260, 70], itemLiberdade: [140, 90] };
     const lista = { clientWidth: 0, get scrollWidth() { return 0; } };
     const itens = {};
@@ -295,8 +295,7 @@ test('cada indicador tem um olho; abre na ordem enquanto couber e o clique preva
             querySelector: sel => (sel == '.btOlho' ? itens[id].botao : svg),
             get aberto() { return !classes.has('fechado'); },
             get offsetTop() {
-                const ordem = ['itemReserva', 'itemComprometido', 'itemProporcaoReserva'];
-                if (!ordem.includes(id)) return 99;
+                const ordem = ['itemReserva', 'itemComprometido', 'itemProporcaoReserva', 'itemLiberdade'];
                 const ate = ordem.slice(0, ordem.indexOf(id) + 1).reduce((s, i) => s + larguras[i][itens[i].aberto ? 0 : 1], 0);
                 // Na mesma linha o topo varia ~2px (alturas diferentes, centralizadas): não é quebra.
                 return ate > lista.clientWidth ? 50 : (itens[id].aberto ? 0 : 2);
@@ -308,37 +307,37 @@ test('cada indicador tem um olho; abre na ordem enquanto couber e o clique preva
     vm.runInNewContext(`${codigo}\nthis.ajustar = ajustarOlhosIndicadores;`, ctx);
     const abertos = () => Object.keys(itens).filter(id => itens[id].aberto);
 
-    lista.clientWidth = 1200;   // desktop largo: todos abertos
+    lista.clientWidth = 1100;   // desktop largo: todos abertos (300+330+260+140 = 1030)
     ctx.ajustar();
     assert.deepEqual(abertos(), ['itemReserva', 'itemComprometido', 'itemProporcaoReserva', 'itemLiberdade']);
     assert.equal(itens.itemReserva.botao.title, 'Ocultar itemReserva');
     assert.match(itens.itemReserva.svg.innerHTML, /<circle cx=12 cy=12 r=3 \/>/);
 
-    lista.clientWidth = 700;    // Reserva + Comprometido abertos (630) + Gastos fechado (70) = 700
+    lista.clientWidth = 790;    // Reserva + Comprometido abertos (630) + Gastos e Liberdade fechados (160) = 790
     ctx.ajustar();
     assert.deepEqual(abertos(), ['itemReserva', 'itemComprometido']);   // o 1º que não cabe e os seguintes fecham
     assert.equal(itens.itemProporcaoReserva.atributos['aria-pressed'], 'false');
     assert.equal(itens.itemLiberdade.botao.title, 'Mostrar itemLiberdade');
     assert.match(itens.itemLiberdade.svg.innerHTML, /M3 3l18 18/);
 
-    lista.clientWidth = 360;    // celular: nem Reserva aberta cabe com os outros fechados
+    lista.clientWidth = 360;    // celular: todos fechados (360) cabem, mas nem Reserva aberta
     ctx.ajustar();
     assert.deepEqual(abertos(), []);
 
     itens.itemLiberdade.botao.onclick();   // clique do usuário prevalece sobre o ajuste
     ctx.ajustar();
     assert.deepEqual(abertos(), ['itemLiberdade']);
-    lista.clientWidth = 1200;
+    lista.clientWidth = 1100;
     itens.itemReserva.botao.onclick();     // fechada no celular: o clique abre
     itens.itemReserva.botao.onclick();     // e outro fecha, por escolha
     ctx.ajustar();
-    // Reserva fica fechada por escolha; os automáticos seguintes abrem porque cabem.
+    // Reserva fica fechada por escolha; os automáticos seguintes abrem porque cabem (80+330+260+140).
     assert.deepEqual(abertos(), ['itemComprometido', 'itemProporcaoReserva', 'itemLiberdade']);
     assert.match(regras, /Cada indicador tem um \*\*olho\*\* antes: aberto mostra o indicador; fechado deixa só o olho fechado e o nome/);
     assert.match(regras, /no desktop todos começam abertos e, conforme a tela estreita, vão fechando a partir da Liberdade/);
-    assert.match(regras, /\*\*Liberdade\*\* fica sempre numa linha própria, abaixo deles/);
+    assert.match(regras, /\*\*Gastos\*\* e \*\*Liberdade\*\* ficam numa linha quando cabem[^.]*\. Nenhum tem linha própria fixa\./);
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-    assert.match(estilos, /#itemLiberdade \{\s*\n\s*flex-basis: 100%;/);
+    assert.doesNotMatch(estilos, /#itemLiberdade/);
     assert.match(estilos, /\.indicadorItem\.fechado > :not\(\.btOlho, \.nomeOlho\) \{\s*\n\s*display: none;/);
     // Textos novos mudam a largura dos itens: o ajuste roda ao fim de cada atualização.
     assert.match(graficos, /Sem gastos suficientes para calcular a meta';\s*\n(\s*\/\/.*\n)?\s*ajustarOlhosIndicadores\(\);\s*\n\}/);
@@ -454,4 +453,17 @@ test('botões que descem de linha ficam à esquerda; na mesma linha, à direita'
     assert.doesNotMatch(bloco, /margin-left/);
     // Na mesma linha da navegação, é a margem automática dela que joga os botões pra direita.
     assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /#fciclNav \{[^}]*margin: 0 auto 0 0;/);
+});
+
+test('controle desativado mostra o cursor de bloqueado vermelho', () => {
+    const base = fs.readFileSync('css/base.css', 'utf8');
+    // SVG do círculo cortado no vermelho do tema (--vm #F06A61), com not-allowed de reserva.
+    assert.match(base, /--cursor-bloqueado: url\("data:image\/svg\+xml,[^"]*stroke='%23F06A61'[^"]*"\) 12 12, not-allowed;/);
+    assert.match(base, /:disabled \{\s*\n\s*cursor: var\(--cursor-bloqueado\) !important;/);
+    // Nenhuma regra de desativado volta a impor o cursor padrão ou o nativo.
+    for (const arquivo of ['css/dashboard.css', 'css/forms.css', 'css/mobile.css']) {
+        const css = fs.readFileSync(arquivo, 'utf8');
+        for (const [, corpo] of css.matchAll(/:disabled[^{]*\{([^}]*)\}/g)) assert.doesNotMatch(corpo, /cursor:/, arquivo);
+    }
+    assert.match(regras, /Todo controle desativado \(botão, seletor ou campo\) mostra, ao passar o mouse, o cursor de bloqueado \(círculo cortado\) em \*\*vermelho\*\*/);
 });

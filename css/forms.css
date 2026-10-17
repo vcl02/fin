@@ -384,7 +384,6 @@
       background-image: none;
       border-style: dashed;
       opacity: .7;
-      cursor: not-allowed;
   }
 
   /* Troca de estado animada: a classe é posta só quando o campo realmente alterna entre
@@ -908,7 +907,6 @@
 
   .btPri:disabled {
       opacity: .5;
-      cursor: default;
   }
 
   .sd {

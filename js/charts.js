@@ -158,14 +158,13 @@ function definirOlhoIndicador(item, aberto) {
     botao.querySelector('svg').innerHTML = aberto ? ICONE_OLHO_ABERTO : ICONE_OLHO_FECHADO;
 }
 
-// Cabe = os itens da 1ª linha (todos menos Liberdade, que tem linha própria) seguem na mesma
-// linha e nenhum item passa da largura da lista. Itens da mesma linha podem diferir uns 2px
+// Cabe = todos os itens seguem na mesma linha e nenhum passa da largura da lista. Itens da mesma linha podem diferir uns 2px
 // no topo (o selo de variação é mais alto, e a linha centraliza); meia altura de tolerância.
 function indicadoresCabemNaLinha(itens) {
     const lista = itens[0].parentElement;
     const topo = itens[0].offsetTop;
     const tolerancia = itens[0].offsetHeight / 2;
-    return itens.slice(0, -1).every(item => Math.abs(item.offsetTop - topo) < tolerancia)
+    return itens.every(item => Math.abs(item.offsetTop - topo) < tolerancia)
         && lista.scrollWidth <= lista.clientWidth + 1;
 }
 
