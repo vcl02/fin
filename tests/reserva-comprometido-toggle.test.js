@@ -24,7 +24,7 @@ test('COLS inclui reserva e comprometido como colunas booleanas, sem recorte em 
     assert.match(estado, /\['reserva', 'Reserva', 'b'\], \['comprometido', 'Comprometido', 'b'\],/);
     // colunasAtivas só recorta 'prio' (exclusivo do Backlog); reserva/comprometido
     // aparecem em Débito, Crédito e Backlog igualmente.
-    assert.match(estado, /const colunasAtivas = idTabela => idTabela === 'bk'/);
+    assert.match(estado, /const colunasDaTabela = idTabela => idTabela === 'bk'/);
 });
 
 test('célula de Reserva/Comprometido mostra "—" quando falso, sem repetir texto negativo em toda linha', () => {

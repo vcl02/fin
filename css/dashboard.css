@@ -621,6 +621,11 @@
       min-width: 74rem;
   }
 
+  /* Sem ID, Reserva e Comprometido (conta restrita), a soma das colunas cai ~18rem. */
+  table.larguraFixa:not(:has(col.col-id)) {
+      min-width: 56rem;
+  }
+
   .col-data { width: 7rem; }
   .col-valor { width: 9.75rem; }
   .col-pago { width: 5rem; }

@@ -27,9 +27,14 @@ const COLS = [
 // estadoOrdenacao), então some nas demais (Débito, Crédito), onde a linha já tem ciclo — e,
 // no Backlog, vem na FRENTE de tudo (inclusive Data), já que é o primeiro critério que
 // importa ali: decidir o que elevar primeiro pra um ciclo.
-const colunasAtivas = idTabela => idTabela === 'bk'
+const colunasDaTabela = idTabela => idTabela === 'bk'
     ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio')]
     : COLS.filter(([chave]) => chave !== 'prio');
+// A conta restrita (Isabella) não vê ID, Reserva nem Comprometido (pedido do mantenedor):
+// são colunas de controle do mantenedor, sem uso pra quem só consulta.
+const COLUNAS_FORA_DA_CONTA_RESTRITA = ['id', 'reserva', 'comprometido'];
+const colunasAtivas = idTabela => colunasDaTabela(idTabela)
+    .filter(([chave]) => !(modoRestrito() && COLUNAS_FORA_DA_CONTA_RESTRITA.includes(chave)));
 const isMobile = () => matchMedia('(max-width: 640px)').matches;
 
 // Único estado mutável da tela. Dados vindos do banco são normalizados em carregarDados;
