@@ -1,6 +1,7 @@
 // Contrato de domínio: valida dados carregados sem mutar ou descartar registros históricos.
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const fs = require('node:fs');
 const { carregarFuncoes } = require('./helpers/carregar-funcoes');
 
 const categoriasSeparadas = valor => {
@@ -124,6 +125,22 @@ test('débito avisa pago no ciclo seguinte, mas crédito só avisa dois ciclos �
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 50')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 52')));
     assert.ok(!diagnostico.avisos.some(a => a.includes('id 53')));
+});
+
+test('parcelas seguintes de compra parcelada não avisam quando a 1ª está na prévia normal', () => {
+    const ciclos = ['2026-08-01', '2026-09-01', '2026-10-01', '2026-11-01', '2026-12-01'].map(ini => ({ ini }));
+    const parcela = (id, data, fatura, lote) => ({ id, data, fatura, valor: -133.33, nome: 'Tênis', categ: 'Vestuário', cred: true, pago: true, freq: 'Mensal', recorrencia_id: lote });
+    const diagnostico = dominioComHoje.validarLancamentosCarregados([
+        // lote 70: 1ª fatura em N+1 (prévia normal) → 2ª e 3ª parcelas não avisam
+        parcela(70, '2026-09-12', '2026-10-12', 70), parcela(71, '2026-10-12', '2026-11-12', 70), parcela(72, '2026-11-12', '2026-12-12', 70),
+        // lote 80: já começa em N+2 → todas avisam
+        parcela(80, '2026-10-20', '2026-11-12', 80), parcela(81, '2026-11-20', '2026-12-12', 80),
+        // avulso dois ciclos à frente, sem lote → avisa
+        { id: 90, data: '2026-10-25', valor: -60, nome: 'Avulso', categ: 'Casa', cred: true, pago: true, fatura: '2026-11-12', recorrencia_id: null },
+    ], ciclos);
+    const avisados = diagnostico.avisos.filter(a => a.includes('marcado como pago')).map(a => +a.match(/^id (\d+)/)[1]).sort((x, y) => x - y);
+    assert.deepEqual([...avisados], [80, 81, 90]);
+    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /Também não avisa nas parcelas seguintes de uma compra parcelada \(mesmo `recorrencia_id`\) cuja 1ª fatura/);
 });
 
 test('ciclos vêm de fin_ciclo: ordenados pelo início, fim vazio = aberto, buraco vira aviso', () => {

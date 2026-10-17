@@ -187,6 +187,9 @@ function validarLancamentosCarregados(lancamentos, ciclos = []) {
     // competência N+1 no ciclo N (ver REGRAS.md), então fatura no PRÓXIMO ciclo é o
     // normal esperado. Só fatura dois ciclos ou mais à frente foge dessa prévia e é sinal
     // de revisão (ex.: mesma falha de recorrência nascer paga, só que do lado do Crédito).
+    // Exceção: parcelas seguintes de um lote (mesmo recorrencia_id) cuja 1ª fatura está
+    // antes do ciclo N+2. É compra parcelada já feita — o banco bloqueia o limite inteiro
+    // na compra —, então as parcelas futuras estarem confirmadas é o esperado.
     if (typeof hojeISO === 'function') {
         const iniciosOrdenados = ciclos.map(ciclo => ciclo.ini).sort();
         const hoje = hojeISO();
@@ -194,8 +197,18 @@ function validarLancamentosCarregados(lancamentos, ciclos = []) {
         const inicioProximoCiclo = idxHoje >= 0 ? iniciosOrdenados[idxHoje + 1] : null;
         const inicioDoisCiclosAFrente = idxHoje >= 0 ? iniciosOrdenados[idxHoje + 2] : null;
         if (inicioProximoCiclo || inicioDoisCiclosAFrente) {
+            // 1ª fatura (a menor) de cada lote de Crédito, pra reconhecer parcelas seguintes.
+            const primeiraFaturaDoLote = new Map();
+            lancamentos.forEach(lancamento => {
+                if (!lancamento?.cred || lancamento.recorrencia_id == null || !ehDataIso(lancamento.fatura)) return;
+                const fatura = String(lancamento.fatura).slice(0, 10);
+                const atual = primeiraFaturaDoLote.get(lancamento.recorrencia_id);
+                if (!atual || fatura < atual) primeiraFaturaDoLote.set(lancamento.recorrencia_id, fatura);
+            });
             lancamentos.forEach((lancamento, indice) => {
                 if (!lancamento || lancamento.pago !== true) return;
+                if (lancamento.cred && inicioDoisCiclosAFrente
+                    && primeiraFaturaDoLote.get(lancamento.recorrencia_id) < inicioDoisCiclosAFrente) return;
                 const fronteira = lancamento.cred ? inicioDoisCiclosAFrente : inicioProximoCiclo;
                 if (!fronteira) return;
                 const dataRelevante = lancamento.cred ? lancamento.fatura : lancamento.data;
