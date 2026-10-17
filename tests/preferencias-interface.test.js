@@ -382,10 +382,10 @@ test('De/Até mostram o mês abreviado, com o nome completo no tooltip', () => {
     assert.match(regras, /Os seletores \*\*De\*\* e \*\*Até\*\* mostram cada ciclo pelo mês abreviado \(`Out\/26`/);
 });
 
-test('entre De e Até fica só um "-"', () => {
-    assert.match(pagina, /<span class=navCompararAte id=navCompararAte aria-hidden=true>-<\/span>/);
-    assert.doesNotMatch(pagina, /navCompararAte>até</);
-    assert.match(regras, /Entre os dois fica só um `-` \(`Out\/26 - Nov\/26`\)/);
+test('entre De e Até não há texto nem traço', () => {
+    assert.doesNotMatch(pagina, /navCompararAte/);
+    assert.match(pagina, /<select id=compDe aria-label="De"><\/select>\s*<\/label>\s*<label class=fInline id=fate>/);
+    assert.match(regras, /Os dois ficam lado a lado, sem texto ou traço entre eles/);
 });
 
 test('botões de ação do cabeçalho ficam num bloco que quebra de linha inteiro', () => {
