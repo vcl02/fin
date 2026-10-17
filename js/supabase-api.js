@@ -82,6 +82,14 @@ const buscar = async (tabela, retry, chave = 'id') => {
     }
 };
 
+// Toda gravação real que o banco confirma pede uma recarga da tela (recarregarAposGravacao,
+// em bootstrap.js): o que aparece é sempre o que está no banco, inclusive defaults,
+// triggers e o que outra aba ou o DataGrip mudou no meio-tempo.
+const aposGravar = resultado => {
+    if (typeof recarregarAposGravacao === 'function') recarregarAposGravacao();
+    return resultado;
+};
+
 const normalizarCategoriasNoPayload = payload => Object.hasOwn(payload, 'categ')
     ? { ...payload, categ: normalizaCategorias(payload.categ) || null }
     : payload;
@@ -101,11 +109,12 @@ const inserirLancamentos = async payloads => {
             body: JSON.stringify(payloads.map(normalizarCategoriasNoPayload)),
         }, 'inserir');
     } catch (err) {
-        if (err.semResposta) throw erroSemResposta(`${err.message} — sem confirmação: pode ter salvado. Recarregue e confira antes de repetir`);
+        // Sem resposta o lote pode ter sido gravado: recarrega pra tela mostrar se entrou.
+        if (err.semResposta) { aposGravar(); throw erroSemResposta(`${err.message} — sem confirmação: pode ter salvado. Recarregue e confira antes de repetir`); }
         throw err;
     }
     if (!r.ok) throw Error(`inserir: ${r.status} ${r.texto}`);
-    return JSON.parse(r.texto);
+    return aposGravar(JSON.parse(r.texto));
 };
 
 const inserirLancamento = async payload => (await inserirLancamentos([payload]))[0];
@@ -124,10 +133,10 @@ const excluirLancamento = async id => comRetentativas(async tentativa => {
         method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), Prefer: 'return=representation' },
     }, 'excluir');
     if (!r.ok) throw Error(`excluir: ${r.status} ${r.texto}`);
-    if (JSON.parse(r.texto).length) return;
+    if (JSON.parse(r.texto).length) return aposGravar();
     // Numa repetição, a tentativa sem resposta pode ter excluído de fato: só é bloqueio se a
     // linha ainda existir.
-    if (tentativa > 1 && !(await linhaExiste(id))) return;
+    if (tentativa > 1 && !(await linhaExiste(id))) return aposGravar();
     throw Error('nenhuma linha excluída (RLS/policy do Supabase pode estar bloqueando DELETE)');
 });
 
@@ -142,7 +151,7 @@ const atualizarLancamentos = async (ids, campos) => comRetentativas(async () => 
     if (!r.ok) throw Error(`atualizar: ${r.status} ${r.texto}`);
     const linhas = JSON.parse(r.texto);
     if (linhas.length < ids.length) throw Error('nenhuma linha atualizada (RLS/policy do Supabase pode estar bloqueando UPDATE)');
-    return linhas;
+    return aposGravar(linhas);
 });
 
 const atualizarLancamento = async (id, campos) => (await atualizarLancamentos([id], campos))[0];
@@ -159,7 +168,7 @@ const salvarLimiteDoCiclo = async (cicloId, campo, valor) => comRetentativas(asy
     if (!r.ok) throw Error(`salvar limite: ${r.status} ${r.texto}`);
     const linhas = JSON.parse(r.texto);
     if (!linhas.length) throw Error('limite não gravado (RLS/policy do Supabase pode estar bloqueando)');
-    return linhas[0];
+    return aposGravar(linhas[0]);
 });
 
 async function carregarDados() {

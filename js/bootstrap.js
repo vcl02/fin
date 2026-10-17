@@ -81,6 +81,33 @@ async function recarregarDados() {
     }
 }
 
+// Recarga após gravação: todo INSERT/UPDATE/DELETE confirmado pelo banco — cadastro, edição
+// na tabela, exclusão, toggles, tetos e limites do ciclo, consolidação — chama isto (ver
+// aposGravar em supabase-api.js), e a tela recarrega do banco sozinha, em silêncio. Espera
+// a tela ficar livre (sem campo em edição, sem modal aberto, sem carga ou Consolidar em
+// andamento) pra não apagar o que o usuário está digitando, e não repete a carga quando o
+// próprio fluxo já recarregou depois de gravar. Várias gravações seguidas viram uma só carga.
+const ESPERA_RECARGA_APOS_GRAVACAO_MS = 300;
+let temporizadorRecargaAposGravacao = null;
+const telaSemEdicaoEmCurso = () =>
+    el('app').style.display !== 'none' && !document.querySelector('dialog[open]') &&
+    !document.activeElement?.matches?.('input, select, textarea') &&
+    !el('recarregar').disabled && !Estado.cargasEmAndamento;
+// Contador em vez de relógio: carga e gravação no mesmo milissegundo não se confundem.
+function recarregarAposGravacao() {
+    const gravacao = ++Estado.gravacoes;
+    clearTimeout(temporizadorRecargaAposGravacao);
+    const tentar = () => {
+        if (Estado.gravacoesNaUltimaCarga >= gravacao) return;   // uma carga posterior já trouxe
+        if (!telaSemEdicaoEmCurso()) {
+            temporizadorRecargaAposGravacao = setTimeout(tentar, ESPERA_RECARGA_APOS_GRAVACAO_MS);
+            return;
+        }
+        recarregarDados();
+    };
+    temporizadorRecargaAposGravacao = setTimeout(tentar, ESPERA_RECARGA_APOS_GRAVACAO_MS);
+}
+
 // Botão Recarregar (verde, no cabeçalho): numa só ação, recarrega do banco, volta ao ciclo
 // atual, limpa os filtros e roda o Consolidar tudo (consolidarTudo em form.js, que recarrega
 // primeiro e chama voltarAoCicloAtualELimpar entre a carga e a varredura). A conta restrita

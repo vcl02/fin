@@ -224,6 +224,9 @@ function mostrarToast(titulo, texto) {
 async function load({ silencioso = false } = {}) {
     if (API.includes('SEUPROJETO')) { el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>'; return false; }
     const inicioCarga = performance.now();
+    // Quantas gravações já existiam quando esta carga começou: ela traz todas essas.
+    const gravacoesAteAqui = Estado.gravacoes;
+    Estado.cargasEmAndamento++;
     try {
         const { lancamentosCrus, diagnosticoDeDados } = await carregarDados();
         const aposDados = performance.now();
@@ -237,6 +240,8 @@ async function load({ silencioso = false } = {}) {
         if (cargaMs >= LIMIAR_CARGA_LENTA_MS && !silencioso) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
         atualizarBotaoDiagnostico(diagnosticoDeDados);
         Estado.ultimaCarga = Date.now();   // base da recarga automática (bootstrap.js)
+        // Base da recarga após gravação: carga que COMEÇOU depois de gravar já traz o gravado.
+        Estado.gravacoesNaUltimaCarga = Math.max(Estado.gravacoesNaUltimaCarga, gravacoesAteAqui);
         return true;
     } catch (e) {
         if (silencioso) {
@@ -250,6 +255,8 @@ async function load({ silencioso = false } = {}) {
         el('out').innerHTML = '<p class=empty>Falhou: ' + escapeHtml(e.message) + '</p>';
         mostrarToast('Não foi possível carregar', e.message);
         return false;
+    } finally {
+        Estado.cargasEmAndamento--;
     }
 }
 

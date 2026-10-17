@@ -153,7 +153,7 @@ test('sempre recarrega do banco antes de varrer; carga com falha para tudo; simu
     // A recarga vem antes de qualquer leitura de Estado.lancamentos pela varredura.
     assert.ok(trecho.indexOf('await load({ silencioso })') < trecho.indexOf('corrigeRecorrenciasDuplicadasNoIntervalo('));
     const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
-    assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\);\s*\n.*\n\s*return true;/);
+    assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\);[\s\S]*?Estado\.gravacoesNaUltimaCarga = Math\.max\(Estado\.gravacoesNaUltimaCarga, gravacoesAteAqui\);\s*\n\s*return true;/);
     assert.match(dadosUi, /mostrarToast\('Não foi possível carregar', e\.message\);\s*\n\s*return false;/);
     assert.match(regras, /Antes de varrer, \*\*Consolidar tudo\*\* sempre recarrega os dados do banco/);
 });
