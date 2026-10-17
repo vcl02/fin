@@ -467,3 +467,11 @@ test('controle desativado mostra o cursor de bloqueado vermelho', () => {
     }
     assert.match(regras, /Todo controle desativado \(botão, seletor ou campo\) mostra, ao passar o mouse, o cursor de bloqueado \(círculo cortado\) em \*\*vermelho\*\*/);
 });
+
+test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica preenchido', () => {
+    const base = fs.readFileSync('css/base.css', 'utf8');
+    assert.match(base, /#toggleSimulacao \{[^}]*color: #F0A83A;\s*\n\s*background: var\(--orange-soft\);\s*\n\s*border: 1px solid #F0A83A;/);
+    assert.match(base, /#recarregar \{[^}]*color: var\(--vd\);\s*\n\s*background: var\(--green-soft\);\s*\n\s*border: 1px solid var\(--vd\);/);
+    assert.match(base, /#toggleSimulacao:hover,\s*\n\s*#toggleSimulacao\.ativo \{\s*\n\s*color: #10231A;\s*\n\s*background: #F0A83A;/);
+    assert.match(regras, /O botão \*\*Simular\*\* \(lançamentos provisórios\) é sempre laranja/);
+});

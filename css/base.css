@@ -184,6 +184,9 @@
       background: var(--vm);
   }
 
+  /* Simular (lançamentos provisórios): sempre em laranja, como o Recarregar é sempre verde.
+     Ligado, o botão fica preenchido de laranja, pra não deixar dúvida de que nada está sendo
+     gravado. */
   #toggleSimulacao {
       display: flex;
       align-items: center;
@@ -191,27 +194,23 @@
       width: 2rem;
       height: 2rem;
       padding: 0;
-      color: var(--mu);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      color: #F0A83A;
+      background: var(--orange-soft);
+      border: 1px solid #F0A83A;
       border-radius: 9px;
       cursor: pointer;
   }
 
-  #toggleSimulacao:hover {
-      background: var(--field-hover);
-      border-color: var(--fg);
-  }
-
+  #toggleSimulacao:hover,
   #toggleSimulacao.ativo {
-      color: #F0A83A;
-      background: var(--orange-soft);
+      color: #10231A;
+      background: #F0A83A;
       border-color: #F0A83A;
   }
 
   #toggleSimulacao.ativo:hover {
-      color: #10231A;
-      background: #F0A83A;
+      background: #F5BC63;
+      border-color: #F5BC63;
   }
 
   @keyframes girar {
