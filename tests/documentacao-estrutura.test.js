@@ -31,3 +31,19 @@ test('HTML explica as regiões que o JavaScript altera dinamicamente', () => {
     assert.match(html, /<!-- Painel único estático:/);
     assert.match(html, /<!-- Cadastro único para lançamento real e simulado;/);
 });
+
+test('REGRAS.md legível: uma frase por linha nos itens e subtítulos nas seções longas', () => {
+    const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+    const linhas = regras.split('\n');
+    // Itens longos ficam quebrados em frases (linhas de continuação recuadas, mesmo item no
+    // Markdown renderizado); nenhuma linha volta a ter milhares de caracteres.
+    assert.ok(Math.max(...linhas.map(l => l.length)) <= 700);
+    assert.ok(linhas.filter(l => /^  \S/.test(l)).length > 300);
+    // Continuação nunca começa com "-", "#" ou número seguido de ponto (viraria lista/título).
+    assert.ok(!linhas.some(l => /^  (- |#|\d+\. )/.test(l)));
+    for (const titulo of ['## Convenções gerais', '### Valores, linhas reais e edição na tabela', '### Diagnóstico da carga',
+        '## Faturas', '### Dois cartões e limites', '## Aportes e resgates', '### Recargas e consolidação automática',
+        '## Mobile', '### Cabeçalho e controles', '## Conta restrita (Isabella)']) {
+        assert.ok(linhas.includes(titulo), titulo);
+    }
+});

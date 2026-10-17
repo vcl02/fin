@@ -335,7 +335,7 @@ test('cada indicador tem um olho; abre na ordem enquanto couber e o clique preva
     assert.deepEqual(abertos(), ['itemComprometido', 'itemProporcaoReserva', 'itemLiberdade']);
     assert.match(regras, /Cada indicador tem um \*\*olho\*\* antes: aberto mostra o indicador; fechado deixa só o olho fechado e o nome/);
     assert.match(regras, /no desktop todos começam abertos e, conforme a tela estreita, vão fechando a partir da Liberdade/);
-    assert.match(regras, /\*\*Gastos\*\* e \*\*Liberdade\*\* ficam numa linha quando cabem[^.]*\. Nenhum tem linha própria fixa\./);
+    assert.match(regras, /\*\*Gastos\*\* e \*\*Liberdade\*\* ficam numa linha quando cabem[^.]*\.\s+Nenhum tem linha própria fixa\./);
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.doesNotMatch(estilos, /#itemLiberdade/);
     assert.match(estilos, /\.indicadorItem\.fechado > :not\(\.btOlho, \.nomeOlho\) \{\s*\n\s*display: none;/);

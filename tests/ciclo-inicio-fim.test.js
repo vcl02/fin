@@ -42,5 +42,5 @@ test('integridade dos ciclos no banco: início obrigatório e único, fim >= in�
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Os ciclos são as linhas de `fin_ciclo`/);
     assert.match(regras, /`migrations\/26-ciclo-com-inicio-e-fim\.sql`/);
-    assert.match(regras, /Comprometido.*toda entrada positiva do ciclo/);
+    assert.match(regras, /Comprometido(?:.|\n  )*?toda entrada positiva do ciclo/);
 });
