@@ -99,13 +99,26 @@
       border-left: 1px solid var(--line-strong);
   }
 
-  /* Liberdade à mostra vai pra linha de baixo dos demais indicadores (pedido do mantenedor);
-     oculta, só o olho fechado fica na mesma linha, depois de Gastos. */
-  .indicadorItem:has(#indicadorLiberdade:not([hidden])) {
+  /* Liberdade sempre numa linha própria, abaixo dos demais indicadores, aberta ou fechada. */
+  #itemLiberdade {
       flex-basis: 100%;
   }
 
-  /* Olho que mostra/esconde Liberdade: só o ícone, sem caixa de botão. */
+  /* Indicador fechado: só o olho e o nome; aberto, o nome some (o próprio texto já o traz). */
+  .indicadorItem.fechado > :not(.btOlho, .nomeOlho) {
+      display: none;
+  }
+
+  .indicadorItem:not(.fechado) > .nomeOlho {
+      display: none;
+  }
+
+  .nomeOlho {
+      font-size: .84rem;
+      color: var(--mu);
+  }
+
+  /* Olho que mostra/esconde cada indicador: só o ícone, sem caixa de botão. */
   .btOlho {
       display: inline-flex;
       align-items: center;
