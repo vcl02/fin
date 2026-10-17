@@ -56,6 +56,14 @@ const Estado = {
 // é uma restrição de CONTA, não de largura de tela.
 const EMAIL_ISABELLA = 'isabella.251200@gmail.com';
 const modoRestrito = () => String(Estado.emailSessao || '').trim().toLowerCase() === EMAIL_ISABELLA;
+// Login por usuário: o Supabase Auth só entra com e-mail, então o app traduz o usuário
+// digitado para o e-mail da conta. Com "@", o texto já é o e-mail e vai direto. Nada muda
+// no Supabase (senha, sessão e RLS por auth.uid() continuam iguais).
+const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com', isabella: EMAIL_ISABELLA };
+const emailDoLogin = texto => {
+    const digitado = String(texto || '').trim();
+    return digitado.includes('@') ? digitado : EMAIL_POR_USUARIO[digitado.toLowerCase()] || null;
+};
 // "modoSimples" sempre foi o nome da casca simplificada (só Débito, sem filtros avançados);
 // antes ela também entrava no mobile por largura de tela — agora o mobile tem paridade total
 // com o desktop, e só a conta restrita continua vendo essa casca, em qualquer dispositivo.

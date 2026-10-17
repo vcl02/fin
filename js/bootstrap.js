@@ -36,13 +36,14 @@ async function boot() {
 async function entrar() {
     el('lerr').textContent = '';
 
-    const { data, error } = await sb.auth.signInWithPassword({
-        email: el('email').value.trim(),
-        password: el('senha').value
-    });
+    // Usuário desconhecido recebe a mesma mensagem de senha errada: não revela quais existem.
+    const email = emailDoLogin(el('email').value);
+    const { data, error } = email
+        ? await sb.auth.signInWithPassword({ email, password: el('senha').value })
+        : { data: null, error: true };
 
     if (error) {
-        el('lerr').textContent = 'E-mail ou senha inválidos.';
+        el('lerr').textContent = 'Usuário ou senha inválidos.';
         return;
     }
 

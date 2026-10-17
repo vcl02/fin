@@ -112,6 +112,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - O botão **Simular** (lançamentos provisórios) é sempre laranja — ícone, borda e fundo suave —, assim como o **Recarregar** é sempre verde; ligado (simulação ativa) ou com o mouse em cima, fica preenchido de laranja com o ícone escuro.
 - Todo controle desativado (botão, seletor ou campo) mostra, ao passar o mouse, o cursor de bloqueado (círculo cortado) em **vermelho**, além do visual esmaecido próprio de cada um.
 
+## Login
+
+- O campo de login aceita **usuário** ou e-mail: `victor` e `isabella` são traduzidos para o e-mail de cada conta (`EMAIL_POR_USUARIO`/`emailDoLogin` em `js/app-state.js`); texto com `@` é usado como e-mail, direto. O Supabase continua autenticando por e-mail e senha — nada muda no Auth, na sessão nem no RLS (que usa `auth.uid()`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`), sem revelar quais usuários existem.
+
 ## Conta restrita (Isabella)
 
 - Existe uma única conta com a interface restrita, identificada pelo e-mail da sessão (`EMAIL_ISABELLA`, checado por `modoRestrito()` em `js/app-state.js`) — não por tamanho de tela. `modoSimples()` é sinônimo de `modoRestrito()`: em qualquer dispositivo, essa conta sempre vê a casca simplificada.

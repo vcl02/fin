@@ -23,7 +23,8 @@
 
   <!-- Casca de autenticação: o bootstrap alterna login/app conforme a sessão Supabase. -->
   <div id=login>
-    <input id=email type=email autocomplete=username>
+    <!-- Usuário (victor, isabella) ou e-mail: emailDoLogin em app-state.js traduz. -->
+    <input id=email type=text autocomplete=username autocapitalize=none spellcheck=false>
     <input id=senha type=password autocomplete=current-password>
     <div class=err id=lerr></div>
   </div>
