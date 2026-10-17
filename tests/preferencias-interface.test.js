@@ -374,3 +374,10 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
     assert.match(estilos, /\.resumoMeta \{\s*\n\s*margin-left: auto;/);
     assert.match(regras, /"N registros · período" fica encaixado no fim da faixa \*\*Futuro\*\*/);
 });
+
+test('De/Até mostram o mês abreviado, com o nome completo no tooltip', () => {
+    const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
+    assert.match(dadosUi, /const opcaoDoCiclo = i => `<option value=\$\{i\} title="\$\{nomePeriodo\(Estado\.ciclos\[i\]\)\}">\$\{nomePeriodoAbrev\(Estado\.ciclos\[i\]\)\}`;/);
+    assert.match(dadosUi, /usadosNaveg\.map\(opcaoDoCiclo\)/);
+    assert.match(regras, /Os seletores \*\*De\*\* e \*\*Até\*\* mostram cada ciclo pelo mês abreviado \(`Out\/26`/);
+});

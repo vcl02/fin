@@ -39,10 +39,13 @@ function atualizarCombos(lancamentosCrus) {
     // Backlog só existe no De, pois não faz sentido compará-lo com outro período. Conta
     // restrita nunca vê "Todos" (Comparar) nem Backlog — só os ciclos de usadosNaveg.
     const usadosNaveg = usados;
+    // De/Até mostram o mês abreviado ("Out/26"): mais curto, cabe melhor na navegação; o nome
+    // completo fica no title de cada opção.
+    const opcaoDoCiclo = i => `<option value=${i} title="${nomePeriodo(Estado.ciclos[i])}">${nomePeriodoAbrev(Estado.ciclos[i])}`;
     const opcoesPeriodo = (modoRestrito() ? '' : '<option value="">Todos</option>') +
-        usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
+        usadosNaveg.map(opcaoDoCiclo).join('');
     const opcoesPeriodoDe = (modoRestrito() ? '' : '<option value="">Todos</option><option value=-1>Backlog') +
-        usadosNaveg.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
+        usadosNaveg.map(opcaoDoCiclo).join('');
     const deAnterior = el('compDe').value, ateAnterior = el('compAte').value;
 
     el('compDe').innerHTML = opcoesPeriodoDe;
