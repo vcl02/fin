@@ -52,3 +52,18 @@ test('registra service worker que atualiza a interface pela rede e cacheia só a
     assert.match(serviceWorker, /self\.clients\.claim\(\)/);
     assert.doesNotMatch(serviceWorker, /supabase\.co|rest\/v1|Authorization/);
 });
+
+test('dependências externas com versão exata e integrity (sha384)', () => {
+    const scripts = [...html.matchAll(/<script src="(https:[^"]+)"\s*\n?\s*integrity="(sha384-[A-Za-z0-9+/=]+)" crossorigin=anonymous><\/script>/g)];
+    assert.deepEqual(scripts.map(([, url]) => url), [
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js',
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js',
+    ]);
+    // Nenhum script externo sem integrity nem com faixa de versão (ex.: "@2").
+    const externos = [...html.matchAll(/<script src="(https:[^"]+)"/g)].map(([, url]) => url);
+    assert.equal(externos.length, scripts.length);
+    assert.ok(externos.every(url => /@\d+\.\d+\.\d+\//.test(url)));
+    const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
+    assert.match(decisoes, /## Dependências externas fixadas/);
+    assert.match(decisoes, /Leaked Password Protection[\s\S]*só está disponível no plano Pro/);
+});

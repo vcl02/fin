@@ -43,3 +43,12 @@ As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checkl
 ## Hub abandonado
 
 A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) foi encerrada e removida do repositório. A aplicação estática e `docs/REGRAS.md` continuam sendo a única fonte de verdade; não há plano ativo de migração para outro produto.
+
+## Dependências externas fixadas
+
+- `supabase-js` e `Chart.js` vêm do jsDelivr com **versão exata** e `integrity` (sha384), nunca por faixa (`@2`). Sem isso, uma versão nova entraria sozinha (podendo quebrar o login) e um CDN comprometido rodaria código com acesso à sessão.
+- O jsDelivr serve o arquivo do pacote npm byte a byte, então o hash é calculado do próprio pacote: `npm pack <pacote>@<versão>`, extrair e rodar `openssl dgst -sha384 -binary <arquivo> | openssl base64 -A`. Atualize versão e hash juntos, de preferência para uma versão publicada há pelo menos duas semanas.
+
+## Supabase: itens só do plano Pro
+
+- **Leaked Password Protection** (Auth recusa senhas que constam no HaveIBeenPwned): o advisor de segurança do Supabase aponta como desligada (`auth_leaked_password_protection`), mas o recurso só está disponível no plano Pro. No plano atual o aviso fica aceito; ao migrar para o Pro, ligar em Authentication → Policies/Password security.
