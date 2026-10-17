@@ -154,6 +154,21 @@ const atualizarLancamentos = async (ids, campos) => comRetentativas(async () => 
     return aposGravar(linhas);
 });
 
+// Próximo recorrencia_id da sequência do banco (fin_recorrencia_seq, via a função da
+// migration 28): a numeração é sempre 1, 2, 3…, nunca o id de um lançamento. Não repete
+// sozinho: cada chamada consome um número, e uma repetição cega deixaria um buraco.
+const proximaRecorrencia = async () => {
+    const r = await fetchComLimite(`${API}/rest/v1/rpc/proxima_recorrencia`, {
+        method: 'POST',
+        headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json' },
+        body: '{}',
+    }, 'numerar recorrência');
+    if (!r.ok) throw Error(`numerar recorrência: ${r.status} ${r.texto}`);
+    const numero = JSON.parse(r.texto);
+    if (!Number.isInteger(numero) || numero <= 0) throw Error(`numerar recorrência: resposta inválida (${r.texto})`);
+    return numero;
+};
+
 const atualizarLancamento = async (id, campos) => (await atualizarLancamentos([id], campos))[0];
 
 // Grava UMA escolha de um ciclo na linha dele em fin_ciclo (a linha existe: é o próprio

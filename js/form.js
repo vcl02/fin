@@ -1221,9 +1221,9 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
     // Vezes > 1 cria o lote inteiro nesta mesma submissão (cartão parcelado ou várias
     // ocorrências futuras de um débito recorrente) num único INSERT (inserirLancamentos):
     // com sinal ruim, ou o lote inteiro entra, ou nada entra — nunca uma série pela metade.
-    // Todas as parcelas compartilham um recorrencia_id só pra marcar o lote: é o id da 1ª
-    // parcela (o menor do lote, já que o banco numera na ordem enviada), que só existe depois
-    // do INSERT, então um PATCH em lote grava o vínculo. Lançamento único (parcelas == 1)
+    // Todas as parcelas compartilham um recorrencia_id só pra marcar o lote: o próximo número
+    // da sequência do banco (proximaRecorrencia, migration 28), pedido depois do INSERT — só
+    // então o lote existe — e gravado num PATCH em lote. Lançamento único (parcelas == 1)
     // continua sem recorrencia_id, mesmo com Frequência marcada: essa continuidade entre
     // meses cadastrados em momentos separados não é coberta aqui.
     const payloads = Array.from({ length: parcelas }, (_, p) => {
@@ -1240,8 +1240,9 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
     const criadas = (await inserirLancamentos(payloads)).sort((a, b) => a.id - b.id);
     let aviso = '';
     if (parcelas > 1) {
-        const recorrenciaId = criadas[0].id;
         try {
+            // Sempre o próximo número da sequência do banco, nunca o id de uma parcela.
+            const recorrenciaId = await proximaRecorrencia();
             await atualizarLancamentos(criadas.map(linha => linha.id), { recorrencia_id: recorrenciaId });
             criadas.forEach(linha => { linha.recorrencia_id = recorrenciaId; });
         } catch (err) {

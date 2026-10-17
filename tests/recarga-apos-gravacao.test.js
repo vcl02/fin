@@ -21,9 +21,12 @@ test('toda função que grava no banco pede a recarga ao confirmar', () => {
     assert.match(corpo(api, 'const salvarLimiteDoCiclo'), /return aposGravar\(linhas\[0\]\);/);
     // INSERT sem resposta pode ter gravado: recarrega também.
     assert.match(api, /if \(err\.semResposta\) \{ aposGravar\(\); throw erroSemResposta/);
-    // Nenhum outro método que muda dados escapa do gatilho.
+    // Nenhum outro método que muda dados escapa do gatilho. A única exceção é o POST da
+    // função proxima_recorrencia: só consome um número da sequência, não muda linha nenhuma.
     const escritas = [...api.matchAll(/method: '(POST|PATCH|DELETE)'/g)].length;
-    assert.equal(escritas, 4);
+    assert.equal(escritas, 5);
+    assert.equal((api.match(/rest\/v1\/rpc\//g) || []).length, 1);
+    assert.match(api, /rpc\/proxima_recorrencia/);
 });
 
 test('load marca quando a carga começou e quantas estão em andamento', () => {

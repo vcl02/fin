@@ -142,9 +142,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Duplicar herda a Frequência do original — salvar um duplicado de algo Mensal gera a série inteira.
   Um botão "?" ao lado do rótulo Frequência (`#ajudaFrequencia`, abre `#modalAjudaFrequencia`) resume essa regra no próprio cadastro.
   Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo (`for=`): tocar no texto do rótulo foca o campo, nunca abre a ajuda — só o "?" abre.
-- Quando o campo Vezes (ou uma série de Frequência) cria mais de uma parcela numa única submissão (compra parcelada no Crédito, ou várias ocorrências futuras de um Débito recorrente), todas as parcelas do lote gravam o mesmo `recorrencia_id` (`fin.recorrencia_id`, coluna da migration 15), igual ao id da própria 1ª parcela (o menor id do lote).
-  O lote inteiro entra num único `INSERT` (todas as linhas ou nenhuma, então sinal caindo no meio nunca deixa série pela metade) e, como os ids só existem depois dele, um único `UPDATE` em lote grava o `recorrencia_id` em todas.
-  Se só esse `UPDATE` falhar, as linhas continuam salvas e o cadastro avisa "sem o vínculo de lote" na mensagem de sucesso, em vez de erro — erro faria a pessoa salvar de novo e duplicar a série; o vínculo é só uma marca, a tela não depende dele.
+- Quando o campo Vezes (ou uma série de Frequência) cria mais de uma parcela numa única submissão (compra parcelada no Crédito, ou várias ocorrências futuras de um Débito recorrente), todas as parcelas do lote gravam o mesmo `recorrencia_id` (`fin.recorrencia_id`, coluna da migration 15).
+  O `recorrencia_id` é **sempre sequencial**: o próximo número da sequência `fin_recorrencia_seq` (1, 2, 3…), obtido pela função `proxima_recorrencia()` (migration 28), nunca o id de um lançamento.
+  Só o mantenedor obtém número novo; o pedido não é repetido sozinho, porque cada chamada consome um número.
+  Quem grava série fora do app (DataGrip) usa `nextval('fin_recorrencia_seq')` pelo mesmo motivo.
+  O lote inteiro entra num único `INSERT` (todas as linhas ou nenhuma, então sinal caindo no meio nunca deixa série pela metade); depois dele, o app pede o número e um único `UPDATE` em lote grava o `recorrencia_id` em todas.
+  Se só o número ou esse `UPDATE` falhar, as linhas continuam salvas e o cadastro avisa "sem o vínculo de lote" na mensagem de sucesso, em vez de erro — erro faria a pessoa salvar de novo e duplicar a série; o vínculo é só uma marca, a tela não depende dele.
   Um lançamento único (Vezes = 1) nunca grava `recorrencia_id`, mesmo com Frequência marcada: a continuidade entre ocorrências cadastradas em momentos separados (ex: mês a mês via Duplicar) não usa essa coluna — quem identifica a mesma recorrência ao longo do tempo continua sendo nome + categoria (`chaveDaRecorrencia`), não este id.
 - Compra no Crédito (ou antecipação de fatura) exige uma fatura explícita por parcela — sem inferência por fechamento, cada uma pode apontar pra um vencimento diferente.
   Sem Frequência, o cadastro gera um `<select>` de fatura por parcela (com Frequência, só o da 1ª — ver regra acima).
@@ -543,6 +546,13 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   `UPDATE` que não muda nada não é registrado.
   Só o trigger escreve (função `SECURITY DEFINER`, sem execução pela API); nenhuma conta insere, altera ou apaga o histórico pela API, só o mantenedor lê e o anônimo não acessa.
   Não altera nenhuma linha de `fin` nem de `fin_ciclo` e não muda nada no app; serve pra achar e desfazer à mão, no DataGrip, uma mudança errada (ex.: `select * from fin_historico where tabela = 'fin' and linha_id = 5251 order by em desc`).
+- `migrations/28-recorrencia-sequencial.sql` alinha `fin_recorrencia_seq` ao maior `recorrencia_id` já gravado (nunca volta atrás) e cria `public.proxima_recorrencia()`, que devolve o próximo número da sequência só para o mantenedor (outra conta logada recebe erro; o anônimo nem executa).
+  Não altera nenhuma linha de `fin`.
+- `migrations/29-marcar-series-sem-recorrencia.sql` dá `freq` e um `recorrencia_id` novo (da sequência, na ordem da 1ª ocorrência) às séries cadastradas sem os dois: mesmo nome + categoria + `cred`, só entre linhas com data, sem `freq` e sem `recorrencia_id`.
+  **Mensal**: 3 ou mais, exatamente uma por mês, em meses seguidos (o dia pode variar); **Anual**: 2 ou mais, uma por ano, no mesmo mês, em anos seguidos.
+  No Crédito o valor precisa ser sempre igual (parcela/assinatura), pra compras avulsas que caíram uma vez por mês por acaso ficarem de fora; no Débito o valor pode variar.
+  Nunca entram Investimento (Aporte/Resgate), antecipação/pagamento de fatura e Ajuste.
+  Exige a 28 (aborta sem alterar nada se ela faltar), não toca linha que já tem `freq` ou `recorrencia_id` (rodar de novo não muda nada) e lista ao final as séries marcadas; o histórico (migration 27) guarda o antes de cada linha.
 
 ## Testes
 
