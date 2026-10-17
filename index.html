@@ -43,37 +43,6 @@
           </label>
           <button type=button id=cicloProximo class=btNavCiclo title="Próximo ciclo"
             aria-label="Próximo ciclo">›</button>
-          <!-- Gráfico: ícone logo depois da seta › (handler em interactions.js). -->
-          <button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">
-            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-              stroke-linejoin=round aria-hidden=true>
-              <path d="M4 20h16" />
-              <path d="M7 16v-5M12 16V6M17 16v-8" />
-            </svg>
-          </button>
-          <!-- Visualizações: ícone que abre um menu próprio logo abaixo; charts.js preenche
-               #visMenu com os acompanhamentos e abre o escolhido. -->
-          <div id=visIcone class=visWrap>
-            <button type=button id=btVis class=btIcone title="Visualizações" aria-label="Visualizações"
-              aria-haspopup=menu aria-expanded=false aria-controls=visMenu>
-              <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-                stroke-linejoin=round aria-hidden=true>
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                <circle cx=12 cy=12 r=3 />
-              </svg>
-            </button>
-            <div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden></div>
-          </div>
-          <!-- Todas/Diferentes ao comparar ciclos (handler em interactions.js). O lugar fica
-               sempre reservado: fora da comparação o botão só fica invisível. -->
-          <button type=button id=btSomenteDif class="btIcone reservado" title="Mostrar só as linhas diferentes"
-            aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>
-            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-              stroke-linejoin=round aria-hidden=true>
-              <path d="M5 9h14M5 15h14" />
-              <path d="M16 4 8 20" />
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -116,6 +85,37 @@
 
       <!-- Botões de ação do cabeçalho num grupo só: quebram de linha juntos, nunca separados. -->
       <div class=acoesCabecalho>
+        <!-- Gráfico, Visualizações e Todas/Diferentes junto dos demais botões (handlers em interactions.js e charts.js). -->
+        <!-- Todas/Diferentes ao comparar ciclos (handler em interactions.js). O lugar fica
+             sempre reservado: fora da comparação o botão só fica invisível. -->
+        <button type=button id=btSomenteDif class="btIcone reservado" title="Mostrar só as linhas diferentes"
+          aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+            stroke-linejoin=round aria-hidden=true>
+            <path d="M5 9h14M5 15h14" />
+            <path d="M16 4 8 20" />
+          </svg>
+        </button>
+        <button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+            stroke-linejoin=round aria-hidden=true>
+            <path d="M4 20h16" />
+            <path d="M7 16v-5M12 16V6M17 16v-8" />
+          </svg>
+        </button>
+        <!-- Visualizações: ícone que abre um menu próprio logo abaixo; charts.js preenche
+             #visMenu com os acompanhamentos e abre o escolhido. -->
+        <div id=visIcone class=visWrap>
+          <button type=button id=btVis class=btIcone title="Visualizações" aria-label="Visualizações"
+            aria-haspopup=menu aria-expanded=false aria-controls=visMenu>
+            <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+              stroke-linejoin=round aria-hidden=true>
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+              <circle cx=12 cy=12 r=3 />
+            </svg>
+          </button>
+          <div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden></div>
+        </div>
         <button id=toggleSimulacao
           title="Simular (não salva)"
           aria-label="Ativar modo simulação">

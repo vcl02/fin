@@ -211,8 +211,8 @@ test('comparar mantém apenas todas ou diferentes confirmados sem recorrência d
     assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
     // O select virou estado interno; o controle visível é o ícone depois de Visualizações.
     assert.match(pagina, /<label class=f id=fdif hidden>/);
-    const nav = pagina.slice(pagina.indexOf('id=navComparar'), pagina.indexOf('id=rowVis'));
-    assert.ok(nav.indexOf('id=visIcone') < nav.indexOf('id=btSomenteDif'));
+    const nav = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'), pagina.indexOf('id=toggleSimulacao'));
+    assert.ok(nav.indexOf('id=btSomenteDif') < nav.indexOf('id=btGrafico'));
     assert.match(nav, /<button type=button id=btSomenteDif class="btIcone reservado" title="Mostrar só as linhas diferentes"\s*\n\s*aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>/);
     assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.btIcone\.reservado \{\s*\n\s*visibility: hidden;/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
@@ -335,7 +335,7 @@ test('ícone Todas/Diferentes: lugar reservado fora da comparação, só funcion
     ctx.clica();
     assert.equal(filtro.value, 'N');
     assert.match(interacoes, /el\('btSomenteDif'\)\.hidden = simples;/);
-    assert.match(regras, /a escolha entre \*\*Todas\*\* e \*\*Diferentes\*\* é um ícone \(sinal de diferente, ≠\) na navegação de ciclo, logo depois de Visualizações/);
+    assert.match(regras, /a escolha entre \*\*Todas\*\* e \*\*Diferentes\*\* é um ícone \(sinal de diferente, ≠\) no início do bloco de botões do cabeçalho, antes do Gráfico/);
 });
 
 test('"N registros · período" fica encaixado no fim da faixa Futuro do título', () => {

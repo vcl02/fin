@@ -115,8 +115,10 @@ test('o botão verde é o único: sem Atual, Limpar filtros nem Consolidar tudo'
     assert.match(regras, /Na conta restrita, que nunca grava, recarrega, volta ao ciclo atual e limpa, sem consolidar\./);
 });
 
-test('Gráfico e Visualizações são ícones logo depois da seta ›', () => {
-    const acoes = pagina.slice(pagina.indexOf('id=cicloProximo'), pagina.indexOf('id=toggleSimulacao'));
+test('Todas/Diferentes, Gráfico e Visualizações ficam no bloco de botões, antes da simulação', () => {
+    const acoes = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'), pagina.indexOf('id=toggleSimulacao'));
+    assert.ok(acoes.indexOf('id=btSomenteDif') < acoes.indexOf('id=btGrafico'));
+    assert.doesNotMatch(pagina.slice(pagina.indexOf('id=navComparar'), pagina.indexOf('id=rowVis')), /btGrafico|btVis|btSomenteDif/);
     assert.match(acoes, /<button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">\s*\n\s*<svg/);
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=visIcone'));
     // Fora de #rowVis: a conta restrita precisa escondê-los à parte.
@@ -124,10 +126,12 @@ test('Gráfico e Visualizações são ícones logo depois da seta ›', () => {
     assert.doesNotMatch(barra, /btGrafico|btVis/);
     assert.match(interacoes, /el\('btGrafico'\)\.hidden = simples;\s*\n\s*el\('visIcone'\)\.hidden = simples;/);
     assert.match(estilos, /\.menuIcone \{\s*\n\s*position: absolute;\s*\n\s*top: calc\(100% \+ \.45rem\);/);
-    assert.match(regras, /\*\*Visualizações\*\* é um ícone \(olho\) na navegação de ciclo, logo depois do Gráfico/);
+    assert.match(regras, /\*\*Visualizações\*\* é um ícone \(olho\) no bloco de botões do cabeçalho, logo depois do Gráfico/);
+    assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.acoesCabecalho \.btIcone \{\s*\n\s*width: 2rem;\s*\n\s*height: 2rem;/);
     assert.match(estilos, /\.btIcone \{[\s\S]*?width: 2\.2rem;\s*\n\s*height: 2\.2rem;/);
     assert.match(estilos, /\.btIcone:disabled \{\s*\n\s*opacity: \.5;/);
-    assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) é botão só de ícone[^.]*logo depois da seta › \(seta ›, Gráfico, Visualizações\)/);
+    assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) é botão só de ícone[^.]*no bloco de botões à direita do cabeçalho, junto dos demais\./);
+    assert.match(regras, /Os botões \(Todas\/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem\) formam um bloco só/);
 });
 
 test('navegação de ciclo quebra linha em vez de sobrepor o cabeçalho, e no mobile os ícones cabem ao lado do Até', () => {
