@@ -85,13 +85,18 @@ test('célula Prio só é clicável pra linha real fora da conta restrita, igual
     assert.match(tabelas, /chave == 'prio' \? celPrio\(r\)/);
 });
 
-test('clique em Prio abre um <input type=number>, aceita limpar (volta a null) e ignora entrada inválida sem salvar', () => {
-    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-prio\]'\);/);
-    assert.match(interacoes, /<input type=number class=inpPrio/);
-    assert.match(interacoes, /if \(bruto !== ''\) \{/);
-    assert.match(interacoes, /if \(!Number\.isFinite\(n\)\) \{ desenhar\(\); return; \}/);
-    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ prio: novo \}\);/);
-    assert.match(interacoes, /r\.prio = novo;/);
+test('clique em Prio abre um <input type=number>, aceita limpar (volta a null) e ignora entrada inválida sem salvar', async () => {
+    const { editar } = require('./helpers/editor-inline');
+    let r = await editar('data-tog-prio', { prio: 3 }, ' 7.9 ');
+    assert.match(r.html, /<input type=number class=inpPrio inputmode=numeric step=1 value="3"/);
+    assert.deepEqual(r.gravado, { prio: 7 });   // inteiro: a casa decimal cai
+    r = await editar('data-tog-prio', { prio: 3 }, '');
+    assert.deepEqual(r.gravado, { prio: null });
+    r = await editar('data-tog-prio', { prio: 3 }, 'abc');
+    assert.equal(r.gravado, null);
+    assert.equal(r.lancamento.prio, 3);
+    r = await editar('data-tog-prio', { prio: 5 }, '0');   // zero é prioridade válida, não vira null
+    assert.deepEqual(r.gravado, { prio: 0 });
 });
 
 test('estilos cobrem .togPrio/.inpPrio reaproveitando o padrão visual das demais colunas livres', () => {

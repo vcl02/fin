@@ -22,32 +22,58 @@ test('celulasDaLinha usa celCateg/celFreq nas colunas categ/freq, celNome contin
     assert.match(tabelas, /chave == 'nome' \? celNome\(r\)/);
 });
 
-test('clique no Nome abre input de texto livre com o mesmo esquema de stopImmediatePropagation', () => {
-    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-nome\]'\);/);
-    assert.match(interacoes, /<input type=text class=inpNome/);
-    assert.match(interacoes, /if \(!novo \|\| novo === original\) \{ desenhar\(\); return; \}/);
+// Os seis editores (Nome, Categoria, Frequência, Prio, Obs, Canal) saem do mesmo
+// registrarEditorInline: o teste roda o código real num DOM falso e confere o que grava.
+const { editar } = require('./helpers/editor-inline');
+
+test('Nome: grava aparado; vazio ou igual cancela sem gravar', async () => {
+    let r = await editar('data-tog-nome', { nome: 'Mercado' }, '  Feira  ');
+    assert.deepEqual(r.gravado, { nome: 'Feira' });
+    assert.equal(r.lancamento.nome, 'Feira');
+    assert.equal(r.controle, 'input');
+    assert.ok(r.parouPropagacao);   // clique não vaza pra seleção da linha
+    r = await editar('data-tog-nome', { nome: 'Mercado' }, '   ');
+    assert.equal(r.gravado, null);
+    assert.equal(r.lancamento.nome, 'Mercado');
 });
 
-test('clique na Categoria normaliza o texto como o cadastro antes do UPDATE', () => {
-    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-categ\]'\);/);
-    assert.match(interacoes, /<input type=text class=inpCateg/);
-    assert.match(interacoes, /const novo = normalizaCategorias\(input\.value\);/);
-    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ categ: novo \}\);/);
+test('Categoria: normaliza como o cadastro antes do UPDATE; vazio vira null', async () => {
+    let r = await editar('data-tog-categ', { categ: 'Casa' }, ' casa ,  Mercado, Casa ');
+    assert.deepEqual(r.gravado, { categ: 'casa, Mercado' });
+    r = await editar('data-tog-categ', { categ: 'Casa' }, '');
+    assert.deepEqual(r.gravado, { categ: null });
+    assert.equal(r.lancamento.categ, null);
 });
 
-test('clique na Frequência abre um select travado no vocabulário de RECORRENCIAS, nunca texto livre', () => {
-    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-freq\]'\);/);
-    assert.match(interacoes, /const opcoes = \['', \.\.\.Object\.keys\(RECORRENCIAS\)\];/);
-    assert.match(interacoes, /<select class=inpFreq>/);
-    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ freq: novo \|\| null \}\);/);
+test('Frequência: select travado no vocabulário de RECORRENCIAS; grava ao escolher, vazio vira null', async () => {
+    let r = await editar('data-tog-freq', { freq: 'Mensal' }, 'Anual', { evento: 'change' });
+    assert.equal(r.controle, 'select');
+    assert.match(r.html, /<select class=inpFreq>/);
+    assert.match(r.html, /<option value="" >— Sem recorrência<\/option>/);
+    assert.match(r.html, /<option value="Mensal" selected>Mensal<\/option>/);
+    assert.deepEqual(r.gravado, { freq: 'Anual' });
+    r = await editar('data-tog-freq', { freq: 'Mensal' }, '', { evento: 'change' });
+    assert.deepEqual(r.gravado, { freq: null });
 });
 
-test('cada novo handler para a propagação pra não vazar pra seleção da linha', () => {
-    ['data-tog-nome', 'data-tog-categ', 'data-tog-freq'].forEach(atributo => {
-        const chave = atributo.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-        const regex = new RegExp(`e\\.target\\.closest\\('\\[${atributo}\\]'\\);[\\s\\S]{0,400}?e\\.stopImmediatePropagation\\(\\);`);
-        assert.match(interacoes, regex, `handler de ${atributo} deveria parar a propagação`);
-    });
+test('Esc cancela; simulação e linha simulada mudam só na memória', async () => {
+    let r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { evento: 'escape' });
+    assert.equal(r.gravado, null);
+    assert.equal(r.lancamento.nome, 'Mercado');
+    r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { simulando: true });
+    assert.equal(r.gravado, null);
+    assert.equal(r.lancamento.nome, 'Feira');
+    r = await editar('data-tog-nome', { nome: 'Mercado', _sim: true }, 'Feira');
+    assert.equal(r.gravado, null);
+    assert.equal(r.lancamento.nome, 'Feira');
+});
+
+test('conta restrita não abre editor; falha no banco avisa e não muda a linha', async () => {
+    let r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { restrito: true });
+    assert.equal(r.controle, null);
+    r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { falhar: true });
+    assert.deepEqual(r.toasts, [['Falhou ao atualizar', 'RLS']]);
+    assert.equal(r.lancamento.nome, 'Mercado');
 });
 
 test('estilos cobrem os três novos togs e inputs, reaproveitando o padrão visual existente', () => {

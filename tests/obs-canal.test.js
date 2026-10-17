@@ -89,14 +89,19 @@ test('estilos: Canal tem largura fixa com reticências; os ícones de copiar/lin
     assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?cursor: pointer;/);
 });
 
-test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', () => {
-    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-obs\]'\);/);
-    assert.match(interacoes, /<input type=text class=inpObs/);
-    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ obs: novo \|\| null \}\);/);
+test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', async () => {
+    const { editar } = require('./helpers/editor-inline');
+    let r = await editar('data-tog-obs', { obs: null }, '  ligar antes  ');
+    assert.match(r.html, /<input type=text class=inpObs value="">/);
+    assert.deepEqual(r.gravado, { obs: 'ligar antes' });
+    r = await editar('data-tog-obs', { obs: 'x' }, '');
+    assert.deepEqual(r.gravado, { obs: null });
 
-    assert.match(interacoes, /const span = e\.target\.closest\('\[data-tog-canal\]'\);/);
-    assert.match(interacoes, /<input type=text class=inpCanal value="\$\{escapeHtml\(original\)\}" placeholder="Ex\.: https:\/\/\.\.\."/);
-    assert.match(interacoes, /await atualizarLancamento\(r\.id, \{ canal: novo \|\| null \}\);/);
+    r = await editar('data-tog-canal', { canal: 'https://a.test' }, 'https://b.test');
+    assert.match(r.html, /<input type=text class=inpCanal value="https:\/\/a\.test" placeholder="Ex\.: https:\/\/\.\.\.">/);
+    assert.deepEqual(r.gravado, { canal: 'https://b.test' });
+    r = await editar('data-tog-canal', { canal: 'https://a.test' }, '');
+    assert.deepEqual(r.gravado, { canal: null });
 });
 
 test('clique no ícone de copiar do Canal usa a Clipboard API e nunca entra em edição', () => {

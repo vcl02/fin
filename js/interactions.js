@@ -676,301 +676,119 @@ el('out').addEventListener('click', e => {
     input.focus();
 });
 
-// clique no Nome troca o <span> por um <input> de texto livre. Mesmo esquema de
-// stopImmediatePropagation dos demais togs, pra nao vazar pra selecao da linha.
-el('out').addEventListener('click', e => {
-    const span = e.target.closest('[data-tog-nome]');
-    if (!span) return;
-    if (modoRestrito()) return;
-    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
-    e.stopImmediatePropagation();
+// Edição inline das colunas de texto/número/lista (Nome, Categoria, Frequência, Prio, Obs,
+// Canal): o clique troca o <span data-tog-…> por um campo; Enter ou sair do campo grava,
+// Esc cancela. Um registrador só, porque o ciclo é sempre o mesmo — só mudam o campo, o
+// controle e como o texto digitado vira valor. Valor e Data têm regras próprias (sinal,
+// confirmação de ciclo) e continuam com handlers à parte.
+//   ler(texto, original) → novo valor; undefined cancela sem gravar (entrada inválida).
+//   vazioViraNull: grava null em vez de '' (coluna opcional no banco).
+function registrarEditorInline({ atributo, campo, original, controle, ler, vazioViraNull = false, lista = false }) {
+    el('out').addEventListener('click', e => {
+        const span = e.target.closest(`[${atributo}]`);
+        if (!span) return;
+        if (modoRestrito()) return;
+        // stopImmediatePropagation: o clique não pode vazar pra seleção da linha (#out).
+        if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
+        e.stopImmediatePropagation();
 
-    const id = span.dataset.togNome;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
+        const id = span.getAttribute(atributo);
+        const r = Estado.lancamentos.find(x => String(x.id) == id);
+        if (!r) return;
 
-    const original = String(r.nome || '');
-    span.classList.add('editando');
-    span.innerHTML = `<input type=text class=inpNome value="${escapeHtml(original)}">`;
-    const input = span.querySelector('input');
+        const anterior = original(r);
+        span.classList.add('editando');
+        span.innerHTML = controle(anterior);
+        const campoEditado = span.querySelector('input, select');
 
-    let concluido = false;
-    async function confirma() {
-        if (concluido) return;
-        concluido = true;
-        const novo = input.value.trim();
-        if (!novo || novo === original) { desenhar(); return; }
-        input.disabled = true;
-        try {
-            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { nome: novo });
-            r.nome = novo;
-            desenhar();
-        } catch (err) {
-            mostrarToast('Falhou ao atualizar', err.message);
-            desenhar();
+        let concluido = false;
+        async function confirma() {
+            if (concluido) return;
+            concluido = true;
+            const novo = ler(campoEditado.value, anterior);
+            if (novo === undefined || novo === anterior) { desenhar(); return; }
+            const valor = vazioViraNull ? novo || null : novo;
+            campoEditado.disabled = true;
+            try {
+                // Simulação e linha simulada mudam só na memória, nunca no banco.
+                if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { [campo]: valor });
+                r[campo] = valor;
+                desenhar();
+            } catch (err) {
+                mostrarToast('Falhou ao atualizar', err.message);
+                desenhar();
+            }
         }
-    }
-    function cancela() { concluido = true; desenhar(); }
+        function cancela() { concluido = true; desenhar(); }
 
-    input.addEventListener('keydown', ev => {
-        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
-        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+        // Lista (select) grava ao escolher; texto/número gravam no Enter.
+        if (lista) campoEditado.addEventListener('change', confirma);
+        campoEditado.addEventListener('keydown', ev => {
+            if (ev.key == 'Enter' && !lista) { ev.preventDefault(); confirma(); }
+            else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
+        });
+        campoEditado.addEventListener('blur', () => confirma());
+        campoEditado.addEventListener('click', ev => ev.stopImmediatePropagation());
+
+        campoEditado.focus();
+        if (!lista) campoEditado.select();
     });
-    input.addEventListener('blur', () => confirma());
-    input.addEventListener('click', ev => ev.stopImmediatePropagation());
+}
 
-    input.focus();
-    input.select();
+const textoDoLancamento = campo => r => String(r[campo] || '');
+const aparado = texto => texto.trim();
+
+// Nome é obrigatório: apagar tudo cancela em vez de gravar vazio.
+registrarEditorInline({
+    atributo: 'data-tog-nome', campo: 'nome', original: textoDoLancamento('nome'),
+    controle: original => `<input type=text class=inpNome value="${escapeHtml(original)}">`,
+    ler: texto => texto.trim() || undefined,
 });
 
-// clique na Categoria troca o <span> por um <input> de texto livre (mesma lista separada por
-// vírgula do cadastro). A normalização (trim, dedupe, acento/caixa) acontece no PATCH
-// (normalizarCategoriasNoPayload) — espelha aqui pra Estado.lancamentos nao ficar com o
-// texto bruto divergente do que foi realmente persistido.
-el('out').addEventListener('click', e => {
-    const span = e.target.closest('[data-tog-categ]');
-    if (!span) return;
-    if (modoRestrito()) return;
-    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
-    e.stopImmediatePropagation();
-
-    const id = span.dataset.togCateg;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const original = String(r.categ || '');
-    span.classList.add('editando');
-    span.innerHTML = `<input type=text class=inpCateg value="${escapeHtml(original)}" placeholder="Ex.: Casa, Mercado">`;
-    const input = span.querySelector('input');
-
-    let concluido = false;
-    async function confirma() {
-        if (concluido) return;
-        concluido = true;
-        const novo = normalizaCategorias(input.value);
-        if (novo === original) { desenhar(); return; }
-        input.disabled = true;
-        try {
-            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { categ: novo });
-            r.categ = novo || null;
-            desenhar();
-        } catch (err) {
-            mostrarToast('Falhou ao atualizar', err.message);
-            desenhar();
-        }
-    }
-    function cancela() { concluido = true; desenhar(); }
-
-    input.addEventListener('keydown', ev => {
-        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
-        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
-    });
-    input.addEventListener('blur', () => confirma());
-    input.addEventListener('click', ev => ev.stopImmediatePropagation());
-
-    input.focus();
-    input.select();
+// Mesma lista separada por vírgula do cadastro. A normalização (trim, dedupe, acento/caixa)
+// também acontece no PATCH (normalizarCategoriasNoPayload); repetida aqui pra
+// Estado.lancamentos não ficar com o texto bruto divergente do que foi persistido.
+registrarEditorInline({
+    atributo: 'data-tog-categ', campo: 'categ', original: textoDoLancamento('categ'), vazioViraNull: true,
+    controle: original => `<input type=text class=inpCateg value="${escapeHtml(original)}" placeholder="Ex.: Casa, Mercado">`,
+    ler: texto => normalizaCategorias(texto),
 });
 
-// clique na Frequência troca o <span> por um <select> com o MESMO vocabulário controlado
-// do formulário de cadastro (RECORRENCIAS, em shared.js) — nunca texto livre, pra nao
-// persistir um valor que dataDaOcorrencia nao reconheceria depois.
-el('out').addEventListener('click', e => {
-    const span = e.target.closest('[data-tog-freq]');
-    if (!span) return;
-    if (modoRestrito()) return;
-    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
-    e.stopImmediatePropagation();
-
-    const id = span.dataset.togFreq;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const original = String(r.freq || '');
-    span.classList.add('editando');
-    const opcoes = ['', ...Object.keys(RECORRENCIAS)];
-    span.innerHTML = `<select class=inpFreq>${opcoes.map(op =>
+// Frequência só aceita o MESMO vocabulário do cadastro (RECORRENCIAS, em shared.js) — nunca
+// texto livre, pra não persistir um valor que dataDaOcorrencia não reconheceria depois.
+registrarEditorInline({
+    atributo: 'data-tog-freq', campo: 'freq', original: textoDoLancamento('freq'), vazioViraNull: true, lista: true,
+    controle: original => `<select class=inpFreq>${['', ...Object.keys(RECORRENCIAS)].map(op =>
         `<option value="${escapeHtml(op)}" ${op === original ? 'selected' : ''}>${op || '— Sem recorrência'}</option>`
-    ).join('')}</select>`;
-    const select = span.querySelector('select');
-
-    let concluido = false;
-    async function confirma() {
-        if (concluido) return;
-        concluido = true;
-        const novo = select.value;
-        if (novo === original) { desenhar(); return; }
-        select.disabled = true;
-        try {
-            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { freq: novo || null });
-            r.freq = novo || null;
-            desenhar();
-        } catch (err) {
-            mostrarToast('Falhou ao atualizar', err.message);
-            desenhar();
-        }
-    }
-    function cancela() { concluido = true; desenhar(); }
-
-    select.addEventListener('change', confirma);
-    select.addEventListener('keydown', ev => {
-        if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
-    });
-    select.addEventListener('blur', () => confirma());
-    select.addEventListener('click', ev => ev.stopImmediatePropagation());
-
-    select.focus();
+    ).join('')}</select>`,
+    ler: texto => texto,
 });
 
-// clique na Prioridade (coluna "prio") troca o <span> por um <input type=number> — numero
-// livre que o usuario preenche na mao pra decidir a fila de elevacao do Backlog (1 = mais
-// provavel de entrar num ciclo; quanto maior, menos chance, ex.: 999). Mesmo esquema de
-// confirma/cancela das demais colunas de edicao inline.
-el('out').addEventListener('click', e => {
-    const span = e.target.closest('[data-tog-prio]');
-    if (!span) return;
-    if (modoRestrito()) return;
-    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
-    e.stopImmediatePropagation();
-
-    const id = span.dataset.togPrio;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const original = r.prio ?? null;
-    span.classList.add('editando');
-    span.innerHTML = `<input type=number class=inpPrio inputmode=numeric step=1 value="${escapeHtml(original != null ? String(original) : '')}" placeholder="—">`;
-    const input = span.querySelector('input');
-
-    let concluido = false;
-    async function confirma() {
-        if (concluido) return;
-        concluido = true;
-        const bruto = input.value.trim();
-        let novo = null;
-        if (bruto !== '') {
-            const n = Math.trunc(Number(bruto));
-            if (!Number.isFinite(n)) { desenhar(); return; }   // entrada invalida: cancela sem salvar
-            novo = n;
-        }
-        if (novo === original) { desenhar(); return; }
-        input.disabled = true;
-        try {
-            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { prio: novo });
-            r.prio = novo;
-            desenhar();
-        } catch (err) {
-            mostrarToast('Falhou ao atualizar', err.message);
-            desenhar();
-        }
-    }
-    function cancela() { concluido = true; desenhar(); }
-
-    input.addEventListener('keydown', ev => {
-        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
-        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
-    });
-    input.addEventListener('blur', () => confirma());
-    input.addEventListener('click', ev => ev.stopImmediatePropagation());
-
-    input.focus();
-    input.select();
+// Prioridade de elevação do Backlog: número livre (1 = mais provável de entrar num ciclo;
+// quanto maior, menos chance, ex.: 999). Vazio volta a null; texto inválido cancela.
+registrarEditorInline({
+    atributo: 'data-tog-prio', campo: 'prio', original: r => r.prio ?? null,
+    controle: original => `<input type=number class=inpPrio inputmode=numeric step=1 value="${escapeHtml(original != null ? String(original) : '')}" placeholder="—">`,
+    ler: texto => {
+        const bruto = texto.trim();
+        if (bruto === '') return null;
+        const n = Math.trunc(Number(bruto));
+        return Number.isFinite(n) ? n : undefined;
+    },
 });
 
-// clique na Observação troca o <span> por um <input> de texto livre — mesmo esquema do
-// Nome/Categoria.
-el('out').addEventListener('click', e => {
-    const span = e.target.closest('[data-tog-obs]');
-    if (!span) return;
-    if (modoRestrito()) return;
-    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
-    e.stopImmediatePropagation();
-
-    const id = span.dataset.togObs;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const original = String(r.obs || '');
-    span.classList.add('editando');
-    span.innerHTML = `<input type=text class=inpObs value="${escapeHtml(original)}">`;
-    const input = span.querySelector('input');
-
-    let concluido = false;
-    async function confirma() {
-        if (concluido) return;
-        concluido = true;
-        const novo = input.value.trim();
-        if (novo === original) { desenhar(); return; }
-        input.disabled = true;
-        try {
-            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { obs: novo || null });
-            r.obs = novo || null;
-            desenhar();
-        } catch (err) {
-            mostrarToast('Falhou ao atualizar', err.message);
-            desenhar();
-        }
-    }
-    function cancela() { concluido = true; desenhar(); }
-
-    input.addEventListener('keydown', ev => {
-        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
-        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
-    });
-    input.addEventListener('blur', () => confirma());
-    input.addEventListener('click', ev => ev.stopImmediatePropagation());
-
-    input.focus();
-    input.select();
+registrarEditorInline({
+    atributo: 'data-tog-obs', campo: 'obs', original: textoDoLancamento('obs'), vazioViraNull: true,
+    controle: original => `<input type=text class=inpObs value="${escapeHtml(original)}">`,
+    ler: aparado,
 });
 
-// clique no Canal troca o <span> por um <input> de texto livre — mesmo esquema do Nome/
-// Categoria/Observação. O valor digitado pode ser qualquer texto, mas quando é uma URL
-// http(s) ganha o ícone de abrir link ao lado (ver celCanal em tables.js), sem precisar
-// re-clicar pra editar de novo.
-el('out').addEventListener('click', e => {
-    const span = e.target.closest('[data-tog-canal]');
-    if (!span) return;
-    if (modoRestrito()) return;
-    if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
-    e.stopImmediatePropagation();
-
-    const id = span.dataset.togCanal;
-    const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
-
-    const original = String(r.canal || '');
-    span.classList.add('editando');
-    span.innerHTML = `<input type=text class=inpCanal value="${escapeHtml(original)}" placeholder="Ex.: https://...">`;
-    const input = span.querySelector('input');
-
-    let concluido = false;
-    async function confirma() {
-        if (concluido) return;
-        concluido = true;
-        const novo = input.value.trim();
-        if (novo === original) { desenhar(); return; }
-        input.disabled = true;
-        try {
-            if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, { canal: novo || null });
-            r.canal = novo || null;
-            desenhar();
-        } catch (err) {
-            mostrarToast('Falhou ao atualizar', err.message);
-            desenhar();
-        }
-    }
-    function cancela() { concluido = true; desenhar(); }
-
-    input.addEventListener('keydown', ev => {
-        if (ev.key == 'Enter') { ev.preventDefault(); confirma(); }
-        else if (ev.key == 'Escape') { ev.preventDefault(); cancela(); }
-    });
-    input.addEventListener('blur', () => confirma());
-    input.addEventListener('click', ev => ev.stopImmediatePropagation());
-
-    input.focus();
-    input.select();
+// Canal aceita qualquer texto; sendo URL http(s), ganha o ícone de abrir link ao lado (ver
+// celCanal em tables.js), sem precisar re-clicar pra editar de novo.
+registrarEditorInline({
+    atributo: 'data-tog-canal', campo: 'canal', original: textoDoLancamento('canal'), vazioViraNull: true,
+    controle: original => `<input type=text class=inpCanal value="${escapeHtml(original)}" placeholder="Ex.: https://...">`,
+    ler: aparado,
 });
 
 // clique no botão de copiar do Canal: copia o texto bruto pra área de transferência — link
