@@ -60,6 +60,18 @@ test('avisa categoria com uma única ocorrência sem confundir caixa ou acento',
     assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Casa"')));
 });
 
+test('categoria única só avisa em lançamento negativo; positivo nunca', () => {
+    const diagnostico = dominio.validarLancamentosCarregados([
+        { id: 40, data: '2026-09-21', valor: -10, nome: 'Saída', categ: 'Viagem', cred: false, pago: false },
+        { id: 41, data: '2026-09-21', valor: 300, nome: 'Venda bike', categ: 'Venda', cred: false, pago: true },
+        { id: 42, data: '2026-09-21', valor: 0, nome: 'Zerado', categ: 'Zero', cred: false, pago: true },
+    ]);
+    assert.ok(diagnostico.avisos.some(aviso => aviso.includes('Categoria "Viagem" aparece em apenas um lançamento')));
+    assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Venda"')));
+    assert.ok(!diagnostico.avisos.some(aviso => aviso.includes('Categoria "Zero"')));
+    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /e só quando esse lançamento é negativo \(saída\); com valor positivo ou zero, nunca avisa/);
+});
+
 test('valida cada categoria separada por vírgula', () => {
     const diagnostico = dominio.validarLancamentosCarregados([
         { id: 30, data: '2026-09-21', valor: -10, nome: 'Mercado A', categ: 'Casa, Mercado', cred: false, pago: true },

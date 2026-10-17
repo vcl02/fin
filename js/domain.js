@@ -147,6 +147,7 @@ function validarLancamentosCarregados(lancamentos, ciclos = []) {
             grupo.lancamentos.push({
                 id: lancamento.id ?? indice + 1,
                 nome: String(lancamento.nome || '').trim() || 'sem nome',
+                negativo: Number(lancamento.valor) < 0,
             });
             categorias.set(chave, grupo);
         });
@@ -163,8 +164,10 @@ function validarLancamentosCarregados(lancamentos, ciclos = []) {
             faturasPorMes.set(chaveMes, porDia);
         }
     });
+    // Categoria única só é suspeita numa saída: entradas (positivas) costumam ser pontuais
+    // (reembolso, venda, presente) e nunca geram esse aviso.
     categorias.forEach(({ nome, lancamentos: itens }) => {
-        if (itens.length === 1) {
+        if (itens.length === 1 && itens[0].negativo) {
             const { id, nome: nomeLancamento } = itens[0];
             avisos.push(`Categoria "${nome}" aparece em apenas um lançamento: "${nomeLancamento}" (id ${id}).`);
         }
