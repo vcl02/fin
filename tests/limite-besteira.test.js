@@ -105,7 +105,7 @@ test('indicador Isabella soma tudo com a categoria Isabella (com Lazer ou sozinh
     assert.equal(resultado.valorTotal, 140);
 });
 
-test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', () => {
+test('aparece no título Débito de qualquer ciclo (inclusive passados), com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', () => {
     // Igual à regra geral de Crédito ("no ciclo N ela mostra os créditos da competência
     // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
@@ -113,7 +113,7 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\]\.filter\(r => !r\._prev\);/);
     assert.match(visoes, /rotulo: 'Besteira', teto: tetosDoCiclo\.besteira, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo\.besteira\)/);
     assert.match(visoes, /rotulo: 'Isabella', teto: tetosDoCiclo\.isabella, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo\.isabella\)/);
-    assert.match(visoes, /spansLimitesCategoria\('percentualPago'\)/);
+    assert.match(visoes, /spansLimitesCategoria\(cicloDebitoPassado \? 'percentualTotal' : 'percentualPago'\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
     assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
     // Além do %, quanto ainda cabe no teto (Hoje: pago; Futuro: pago + aberto) ou quanto passou.
@@ -121,7 +121,7 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     assert.match(visoes, /<b class="\$\{dentro \? cor : 'vm'\}">\$\{brl\(dentro \? Math\.max\(0, restante\) : -restante\)\}<\/b> <span class=limiteRotulo>\$\{dentro \? 'Livre' : 'Acima'\}<\/span>/);
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
     assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
-    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje && !modoRestrito\(\) \? \[/);
+    assert.match(visoes, /const limitesCategoria = i >= 0 && !modoRestrito\(\) \? \[/);
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
@@ -130,7 +130,9 @@ test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /cada um com seu próprio teto fixo em código \(`js\/domain\.js`, não editável pela tela\)/);
-    assert.match(regras, /nunca no histórico nem num ciclo futuro ainda não iniciado/);
+    assert.match(regras, /No título Débito de qualquer ciclo \(atual, seguintes e passados\)/);
+    // Passado mostra o fechamento do ciclo: pago + aberto, como Saldo e Guardado da mesma linha.
+    assert.match(visoes, /spansLimitesCategoria\(cicloDebitoPassado \? 'percentualTotal' : 'percentualPago'\)/);
     assert.match(regras, /`creditosExibidosNoCiclo`, fatura de `i\+1`/);
     assert.match(regras, /ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro/);
     assert.match(regras, /o rótulo `Isabella` contra `LIMITE_ISABELLA`, R\$ 700/);

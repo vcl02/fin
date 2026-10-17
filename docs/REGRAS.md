@@ -394,7 +394,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Se houver déficit, o `Resgate necessário` é limitado ao patrimônio disponível.
   Se houver excedente, o `Aporte sugerido` absorve o excedente.
   Ambos são linhas sintéticas até serem materializados/consolidados pelo usuário.
-- No título Débito do ciclo atual (nunca no histórico nem num ciclo futuro ainda não iniciado), as linhas Hoje e Futuro mostram um indicador por categoria de limite, bem separado de Saldo/Guardado e um do outro por um divisor: a porcentagem gasta daquela categoria contra o teto fixo dela.
+- No título Débito de qualquer ciclo (atual, seguintes e passados), as linhas Hoje/Futuro — ou Passado, num ciclo já encerrado — mostram um indicador por categoria de limite, bem separado de Saldo/Guardado e um do outro por um divisor: a porcentagem gasta daquela categoria contra o teto fixo dela.
   Hoje conta só o que já está `pago`; Futuro conta pago + aberto, isto é, o que está planejado gastar no ciclo inteiro.
   O cálculo soma o Débito do próprio ciclo (`periodoIdx == i`) com o Crédito da MESMA prévia que a tabela Crédito já mostra pra esse ciclo (`creditosExibidosNoCiclo`, fatura de `i+1`): um ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro — igual à regra geral de Crédito ("no ciclo N ela mostra os créditos da competência N+1"), nunca pela data da compra nem pelo `periodoIdx` cru do lançamento de Crédito.
   Mesma regra de despesa das demais leituras de orçamento (`dadosCompromissosDoCiclo`): só `valor < 0`, exclui antecipação de fatura, valor absoluto.
@@ -416,7 +416,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Na coluna ID cada uma tem o seu: Fatura Nubank −3, Fatura Mercado Pago −4, Besteira prevista −6, Isabella prevista −7.
   Não existem no banco: não podem ser editadas, duplicadas nem excluídas.
   Ciclos passados não ganham previsão, nem o último ciclo aberto (sem ciclo seguinte pra fatura cair).
-  O teto de cada ciclo é individual: o indicador aparece no título do Débito do ciclo atual e dos seguintes (nunca no histórico), com o teto editável ao lado ("de R$ […]", mesmo esquema do Aprovado do cartão).
+  O teto de cada ciclo é individual: o indicador aparece no título do Débito de cada ciclo — inclusive dos passados, na linha Passado, com o total daquele ciclo (pago + aberto), como o Saldo e o Guardado dessa linha —, com o teto editável ao lado ("de R$ […]", mesmo esquema do Aprovado do cartão).
   O valor é gravado na linha daquele ciclo em `fin_ciclo` (`limite_besteira`/`limite_isabella`) — vai pro banco, e não só pro navegador, porque muda o saldo e precisa ser igual em qualquer aparelho; campo vazio volta ao padrão do código.
   Também dá pra editar direto no DataGrip (tabela `fin_ciclo`).
   A conta restrita só vê o teto, sem campo.

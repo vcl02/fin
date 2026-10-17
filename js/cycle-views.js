@@ -150,8 +150,9 @@ function vCiclo() {
     // justamente o que falta até o teto, então nunca entra nesta conta.
     const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)].filter(r => !r._prev);
     const tetosDoCiclo = limitesCategoriaDoCiclo(i);
-    // A conta restrita não vê os tetos de Besteira/Isabella (pedido do mantenedor).
-    const limitesCategoria = Estado.idxHoje >= 0 && i >= Estado.idxHoje && !modoRestrito() ? [
+    // A conta restrita não vê os tetos de Besteira/Isabella (pedido do mantenedor). Ciclo
+    // passado também mostra os dele, na linha Passado (ver linhaHojeDebito).
+    const limitesCategoria = i >= 0 && !modoRestrito() ? [
         { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo.besteira) },
         { chave: 'isabella', rotulo: 'Isabella', teto: tetosDoCiclo.isabella, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo.isabella) },
     ] : [];
@@ -206,7 +207,8 @@ function vCiclo() {
             `<span class=resumoLinha><span class=resumoRotulo>${cicloDebitoPassado ? 'Passado' : 'Hoje'}</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoNaLinhaUnica}">${brl(saldoExibidoNaLinhaUnica)}</b></span>` +
             `<span>Guardado <b class="${corValor(guardadoExibidoNaLinhaUnica)}">${brl(guardadoExibidoNaLinhaUnica)}</b></span>` +
-            spansLimitesCategoria('percentualPago') + `</span></span>`;
+            // Passado é o fechamento do ciclo (como Saldo/Guardado acima): pago + aberto.
+            spansLimitesCategoria(cicloDebitoPassado ? 'percentualTotal' : 'percentualPago') + `</span></span>`;
         const linhaFuturoDebito = exibeFuturo ?
             `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +

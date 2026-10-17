@@ -479,7 +479,7 @@ test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica 
 test('conta restrita sem tetos Besteira/Isabella, sem diagnóstico e sem Recarregar (só a recarga automática)', () => {
     const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
     const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
-    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje && !modoRestrito\(\) \? \[/);
+    assert.match(visoes, /const limitesCategoria = i >= 0 && !modoRestrito\(\) \? \[/);
     assert.match(interacoes, /el\('btDiagnostico'\)\.hidden = simples;/);
     assert.match(interacoes, /el\('recarregar'\)\.hidden = simples;/);
     assert.match(boot, /if \(bt\.disabled \|\| modoRestrito\(\)\) return;\s*\n\s*await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
