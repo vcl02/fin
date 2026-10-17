@@ -99,6 +99,12 @@
       border-left: 1px solid var(--line-strong);
   }
 
+  /* Liberdade à mostra vai pra linha de baixo dos demais indicadores (pedido do mantenedor);
+     oculta, só o olho fechado fica na mesma linha, depois de Gastos. */
+  .indicadorItem:has(#indicadorLiberdade:not([hidden])) {
+      flex-basis: 100%;
+  }
+
   /* Olho que mostra/esconde Liberdade: só o ícone, sem caixa de botão. */
   .btOlho {
       display: inline-flex;

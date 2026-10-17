@@ -294,6 +294,9 @@ test('Liberdade fica oculta atrás de um olho fechado que mostra e esconde', () 
     assert.equal(atributos['aria-label'], 'Mostrar Liberdade');
     assert.match(svg.innerHTML, /M3 3l18 18/);
     assert.match(regras, /\*\*Liberdade\*\* fica oculta por padrão: no lugar dela aparece só um ícone de olho fechado/);
+    // À mostra, Liberdade desce pra uma linha própria; oculta, o olho segue depois de Gastos.
+    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.indicadorItem:has\(#indicadorLiberdade:not\(\[hidden\]\)\) \{\s*\n\s*flex-basis: 100%;/);
+    assert.match(regras, /olho aberto\) numa linha própria, abaixo dos demais indicadores/);
 });
 
 test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alterna o filtro', () => {
