@@ -354,13 +354,39 @@
       text-transform: uppercase;
   }
 
+  /* Cada item da faixa (Saldo, Guardado, Besteira, cartões…) leva o divisor na borda esquerda,
+     transparente onde não há divisão. A faixa recua uma borda+folga e o clip corta esse
+     recuo, então o item que abre uma linha nunca começa com divisor (mesma ideia da lista
+     de indicadores do cabeçalho). */
   .resumoDados {
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
-      gap: .15rem .8rem;
+      gap: .15rem .4rem;
       min-width: 0;
+      margin-left: calc(-.8rem - 1px);
+      clip-path: inset(0 0 0 calc(.8rem + 1px));
       font-variant-numeric: tabular-nums;
+  }
+
+  .resumoDados > * {
+      padding-left: .8rem;
+      border-left: 1px solid transparent;
+      white-space: nowrap;
+  }
+
+  /* Item grande demais pra linha quebra entre os seus pedaços, nunca no meio de um valor
+     ("de R$ 3.920,00" fica junto); a linha de baixo começa alinhada ao início do item. */
+  .resumoDados > .temPedacos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: .3em;
+      white-space: normal;
+  }
+
+  .pedaco {
+      white-space: nowrap;
   }
 
   /* Larguras igualadas entre Hoje e Futuro (alinharResumosDosTitulos): os valores em negrito
@@ -394,10 +420,8 @@
 
   /* Fica visivelmente separado de Saldo/Guardado (gap maior + divisor), pois é uma leitura
      diferente: não é saldo de caixa, é progresso contra um teto fixo de código. */
-  .besteiraIndicador {
-      margin-left: .4rem;
-      padding-left: .8rem;
-      border-left: 1px solid var(--ln);
+  .resumoDados > .besteiraIndicador {
+      border-left-color: var(--ln);
       color: var(--mu);
   }
 
@@ -452,9 +476,7 @@
 
   /* Faixas separadas por um divisor vertical, igual Besteira/Isabella no Débito. */
   .resumoDados > * + .limiteCartao {
-      margin-left: .4rem;
-      padding-left: .8rem;
-      border-left: 1px solid var(--line-strong);
+      border-left-color: var(--line-strong);
   }
 
   /* Rótulos discretos, valores em negrito; o teto ("de R$ …") e os complementos ficam em

@@ -174,7 +174,9 @@ function vCiclo() {
             : `<span class=limiteRotulo>Acima</span> <b class=vm>${brl(-restante)}</b>`;
         const descricao = DESCRICAO_LIMITE_CATEGORIA[limite.chave];
         const rotulo = descricao ? `<span class=rotuloComDica title="${escapeHtml(descricao)}">${limite.rotulo}</span>` : limite.rotulo;
-        return `<span class=besteiraIndicador>${rotulo} <b class="pct ${cor}">${Math.round(limite[chave])}%</b> · ${sobra} <span class=limiteTeto>de ${tetoDoIndicador(limite)}</span></span>`;
+        // Em pedaços que nunca se partem: com a faixa estreita, o item quebra antes do "de".
+        return `<span class="besteiraIndicador temPedacos"><span class=pedaco>${rotulo} <b class="pct ${cor}">${Math.round(limite[chave])}%</b></span><span class=pedaco>· ${sobra}</span>` +
+            `<span class="pedaco limiteTeto">de ${tetoDoIndicador(limite)}</span></span>`;
     }).join('');
     const debitoTemPendencia = debitos.some(r => r.pago === false) || linhasFatura.length > 0;
     const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&
@@ -324,7 +326,7 @@ function vCiclo() {
     // Com um cartão só, o nome dele não acrescenta nada; com dois, cada faixa diz de quem é.
     // A classe por cartão dá a cor do nome (ver .limiteCartaoNome em dashboard.css).
     const nomeNoTitulo = cartao => cartoesNoTitulo.length > 1
-        ? `<span class="limiteCartaoNome cartao-${cartao}">${NOME_CARTAO[cartao]}</span> ` : '';
+        ? `<span class="limiteCartaoNome cartao-${cartao}">${NOME_CARTAO[cartao]}</span>` : '';
     // O teto total é somente leitura no "de"; os campos discretos editam o Aprovado de cada
     // cartão e a Garantia do Nubank DESTE ciclo (valem também pros seguintes até outro ciclo
     // definir outro). Gravam na linha âncora do ciclo (ver confirmarLimiteNaAncora em
@@ -342,21 +344,27 @@ function vCiclo() {
     // Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em
     // Futuro, a fatura exibida inteira mais o uso confirmado posterior. Mesma conta do Livre,
     // só mostrada pelo outro lado, pra ver quanto já foi gasto sem fazer a subtração de cabeça.
-    const usadoELivre = (usado, livre) =>
-        `<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b> ` +
-        `<span class=limiteRotulo>Livre</span> <b class="${corValor(livre)}">${brl(livre)}</b> <span class=limiteTeto>de `;
-    const resumoLimiteCartao = (l, limiteLivre) => `<span class=limiteCartao>${nomeNoTitulo(l.cartao)}${usadoELivre(l.limiteTotal - limiteLivre, limiteLivre)}` +
-        (tetoSemGarantia(l)
-            ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>`
-            : `${brl(l.limiteTotal)} <span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span>`) +
-        `</span>${l.cartao === CARTAO_NUBANK && mostraGarantia ? `<span class=limiteGarantido> + R$ ${campoGarantia()} Garantido</span>` : ''}</span>`;
+    // Cada faixa vai em pedaços que nunca se partem (nome; Usado; Livre; "de" teto; Aprovado;
+    // Garantido): com a tela estreita, a faixa quebra entre eles, nunca no meio de um valor.
+    const pedaco = html => `<span class=pedaco>${html}</span>`;
+    const usadoELivre = (nome, usado, livre, teto) => (nome ? pedaco(nome) : '') +
+        pedaco(`<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b>`) +
+        pedaco(`<span class=limiteRotulo>Livre</span> <b class="${corValor(livre)}">${brl(livre)}</b>`) +
+        `<span class="pedaco limiteTeto">de ${teto}</span>`;
+    const resumoLimiteCartao = (l, limiteLivre) => `<span class="limiteCartao temPedacos">` +
+        usadoELivre(nomeNoTitulo(l.cartao), l.limiteTotal - limiteLivre, limiteLivre,
+            tetoSemGarantia(l) ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>` : brl(l.limiteTotal)) +
+        (tetoSemGarantia(l) ? ''
+            : pedaco(`<span class=limiteTeto><span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span></span>`)) +
+        (l.cartao === CARTAO_NUBANK && mostraGarantia ? `<span class="pedaco limiteGarantido">+ R$ ${campoGarantia()} Garantido</span>` : '') +
+        `</span>`;
     // Com dois cartões, a primeira faixa soma os dois: quanto ainda dá pra gastar no crédito
     // inteiro e o teto somado (com a garantia do Nubank, como o teto dele).
     const resumoTotalDosCartoes = chaveLivre => {
         if (limitesDosCartoes.length < 2) return '';
         const livre = limitesDosCartoes.reduce((soma, l) => soma + l[chaveLivre], 0);
         const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
-        return `<span class=limiteCartao><span class="limiteCartaoNome cartao-total">Total</span> ${usadoELivre(teto - livre, livre)}${brl(teto)}</span></span>`;
+        return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto))}</span>`;
     };
     const resumoLimites = chaveLivre =>
         resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('');

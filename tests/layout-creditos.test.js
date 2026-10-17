@@ -59,13 +59,17 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(visoes, /placeholder="0,00"/);
     assert.match(visoes, /limiteGarantido/);
     assert.match(visoes, /const resumoLimiteCartao/);
+    // Teto = Aprovado vira o próprio campo depois de "de"; com garantia, o Aprovado vem num
+    // pedaço próprio e a garantia em outro (só no Nubank).
+    assert.match(visoes, /tetoSemGarantia\(l\) \? `<span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<\/span>` : brl\(l\.limiteTotal\)\)/);
+    assert.match(visoes, /pedaco\(`<span class=limiteTeto><span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<span class=limiteCartaoRotulo>Aprovado<\/span><\/span><\/span>`\)/);
+    assert.match(visoes, /l\.cartao === CARTAO_NUBANK && mostraGarantia \? `<span class="pedaco limiteGarantido">\+ R\$ \$\{campoGarantia\(\)\} Garantido<\/span>` : ''/);
     assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado && limitesDosCartoes\.some\(l =>\s*Math\.abs\(l\.totalHoje\) > l\.limiteTotal \|\| \(exibeFuturoCredito && l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\)\);/);
     assert.match(visoes, /const alertaTituloCredito = alertaTitulo\('alertaLimite', creditoAcimaLimite,/);
     assert.match(visoes, /Math\.abs\(l\.totalHoje\) > l\.limiteTotal/);
     assert.match(visoes, /l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
     assert.match(visoes, /'Gasto acima do limite'/);
     assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
-    assert.match(visoes, /: `\$\{brl\(l\.limiteTotal\)\} <span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<span class=limiteCartaoRotulo>Aprovado<\/span><\/span>`\)/);
     assert.match(visoes, /value="\$\{emReais\(l\.aprovado\)\}"/);
     // Largura pelo próprio valor, sem vão até Aprovado/Garantido sem field-sizing.
     assert.match(visoes, /const larguraDoCampo = texto => `style="width:\$\{Math\.max\(4, String\(texto\)\.length \+ 1\)\}ch"`;/);
@@ -73,7 +77,6 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(visoes, /const tetoSemGarantia = l => Math\.abs\(l\.limiteTotal - l\.aprovado\) < TOLERANCIA_FINANCEIRA;/);
     assert.match(visoes, /\? `<span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<\/span>`/);
     assert.match(visoes, /const garantiaExibida = garantiaNubank\.escolhida != null \|\| i === Estado\.idxHoje\s*\n\s*\? garantiaNubank\.efetiva : Math\.floor\(garantiaNubank\.efetiva \/ 100\) \* 100;/);
-    assert.match(visoes, /\$\{l\.cartao === CARTAO_NUBANK && mostraGarantia \? `<span class=limiteGarantido> \+ R\$ \$\{campoGarantia\(\)\} Garantido<\/span>`/);
     assert.doesNotMatch(visoes, /Garantido<\/span>` : ''\}\)<\/span>/);
     assert.match(estilos, /\.limiteCartao/);
     assert.match(estilos, /\.limiteCartaoEditavel/);

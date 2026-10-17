@@ -23,7 +23,8 @@ function rodar(faixas) {
     const titulo = { querySelectorAll: () => faixas.map(filhos => ({ children: filhos })) };
     const inicio = interacoes.indexOf('function alinharResumosDosTitulos() {');
     const fim = interacoes.indexOf('\n}\n', inicio) + 3;
-    const ctx = { el: () => ({ querySelectorAll: () => [titulo] }), Math };
+    const antigos = rodar.antigos || [];
+    const ctx = { el: () => ({ querySelectorAll: sel => (sel == '.resumoTitulo' ? [titulo] : antigos) }), Math };
     vm.runInNewContext(`${interacoes.slice(inicio, fim)}\nalinharResumosDosTitulos();`, ctx);
 }
 
@@ -46,6 +47,17 @@ test('itens e valores das duas faixas ficam com a largura do maior', () => {
     assert.equal(meta.style.minWidth, undefined);
 });
 
+test('larguras da janela anterior são apagadas antes de medir de novo', () => {
+    const antigo = { style: { minWidth: '300px' } };
+    rodar.antigos = [antigo];
+    rodar([[elemento(200)], [elemento(180)]]);
+    rodar.antigos = [];
+    assert.equal(antigo.style.minWidth, '');
+    assert.match(interacoes, /el\('out'\)\.querySelectorAll\('\.resumoDados \[style\*="min-width"\]'\)\.forEach\(e => \{ e\.style\.minWidth = ''; \}\);/);
+    // Mudou a largura da janela: refaz o alinhamento (no próximo quadro).
+    assert.match(interacoes, /window\.addEventListener\('resize', \(\) => \{\s*\n\s*if \(window\.innerWidth == larguraDosResumos\) return;\s*\n\s*larguraDosResumos = window\.innerWidth;\s*\n\s*requestAnimationFrame\(alinharResumosDosTitulos\);/);
+});
+
 test('faixas com estrutura diferente não são mexidas', () => {
     const hoje = [elemento(200), elemento(100)];
     const futuro = [elemento(180)];
@@ -66,4 +78,14 @@ test('valores das faixas têm tamanho fixo: reais e percentuais reservam a largu
     assert.match(estilos, /\.resumoDados b\.pct \{\s*\n\s*min-width: 5ch;/);
     assert.match(visoes, /\$\{rotulo\} <b class="pct \$\{cor\}">/);
     assert.match(regras, /todo valor em reais nas faixas reserva a largura de `-R\$ 99\.999,99` e todo percentual a de `100%`/);
+});
+
+test('faixa estreita quebra entre pedaços inteiros, sem divisor no começo da linha', () => {
+    assert.match(estilos, /\.resumoDados > \.temPedacos \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
+    assert.match(estilos, /\.pedaco \{\s*\n\s*white-space: nowrap;/);
+    // Recuo de borda+folga cortado pelo clip: o divisor do item que abre a linha some.
+    assert.match(estilos, /margin-left: calc\(-\.8rem - 1px\);\s*\n\s*clip-path: inset\(0 0 0 calc\(\.8rem \+ 1px\)\);/);
+    assert.match(visoes, /<span class="besteiraIndicador temPedacos"><span class=pedaco>\$\{rotulo\} <b class="pct \$\{cor\}">/);
+    assert.match(visoes, /`<span class="pedaco limiteTeto">de \$\{tetoDoIndicador\(limite\)\}<\/span><\/span>`/);
+    assert.match(regras, /quebra só entre seus pedaços[^.]*nunca no meio de um valor ou separando "de" do teto\. O divisor vertical entre itens nunca aparece no começo de uma linha\./);
 });

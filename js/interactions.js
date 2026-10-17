@@ -74,6 +74,9 @@ async function confirmarLimiteDoCiclo(input) {
 // ganha a largura do maior entre as faixas, então ficam um embaixo do outro. Só alinha
 // quando as faixas têm a mesma estrutura; "N registros" (.resumoMeta) fica de fora.
 function alinharResumosDosTitulos() {
+    // Refeito do zero a cada chamada (inclusive ao redimensionar): larguras da largura
+    // anterior da janela não podem forçar quebras erradas na nova.
+    el('out').querySelectorAll('.resumoDados [style*="min-width"]').forEach(e => { e.style.minWidth = ''; });
     const igualarLarguras = grupos => grupos.forEach(elementos => {
         const larguras = elementos.map(e => e.getBoundingClientRect().width);
         const largura = Math.max(...larguras);
@@ -96,6 +99,14 @@ function alinharResumosDosTitulos() {
         igualarLarguras(colunas);
     });
 }
+
+// Ao mudar a largura, o que cabe em cada linha muda: refaz o alinhamento Hoje/Futuro.
+let larguraDosResumos = window.innerWidth;
+window.addEventListener('resize', () => {
+    if (window.innerWidth == larguraDosResumos) return;
+    larguraDosResumos = window.innerWidth;
+    requestAnimationFrame(alinharResumosDosTitulos);
+});
 
 function desenhar() {
     limparCachesFinanceiros();   // recalcula 1x neste render

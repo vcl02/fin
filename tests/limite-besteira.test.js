@@ -126,7 +126,7 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
-    assert.match(estilos, /\.besteiraIndicador\s*\{[\s\S]*?border-left:\s*1px solid var\(--ln\);/);
+    assert.match(estilos, /\.resumoDados > \.besteiraIndicador \{\s*\n\s*border-left-color: var\(--ln\);/);
 });
 
 test('regra documentada em REGRAS.md', () => {
