@@ -213,8 +213,9 @@ test('comparar mantém apenas todas ou diferentes confirmados sem recorrência d
     assert.match(pagina, /<label class=f id=fdif hidden>/);
     const nav = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'), pagina.indexOf('id=toggleSimulacao'));
     assert.ok(nav.indexOf('id=btSomenteDif') < nav.indexOf('id=btGrafico'));
-    assert.match(nav, /<button type=button id=btSomenteDif class="btIcone reservado" title="Mostrar só as linhas diferentes"\s*\n\s*aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>/);
-    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.btIcone\.reservado \{\s*\n\s*visibility: hidden;/);
+    assert.match(nav, /<button type=button id=btSomenteDif class=btIcone title="Mostrar só as linhas diferentes"\s*\n\s*aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>/);
+    // Sempre visível: nada de classe que esconda o botão fora da comparação.
+    assert.doesNotMatch(fs.readFileSync('css/dashboard.css', 'utf8'), /\.btIcone\.reservado/);
     assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
     assert.doesNotMatch(pagina, /Diferentes \(ignorar repetidas\)/);
     assert.match(visoes, /const somenteDif = comparacao2Periodos && modoLinhas == 'D';/);
@@ -295,11 +296,11 @@ test('Liberdade fica oculta atrás de um olho fechado que mostra e esconde', () 
     assert.match(regras, /\*\*Liberdade\*\* fica oculta por padrão: no lugar dela aparece só um ícone de olho fechado/);
 });
 
-test('ícone Todas/Diferentes: lugar reservado fora da comparação, só funciona com 2 ciclos e alterna o filtro', () => {
+test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alterna o filtro', () => {
     const vm = require('node:vm');
     const inicio = interacoes.indexOf('function atualizarBotaoSomenteDif(comparando) {');
     const codigo = interacoes.slice(inicio, interacoes.indexOf('\n};', interacoes.indexOf("el('btSomenteDif').onclick")) + 3);
-    const classes = new Set(['btIcone', 'reservado']);
+    const classes = new Set(['btIcone']);
     const atributos = {};
     const botao = {
         disabled: true, title: '',
@@ -312,12 +313,13 @@ test('ícone Todas/Diferentes: lugar reservado fora da comparação, só funcion
     ctx.desenhar = () => { ctx.desenhos++; };
     vm.runInNewContext(`${codigo}\nthis.atualizar = atualizarBotaoSomenteDif;\nthis.clica = () => el('btSomenteDif').onclick();`, ctx);
 
-    ctx.atualizar(false);   // um ciclo só: invisível, mas o lugar continua reservado
-    assert.ok(classes.has('reservado'));
+    ctx.atualizar(false);   // um ciclo só: visível, desativado
+    assert.deepEqual([...classes], ['btIcone']);
     assert.equal(botao.disabled, true);
+    assert.equal(botao.title, 'Linhas diferentes: só comparando 2 ciclos');
 
-    ctx.atualizar(true);    // comparando 3+ ciclos: aparece, desabilitado
-    assert.ok(!classes.has('reservado'));
+    ctx.atualizar(true);    // comparando 3+ ciclos: continua desativado
+    assert.deepEqual([...classes], ['btIcone']);
     assert.equal(botao.disabled, true);
     assert.equal(botao.title, 'Linhas diferentes: só comparando 2 ciclos');
 
@@ -335,6 +337,7 @@ test('ícone Todas/Diferentes: lugar reservado fora da comparação, só funcion
     ctx.clica();
     assert.equal(filtro.value, 'N');
     assert.match(interacoes, /el\('btSomenteDif'\)\.hidden = simples;/);
+    assert.match(regras, /Ele fica sempre visível, mas só funciona com exatamente dois ciclos: fora da comparação \(um ciclo só ou Backlog\) ou com três ou mais ciclos fica desativado/);
     assert.match(regras, /a escolha entre \*\*Todas\*\* e \*\*Diferentes\*\* é um ícone \(sinal de diferente, ≠\) no início do bloco de botões do cabeçalho, antes do Gráfico/);
 });
 

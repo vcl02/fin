@@ -138,7 +138,7 @@ function desenhar() {
     // Gráfico e Visualizações moram na navegação de ciclo (fora de #rowVis): escondem à parte.
     el('btGrafico').hidden = simples;
     el('visIcone').hidden = simples;
-    el('btSomenteDif').hidden = simples;   // conta restrita não compara: nem o lugar reservado
+    el('btSomenteDif').hidden = simples;   // conta restrita não compara: o botão nem aparece
     popularAlvosVisualizacao();   // reordena do mais perto de acabar pro mais longe a cada redesenho
     el('abreNovo').hidden = simples;
     el('toggleSimulacao').hidden = simples;
@@ -174,8 +174,8 @@ function desenhar() {
             [e.scrollTop, e.scrollLeft] = scrollsAntigos[i];
         });
     }
-    // Ícone Todas/Diferentes: aparece comparando mais de um ciclo; fora disso o lugar fica
-    // reservado (invisível) pra navegação não pular. "Diferentes" só faz sentido com
+    // Ícone Todas/Diferentes: sempre visível (desativado fora da comparação), pra quem vê
+    // saber que o filtro existe e a navegação não pular. "Diferentes" só faz sentido com
     // EXATAMENTE 2 períodos — vComp() deixa isso em Estado._comparacao2Periodos, porque só
     // ali se sabe quantos períodos a matriz de fato usou —; com 3 ou mais fica desabilitado.
     atualizarBotaoSomenteDif(!modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
@@ -1047,7 +1047,6 @@ function atualizarBotaoSomenteDif(comparando) {
     const diferentes = el('somenteDif').value == 'D';
     const rotulo = !doisCiclos ? 'Linhas diferentes: só comparando 2 ciclos'
         : diferentes ? 'Mostrar todas as linhas' : 'Mostrar só as linhas diferentes';
-    botao.classList.toggle('reservado', !comparando);
     botao.disabled = !doisCiclos;
     botao.classList.toggle('ativo', doisCiclos && diferentes);
     botao.setAttribute('aria-pressed', String(doisCiclos && diferentes));
