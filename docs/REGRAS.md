@@ -537,6 +537,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Aborta a transação inteira, sem alterar nada, se a 25 não estiver aplicada, se houver dois `Faturamento PJ` na mesma data ou se alguma linha de `fin_ciclo` apontar para outro tipo de lançamento.
   Depois dela o banco exige `inicio` único e não nulo, `fim >= inicio` e nenhuma sobreposição (`exclude using gist` sobre o intervalo de datas, sem extensão).
   Os lançamentos `Faturamento PJ` continuam em `fin`, intactos.
+- `migrations/27-historico-de-mudancas.sql` cria `public.fin_historico`: todo `INSERT`, `UPDATE` e `DELETE` em `fin` e em `fin_ciclo` grava uma linha com tabela, operação, id da linha, quem fez (`auth.uid()`; vazio quando veio do DataGrip), quando, e a linha inteira antes e depois (`jsonb`).
+  `UPDATE` que não muda nada não é registrado.
+  Só o trigger escreve (função `SECURITY DEFINER`, sem execução pela API); nenhuma conta insere, altera ou apaga o histórico pela API, só o mantenedor lê e o anônimo não acessa.
+  Não altera nenhuma linha de `fin` nem de `fin_ciclo` e não muda nada no app; serve pra achar e desfazer à mão, no DataGrip, uma mudança errada (ex.: `select * from fin_historico where tabela = 'fin' and linha_id = 5251 order by em desc`).
 
 ## Testes
 
