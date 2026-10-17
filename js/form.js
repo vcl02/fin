@@ -790,7 +790,7 @@ async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
             });
             Object.assign(existente, linhaAtualizada, {
                 v: +linhaAtualizada.valor || 0,
-                inv: /^investimento$/i.test(String(linhaAtualizada.categ || '').trim()),
+                inv: ehCategoriaInvestimento(linhaAtualizada.categ),
             });
         }
     } else {
@@ -810,12 +810,11 @@ async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
                 categ,
                 valor: valorAjuste,
             });
-            const periodoIdx = data ? periodoDoDebito(data) : null;
             Estado.lancamentos.push({
                 ...linhaCriada,
                 v: +linhaCriada.valor || 0,
-                inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
-                periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+                inv: ehCategoriaInvestimento(linhaCriada.categ),
+                periodoIdx: periodoDoLancamento(linhaCriada),
             });
         }
     }
@@ -923,7 +922,10 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = fa
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
             Estado.idxHoje
         );
-        const { corrigidos, log: logDatas } = await corrigeRecorrenciasDuplicadasNoIntervalo(Estado.idxHoje, ultimoCicloAntesDaCorrecao);
+        // Mover data é a parte mais invasiva da varredura: só roda no clique (Recarregar), nunca
+        // na consolidação automática de 15 min, que fica só com Aporte/Resgate.
+        const { corrigidos, log: logDatas } = silencioso ? { corrigidos: 0, log: [] }
+            : await corrigeRecorrenciasDuplicadasNoIntervalo(Estado.idxHoje, ultimoCicloAntesDaCorrecao);
         // Uma correção pode ter empurrado alguma linha pro ciclo logo depois do limite
         // conhecido antes da varredura — recalcula pra não deixar esse ciclo de fora do
         // loop de aporte/resgate a seguir.
@@ -1200,7 +1202,7 @@ async function submeteEdicaoLancamento(r) {
         if (!Estado.simulando && !r._sim) await atualizarLancamento(r.id, campos);
         Object.assign(r, campos);
         r.v = campos.valor || 0;
-        r.inv = /^investimento$/i.test(String(r.categ || '').trim());
+        r.inv = ehCategoriaInvestimento(r.categ);
         reclassificaPeriodo(r);
         modalNovo.close();   // o close listener ja' limpa a selecao e redesenha
     } catch (err) {
@@ -1259,16 +1261,14 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
             aviso = `sem o vínculo de lote (recorrencia_id): ${err.message}`;
         }
     }
+    // Mesmas regras da carga (periodoDoLancamento/ehCategoriaInvestimento): o que aparece na
+    // hora é o que volta ao recarregar. Antecipação é débito: ciclo pela data, não pela fatura.
     criadas.forEach(linhaCriada => {
-        const periodoIdx = !linhaCriada.data ? null
-            // antecipacao e' debito: periodo determinado pela propria data, nao pelo vencimento da fatura
-            : cred ? periodoDaFatura(dataISO(linhaCriada.fatura)) : periodoDoDebito(dataISO(linhaCriada.data));
-        const idxValido = periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null;
         Estado.lancamentos.push({
             ...linhaCriada,
             v: +linhaCriada.valor || 0,
-            inv: /^investimento$/i.test(String(linhaCriada.categ || '').trim()),
-            periodoIdx: idxValido,
+            inv: ehCategoriaInvestimento(linhaCriada.categ),
+            periodoIdx: periodoDoLancamento(linhaCriada),
         });
     });
     return aviso;
@@ -1323,8 +1323,6 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserv
     const criadas = valores.map((valorAssinado, p) => {
         const dataParcela = data ? dataDaOcorrencia(data, p, freq) : null;
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
-        const periodoIdx = !dataParcela ? null
-            : cred ? periodoDaFatura(faturaVenc) : periodoDoDebito(dataISO(dataParcela));
         return {
             id: `sim-${grupoSimulado}-${p}`,
             nome,
@@ -1332,8 +1330,8 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserv
             cred, pago, reserva, comprometido, pra_sempre: praSempre,
             fatura: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
-            inv: /^investimento$/i.test(categ.trim()),
-            periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+            inv: ehCategoriaInvestimento(categ),
+            periodoIdx: periodoDoLancamento({ cred, data: dataParcela, fatura: faturaVenc }),
             // mesma ideia do lote real (salvaLancamentoParceladoNoBanco): só parcelas > 1
             // dividem um identificador de lote, aqui o próprio contador da simulação.
             recorrencia_id: parcelas > 1 ? grupoSimulado : null,

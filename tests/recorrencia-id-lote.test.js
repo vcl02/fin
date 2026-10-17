@@ -22,7 +22,7 @@ function carregaSalvarLote({ falhaPatch, falhaNumero } = {}) {
         ehAntecipacaoFatura: () => false,
         dataISO: v => v,
         dataDaOcorrencia: (data, p) => `2026-1${p}-15`,
-        periodoDaFatura: () => -1,
+        periodoDaFatura: () => -1, periodoDoLancamento: () => null, ehCategoriaInvestimento: () => false,
         periodoDoDebito: () => -1,
         inserirLancamentos: async payloads => {
             chamadas.inserts.push(payloads);

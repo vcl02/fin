@@ -63,8 +63,12 @@ function carregaReclassificaPeriodo() {
         periodoDoDebito: data => (data === '2026-10-09' ? 2 : -1),
         periodoDaFatura: fatura => (fatura === '2026-11-10' ? 3 : -1),
     };
+    // A regra de ciclo é a única de shared.js (periodoDoLancamento), a mesma da carga.
+    const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
+    const inicioRegra = compartilhado.indexOf('function periodoDoLancamento(r) {');
+    const regra = compartilhado.slice(inicioRegra, compartilhado.indexOf('\n}\n', inicioRegra) + 3);
     vm.createContext(contexto);
-    vm.runInContext(`${interacoes.slice(inicio, fim)}\nglobalThis.reclassificaPeriodo = reclassificaPeriodo;`, contexto);
+    vm.runInContext(`${regra}\n${interacoes.slice(inicio, fim)}\nglobalThis.reclassificaPeriodo = reclassificaPeriodo;`, contexto);
     return contexto.reclassificaPeriodo;
 }
 

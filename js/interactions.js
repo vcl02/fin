@@ -601,11 +601,7 @@ el('out').addEventListener('change', e => {
 // 'data' (ex.: veio do Backlog e ganhou uma fatura na transformacao Debito -> Credito)
 // ainda classifica certo pelo vencimento — so' cai no Backlog quando faltam as DUAS coisas.
 function reclassificaPeriodo(r) {
-    const faturaRef = r.fatura;
-    const idx = !r.data && !faturaRef ? null
-        : r.cred ? periodoDaFatura(faturaRef)
-            : periodoDoDebito(dataISO(r.data));
-    r.periodoIdx = idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
+    r.periodoIdx = periodoDoLancamento(r);
 }
 
 // clique na Data troca o <span> por um <input type=date>. O banco ja guarda 'YYYY-MM-DD',

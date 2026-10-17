@@ -95,11 +95,11 @@ test('consolidar tudo em lote: corrige todas as ocorrências aplicáveis no inte
         { ini: '2026-09-08' }, { ini: '2026-10-08' }, { ini: '2026-11-09' }, { ini: '2026-12-09' },
     ];
     contexto.Estado.lancamentos = [
-        { id: 10, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90, periodoIdx: 1, cred: false },
-        { id: 11, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90, periodoIdx: 1, cred: false },
+        { id: 10, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90, freq: 'Mensal', periodoIdx: 1, cred: false },
+        { id: 11, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90, freq: 'Mensal', periodoIdx: 1, cred: false },
         { id: 12, nome: 'Mercado', categ: 'Casa', data: '2026-10-20', v: -50, periodoIdx: 1, cred: false },
-        { id: 13, nome: 'Internet', categ: 'Casa', data: '2026-11-10', v: -70, periodoIdx: 2, cred: false },
-        { id: 14, nome: 'Internet', categ: 'Casa', data: '2026-12-05', v: -70, periodoIdx: 2, cred: false },
+        { id: 13, nome: 'Internet', categ: 'Casa', data: '2026-11-10', v: -70, freq: 'Mensal', periodoIdx: 2, cred: false },
+        { id: 14, nome: 'Internet', categ: 'Casa', data: '2026-12-05', v: -70, freq: 'Mensal', periodoIdx: 2, cred: false },
     ];
     const { corrigidos, log } = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(1, 2);
     assert.equal(corrigidos, 2);
@@ -126,8 +126,8 @@ test('simulação (Estado.simulando) não faz PATCH nenhum, só ajusta em memór
     contexto.Estado.simulando = true;
     contexto.Estado.ciclos = [{ ini: '2026-10-08' }, { ini: '2026-11-09' }];
     contexto.Estado.lancamentos = [
-        { id: 20, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90, periodoIdx: 0, cred: false },
-        { id: 21, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90, periodoIdx: 0, cred: false },
+        { id: 20, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90, freq: 'Mensal', periodoIdx: 0, cred: false },
+        { id: 21, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90, freq: 'Mensal', periodoIdx: 0, cred: false },
     ];
     const { corrigidos } = await contexto.corrigeRecorrenciasDuplicadasNoIntervalo(0, 0);
     assert.equal(corrigidos, 1);
@@ -137,8 +137,8 @@ test('simulação (Estado.simulando) não faz PATCH nenhum, só ajusta em memór
 
 test('marca só a(s) ocorrência(s) mais recente(s) do grupo duplicado, com a data do próximo ciclo', () => {
     const c = carregaMarcacao();
-    const antiga = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90 };
-    const recente = { id: 2, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90 };
+    const antiga = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', v: -90, freq: 'Mensal' };
+    const recente = { id: 2, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', v: -90, freq: 'Mensal' };
     const outraCategoria = { id: 3, nome: 'Mercado', categ: 'Casa', data: '2026-10-08', v: -50 };
     const debitos = [antiga, recente, outraCategoria];
     c.marcaOcorrenciasDuplicadasNoCiclo(debitos, { ini: '2026-11-09' });
@@ -149,8 +149,8 @@ test('marca só a(s) ocorrência(s) mais recente(s) do grupo duplicado, com a da
 
 test('sem próximo ciclo cadastrado, não marca nada (não há pra onde mover)', () => {
     const c = carregaMarcacao();
-    const antiga = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05' };
-    const recente = { id: 2, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04' };
+    const antiga = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', freq: 'Mensal' };
+    const recente = { id: 2, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', freq: 'Mensal' };
     c.marcaOcorrenciasDuplicadasNoCiclo([antiga, recente], undefined);
     assert.equal(antiga._dupCiclo, undefined);
     assert.equal(recente._dupCiclo, undefined);
@@ -160,8 +160,8 @@ test('mesmo mês (sem duplicidade real) ou linha sintética/simulada não marca'
     const c = carregaMarcacao();
     const mesmoMes1 = { id: 1, nome: 'Mercado', categ: 'Casa', data: '2026-10-05' };
     const mesmoMes2 = { id: 2, nome: 'Mercado', categ: 'Casa', data: '2026-10-20' };
-    const sintetica = { _sid: 'fat:0', nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04' };
-    const antigaReal = { id: 3, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05' };
+    const sintetica = { _sid: 'fat:0', nome: 'Seguro Residencial', categ: 'Casa', data: '2026-11-04', freq: 'Mensal' };
+    const antigaReal = { id: 3, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', freq: 'Mensal' };
     const debitos = [mesmoMes1, mesmoMes2, sintetica, antigaReal];
     c.marcaOcorrenciasDuplicadasNoCiclo(debitos, { ini: '2026-11-09' });
     assert.equal(mesmoMes1._dupCiclo, undefined);
@@ -225,7 +225,7 @@ test('consolidar tudo em lote também pula antecipação de fatura, sem PATCH ne
 
 test('limpa marca de um redesenho anterior antes de recalcular', () => {
     const c = carregaMarcacao();
-    const r = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', _dupCiclo: '2026-09-01' };
+    const r = { id: 1, nome: 'Seguro Residencial', categ: 'Casa', data: '2026-10-05', freq: 'Mensal', _dupCiclo: '2026-09-01' };
     c.marcaOcorrenciasDuplicadasNoCiclo([r], { ini: '2026-11-09' });
     assert.equal(r._dupCiclo, undefined);
 });
@@ -256,9 +256,43 @@ test('estilos: mesma cor âmbar do aviso "*" de Comparar, em botão circular em 
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /a confirmação ao corrigir a data de uma recorrência duplicada no ciclo/);
-    assert.match(regras, /a tabela Débito marca a\(s\) ocorrência\(s\) mais recente\(s\) do grupo \(a mais antiga fica como está\) com um botão "↷"/);
+    assert.match(regras, /a tabela Débito marca com um botão "↷" ao lado da Data \(mesma cor do asterisco `avisoDup` de Comparar\) só a\(s\) ocorrência\(s\) cujo mês é diferente do da mais antiga do grupo/);
     assert.match(regras, /Um clique, com confirmação, move a `data` dessa linha pro 1º dia do PRÓXIMO ciclo/);
     assert.match(regras, /some sozinho se não houver próximo ciclo cadastrado ainda/);
     assert.match(regras, /Antecipação\/pagamento de fatura nunca entra nessa detecção: é transferência, não recorrência/);
     assert.match(regras, /nunca marcam um lançamento de valor positivo \(entrada\): é recebimento, não conta recorrente/);
+});
+
+test('compra avulsa repetida (sem Frequência nem recorrencia_id) nunca é marcada pra mover', () => {
+    const c = carregaMarcacao();
+    const outubro = { id: 1, nome: 'Mercado', categ: 'Casa', data: '2026-10-15', v: -80 };
+    const novembro = { id: 2, nome: 'Mercado', categ: 'Casa', data: '2026-11-03', v: -60 };
+    c.marcaOcorrenciasDuplicadasNoCiclo([outubro, novembro], { ini: '2026-11-07' });
+    assert.equal(outubro._dupCiclo, undefined);
+    assert.equal(novembro._dupCiclo, undefined);
+    // Com recorrencia_id (lote do cadastro) volta a valer, mesmo sem Frequência.
+    const p1 = { id: 3, nome: 'Curso', categ: 'Educação', data: '2026-10-10', v: -100, recorrencia_id: 7 };
+    const p2 = { id: 4, nome: 'Curso', categ: 'Educação', data: '2026-11-02', v: -100, recorrencia_id: 7 };
+    c.marcaOcorrenciasDuplicadasNoCiclo([p1, p2], { ini: '2026-11-07' });
+    assert.equal(p1._dupCiclo, undefined);
+    assert.equal(p2._dupCiclo, '2026-11-07');
+});
+
+test('só a ocorrência do OUTRO mês é movida; as do mesmo mês da primeira ficam', () => {
+    const c = carregaMarcacao();
+    const a = { id: 1, nome: 'Academia', categ: 'Saúde', data: '2026-10-08', v: -100, freq: 'Quinzenal' };
+    const b = { id: 2, nome: 'Academia', categ: 'Saúde', data: '2026-10-22', v: -100, freq: 'Quinzenal' };
+    const d = { id: 3, nome: 'Academia', categ: 'Saúde', data: '2026-11-05', v: -100, freq: 'Quinzenal' };
+    c.marcaOcorrenciasDuplicadasNoCiclo([a, b, d], { ini: '2026-11-07' });
+    assert.equal(a._dupCiclo, undefined);
+    assert.equal(b._dupCiclo, undefined);   // mesmo mês da 1ª: antes era movida junto
+    assert.equal(d._dupCiclo, '2026-11-07');
+});
+
+test('consolidação automática (silenciosa) não move data; só o clique move', () => {
+    const fonte = fs.readFileSync('js/form.js', 'utf8');
+    assert.match(fonte, /const \{ corrigidos, log: logDatas \} = silencioso \? \{ corrigidos: 0, log: \[\] \}\s*\n\s*: await corrigeRecorrenciasDuplicadasNoIntervalo\(Estado\.idxHoje, ultimoCicloAntesDaCorrecao\);/);
+    const regrasDoc = fs.readFileSync('docs/REGRAS.md', 'utf8');
+    assert.match(regrasDoc, /Só linha de série \(com Frequência ou `recorrencia_id`\) entra/);
+    assert.match(regrasDoc, /a consolidação automática de 15 minutos não move datas/);
 });

@@ -119,3 +119,35 @@ test('antecipa sem vínculo em ordem cronológica e nunca abate além do saldo',
     ]);
     assert.deepEqual({ ...abatido }, { 0: 100, 1: 50 });
 });
+
+test('dois vencimentos do mesmo cartão no mesmo ciclo: a antecipação abate a fatura que aponta', () => {
+    // Ciclo de 07/10 a 14/11 contém duas faturas do Nubank (12/10 e 12/11). Antes, sem um
+    // vencimento único, nada era abatido e o pagamento contava duas vezes no saldo.
+    const estado = { ciclos: [{ ini: '2026-10-07', fat: '2026-11-14' }], faturas: [{ vencimento: '2026-10-12' }, { vencimento: '2026-11-12' }] };
+    const r = regrasCompartilhadas(estado);
+    const abatido = r.alocacaoAntecipacoes([
+        { cred: true, periodoIdx: 0, v: -300, fatura: '2026-10-12' },
+        { cred: true, periodoIdx: 0, v: -200, fatura: '2026-11-12' },
+        { cred: false, categ: 'Antecipação Fatura', data: '2026-10-20', v: -150, fatura: '2026-11-12' },
+        { cred: false, categ: 'Antecipação Fatura', data: '2026-10-21', v: -400, fatura: '2026-10-12' },
+    ]);
+    // 150 na de 12/11 (cabe) + 300 na de 12/10 (limitado ao saldo dela, nunca transborda).
+    assert.equal(abatido[0], 450);
+});
+
+test('linha de débito com fatura esquecida não atrapalha o abatimento da antecipação', () => {
+    // A data esquecida (25/10, dia de Nubank) entra em Estado.faturas e deixava o ciclo com
+    // dois vencimentos do Nubank.
+    const estado = { ciclos: [{ ini: '2026-10-07', fat: '2026-11-06' }], faturas: [{ vencimento: '2026-10-12' }, { vencimento: '2026-10-25' }] };
+    const r = regrasCompartilhadas(estado);
+    const abatido = r.alocacaoAntecipacoes([
+        { cred: true, periodoIdx: 0, v: -500, fatura: '2026-10-12' },
+        { cred: false, nome: 'Água', categ: 'Casa', data: '2026-10-10', v: -80, fatura: '2026-10-25' },
+        { cred: false, categ: 'Antecipação Fatura', data: '2026-10-09', v: -500, fatura: '2026-10-12' },
+    ]);
+    assert.equal(abatido[0], 500);
+});
+
+test('regra do abatimento por vencimento documentada', () => {
+    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /A antecipação com `fatura` abate exatamente a fatura daquele vencimento/);
+});

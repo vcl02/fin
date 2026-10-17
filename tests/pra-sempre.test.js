@@ -51,7 +51,7 @@ test('lote real grava pra_sempre em todas as parcelas só quando a coluna existe
         const inserts = [];
         const ctx = {
             Estado: { lancamentos: [], ciclos: [], temPraSempre }, ehAntecipacaoFatura: () => false, dataISO: v => v,
-            dataDaOcorrencia: (d, p) => `2026-1${p}-15`, periodoDaFatura: () => -1, periodoDoDebito: () => -1,
+            dataDaOcorrencia: (d, p) => `2026-1${p}-15`, periodoDaFatura: () => -1, periodoDoLancamento: () => null, ehCategoriaInvestimento: () => false, periodoDoDebito: () => -1,
             inserirLancamentos: async payloads => { inserts.push(...payloads); return payloads.map((p, i) => ({ ...p, id: 10 + i })); },
             proximaRecorrencia: async () => 80, atualizarLancamentos: async () => {},
         };

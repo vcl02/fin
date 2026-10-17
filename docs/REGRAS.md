@@ -211,13 +211,14 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Recorrência duplicada no mesmo ciclo
 
-- Quando a mesma recorrência (nome+categoria, igual à identidade usada em Comparar) tem 2+ lançamentos reais no MESMO ciclo com datas de meses-calendário diferentes — sintoma de a janela do ciclo ter cortado o mês ao meio, não uma despesa nova (ex.: Seguro Residencial perto do dia 5, com o ciclo terminando logo depois) — a tabela Débito marca a(s) ocorrência(s) mais recente(s) do grupo (a mais antiga fica como está) com um botão "↷" ao lado da Data (mesma cor do asterisco `avisoDup` de Comparar).
+- Quando a mesma recorrência (nome+categoria, igual à identidade usada em Comparar) tem 2+ lançamentos reais no MESMO ciclo com datas de meses-calendário diferentes — sintoma de a janela do ciclo ter cortado o mês ao meio, não uma despesa nova (ex.: Seguro Residencial perto do dia 5, com o ciclo terminando logo depois) — a tabela Débito marca com um botão "↷" ao lado da Data (mesma cor do asterisco `avisoDup` de Comparar) só a(s) ocorrência(s) cujo mês é diferente do da mais antiga do grupo; a mais antiga e as do mesmo mês dela ficam como estão.
+  Só linha de série (com Frequência ou `recorrencia_id`) entra: compra avulsa repetida (ex.: Mercado em 15/10 e 03/11 no mesmo ciclo) é gasto de verdade nas duas datas e nunca é movida.
   Antecipação/pagamento de fatura nunca entra nessa detecção: é transferência, não recorrência, e duas antecipações de verdade no mesmo ciclo são dois pagamentos distintos por si só, nunca a mesma conta cortada pela janela do ciclo — mover a data mudaria quando o dinheiro de verdade saiu da conta.
   O botão "↷" e o lote de **Consolidar tudo** também nunca marcam um lançamento de valor positivo (entrada): é recebimento, não conta recorrente, então nunca é "a mesma conta cortada pela janela do ciclo".
   Essa exclusão de entrada é exclusiva do botão/lote; o asterisco `avisoDup` de Comparar, que usa a mesma detecção de meses duplicados por outro motivo, não é afetado.
   Um clique, com confirmação, move a `data` dessa linha pro 1º dia do PRÓXIMO ciclo (`UPDATE` real, pedindo confirmação porque altera dado); some sozinho se não houver próximo ciclo cadastrado ainda (não há pra onde mover) ou, depois do PATCH, porque deixou de haver duplicidade.
   Só pra linha real fora da conta restrita, mesma regra de edição das demais colunas.
-  **Consolidar tudo** (ver **Ciclos, saldo e gráficos**) aplica essa mesma correção em lote, em todos os ciclos varridos, sem confirmação por linha.
+  **Consolidar tudo** pelo clique no Recarregar (ver **Ciclos, saldo e gráficos**) aplica essa mesma correção em lote, em todos os ciclos varridos, sem confirmação por linha; a consolidação automática de 15 minutos não move datas.
 
 ### Excluir várias linhas
 
@@ -346,6 +347,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações dos cartões.
 - A categoria `Isabella` identifica esses lançamentos; ela não muda a interface conforme o e-mail da sessão.
 - Antecipações de fatura abatem somente faturas do próprio cartão (o da `fatura` que elas apontam; sem `fatura`, Nubank), da mais antiga para a mais nova: antecipação do Mercado Pago maior que a fatura dele não transborda para o Nubank, e vice-versa.
+  A antecipação com `fatura` abate exatamente a fatura daquele vencimento, cujo saldo é a soma das compras de crédito com esse mesmo vencimento — mesmo quando o ciclo tem dois vencimentos do mesmo cartão (ciclo longo) ou uma linha de débito ficou com uma `fatura` esquecida; antes, nesses casos, nada era abatido e o pagamento contava duas vezes no saldo.
+  Abate no máximo o saldo daquela fatura, nunca transborda.
 
 ## Aportes e resgates
 
@@ -374,13 +377,13 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Ela só acontece com a tela logada e visível, sem modal aberto, sem campo em edição, sem linha selecionada, sem simulação (apagaria os lançamentos simulados) e sem outra carga ou consolidação em andamento; ocupada, a tela tenta de novo a cada 30 segundos.
   É silenciosa: não mostra toast nem toca som (nem "Carga lenta", nem erro); se falhar, a tela continua com os dados que já tinha, em vez de virar a mensagem de erro, e a próxima verificação tenta de novo.
   O clique no botão Recarregar continua avisando normalmente.
-- **Consolidação automática:** a cada 15 minutos (contados da última consolidação, automática ou pelo botão Recarregar; a primeira vem 15 minutos depois de abrir a tela), roda sozinho o **Consolidar tudo** — recarrega do banco e materializa/consolida Aporte sugerido/Resgate necessário e as datas de recorrência duplicada, do ciclo atual em diante —, nas mesmas condições de tela livre da recarga automática, e nunca na conta restrita.
+- **Consolidação automática:** a cada 15 minutos (contados da última consolidação, automática ou pelo botão Recarregar; a primeira vem 15 minutos depois de abrir a tela), roda sozinho o **Consolidar tudo** — recarrega do banco e materializa/consolida Aporte sugerido/Resgate necessário, do ciclo atual em diante; mover data de recorrência duplicada fica só pro clique, por ser a parte mais invasiva —, nas mesmas condições de tela livre da recarga automática, e nunca na conta restrita.
   Diferente do clique no botão, não volta ao ciclo atual nem limpa os filtros.
   É silenciosa quando não há nada a fazer; quando grava algo, mostra só um toast ("Consolidado automaticamente"), sem o modal de detalhe; uma falha fica só no console e espera o próximo intervalo.
   Quando vence, ela substitui a recarga simples daquela verificação, pois já recarrega.
 - **Consolidar tudo** (hoje parte do clique no botão verde **Recarregar** do cabeçalho) repete essa mesma ação (materializar/consolidar) em sequência, do ciclo atual até o último ciclo que tiver algum lançamento — sem precisar abrir ciclo por ciclo.
   Enquanto a varredura roda, o próprio botão fica desabilitado (`disabled`, de verdade bloqueado pro navegador — mesmo esquema visual apagado do Salvar do cadastro e do Duplicar/Editar/Excluir da barra de seleção, não só o `disabled` nativo sem estilo) e o ícone do Recarregar gira, com o title/aria-label passando a "Recarregando…" e depois "Consolidando…", pra bloquear clique duplo e deixar claro que já está processando; volta ao normal ao final, com sucesso ou falha.
-  Antes disso, ela também corrige toda recorrência duplicada nesse mesmo intervalo (mesma regra do botão "↷" ao lado da Data, ver **Ciclos, saldo e gráficos**), pra que os ajustes materializados/consolidados em seguida já reflitam as datas certas — sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira.
+  Antes disso, o clique no Recarregar também corrige toda recorrência duplicada nesse mesmo intervalo (mesma regra do botão "↷" ao lado da Data, ver **Ciclos, saldo e gráficos**), pra que os ajustes materializados/consolidados em seguida já reflitam as datas certas — sem pedir confirmação por linha, já que o clique em "Consolidar tudo" é a confirmação da varredura inteira.
   Cada ciclo é resolvido na ordem (do atual pra frente) porque materializar o ajuste de um ciclo muda o guardado disponível do próximo; ciclos sem `Aporte sugerido` nem `Resgate necessário` são pulados sem gerar nada.
   Ciclos anteriores ao atual nunca entram nessa varredura.
   Como a maioria dos ciclos varridos não fica visível na tela (só o ciclo aberto é renderizado), a conclusão sempre aparece em toast contando quantos foram materializados, quantos foram consolidados e quantas datas de recorrência duplicada foram corrigidas, ou avisando que não havia nenhum pendente — e, junto, abre sozinho um modal (`#modalConsolidarTudo`) com o mesmo resumo e uma linha por ação de verdade executada (ciclo, tipo — Aporte/Resgate materializado ou consolidado, valor; ou recorrência duplicada movida, nome, data antiga e nova), pra dar contexto do que aconteceu em ciclos que não estão na tela.

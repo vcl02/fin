@@ -208,14 +208,11 @@ async function carregarDados() {
     const diagnosticoDeDados = validarLancamentosCarregados(lancamentosCrus, ciclos);
     diagnosticoDeDados.avisos.push(...avisosDosCiclos);
     Estado.lancamentos = lancamentosCrus.map(r => {
-        const faturaRef = r.fatura;
-        const periodoIdx = !r.data && !faturaRef ? null
-            : r.cred ? periodoDaFatura(faturaRef) : periodoDoDebito(dataISO(r.data));
         const categ = normalizaCategorias(r.categ) || null;
         return {
-            ...r, categ, fatura: faturaRef ? dataISO(faturaRef) : null, v: +r.valor || 0,
-            inv: categoriasSeparadas(categ).some(categoria => /^investimento$/i.test(categoria)),
-            periodoIdx: periodoIdx != null && periodoIdx >= 0 && periodoIdx < Estado.ciclos.length ? periodoIdx : null,
+            ...r, categ, fatura: r.fatura ? dataISO(r.fatura) : null, v: +r.valor || 0,
+            inv: ehCategoriaInvestimento(categ),
+            periodoIdx: periodoDoLancamento(r),
         };
     });
     Estado.faturas = [...new Set(Estado.lancamentos.map(r => r.fatura).filter(Boolean))]

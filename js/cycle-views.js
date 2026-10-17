@@ -496,14 +496,22 @@ function marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo) {
     // Comparar também usa): entrada (valor positivo) é recebimento, nunca uma conta
     // recorrente que a janela do ciclo cortou ao meio, então nunca ganha o botão "↷" — mas
     // isso não deve mudar o desconto de falso positivo que Comparar já faz por conta própria.
-    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r) && r.v <= 0).forEach(r => {
+    // Só linha de SÉRIE (com Frequência ou recorrencia_id) pode ser movida: compra avulsa
+    // repetida (Mercado em 15/10 e 03/11 no mesmo ciclo) é gasto de verdade nas duas datas,
+    // não uma conta que a janela do ciclo cortou.
+    const ehDeSerie = r => !!r.freq || r.recorrencia_id != null;
+    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r) && r.v <= 0 && ehDeSerie(r)).forEach(r => {
         const grupo = chaveDaRecorrencia(r);
         if (!grupos.has(grupo)) return;
         (porGrupo[grupo] = porGrupo[grupo] || []).push(r);
     });
+    // Move só a ocorrência do OUTRO mês: a mais antiga fixa o mês da série naquele ciclo, e
+    // as do mesmo mês dela ficam onde estão.
     Object.values(porGrupo).forEach(linhasDoGrupo => {
         const ordenadas = [...linhasDoGrupo].sort((a, b) => timestamp(a.data) - timestamp(b.data));
-        ordenadas.slice(1).forEach(r => { r._dupCiclo = proximoCiclo.ini; });
+        const mesDaPrimeira = dataISO(ordenadas[0].data).slice(0, 7);
+        ordenadas.filter(r => dataISO(r.data).slice(0, 7) !== mesDaPrimeira)
+            .forEach(r => { r._dupCiclo = proximoCiclo.ini; });
     });
 }
 

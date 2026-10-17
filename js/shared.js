@@ -286,6 +286,20 @@ function nomeMesPeriodo(fatOuCiclo) {
     return MESES[mesAnterior - 1];
 }
 
+// Regras únicas de classificação de um lançamento — carga (carregarDados), cadastro,
+// edição, materialização e simulação usam estas duas, pra uma linha nunca mudar de ciclo
+// nem de "é investimento" ao recarregar a página.
+// Investimento: alguma das categorias (lista separada por vírgula) é exatamente
+// "Investimento" — "Investimento, Reserva" também é.
+const ehCategoriaInvestimento = categ => categoriasSeparadas(categ).some(categoria => /^investimento$/i.test(categoria));
+// Ciclo: Crédito pela fatura, Débito (inclusive antecipação) pela data; sem data nem fatura,
+// Backlog (null); fora de todos os ciclos conhecidos, também null.
+function periodoDoLancamento(r) {
+    const idx = !r.data && !r.fatura ? null
+        : r.cred ? periodoDaFatura(r.fatura) : periodoDoDebito(dataISO(r.data));
+    return idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
+}
+
 // Credito nao e' classificado pela data da compra: a fatura foi escolhida manualmente
 // e o vencimento dela determina em qual ciclo de caixa o total aparece.
 function periodoDaFatura(faturaVenc) {
@@ -320,19 +334,28 @@ function vencimentoDoCiclo(idx, cartao) {
 // antigas sem fatura continuam usando o fallback cronologico (ponteiro p na lista de
 // faturas com saldo).
 function alocacaoAntecipacoesDoCartao(linhas, cartao) {
-    // saldo devido de cada fatura, na ordem em que aparecem na tela.
-    // vencimento e' a data PK da fatura (para cruzar com r.fatura das antecipacoes novas).
+    // Saldo devido de cada fatura, do ciclo mais antigo pro mais novo e, dentro do ciclo, por
+    // vencimento. Cada fatura é somada pelas PRÓPRIAS compras (o vencimento delas), não pela
+    // lista geral de faturas do ciclo: com dois vencimentos do mesmo cartão no mesmo ciclo
+    // (ou uma linha de débito com fatura esquecida), a antecipação que aponta pra um deles
+    // ainda acha a fatura certa — antes ficava sem vencimento e não abatia nada, contando o
+    // pagamento duas vezes no saldo.
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
-        const bruto = linhas
+        const porVencimento = new Map();
+        // Compra sem fatura (o banco exige, migration 21; só dado antigo/simulado) cai no
+        // vencimento único do ciclo, como antes; com mais de um, fica sem vencimento.
+        const faturasDoCartao = faturasDoCiclo(idx, cartao);
+        const vencimentoUnico = faturasDoCartao.length === 1 ? dataISO(faturasDoCartao[0].vencimento) : null;
+        linhas
             .filter(r => r.cred && r.periodoIdx === idx && cartaoDaFatura(r.fatura) === cartao)
-            .reduce((s, r) => s + r.v, 0);
-        if (bruto < 0) {
-            // descobre qual fatura do banco corresponde a este ciclo (pode ser null se nao houver)
-            const faturasDoCartao = faturasDoCiclo(idx, cartao);
-            const vencimento = faturasDoCartao.length === 1 ? dataISO(faturasDoCartao[0].vencimento) : null;
-            faturas.push({ idx, saldo: -bruto, vencimento });
-        }
+            .forEach(r => {
+                const vencimento = r.fatura ? dataISO(r.fatura) : vencimentoUnico;
+                porVencimento.set(vencimento, (porVencimento.get(vencimento) || 0) + r.v);
+            });
+        [...porVencimento.entries()]
+            .sort(([a], [b]) => (a == null) - (b == null) || timestamp(a) - timestamp(b))
+            .forEach(([vencimento, bruto]) => { if (bruto < 0) faturas.push({ idx, saldo: -bruto, vencimento }); });
     });
 
     const antecipacoes = linhas
