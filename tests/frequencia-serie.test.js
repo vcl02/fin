@@ -1,4 +1,4 @@
-// Regressão: Frequência no cadastro gera a série da 1ª ocorrência até 31/12/2029 (Vezes
+// Regressão: Frequência no cadastro gera a série da 1ª ocorrência até 31/12/2032 (Vezes
 // fica desativado mostrando a contagem) e, no Crédito, só pede a 1ª fatura — as seguintes
 // avançam mês a mês a partir dela. Sem Frequência, Vezes volta a ser editável e cada
 // parcela escolhe sua fatura.
@@ -26,13 +26,13 @@ function regrasDaSerie() {
     return contexto.r;
 }
 
-test('a data-limite da série fica fixa em código: 31/12/2029', () => {
-    assert.match(dominio, /const DATA_LIMITE_RECORRENCIA = '2029-12-31';/);
+test('a data-limite da série fica fixa em código: 31/12/2032', () => {
+    assert.match(dominio, /const DATA_LIMITE_RECORRENCIA = '2032-12-31';/);
 });
 
 test('conta as ocorrências da 1ª data até o limite, inclusive, conforme a Frequência', () => {
     const r = regrasDaSerie();
-    assert.equal(r.ocorrenciasAteLimite('2026-10-15', 'Mensal', '2029-12-31'), 39);   // out/2026..dez/2029
+    assert.equal(r.ocorrenciasAteLimite('2026-10-15', 'Mensal', '2032-12-31'), 75);   // out/2026..dez/2032
     assert.equal(r.ocorrenciasAteLimite('2029-12-31', 'Mensal', '2029-12-31'), 1);    // o próprio limite conta
     assert.equal(r.ocorrenciasAteLimite('2029-12-01', 'Semanal', '2029-12-31'), 5);   // 01, 08, 15, 22, 29
     assert.equal(r.ocorrenciasAteLimite('2029-01-31', 'Semestral', '2029-12-31'), 2); // jan e jul
@@ -62,7 +62,7 @@ test('Frequência vem antes de Vezes no cadastro, com o "?" de ajuda abrindo um 
     assert.match(pagina, /<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
     assert.match(pagina, /<button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"\s*\n\s*aria-label="Abrir ajuda da Frequência">/);
     assert.match(pagina, /<dialog id=modalAjudaFrequencia>/);
-    assert.match(pagina, /gera uma ocorrência a cada período até 31\/12\/2029/);
+    assert.match(pagina, /gera uma ocorrência a cada período até 31\/12\/2032/);
     assert.match(formulario, /el\('ajudaFrequencia'\)\.onclick = \(\) => el\('modalAjudaFrequencia'\)\.showModal\(\);/);
     assert.match(formulario, /el\('fechaAjudaFrequencia'\)\.onclick = \(\) => el\('modalAjudaFrequencia'\)\.close\(\);/);
     assert.match(formulario, /if \(e\.target == el\('modalAjudaFrequencia'\)\) el\('modalAjudaFrequencia'\)\.close\(\);/);
@@ -99,7 +99,7 @@ test('ao salvar com Frequência: exige data, conta a série até o limite e expa
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /No cadastro, \*\*Frequência\*\* vem antes de \*\*Vezes\*\*, e as duas são modos excludentes/);
-    assert.match(regras, /até `DATA_LIMITE_RECORRENCIA` \(31\/12\/2029, inclusive; em `js\/domain\.js`\)/);
+    assert.match(regras, /até `DATA_LIMITE_RECORRENCIA` \(31\/12\/2032, inclusive; em `js\/domain\.js`\)/);
     assert.match(regras, /a fatura de cada ocorrência é a 1ª fatura avançada pelo mesmo número de meses de calendário/);
     assert.match(regras, /Dividir continua valendo/);
     assert.match(regras, /Duplicar herda a Frequência do original — salvar um duplicado de algo Mensal gera a série inteira/);

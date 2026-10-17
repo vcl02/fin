@@ -31,7 +31,7 @@ test('materializar/consolidar foi extraído pra uma função única, reaproveita
 });
 
 test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca o passado', () => {
-    assert.match(formulario, /async function consolidarTudo\(botao, depoisDaCarga = \(\) => \{\}, \{ silencioso = false \} = \{\}\) \{\s*\n\s*if \(botao\.disabled\) return;\s*\n\s*Estado\.ultimaConsolidacao = Date\.now\(\);/);
+    assert.match(formulario, /async function consolidarTudo\(botao, depoisDaCarga = \(\) => \{\}, \{ silencioso = false \} = \{\}\) \{\s*\n\s*if \(botao\.disabled\) return;[\s\S]*?Estado\.gravandoAjuste = true;\s*\n\s*Estado\.ultimaConsolidacao = Date\.now\(\);/);
     // Hoje fora de qualquer ciclo: não varre nada (checado depois da recarga, que pode mudar o dia).
     assert.match(formulario, /\/\/ Hoje fora de qualquer ciclo: não há de onde partir a varredura\.\s*\n\s*if \(Estado\.idxHoje < 0\) return;/);
     assert.match(formulario, /const ultimoCicloAntesDaCorrecao = Estado\.lancamentos\.reduce\(\s*\(max, r\) => r\.periodoIdx != null && r\.periodoIdx > max \? r\.periodoIdx : max,\s*Estado\.idxHoje\s*\);/);
@@ -51,7 +51,7 @@ test('botão fica desabilitado e com texto "Consolidando…" durante a varredura
     assert.match(trecho, /etapa\('Consolidando…'\);/);
     // finally roda tanto no caminho feliz quanto no catch, então o texto e o disabled
     // voltam ao normal nos dois casos — sucesso ou falha.
-    assert.match(trecho, /\} finally \{\s*\n\s*botao\.disabled = false;\s*\n\s*botao\.classList\.remove\('carregando'\);\s*\n\s*botao\.title = tituloOriginal;\s*\n\s*botao\.setAttribute\('aria-label', rotuloOriginal\);\s*\n\s*\}/);
+    assert.match(trecho, /\} finally \{\s*\n\s*Estado\.gravandoAjuste = false;\s*\n\s*botao\.disabled = false;\s*\n\s*botao\.classList\.remove\('carregando'\);\s*\n\s*botao\.title = tituloOriginal;\s*\n\s*botao\.setAttribute\('aria-label', rotuloOriginal\);\s*\n\s*\}/);
 });
 
 test('fica visualmente apagado enquanto desabilitado, igual Duplicar/Editar/Excluir e o Salvar do cadastro — não só o cursor nativo do navegador', () => {

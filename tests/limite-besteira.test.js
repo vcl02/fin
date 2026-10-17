@@ -25,7 +25,7 @@ test('cada categoria tem seu teto fixo em código, não editável pela tela', ()
 // Extrai dadosLimiteCategoriaDoCiclo E ehGastoIsabella do arquivo real (não reescreve a
 // regra à mão) e roda num contexto isolado, com os globais de que dependem simulados.
 function carregaDadosLimiteCategoriaDoCiclo() {
-    const inicio = graficos.indexOf('const categoriaContemCompromisso');
+    const inicio = graficos.indexOf('// Base do percentual');
     const fim = graficos.indexOf('function dadosCompromissosCiclo(');
     if (inicio < 0 || fim < 0) throw Error('Não encontrou a regra de limite por categoria.');
     const contexto = {
@@ -33,6 +33,9 @@ function carregaDadosLimiteCategoriaDoCiclo() {
         ehTransferenciaFatura: r => String(r.categ || '').toLowerCase().includes('antecipação fatura'),
         categoriasSeparadas: valor => String(valor ?? '').split(',').map(c => c.trim()).filter(Boolean),
     };
+    // Mesma regra de js/shared.js: item inteiro da lista, sem acento/caixa.
+    contexto.ehCategoria = (categ, procurada) => contexto.categoriasSeparadas(categ)
+        .some(c => contexto.semAcento(c) === contexto.semAcento(procurada).trim());
     vm.createContext(contexto);
     vm.runInContext(`${graficos.slice(inicio, fim)}
 globalThis.dadosLimiteCategoriaDoCiclo = dadosLimiteCategoriaDoCiclo;
@@ -70,12 +73,16 @@ test('Besteira solo e Isabella usam cada um o próprio limite, sem misturar com 
     assert.ok(Math.abs(isabella.percentualPago - 120 / 700 * 100) < 1e-9);
 });
 
-test('um lançamento ainda taggeado com a categoria descontinuada "Besteira Isabella" conta pro teto Besteira solo (substring), não pro teto Isabella (não é o item "Isabella")', () => {
+test('a categoria descontinuada "Besteira Isabella" não conta em nenhum teto: Besteira é item inteiro, não substring', () => {
     const { dadosLimiteCategoriaDoCiclo, ehGastoIsabella } = carregaDadosLimiteCategoriaDoCiclo();
-    const linhas = [{ v: -350, categ: 'Besteira Isabella', pago: true, cred: false }];
+    const linhas = [
+        { v: -350, categ: 'Besteira Isabella', pago: true, cred: false },
+        { v: -20, categ: 'Besteiras', pago: true, cred: false },
+        { v: -30, categ: 'Lazer, besteira', pago: true, cred: false },   // item inteiro, outra caixa: conta
+    ];
     const besteira = dadosLimiteCategoriaDoCiclo(linhas, 'Besteira', 250);
     const isabella = dadosLimiteCategoriaDoCiclo(linhas, ehGastoIsabella, 700);
-    assert.equal(besteira.valorPago, 350);
+    assert.equal(besteira.valorPago, 30);
     assert.equal(isabella.valorPago, 0);
 });
 

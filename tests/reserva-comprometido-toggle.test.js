@@ -45,9 +45,11 @@ test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guard
     assert.match(trecho, /if \(modoRestrito\(\)\) return;/);
     assert.match(trecho, /const \[campo, id\] = badge\.dataset\.togFlag\.split\(':'\);/);
     assert.match(trecho, /const novoValor = !r\[campo\];/);
-    assert.match(trecho, /for \(const linha of mesmoNome\) \{/);
-    assert.match(trecho, /if \(!Estado\.simulando && !linha\._sim\) await atualizarLancamento\(linha\.id, \{ \[campo\]: novoValor \}\);/);
-    assert.match(trecho, /linha\[campo\] = novoValor;/);
+    // Simulação lida uma vez; um só PATCH (tudo ou nada) pras linhas reais; memória depois.
+    assert.match(trecho, /const simulando = Estado\.simulando;\s*\n\s*const reais = simulando \? \[\] : mesmoNome\.filter\(linha => !linha\._sim\);/);
+    assert.match(trecho, /if \(reais\.length\) await atualizarLancamentos\(reais\.map\(linha => linha\.id\), \{ \[campo\]: novoValor \}\);/);
+    assert.doesNotMatch(trecho, /for \(const linha of mesmoNome\)/);
+    assert.match(trecho, /mesmoNome\.forEach\(linha => \{ linha\[campo\] = novoValor; \}\);/);
     assert.match(trecho, /mostrarToast\('Falhou ao atualizar', err\.message\);/);
 });
 

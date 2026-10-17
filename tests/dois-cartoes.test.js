@@ -141,17 +141,17 @@ function carregaVencimentosPrevistos() {
     const fim = formulario.indexOf('\n}\n', inicio) + 3;
     const contexto = {
         CARTOES: ['nubank', 'mp'], DIA_VENCIMENTO_CARTAO: { nubank: 12, mp: 13 },
-        DATA_LIMITE_RECORRENCIA: '2029-12-31', hojeISO: () => '2026-10-16',
+        DATA_LIMITE_RECORRENCIA: '2032-12-31', hojeISO: () => '2026-10-16',
     };
     vm.createContext(contexto);
     vm.runInContext(`${formulario.slice(inicio, fim)}\nglobalThis.f = vencimentosPrevistosDosCartoes;`, contexto);
     return contexto.f;
 }
 
-test('cadastro oferece os vencimentos dos dois cartões, do mês passado até dez/2029', () => {
+test('cadastro oferece os vencimentos dos dois cartões, do mês passado até dez/2032', () => {
     const vencimentos = Array.from(carregaVencimentosPrevistos()('2026-10-16'));
     assert.deepEqual(vencimentos.slice(0, 4), ['2026-09-12', '2026-09-13', '2026-10-12', '2026-10-13']);
-    assert.deepEqual(vencimentos.slice(-2), ['2029-12-12', '2029-12-13']);
+    assert.deepEqual(vencimentos.slice(-2), ['2032-12-12', '2032-12-13']);
     // Virada de ano no mês anterior.
     assert.deepEqual(Array.from(carregaVencimentosPrevistos()('2027-01-05')).slice(0, 2), ['2026-12-12', '2026-12-13']);
     assert.match(formulario, /const faturasSet = new Set\(vencimentosPrevistosDosCartoes\(\)\);/);

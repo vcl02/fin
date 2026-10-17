@@ -33,7 +33,7 @@ function carrega(lancamentos, idxHoje = 1, ciclos = CICLOS) {
     const contexto = { Estado: estado, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);
     ['js/domain.js', 'js/shared.js', 'js/finance.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
-    const inicio = graficos.indexOf('const categoriaContemCompromisso');
+    const inicio = graficos.indexOf('// Base do percentual');
     const fim = graficos.indexOf('function dadosCompromissosCiclo(');
     vm.runInContext(graficos.slice(inicio, fim), contexto);
     vm.runInContext('globalThis.r = { previstasDoCiclo, limitesCategoriaDoCiclo, totalBaseDoCiclo, lancamentosComPrevistas, limparCachesFinanceiros };', contexto);

@@ -21,7 +21,7 @@ function regrasFinanceiras(ciclos) {
         hojeISO: () => '2026-09-26',
     };
     vm.createContext(contexto);
-    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, lancamentosPagos, resumoDebitoPago, guardadoGarantidoAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre, limiteCartaoLivreFuturo };`, contexto);
+    vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, lancamentosPagos, resumoDebitoPago, guardadoGarantidoAte, guardadoRealAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre, limiteCartaoLivreFuturo };`, contexto);
     return contexto.regras;
 }
 
@@ -171,17 +171,18 @@ test('Livre Futuro subtrai a fatura inteira exibida e o uso confirmado posterior
     assert.equal(r.limiteCartaoLivreFuturo(linhas, {}, 0, 1, 100), 3500);
 });
 
-test('garantia Nubank não depende de recorte visual e não inclui aporte sugerido', () => {
+test('garantia Nubank só com aporte/resgate pago; Liberdade usa também os abertos', () => {
     const r = regrasFinanceiras([]);
     const linhas = [
         { inv: true, pago: true, periodoIdx: 0, v: -300 },
-        { inv: true, pago: false, periodoIdx: 1, v: -500 }, // aberto ainda está na garantia
+        { inv: true, pago: false, periodoIdx: 1, v: -500 }, // materializado e aberto: ainda não está na caixinha
         { inv: true, pago: true, periodoIdx: 1, v: 100 },    // resgate reduz a garantia
         { inv: true, pago: true, periodoIdx: 2, v: -900 },   // ciclo futuro não entra
         { inv: false, periodoIdx: 1, v: -800 },               // sugestão não é aporte real
     ];
-    assert.equal(r.guardadoGarantidoAte(linhas, 1), 700);
-    assert.equal(r.limiteCartaoTotal(r.guardadoGarantidoAte(linhas, 1)), 4450);
+    assert.equal(r.guardadoGarantidoAte(linhas, 1), 200);
+    assert.equal(r.limiteCartaoTotal(r.guardadoGarantidoAte(linhas, 1)), 3950);
+    assert.equal(r.guardadoRealAte(linhas, 1), 700);
 });
 
 test('aviso "Resgatou tudo" na linha de resgate, calculada ou real', () => {

@@ -323,7 +323,7 @@ function faturasDoCiclo(idx, cartao) {
 
 function vencimentoDoCiclo(idx, cartao) {
     const fatura = faturasDoCiclo(idx, cartao)[0];
-    return fatura ? dataISO(fatura.vencimento) : dataISO(Estado.ciclos[idx]?.fat);
+    return fatura ? dataISO(fatura.vencimento) : dataDeFechamentoDoCiclo(Estado.ciclos[idx]);
 }
 
 // Distribui as antecipacoes de cada cartao pelas faturas DELE, da mais antiga pra mais nova:

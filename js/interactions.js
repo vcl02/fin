@@ -282,12 +282,17 @@ const indiceDoAjuste = chave => {
 
 // Uma sugestao so' pode consolidar com um movimento real de Aporte/Resgate do MESMO
 // ciclo. Investimentos com outro nome continuam independentes: nunca devem ser alterados
-// pela acao de materializar.
+// pela acao de materializar. So' entra linha EM ABERTO (pago = false): um Aporte/Resgate ja
+// pago e' dinheiro que de fato se moveu, e a consolidacao (inclusive a automatica de 15 min)
+// nunca reescreve o valor dele — com so' movimento pago no ciclo, o ajuste vira uma linha
+// nova aberta. Entre as abertas, prefere a da data de fechamento (a que o app cria).
 function movimentoAporteOuResgateDoCiclo(idx) {
+    const fechamento = dataDeFechamentoDoCiclo(Estado.ciclos[idx]);
+    const naDataDoApp = r => dataISO(r.data) === fechamento ? 0 : 1;
     return Estado.lancamentos
-        .filter(r => ehLinhaReal(r) && !r.cred && r.inv && r.periodoIdx === idx)
+        .filter(r => ehLinhaReal(r) && !r.cred && !r.pago && r.inv && r.periodoIdx === idx)
         .filter(r => /^(aporte|resgate)\b/.test(semAcento(String(r.nome || '')).trim()))
-        .sort((a, b) => timestamp(a.data) - timestamp(b.data) || (+a.id - +b.id))[0] || null;
+        .sort((a, b) => naDataDoApp(a) - naDataDoApp(b) || timestamp(a.data) - timestamp(b.data) || (+a.id - +b.id))[0] || null;
 }
 
 function valorArredondado(valor) {
@@ -436,8 +441,7 @@ el('out').addEventListener('click', async e => {
 // "pra_sempre:123".
 // Reserva/Comprometido classificam o COMPROMISSO (identificado pelo nome), não só esta
 // ocorrência — alternar um propaga pra TODOS os lançamentos com o mesmo nome (mesma
-// comparação sem acento/caixa de chaveDaRecorrencia), reais ou simulados, sequencial igual
-// salvaLancamentoParceladoNoBanco, pra preservar ordem e simplificar erro no meio do caminho.
+// comparação sem acento/caixa de chaveDaRecorrencia), reais ou simulados.
 const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-flag]');
@@ -462,10 +466,13 @@ el('out').addEventListener('click', async e => {
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
 
     try {
-        for (const linha of mesmoNome) {
-            if (!Estado.simulando && !linha._sim) await atualizarLancamento(linha.id, { [campo]: novoValor });
-            linha[campo] = novoValor;
-        }
+        // Um só PATCH (id=in.(...)) pra todas as linhas reais: tudo ou nada, sem metade do
+        // compromisso marcada se a rede cair no meio. A simulação é lida uma vez, antes de
+        // gravar — ligá-la durante o PATCH não pode deixar parte gravada e parte só na memória.
+        const simulando = Estado.simulando;
+        const reais = simulando ? [] : mesmoNome.filter(linha => !linha._sim);
+        if (reais.length) await atualizarLancamentos(reais.map(linha => linha.id), { [campo]: novoValor });
+        mesmoNome.forEach(linha => { linha[campo] = novoValor; });
         desenhar();
         if (mesmoNome.length > 1) {
             mostrarToast('Atualizado', `${ROTULO_FLAG_TOGGLE[campo]} ${novoValor ? 'marcado' : 'desmarcado'} em ${mesmoNome.length} lançamentos "${r.nome}".`);

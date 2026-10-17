@@ -112,7 +112,7 @@ function previstasDoCiclo(idx, base) {
             // freq e comprometido só aparecem nas colunas (é uma previsão de todo ciclo); o
             // indicador Comprometido lê só lançamentos reais. pago = false é regra: não ocupa
             // o limite de Hoje. Ids distintos na coluna ID: Besteira -6, Isabella -7.
-            data: dataISO(ciclo.fat), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, comprometido: true, cred: true, fatura,
+            data: dataDeFechamentoDoCiclo(ciclo), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, comprometido: true, cred: true, fatura,
             id: c.chave === 'besteira' ? -6 : -7, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx + 1,
         };
     }).filter(Boolean);
@@ -218,6 +218,8 @@ function limparCachesFinanceiros() {
 // fatura e aporte/resgate sintéticos dependem da mesma base, este contexto local os refaz
 // junto com os eventos reais; reutilizar o cache da conta inteira misturaria o recorte com
 // os valores não filtrados. Os demais totais da tela continuam usando a conta inteira.
+// O guardado também é o do recorte: soma os ajustes DESTE contexto, nunca os da conta inteira
+// (ajusteDoCiclo global), senão o limite do Resgate saía de uma base e o saldo de outra.
 function ajusteDoCicloParaSaldoDiario(base, abat) {
     const saldos = {};
     const ajustes = {};
@@ -228,8 +230,8 @@ function ajusteDoCicloParaSaldoDiario(base, abat) {
             .reduce((s, r) => s - r.v, 0);
         let hipotetico = 0;
         for (let i = 0; i <= idx; i++) {
-            const ajuste = ajusteDoCiclo(i);
-            if (ajuste) hipotetico -= ajuste.v;
+            saldoDoCiclo(i);   // preenche ajustes[i] (ciclos anteriores já vêm prontos da cascata)
+            if (ajustes[i]) hipotetico -= ajustes[i].v;
         }
         return reais + hipotetico;
     };
@@ -265,11 +267,12 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
     });
 
     // um evento de Resgate/Aporte por ciclo, na data de fechamento (usa o cache — nunca
-    // recalcula alocacaoAntecipacoes por periodo)
+    // recalcula alocacaoAntecipacoes por periodo). O ciclo aberto usa o fechamento provisório
+    // (dataDeFechamentoDoCiclo), nunca 31/12/9999 — senão o ajuste dele caía fora de qualquer dia.
     const ajustes = [];
     Estado.ciclos.forEach((per, idx) => {
         const ajuste = ajusteDoCiclo(idx);
-        if (ajuste) ajustes.push({ data: dataISO(per.fat), v: ajuste.v });
+        if (ajuste) ajustes.push({ data: dataDeFechamentoDoCiclo(per), v: ajuste.v });
     });
 
     const eventos = [
@@ -369,10 +372,19 @@ function resumoDebitoPago(linhas) {
     };
 }
 
-// O limite garantido só pode usar dinheiro realmente registrado como investimento: aportes
-// negativos aumentam a garantia e resgates positivos a reduzem. Recebe a lista inteira para
-// não obedecer ao filtro visual Pago (nem contar Aporte sugerido, que é linha sintética).
+// O limite garantido só pode usar dinheiro realmente aplicado: aportes negativos aumentam a
+// garantia e resgates positivos a reduzem, mas só os já PAGOS — o Aporte que o Consolidar
+// materializa nasce aberto, e a Nubank só garante o que de fato está na caixinha. Recebe a
+// lista inteira para não obedecer a recortes visuais (nem contar Aporte sugerido, sintético).
 function guardadoGarantidoAte(linhas, idx) {
+    return linhas
+        .filter(r => r.inv && r.pago && r.periodoIdx != null && r.periodoIdx <= idx)
+        .reduce((soma, r) => soma - (+r.v || 0), 0);
+}
+
+// Patrimônio guardado até o ciclo, inclusive aportes/resgates REAIS ainda abertos (planejados):
+// base da Liberdade financeira, que projeta ciclos futuros. Sem Aporte sugerido (sintético).
+function guardadoRealAte(linhas, idx) {
     return linhas
         .filter(r => r.inv && r.periodoIdx != null && r.periodoIdx <= idx)
         .reduce((soma, r) => soma - (+r.v || 0), 0);

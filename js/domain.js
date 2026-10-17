@@ -44,7 +44,7 @@ const CATEGORIA_INVESTIMENTO = 'Investimento';
 const CATEGORIA_EXCLUIDA_GRAFICO_PADRAO = 'Contabilidade';
 // Cadastro com Frequência gera a série inteira de uma vez, da 1ª ocorrência até esta data
 // (inclusive) — mesmo horizonte dos ciclos já cadastrados. Fixo em código de propósito.
-const DATA_LIMITE_RECORRENCIA = '2029-12-31';
+const DATA_LIMITE_RECORRENCIA = '2032-12-31';
 // Teto mensal de "besteira" SOZINHO (cafés, milkshakes, lanches/doces comendo só, Uber não
 // essencial) — mesmo capricho, mas feito sozinho, por isso desconta daqui e não do teto da
 // Isabella (LIMITE_ISABELLA). Quando é junto com ela, vira "Lazer"+"Isabella" (ver o guia de

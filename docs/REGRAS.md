@@ -102,6 +102,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Mais de um `!` encadeia exclusões em AND — `!Besteira!Assinatura` mostra só as linhas que não contêm nem uma nem a outra.
   `!` sozinho, ou com pedaços vazios (ex.: `!Besteira!`), não filtra por esse pedaço vazio; Frequência mantém a busca literal normal.
   Somente na tabela Débito, a exclusão de Categoria também recalcula o saldo cinza ao fim de cada dia — inclusive fatura e ajuste sintéticos derivados dessa base — sem alterar títulos, gráficos ou outros cálculos financeiros.
+  Esse recorte parte da mesma base do saldo sem recorte (reais + Besteira/Isabella previstas) e calcula o guardado e o Aporte/Resgate de cada ciclo dentro do próprio recorte: um termo que não tira nenhuma linha deixa o saldo cinza igual ao sem filtro.
 - Em qualquer coluna de texto, `|` funciona como OU: `Assinatura|Isabella` mostra linhas cuja célula contenha qualquer um dos termos, sem diferenciar caixa ou acento.
   `|` isolado ou com pedaços vazios (ex.: `Isabella|`) não filtra por esse pedaço vazio, igual ao `!` isolado de Categoria.
 - Em qualquer coluna de texto (inclusive Categoria, Frequência, Obs e Canal), digitar exatamente `vazio` (sem diferenciar caixa ou acento, sozinho no campo — não combina com `!` nem `|`) mostra só as linhas sem nada preenchido naquela coluna: mesmo critério da célula "—" (`ehVazioTextual`), que também trata a string literal `null`/`undefined`/`n/a` gravada por engano como vazia.
@@ -132,7 +133,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No mobile, o modal ocupa a tela inteira e o formulário reparte a altura que sobra igualmente entre os campos, com Salvar encostado no fim do modal (só a margem interna) em vez de um vão vazio embaixo; a mensagem vazia sai do fluxo pra não ganhar uma fatia dessa sobra.
   Se o conteúdo não couber (tela baixa), o formulário só rola, sem espaço extra.
 - No cadastro, **Frequência** vem antes de **Vezes**, e as duas são modos excludentes.
-  **Com Frequência** (Mensal, Semanal…), Vezes fica desativado mostrando a contagem da série (ex.: "39x até 2029"; sem Data, "Escolha a data"): a pessoa informa só a 1ª ocorrência (a Data, obrigatória nesse modo, e no Crédito/antecipação só a 1ª fatura) e o cadastro gera uma ocorrência a cada período, da 1ª data até `DATA_LIMITE_RECORRENCIA` (31/12/2029, inclusive; em `js/domain.js`) — a 1ª sempre é gravada, mesmo se já passar do limite.
+  **Com Frequência** (Mensal, Semanal…), Vezes fica desativado mostrando a contagem da série (ex.: "75x até 2032"; sem Data, "Escolha a data"): a pessoa informa só a 1ª ocorrência (a Data, obrigatória nesse modo, e no Crédito/antecipação só a 1ª fatura) e o cadastro gera uma ocorrência a cada período, da 1ª data até `DATA_LIMITE_RECORRENCIA` (31/12/2032, inclusive; em `js/domain.js`) — a 1ª sempre é gravada, mesmo se já passar do limite.
   No Crédito, a fatura de cada ocorrência é a 1ª fatura avançada pelo mesmo número de meses de calendário entre a 1ª data e a data da ocorrência (`faturaDaOcorrencia`, sempre a partir da 1ª, mantendo o dia de vencimento com o mesmo ajuste de fim de mês das datas) — funciona mesmo pra faturas que ainda não existem no banco.
   Dividir continua valendo e com o mesmo padrão de sempre (abre marcado no Crédito, desmarcado no Débito, sempre alternável): marcado, o valor digitado é dividido entre todas as ocorrências da série; desmarcado, se repete em cada uma.
   Frequência, Vezes, Dividir e Fatura têm posição fixa no cadastro (exceção pontual registrada em `docs/DECISOES.md`): Frequência ocupa a linha inteira, Vezes e Dividir ficam logo abaixo, e trocar Crédito ou Frequência só ativa/desativa campos, sem mudar a forma do formulário.
@@ -165,9 +166,11 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   O cabeçalho das colunas traz, no tooltip, a pergunta que decide a marca: **Reserva** — "Se eu perder o emprego, preciso continuar pagando isso?"; **Comprometido** — "Começou o mês, isso já é obrigatório pagar?" (`PERGUNTA_DA_COLUNA` em `js/tables.js`, nas tabelas Débito, Crédito e Backlog).
   Reserva/Comprometido classificam o **compromisso**, identificado pelo **nome e pela categoria juntos**, não só a ocorrência clicada: marcar ou desmarcar pela tabela propaga pra todos os lançamentos com o mesmo nome **e** a mesma categoria (sem acento/caixa; a ordem das categorias não importa — `Lazer, Isabella` = `Isabella, Lazer`), reais ou simulados, em qualquer ciclo.
   Mesmo nome com outra categoria não muda (ex.: `Uber` de `Transporte` × `Uber` de `Besteira`).
+  As linhas reais vão num único `UPDATE` (tudo ou nada: nunca metade do compromisso marcada se a rede cair), e a simulação é lida uma vez antes de gravar.
   Sem caixa de confirmação, o próprio clique já é a confirmação da varredura, igual ao "Consolidar tudo".
 - **Pra sempre** (`fin.pra_sempre`, migration 31) separa a recorrência **sem data pra acabar** (assinatura, conta de consumo, data comemorativa) da que tem fim (parcelas, financiamento, dívida).
-  Necessário porque o app gera as séries de Frequência só até `DATA_LIMITE_RECORRENCIA` (31/12/2029): sem a marca, "sem fim" e "termina em dez/2029" ficavam iguais.
+  Necessário porque o app gera as séries de Frequência só até `DATA_LIMITE_RECORRENCIA` (hoje 31/12/2032; até a migration 33, 31/12/2029): sem a marca, "sem fim" e "termina no limite" ficariam iguais.
+  Quando o limite sobe, as séries marcadas são estendidas até o novo limite por migration (ver migration 33), a partir da ocorrência mais recente de cada uma.
   Segue exatamente o padrão de Reserva/Comprometido: checkbox próprio no cadastro (ícone de infinito, **desmarcado** por padrão), herdado por Editar/Duplicar, gravado em todas as ocorrências da série cadastrada; coluna própria nas tabelas Débito, Crédito e Backlog, que mostra `Pra sempre` em **azul** quando marcado e "—" quando não, clicável com a mesma propagação por **nome e categoria juntos**; filtro por clique; tooltip do cabeçalho "Isso se repete sem data pra acabar?".
   A conta restrita não vê a coluna, e linha calculada ou simulada só lê, como nas outras marcas.
   Enquanto o banco não tem a coluna (migration 31 não aplicada), o app não mostra a coluna nem o checkbox e não envia o campo — cadastro e toggle continuam funcionando.
@@ -269,7 +272,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No cadastro e no Duplicar a fatura fica presa à data: trocar a Data — digitando, no calendário ou pelo botão **Hoje** — refaz todas as faturas pelo mês seguinte, inclusive uma escolhida à mão (só o cartão dela é mantido); depois de acertar a data, qualquer seletor continua editável.
   Duplicar não copia a fatura do original: começa pela do mês seguinte à data, no Nubank, como um cadastro novo.
   Editar é a mesma linha: a fatura gravada nunca muda sozinha.
-  O seletor lista as faturas que já existem nos lançamentos mais os vencimentos previstos dos dois cartões (dia 12 e dia 13), do mês passado até dezembro de 2029, cada uma com o nome do cartão (ex.: "13/11/2026 · Mercado Pago") — sem isso a 1ª compra num cartão ou mês ainda vazio não teria fatura pra escolher.
+  O seletor lista as faturas que já existem nos lançamentos mais os vencimentos previstos dos dois cartões (dia 12 e dia 13), do mês passado até dezembro de 2032, cada uma com o nome do cartão (ex.: "13/11/2026 · Mercado Pago") — sem isso a 1ª compra num cartão ou mês ainda vazio não teria fatura pra escolher.
 - `periodos` não é lida pela aplicação; a tabela já foi removida do banco (`migrations/07-drop-periodo.sql`).
   Os ciclos são as linhas de `fin_ciclo` (ver abaixo).
 
@@ -313,7 +316,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - O total no título dessa prévia de Crédito usa a mesma base e os mesmos abatimentos por antecipação da linha dinâmica da fatura; a tabela abaixo continua detalhando as compras brutas.
   Cada cartão tem o próprio limite livre, calculado só com as próprias compras e antecipações; o Mercado Pago só aparece no título depois da 1ª compra nele (antes disso o título fica igual ao de um cartão só) e, com dois cartões, cada faixa começa pelo nome do cartão.
   O alerta de limite acende se qualquer um dos dois estourar.
-  O limite livre de cada cartão em **Hoje** retrata o cartão real: crédito com `pago = false` é projeção e não ocupa limite; crédito com `pago = true` ocupa; antecipação alocada à mesma fatura libera somente o que ela abate, até zero.
+  O limite livre de cada cartão em **Hoje** retrata o cartão real: crédito com `pago = false` é projeção e não ocupa limite; crédito com `pago = true` ocupa; antecipação **já paga** alocada à mesma fatura libera somente o que ela abate, até zero; antecipação em aberto ainda não saiu da conta e não libera nada em Hoje (mesma base de pago do resto de Hoje), só em Futuro.
   Em **Futuro**, a fatura exibida inteira (paga e aberta, líquida das antecipações) é subtraída do teto; faturas anteriores são tratadas como quitadas e compras confirmadas de faturas posteriores também continuam consumindo limite.
   Portanto, o Livre Futuro é `Total − fatura exibida − uso confirmado posterior`; antecipação acima da fatura não cria limite extra.
 - `LIMITE_CARTAO` é o limite contratado-base do Nubank, inicialmente **R$ 3.350,00** quando este navegador ainda não possui uma preferência salva.
@@ -322,8 +325,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   A garantia fica ao lado como **Garantido**, sem um rótulo Total separado ou parênteses.
   No ciclo atual ela é exata; em qualquer ciclo passado ou futuro é arredondada visualmente para baixo à centena completa (R$ 1.344,25 aparece como R$ 1.300,00).
   Esse arredondamento não altera teto nem Livre, que usam a garantia exata.
-  Aportes e resgates reais de `Investimento` até o ciclo definem essa garantia, independente de recortes visuais.
-  `Aporte sugerido` não é dinheiro aplicado e não entra nela; resgate reduz a garantia.
+  Aportes e resgates reais de `Investimento` **já pagos** até o ciclo definem essa garantia, independente de recortes visuais.
+  `Aporte sugerido` não é dinheiro aplicado e não entra nela, nem o Aporte materializado ainda em aberto (a Nubank só garante o que está na caixinha); resgate pago reduz a garantia.
+  A Liberdade financeira, que projeta ciclos futuros, continua contando os aportes/resgates reais abertos (planejados).
   Garantia negativa não reduz o limite contratado.
 - O Aprovado de cada cartão e a Garantia do Nubank são definidos por ciclo, na própria linha do ciclo em `fin_ciclo` (colunas `limite_aprovado_nubank`, `limite_aprovado_mp`, `limite_garantia_nubank`), editáveis no título do Crédito daquele ciclo ou no DataGrip.
   Diferente dos tetos de Besteira/Isabella, eles herdam: o valor definido num ciclo vale para ele e para os seguintes até outro ciclo definir outro; campo vazio volta a herdar.
@@ -356,13 +360,16 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Materializar e consolidar Aporte/Resgate
 
-- Ao agir sobre um `Aporte sugerido` ou `Resgate necessário`, o aplicativo procura um lançamento real de `Aporte` ou `Resgate`, na categoria `Investimento`, dentro do mesmo ciclo.
-- Sem movimento real no ciclo, a ação materializa uma nova linha aberta.
-  Com movimento real, a ação passa a ser `Consolidar` e faz `UPDATE` nessa linha: valores do mesmo sentido somam e valores opostos se abatem.
+- Ao agir sobre um `Aporte sugerido` ou `Resgate necessário`, o aplicativo procura um lançamento real de `Aporte` ou `Resgate`, na categoria `Investimento`, **em aberto** (`pago = false`), dentro do mesmo ciclo; havendo mais de um, prefere o da data de fechamento do ciclo (o que o próprio app cria).
+  Aporte/Resgate já **pago** é dinheiro que de fato se moveu e nunca é reescrito — nem pelo clique, nem pelo Consolidar tudo, nem pela consolidação automática de 15 minutos; marcar como pago o Aporte materializado tira ele da consolidação, e um ajuste posterior vira uma linha nova.
+- Sem movimento real em aberto no ciclo, a ação materializa uma nova linha aberta.
+  Com um em aberto, a ação passa a ser `Consolidar` e faz `UPDATE` nessa linha: valores do mesmo sentido somam e valores opostos se abatem.
+- Só um Materializar/Consolidar grava por vez: enquanto o Consolidar tudo (clique ou automático) roda, o clique numa linha avisa "Há uma consolidação em andamento" e não grava; enquanto um clique grava, o Consolidar tudo pelo botão avisa e o automático espera o próximo intervalo — senão os dois leriam "sem Aporte no ciclo" e cada um inseriria o seu.
+  A trava vale dentro da mesma aba; duas abas ou aparelhos ao mesmo tempo ainda podem duplicar (a carga antes de consolidar reduz essa janela).
   Se houver inversão de sinal, o nome passa a refletir o movimento que restou.
 - Se o abatimento zerar o valor, a linha existente é mantida com valor zero; a ação não exclui lançamentos automaticamente.
 - Aporte/Resgate é lançado na data de fechamento do ciclo.
-  O último ciclo, aberto (fim vazio em `fin_ciclo`), usa um fechamento provisório — a véspera do mesmo dia do mês seguinte ao início (início 05/10 → 04/11) —, nunca a data técnica 31/12/9999; a linha calculada de Aporte sugerido/Resgate necessário mostra a mesma data.
+  O último ciclo, aberto (fim vazio em `fin_ciclo`), usa um fechamento provisório — a véspera do mesmo dia do mês seguinte ao início (início 05/10 → 04/11) —, nunca a data técnica 31/12/9999; a linha calculada de Aporte sugerido/Resgate necessário, o subtítulo "início a fim" do Débito e de Comparar, Besteira/Isabella previstas, o vencimento de reserva de um ciclo sem fatura, o saldo por dia e o detalhe do gráfico de evolução usam a mesma data.
 - O **guardado nunca fica negativo**.
   O `Resgate necessário` de um ciclo nunca passa do que havia guardado (o déficit que sobrar fica negativo no saldo do ciclo).
   Se os resgates **reais** do ciclo já levaram mais do que havia guardado, o ajuste do ciclo passa a ser um `Resgate necessário` **negativo**, que, ao materializar/consolidar (inclusive pelo Consolidar tudo), **diminui** o Resgate real até o guardado ficar exatamente zerado; se a sobra do ciclo for maior que esse rombo, vira um `Aporte sugerido` comum, que já o cobre.
@@ -374,7 +381,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Várias gravações seguidas viram uma só carga; se o próprio fluxo já recarregou depois de gravar, não repete.
   Espera a tela ficar livre — nenhum campo em edição, nenhum modal aberto, nenhuma carga ou Consolidar em andamento — pra não apagar o que está sendo digitado.
   Gravação sem resposta do banco (pode ter salvado) também recarrega, pra mostrar se entrou.
-  Na simulação e na conta restrita nada é gravado, então nada recarrega por isso.
+  Na simulação e na conta restrita nada é gravado, então nada recarrega por isso; uma gravação real que termina depois de ligar a simulação espera, porque a carga apagaria os lançamentos simulados — desligar a simulação já recarrega.
 - **Recarga silenciosa** (automática de 5 min, após gravar, consolidação de 15 min) nunca redesenha por cima de uma célula da tabela em edição: os dados novos entram na memória e a tela espera o campo perder o foco pra redesenhar; se a própria edição já redesenhar ao confirmar, não redesenha de novo. Campo fora da tabela (ex.: cadastro) não segura o redesenho, e o clique no Recarregar redesenha na hora.
 - Recarga automática: 5 minutos depois da última carga bem-sucedida, a tela busca os dados no banco de novo (só a carga — sem voltar ao ciclo atual, limpar filtros nem consolidar, que são só do clique no botão Recarregar), pra mostrar o que mudou em outro aparelho ou no DataGrip.
   Ela só acontece com a tela logada e visível, sem modal aberto, sem campo em edição, sem linha selecionada, sem simulação (apagaria os lançamentos simulados) e sem outra carga ou consolidação em andamento; ocupada, a tela tenta de novo a cada 30 segundos.
@@ -415,6 +422,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Acima do teto, o percentual passa a ser o quanto ultrapassou (127% do teto → 27%): `Isabella 27% Ultrapassado · R$ 13,41 Acima dos R$ 50,00`; sem teto (zero), o percentual fica `—`.
   Hoje existem dois indicadores, cada um com seu próprio teto fixo em código (`js/domain.js`, não editável pela tela): `Besteira` (cafés, milkshakes, lanches/doces, Uber não essencial — feitos **sozinho**) contra `LIMITE_BESTEIRA`, R$ 250; e o rótulo `Isabella` contra `LIMITE_ISABELLA`, R$ 700 (`ehGastoIsabella` em `js/charts.js`).
   A categoria `Besteira Isabella` (antigo par do `Besteira` solo) foi descontinuada e substituída por `Lazer`+`Isabella`; não há mais rastro dela em código — um lançamento antigo ainda taggeado assim precisa ser corrigido pela edição inline de Categoria pra voltar a contar em algum teto.
+  `Besteira` também é comparada como **item inteiro** da lista de categorias (sem acento/caixa): `Besteira` e `Lazer, Besteira` contam; `Besteira Isabella` ou `Besteiras` não.
   Convenção de categorização: todo lançamento com a categoria `Isabella` (comparada como item inteiro da lista de categorias) conta pro teto dela — junto com `Lazer` (sair com ela, lanches, estacionamento, ingresso, Uber compartilhado, cover…, o valor inteiro da conta, sem dividir) ou sozinha (presente, mimo).
   Ficam de fora a fatura do cartão dela — lançamento com `Fatura` na categoria ou no nome, que é a conta mensal inteira do cartão — e todo lançamento marcado **Comprometido** (parcelas e compromissos fixos, como Iphone e Senac): o teto mede o gasto variável com ela.
   `Lazer` sozinho nunca conta, pois pode ser lazer com qualquer outra pessoa; a antiga categoria `Besteira Isabella` também não (não é o item `Isabella`).
@@ -567,8 +575,21 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   A 29 exige a 28 (aborta sem alterar nada se ela faltar), não toca linha que já tem `freq` ou `recorrencia_id` (rodar de novo não muda nada) e lista ao final as séries marcadas; o histórico (migration 27) guarda o antes de cada linha.
 - `migrations/30-renumerar-recorrencias.sql` renumera `recorrencia_id` de 1 em diante, sem buracos, mantendo a ordem (o menor vira 1, o seguinte 2…) e os lotes juntos, e põe `fin_recorrencia_seq` no último número, pra o próximo lote continuar a contagem.
   Trava gravações em `fin` durante a transação (rodar com o app fechado), não muda saldo nem tela (o número é só marca de lote) e rodar de novo não muda nada; o histórico (migration 27) guarda o número antigo.
+  O `setval` dela volta a sequência de propósito e, como toda mudança de sequência no PostgreSQL, não é desfeito por `rollback`: se a transação abortar depois dele, rode o script inteiro de novo (ele recalcula o mesmo número).
 - `migrations/31-pra-sempre.sql` cria `fin.pra_sempre` (bool, não nulo, falso por padrão) e marca como pra sempre todo grupo de mesmo nome + categoria que tem Frequência e cuja última ocorrência cai em dez/2029 (o limite de geração).
   Fica de fora o que vai além (ex.: dívida até 2031), o que acaba antes, grupo sem Frequência e Investimento, antecipação/pagamento de fatura e Ajuste; rodar de novo não muda nada e o fim lista os grupos marcados.
+  Esse critério deixou de fora as séries Anual/Semestral cujo dia não cai em dezembro (aniversários, Páscoa, Contadora…), corrigidas pela migration 32.
+- `migrations/32-pra-sempre-por-frequencia.sql` marca pra sempre, pelo critério por frequência, todo grupo (mesmo nome + categoria, com Frequência, mesmas exclusões da 31) que chegou ao limite antigo: a próxima ocorrência depois da última já cairia depois de 31/12/2029 (Mensal +1 mês, Semanal +7 dias, Quinzenal +14, Semestral +6 meses, Anual +1 ano, pela Frequência da ocorrência mais recente que tem uma).
+  Só liga a marca, exige as migrations 27 e 31 (aborta sem alterar nada sem elas), rodar de novo não muda nada e o fim lista os grupos marcados.
+- `migrations/33-estender-pra-sempre-ate-2032.sql` gera, pra cada grupo pra sempre, as ocorrências que faltam depois da última até 31/12/2032.
+  O modelo é a ocorrência mais recente do grupo; as novas andam a partir da data dele pela Frequência (meses contados sempre do modelo, então dia 31 vira o último dia do mês curto e volta ao 31; Semanal/Quinzenal em 7/14 dias) e copiam nome, categoria, valor, Crédito, Frequência, lote, canal, prio, Reserva, Comprometido e pra sempre; nascem em aberto e sem obs.
+  No Crédito, a fatura anda com a data pela mesma regra do cadastro (a do modelo mais os meses de calendário entre as datas); modelo sem lote ganha o próximo número da sequência.
+  Exige as migrations 27, 28 e 31; rodar de novo não cria nada; o fim lista quantas linhas cada grupo ganhou.
+- `migrations/34-ciclos-ate-2032.sql` cria os ciclos de jan/2030 a dez/2032 em `fin_ciclo`, no padrão dos atuais: cada um começa na data do Faturamento PJ daquele mês e termina na véspera do seguinte; o ciclo aberto de hoje ganha fim na véspera do 1º novo e o de dez/2032 fica aberto.
+  Antes, o Faturamento PJ gerado que cai em sábado, domingo ou 7 de setembro passa pro próximo dia útil (outros feriados e os dias 8 avulsos ficam pro DataGrip).
+  Os cinco limites de cada ciclo novo copiam os do último ciclo existente, porque os tetos de Besteira/Isabella não herdam; rodar de novo não cria nada.
+  Rodar depois da 33: sem os Faturamento PJ de 2030 em diante, não há de onde tirar os inícios.
+- `migrations/35-antecipacao-sem-frequencia.sql` tira a Frequência das antecipações/pagamentos de fatura e Ajustes sem lote (cinco "Antecipação Fatura (Final)" de 2026 estavam como Mensal) e remove o default `'Mensal'` de `fin.freq`, que dava Frequência a toda linha inserida pelo DataGrip sem preencher a coluna; o app sempre envia `freq`, então nada muda na tela.
 
 ## Testes
 

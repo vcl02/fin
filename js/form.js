@@ -309,7 +309,7 @@ function atualizarFaturasDoFormulario(idsSelecionados = idsFaturasDoFormulario()
     const sugestoes = cred
         ? faturasSugeridasParaParcelas(el('fData').value, parcelas, freq, cartaoDaSugestao)
         : [];
-    // A sugestão sai da data, então pode cair fora da lista (ex.: depois de dez/2029).
+    // A sugestão sai da data, então pode cair fora da lista (ex.: depois de dez/2032).
     sugestoes.forEach(venc => {
         if (venc && !faturas.some(f => f.vencimento === venc)) faturas.push({ vencimento: venc, rotulo: rotuloFaturaComCartao(venc) });
     });
@@ -380,10 +380,10 @@ el('fData').addEventListener('change', () => {
     atualizarFaturasDoFormulario([], atual ? cartaoDaFatura(atual) : CARTAO_NUBANK);
 });
 // Frequência escolhida = série até DATA_LIMITE_RECORRENCIA: a quantidade sai da própria
-// data, então Vezes fica desativado mostrando essa contagem (ex.: "39x até 2029") — nunca
+// data, então Vezes fica desativado mostrando essa contagem (ex.: "75x até 2032") — nunca
 // some, pra o formulário não mudar de forma. Sem Frequência, Vezes volta ao valor que
 // tinha (compra parcelada comum). Vezes não mexe mais na Frequência — se subisse pra
-// Mensal sozinha, viraria série até 2029.
+// Mensal sozinha, viraria série até 2032.
 // Editar é sempre a própria linha: Vezes e Dividir só servem pra criar lançamentos novos
 // (ver submeteEdicaoLancamento, que ignora os dois), mas a Frequência continua editável.
 function atualizaModoFrequencia() {
@@ -768,8 +768,9 @@ modalNovo.addEventListener('close', () => {
 });
 
 // Núcleo de "materializar/consolidar" um Aporte sugerido ou Resgate necessário de um ciclo
-// `idx`: sem movimento real no ciclo, INSERT (ou push local em simulação); com movimento
-// real, UPDATE consolidando os valores. Compartilhado entre o clique de uma linha só
+// `idx`: sem movimento real EM ABERTO no ciclo, INSERT (ou push local em simulação); com
+// um aberto, UPDATE consolidando os valores — Aporte/Resgate já pago nunca é reescrito
+// (ver movimentoAporteOuResgateDoCiclo). Compartilhado entre o clique de uma linha só
 // (seldup) e "Consolidar tudo" (consolidarTudo), que repete isso ciclo a ciclo. O retorno
 // ('consolidado'/'materializado') é só pro resumo de "Consolidar tudo" contar cada tipo.
 async function materializaOuConsolidaAjuste(idx, ehAporte, categ, valorAjuste) {
@@ -830,7 +831,10 @@ el('seldup').onclick = async () => {
     if (chave && /^(sug|res):/.test(chave)) {
         const ajuste = linhaDaChaveSelecao(chave);
         if (!ajuste || (ajuste._sug == null && !ajuste._res) || el('seldup').disabled) return;
+        // Consolidar tudo em andamento (clique ou automático) já pode estar gravando este ciclo.
+        if (Estado.gravandoAjuste) { mostrarToast('Aguarde', 'Há uma consolidação em andamento.'); return; }
 
+        Estado.gravandoAjuste = true;
         el('seldup').disabled = true;
         el('seldup').textContent = 'Salvando…';
         try {
@@ -842,6 +846,7 @@ el('seldup').onclick = async () => {
         } catch (err) {
             mostrarToast('Falhou ao materializar o ajuste', err.message);
         } finally {
+            Estado.gravandoAjuste = false;
             el('seldup').disabled = false;
             const existente = /^(sug|res):/.test(chave) && movimentoAporteOuResgateDoCiclo(indiceDoAjuste(chave));
             el('seldup').textContent = /^(sug|res):/.test(chave)
@@ -896,6 +901,13 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 // gravou algo, o toast avisa, porque o banco mudou sem um clique.
 async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = false } = {}) {
     if (botao.disabled) return;
+    // Um Materializar/Consolidar de um clique ainda gravando: a varredura leria o ciclo antes
+    // dessa linha existir e inseriria outra. O clique avisa; a automática tenta no próximo ciclo.
+    if (Estado.gravandoAjuste) {
+        if (!silencioso) mostrarToast('Aguarde', 'Há um Aporte/Resgate sendo gravado.');
+        return;
+    }
+    Estado.gravandoAjuste = true;
     Estado.ultimaConsolidacao = Date.now();   // tentativa conta: falhou, espera o próximo intervalo
     // disabled bloqueia clique duplo nativamente (botão desabilitado não dispara 'click'),
     // mas sozinho pode passar despercebido — o ícone gira e o title diz a etapa, pra deixar
@@ -969,6 +981,7 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = fa
         else mostrarToast('Falhou ao consolidar tudo', err.message);
         desenhar();
     } finally {
+        Estado.gravandoAjuste = false;
         botao.disabled = false;
         botao.classList.remove('carregando');
         botao.title = tituloOriginal;
@@ -1135,7 +1148,7 @@ async function submeteNovoLancamento() {
         el('fNome').value = '';
         el('fValor').value = ''; sinalPositivo = false; atualizaSinalUI();
         el('fData').value = hojeISO();
-        // Série até 2029 nunca é o padrão: o próximo cadastro volta a ser avulso, com Vezes
+        // Série até 2032 nunca é o padrão: o próximo cadastro volta a ser avulso, com Vezes
         // de volta, pra não gerar outra série sem a pessoa pedir de novo.
         el('fFreq').value = '';
         atualizaModoFrequencia();

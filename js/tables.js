@@ -131,12 +131,14 @@ function termosExcluidosDoFiltro(termo) {
 
 // O saldo cinza ao fim do dia acompanha exclusivamente `!Categoria`: é a única busca que
 // remove movimentos da conta. A cópia protege o array carregado de qualquer mutação no render.
+// Parte da mesma base do saldo sem recorte (reais + Besteira/Isabella previstas): sem as
+// previstas, o recorte mudava o saldo mesmo quando o termo não tirava nenhuma linha.
 function baseParaSaldoDiario(idTabela) {
     const termosExcluidos = idTabela == 'db'
         ? termosExcluidosDoFiltro(estadoFiltroTexto(idTabela).categ)
         : [];
     return termosExcluidos.length
-        ? Estado.lancamentos.filter(r => !termosExcluidos.some(t => semAcento(r.categ).includes(t)))
+        ? filtrarLancamentos().filter(r => !termosExcluidos.some(t => semAcento(r.categ).includes(t)))
         : null;
 }
 

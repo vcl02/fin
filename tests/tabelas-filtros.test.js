@@ -26,6 +26,8 @@ function filtroDeTexto() {
     if (inicio < 0 || fim < 0) throw Error('Não encontrou o filtro textual da tabela.');
     const contexto = {
         Estado: { filtroTexto: {} },
+        // A base do saldo diário recortado é a mesma do sem recorte (reais + previstas).
+        filtrarLancamentos: () => [...contexto.Estado.lancamentos, ...(contexto.previstas || [])],
         estadoFiltroTexto: id => contexto.Estado.filtroTexto[id] || (contexto.Estado.filtroTexto[id] = {}),
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
         valorMascaraParaNumero: () => 0,
@@ -276,6 +278,13 @@ test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer
     // mais de um ! também exclui em AND na base do saldo diário
     c.Estado.filtroTexto.db = { categ: '!casa!isabella' };
     assert.deepEqual(Array.from(c.regras.baseParaSaldoDiario('db')).map(linha => linha.id), []);
+    // Besteira/Isabella previstas entram na base recortada como no saldo sem recorte: um
+    // termo que não tira nada deixa a base igual à de sempre.
+    c.previstas = [{ id: -6, categ: 'Besteira', v: -200 }];
+    c.Estado.filtroTexto.db = { categ: '!xyz' };
+    assert.deepEqual(Array.from(c.regras.baseParaSaldoDiario('db')).map(linha => linha.id), [1, 2, 3, 4, -6]);
+    c.Estado.filtroTexto.db = { categ: '!besteira' };
+    assert.deepEqual(Array.from(c.regras.baseParaSaldoDiario('db')).map(linha => linha.id), [1, 2, 3, 4]);
 });
 
 test('exclusão por ! de Categoria/Nome (uma ou mais) documentada em REGRAS.md', () => {

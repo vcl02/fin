@@ -1,5 +1,5 @@
 // Regressão: no cadastro, trocar Frequência não esconde Vezes — ele fica desativado
-// mostrando a contagem da série ("39x até 2029") e, ao tirar a Frequência, volta ao valor
+// mostrando a contagem da série ("75x até 2032") e, ao tirar a Frequência, volta ao valor
 // que tinha. Roda a atualizaModoFrequencia real (js/form.js) com um <select> simulado.
 // A troca ativo <-> desativado é animada e o desativado tem visual próprio, bem distinto.
 const assert = require('node:assert/strict');
@@ -49,8 +49,8 @@ function carregaModoFrequencia({ freq, data, editando }) {
         el: id => campos[id],
         modalNovo: { dataset: editando ? { editandoId: '7' } : {} },
         Option: Opcao,
-        DATA_LIMITE_RECORRENCIA: '2029-12-31',
-        ocorrenciasAteLimite: () => 39,
+        DATA_LIMITE_RECORRENCIA: '2032-12-31',
+        ocorrenciasAteLimite: () => 75,
     };
     vm.createContext(contexto);
     vm.runInContext(`${formulario.slice(inicio, fim)}\nglobalThis.atualizaModoFrequencia = atualizaModoFrequencia;`, contexto);
@@ -64,7 +64,7 @@ test('com Frequência, Vezes continua visível, desativado, mostrando a contagem
     assert.equal(campos.parcelasLinha.hidden, false);
     assert.equal(campos.fParcelas.disabled, true);
     assert.equal(campos.fParcelas.value, 'serie');
-    assert.equal(campos.fParcelas.querySelector('option[value=serie]').textContent, '39x até 2029');
+    assert.equal(campos.fParcelas.querySelector('option[value=serie]').textContent, '75x até 2032');
 });
 
 test('sem Data, a contagem pede a data em vez de um número', () => {

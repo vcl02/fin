@@ -217,7 +217,7 @@ function vCiclo() {
         const resumoDebito = `<span class=resumoTitulo>` + linhaHojeDebito + linhaFuturoDebito + `</span>`;
         return renderBloco(
             `Débito${alertaTituloDebito}`, totalDebito,
-            `${periodo.ini ? dataBR(periodo.ini) : 'inicio'} a ${dataBR(periodo.fat)}`,
+            `${periodo.ini ? dataBR(periodo.ini) : 'inicio'} a ${dataBR(dataDeFechamentoDoCiclo(periodo))}`,
             linhasDebito, 'db', true, '', resumoDebito
         );
     };
@@ -275,12 +275,15 @@ function vCiclo() {
     const exibeFuturoCredito = !cicloDebitoPassado && !resumoCreditoIgual;
     // Limite não segue os filtros da tela: é o retrato de cada cartão real. A mesma
     // alocação de antecipações define quando cada compra confirmada deixa de ocupá-lo.
-    // A garantia Nubank usa aportes/resgates REAIS de todos os status. Ela não pode seguir
-    // o filtro Pago da tela nem contar Aporte sugerido, pois ambos fariam o limite variar
-    // sem que o dinheiro efetivamente aplicado na Nubank tivesse mudado. O Mercado Pago não
-    // tem garantia. Ele só aparece no título depois da 1ª compra nele: antes disso a tela fica
-    // exatamente como era com um cartão só.
+    // A garantia Nubank usa só aportes/resgates REAIS já pagos (guardadoGarantidoAte): Aporte
+    // sugerido ou materializado em aberto faria o limite subir sem que o dinheiro estivesse
+    // aplicado na Nubank. O Mercado Pago não tem garantia. Ele só aparece no título depois da
+    // 1ª compra nele: antes disso a tela fica exatamente como era com um cartão só.
+    // Hoje libera limite só com antecipação JÁ PAGA (mesma base de "pago" do resto de Hoje);
+    // as compras continuam todas na alocação, pra antecipação abater a mesma fatura de sempre.
+    // Futuro usa todas as antecipações, pagas e abertas, como a fatura exibida.
     const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
+    const abatidoPagoDoCartao = alocacaoAntecipacoes(Estado.lancamentos.filter(r => !ehTransferenciaFatura(r) || r.pago));
     const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
     const cartoesNoTitulo = CARTOES.filter(cartao => cartao === CARTAO_NUBANK ||
         Estado.lancamentos.some(r => r.cred && cartaoDaFatura(r.fatura) === cartao));
@@ -306,7 +309,7 @@ function vCiclo() {
                 doCartao(creditosExibidosNoCiclo(pagosAteHoje, i), cartao),
                 abatimentoDoCartao(abatidoAteHoje, cartao)[idxCreditoExibido] || 0
             ),
-            limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, -Infinity, cartao, aprovado),
+            limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatimentoDoCartao(abatidoPagoDoCartao, cartao), garantidoDoCartao, -Infinity, cartao, aprovado),
             limiteLivreFuturo: limiteCartaoLivreFuturo(
                 Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao, aprovado
             ),
@@ -589,7 +592,7 @@ function vComp() {
             nome: ajuste.nome, categ: ajuste.categ, freq: '', pago: null,
             id: ajuste.tipo == 'resgate' ? -2 : -5,
             _sid: `${ajuste.tipo == 'resgate' ? 'res' : 'sug'}:${idx}`,
-            data: dataISO(per.fat), cred: false, v: ajuste.v, valor: ajuste.v, periodoIdx: idx,
+            data: dataDeFechamentoDoCiclo(per), cred: false, v: ajuste.v, valor: ajuste.v, periodoIdx: idx,
         });
     });
 
@@ -769,7 +772,7 @@ function vComp() {
     const fimPeriodo = Estado.ciclos[periodosUsados.at(-1)];
     const subtitulo =
         `${nGrupos} ${nGrupos == 1 ? nomeColuna(coluna) : nomeColuna(coluna) + 's'}` +
-        (iniPeriodo && fimPeriodo ? ` · ${dataBR(iniPeriodo.ini)} a ${dataBR(fimPeriodo.fat)}` : '');
+        (iniPeriodo && fimPeriodo ? ` · ${dataBR(iniPeriodo.ini)} a ${dataBR(dataDeFechamentoDoCiclo(fimPeriodo))}` : '');
 
     // titulo no mesmo estilo dos blocos Debito/Credito
     const tituloPeriodo = iniPeriodo && fimPeriodo

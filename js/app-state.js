@@ -50,8 +50,11 @@ const Estado = {
     // id do ciclo -> linha de fin_ciclo (escolhas vazias = padrões/herança).
     limitesPorCiclo: new Map(),
     ultimaCarga: 0, ultimaConsolidacao: 0, gravacoes: 0, gravacoesNaUltimaCarga: 0, cargasEmAndamento: 0,
-    temPraSempre: false,
-    redesenhoPendente: false,   // recarga silenciosa esperando a edição da tabela acabar   // o banco já tem fin.pra_sempre (migration 31)? Ver carregarDados.
+    temPraSempre: false,        // o banco já tem fin.pra_sempre (migration 31)? Ver carregarDados.
+    redesenhoPendente: false,   // recarga silenciosa esperando a edição da tabela acabar
+    // Materializar/Consolidar (um clique) ou Consolidar tudo (clique ou automático) gravando
+    // Aporte/Resgate: só um por vez, senão os dois leem "sem Aporte no ciclo" e cada um insere.
+    gravandoAjuste: false,
 };
 
 // Única conta que enxerga a interface restrita: só Débito, só ciclo atual e próximo, somente

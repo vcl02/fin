@@ -91,8 +91,10 @@ async function recarregarDados() {
 // próprio fluxo já recarregou depois de gravar. Várias gravações seguidas viram uma só carga.
 const ESPERA_RECARGA_APOS_GRAVACAO_MS = 300;
 let temporizadorRecargaAposGravacao = null;
+// Nunca durante a simulação: a carga apagaria os lançamentos simulados (uma gravação real que
+// terminou depois de ligar a simulação espera; desligá-la já recarrega e cobre a espera).
 const telaSemEdicaoEmCurso = () =>
-    el('app').style.display !== 'none' && !document.querySelector('dialog[open]') &&
+    el('app').style.display !== 'none' && !Estado.simulando && !document.querySelector('dialog[open]') &&
     !document.activeElement?.matches?.('input, select, textarea') &&
     !el('recarregar').disabled && !Estado.cargasEmAndamento;
 // Contador em vez de relógio: carga e gravação no mesmo milissegundo não se confundem.

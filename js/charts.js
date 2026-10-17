@@ -283,9 +283,6 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
 // Comprometido é uma leitura do orçamento, não uma mudança de dado: ele lê o bit
 // `comprometido` do lançamento (coluna própria, não mais texto em categ — ver migration 22)
 // e compara ao teto único sobre as entradas do ciclo.
-const categoriaContemCompromisso = (categ, texto) => semAcento(categ).toLowerCase()
-    .includes(semAcento(texto).toLowerCase());
-
 // Base do percentual: toda entrada positiva do ciclo, menos resgate de investimento (é o
 // próprio dinheiro guardado voltando, não renda) e transferências de fatura. O nome continua
 // `faturamento` porque é o que o ciclo ganhou; nenhum lançamento específico é procurado.
@@ -322,11 +319,11 @@ const ehGastoIsabella = r => {
 // Regra única pros indicadores de limite por categoria (Besteira, Isabella, ...): soma
 // Débito e Crédito do MESMO ciclo contra um teto fixo em código. Hoje considera só o que já
 // está pago; Futuro considera tudo (pago + aberto), porque é quanto o usuário planeja gastar
-// no ciclo, não só o que já aconteceu. `categoria` aceita um texto (substring, via
-// categoriaContemCompromisso) OU uma função que recebe a linha inteira e decide sozinha
-// (ex.: ehGastoIsabella, que combina mais de uma categoria).
+// no ciclo, não só o que já aconteceu. `categoria` aceita um texto — item INTEIRO da lista de
+// categorias (ehCategoria): "Besteira" conta, a antiga "Besteira Isabella" não — OU uma função
+// que recebe a linha inteira e decide sozinha (ex.: ehGastoIsabella, que combina mais de uma).
 function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite) {
-    const combina = typeof categoria === 'function' ? categoria : r => categoriaContemCompromisso(r.categ, categoria);
+    const combina = typeof categoria === 'function' ? categoria : r => ehCategoria(r.categ, categoria);
     const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) && combina(r));
     const valorPago = gastos.filter(r => r.pago).reduce((soma, r) => soma + -r.v, 0);
     const valorTotal = gastos.reduce((soma, r) => soma + -r.v, 0);
@@ -472,7 +469,7 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const liberdade = dadosLiberdadeFinanceira(
         Estado.lancamentos.map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) })),
         idxPeriodo,
-        guardadoGarantidoAte(Estado.lancamentos, idxPeriodo),
+        guardadoRealAte(Estado.lancamentos, idxPeriodo),
         reserva.meta
     );
     const reservaAnterior = idxPeriodo > 0 ? dadosMetaReservaEmergenciaCiclo(idxPeriodo - 1) : null;
@@ -849,7 +846,8 @@ function dadosEvolucao(de, ate) {
         if (ajuste) {
             // Pelo sinal, não pelo tipo: o Resgate corrigido pra caber no guardado é negativo.
             linhasDe[ajuste.v > 0 ? 'Resgatado' : 'Aportado'].push({
-                data: dataISO(Estado.ciclos[i].fat), nome: ajuste.nome, categ: ajuste.categ, v: ajuste.v,
+                // Fechamento provisório no ciclo aberto, nunca a data técnica 31/12/9999.
+                data: dataDeFechamentoDoCiclo(Estado.ciclos[i]), nome: ajuste.nome, categ: ajuste.categ, v: ajuste.v,
             });
         }
 
