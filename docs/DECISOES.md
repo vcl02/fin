@@ -14,7 +14,7 @@ O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newli
 
 ## Linguagem visual
 
-O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. Não existe modo especial por e-mail ou titular: `Isabella` é uma categoria comum. No mobile, `modoSimples` não exibe o bloco Crédito; as tabelas permitem somente seleção para somar valores e não oferecem edição, duplicação, exclusão nem atualização.
+O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. O mobile tem paridade total com o desktop e só ajusta o layout. A única casca restrita é a da conta da Isabella, reconhecida pelo e-mail da sessão (`modoRestrito()`, com `modoSimples()` como sinônimo), em qualquer aparelho; o detalhe fica em `docs/REGRAS.md`, seção "Conta restrita (Isabella)". `Isabella` como categoria continua sendo uma categoria comum.
 
 ## Cadastro com layout fixo
 
@@ -24,7 +24,7 @@ Exceção pontual, sem mudar a direção minimalista: no cadastro, trocar Crédi
 
 Há dois cartões detalhados: Nubank (vence dia 12, todo o histórico) e Mercado Pago (vence dia 13). A fatura é derivada de `fin.fatura`; o título e os cálculos usam o ciclo correto, enquanto a tabela Crédito é uma prévia visual do ciclo seguinte, única para os dois cartões. Regra provisória: o cartão sai do dia do vencimento da fatura (`cartaoDaFatura`), sem coluna nova nem migration — escolha do mantenedor pela simplicidade, já que os dois vencimentos são dias diferentes. Nome e categoria continuam sem identificar cartão.
 
-O limite contratado (Aprovado) de cada cartão e quanto do guardado vira garantia do Nubank são definidos por ciclo, na linha do ciclo na tabela `fin_ciclo`, herdando do ciclo anterior até outro definir outro — no banco, e não no navegador, para valerem igual em qualquer aparelho. O limite livre de cada cartão considera somente as próprias compras confirmadas (`pago = true`) e desconta as antecipações alocadas às faturas do próprio cartão. Só o Nubank acrescenta garantia: a parte escolhida do guardado positivo dos aportes/resgates reais até o ciclo (todo ele, sem escolha), nunca acima do guardado; o Mercado Pago não tem garantia. A garantia não obedece ao filtro Pago ou a outros filtros visuais e não inclui `Aporte sugerido`, pois apenas dinheiro aplicado na Nubank pode ampliar o limite. O mesmo título mostra o total utilizável (limite contratado mais garantia), para a soma não ficar implícita. Isso separa projeção de compra real e evita que antecipação libere mais do que a fatura paga.
+O limite contratado (Aprovado) de cada cartão e quanto do guardado vira garantia do Nubank são definidos por ciclo, na linha do ciclo na tabela `fin_ciclo`, herdando do ciclo anterior até outro definir outro — no banco, e não no navegador, para valerem igual em qualquer aparelho. O limite livre de cada cartão considera somente as próprias compras confirmadas (`pago = true`) e desconta as antecipações alocadas às faturas do próprio cartão. Só o Nubank acrescenta garantia: a parte escolhida do guardado positivo dos aportes/resgates reais **já pagos** até o ciclo (todo ele, sem escolha), nunca acima do guardado; o Mercado Pago não tem garantia. A garantia não obedece a filtros visuais e não inclui `Aporte sugerido` nem Aporte materializado ainda em aberto, pois apenas dinheiro aplicado na Nubank pode ampliar o limite. Pelo mesmo motivo, o Livre Hoje só libera limite com antecipação já paga. O mesmo título mostra o total utilizável (limite contratado mais garantia), para a soma não ficar implícita. Isso separa projeção de compra real e evita que antecipação libere mais do que a fatura paga.
 
 A regra pelo dia do vencimento deixa de valer se os dois cartões passarem a vencer no mesmo dia ou se entrar um terceiro cartão. Nesse caso, a evolução é uma mudança de modelo deliberada: migration nova para uma identidade explícita de cartão em crédito e antecipação, mantendo os cálculos por cartão que já existem.
 
@@ -35,6 +35,49 @@ A meta usa nove ciclos futuros e somente despesas da categoria `Reserva`. Para c
 ## Dados e banco
 
 Supabase é a fonte de dados. O frontend não executa migrations nem cria dados fictícios para testar. Migrations históricas são preservadas, e mudanças de esquema exigem uma nova migration numerada. Consultas de leitura, inclusive `SELECT` e inspeção de schema, podem apoiar diagnóstico; qualquer ação remota que altere estado exige confirmação explícita prévia do mantenedor, mesmo se o MCP expuser a ferramenta.
+
+## Migrations no DataGrip
+
+O mantenedor aplica as migrations no DataGrip, que divide o script em comandos a cada `;` sem entender blocos `$$` nem comentários. Um `;` dentro do corpo de uma função `plpgsql` ou de um `do $$ … $$` corta o comando no meio e o PostgreSQL responde `unterminated dollar-quoted string`; dali em diante a transação fica abortada (`current transaction is aborted, commands ignored until end of transaction block`) até um `rollback;`. Por isso, da migration 28 em diante:
+
+- nenhum `do $$`; laços e numeração viram SQL de conjunto (`row_number()`, `generate_series`, tabela temporária `on commit drop`);
+- função só em `language sql` com uma expressão (ex.: `select case when … then nextval(…) end`), sem `;` no corpo;
+- nenhum `;` em linha de comentário, nem como pontuação;
+- tudo entre `begin;` e `commit;`, com pré-requisitos que falham sozinhos (`select 'public.fin_historico'::regclass;`) em vez de `if` procedural;
+- idempotência: rodar de novo não muda nada (filtros como "só datas depois da última", "só liga a marca");
+- mudança de sequência (`setval`, `nextval`) não volta com `rollback` — a migration precisa produzir o mesmo número se for rodada de novo.
+
+Os testes de cada migration (`tests/recorrencia-id-lote.test.js`, `tests/pra-sempre.test.js`, `tests/migrations-2032.test.js`) verificam esse formato. Antes de entregar, a migration roda num PostgreSQL local (PGlite) partida em `;` e é comparada com uma prévia só de leitura no banco real.
+
+## Limite de geração das séries
+
+O cadastro gera séries de Frequência até `DATA_LIMITE_RECORRENCIA` (`js/domain.js`), hoje 31/12/2032. O limite é fixo em código para o banco não crescer sem fim; o que não tem data pra acabar leva a marca `pra_sempre`. Quando o limite sobe, três coisas andam juntas: o código, uma migration que estende as séries pra sempre a partir da ocorrência mais recente de cada uma (como a 33) e os ciclos em `fin_ciclo` até o novo limite (como a 34) — sem os ciclos, tudo depois do último início cai no ciclo aberto e ele soma anos de uma vez.
+
+## Histórico de problemas e correções
+
+Registro do que deu errado e do que mudou para não repetir.
+
+**Out/2026 — migrations e dados**
+
+- *Migration 28 no DataGrip:* a primeira versão criava a função em `plpgsql` e a 29 usava `do $$`; o DataGrip partiu os blocos nos `;` (`unterminated dollar-quoted string`) e a sessão ficou com a transação abortada. Foi preciso `rollback;` e baixar a versão nova. O `setval` da tentativa abortada persistiu, porque sequência não é transacional. Correção: a 28 virou função `language sql` com `case`, a 29 perdeu o `do`, os comentários perderam `;` e os testes passaram a barrar o formato (ver "Migrations no DataGrip").
+- *Migration 27 pelo MCP:* `apply_migration` estourou o tempo; foi aplicada com `execute_sql` em duas partes (criação, depois `revoke`). Uma revisão automática posterior afirmou que a 27 não estava aplicada sem consultar o banco; estava (`fin_historico` com milhares de linhas). Regra: estado do banco só se afirma depois de um `SELECT`.
+- *Critério da migration 31:* marcava pra sempre só o grupo cuja última ocorrência caía em dez/2029. Séries Anual/Semestral com outro mês (aniversários, Páscoa, Contadora, TFE…) acabam antes de dezembro mesmo indo até o limite, e 31 grupos ficaram de fora. A 32 trocou para um critério por frequência: a próxima ocorrência depois da última já passaria do limite.
+- *Default `'Mensal'` em `fin.freq`:* toda linha inserida pelo DataGrip sem `freq` virava Mensal; cinco antecipações de fatura ficaram como "série". A 35 limpou essas linhas e removeu o default.
+- *Limite 2029 → 2032:* as séries pra sempre paravam em 31/12/2029 e o último ciclo era aberto. As migrations 32 a 35 foram aplicadas pelo mantenedor no DataGrip e conferidas por `SELECT` em 17/10/2026: 776 linhas novas em 57 grupos pra sempre, 77 ciclos (36 novos, de jan/2030 a dez/2032, um único aberto, sem buraco, cada um começando num Faturamento PJ em dia útil), nenhuma antecipação com Frequência e `freq` sem default.
+- *Resgate com data 31/12/9999:* uma linha real (id 5229) tinha herdado a data técnica do ciclo aberto; corrigida com autorização para a data de fechamento provisória (06/01/2030). Depois disso, nenhum cálculo ou tela usa mais 31/12/9999 como data: o ciclo aberto sempre usa `dataDeFechamentoDoCiclo`.
+
+**Out/2026 — revisão do código**
+
+- A consolidação automática (15 min) podia reescrever o valor de um Aporte/Resgate **já pago**; agora só consolida em linha aberta, e só uma gravação de ajuste roda por vez (antes, duas consolidações simultâneas podiam inserir dois Aportes).
+- Aporte materializado em aberto contava como garantia Nubank e antecipação em aberto liberava Livre Hoje; os dois passaram a exigir `pago`.
+- A recarga após gravar podia apagar lançamentos simulados; agora espera a simulação acabar. O toggle de Reserva/Comprometido/Pra sempre virou um único `UPDATE` (tudo ou nada).
+- O teto Besteira contava categorias que só *continham* "besteira" (ex.: a antiga `Besteira Isabella`); agora compara o item inteiro.
+- O saldo diário com `!Categoria` partia de outra base e usava o guardado da conta inteira; agora usa a mesma base e o guardado do próprio recorte.
+
+**Ferramentas de teste**
+
+- O harness de navegador (Playwright com Supabase simulado) remove o `integrity` (SRI) do `index.html` apenas na cópia servida localmente; sem isso o navegador recusa o `supabase-js` falso. O arquivo publicado mantém o SRI.
+- Com o relógio congelado do harness, comparar horários de carga e gravação falhava (mesmo milissegundo); a recarga após gravar passou a usar contador de gravações em vez de relógio.
 
 ## Documentação de produto
 

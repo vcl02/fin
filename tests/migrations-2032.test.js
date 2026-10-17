@@ -73,3 +73,30 @@ test('REGRAS.md documenta o limite 2032 e as migrations 32 a 35', () => {
     assert.match(regras, /`migrations\/35-antecipacao-sem-frequencia\.sql` tira a Frequência/);
     assert.match(regras, /O `setval` dela volta a sequência de propósito e, como toda mudança de sequência no PostgreSQL, não é desfeito por `rollback`/);
 });
+
+test('toda migration da 28 em diante roda no DataGrip (sem DO, sem ";" em $$ ou comentário, numa transação)', () => {
+    const arquivos = fs.readdirSync('migrations').filter(n => /^\d+-.*\.sql$/.test(n) && parseInt(n, 10) >= 28);
+    assert.ok(arquivos.length >= 8);
+    for (const nome of arquivos) {
+        const sql = ler(nome);
+        const semComentarios = sql.replace(/--[^\n]*/g, '');
+        for (const [, corpo] of semComentarios.matchAll(/\$\$([\s\S]*?)\$\$/g)) assert.doesNotMatch(corpo, /;/, nome);
+        assert.doesNotMatch(sql, /^\s*do\s/im, nome);
+        assert.ok(!sql.split('\n').some(l => /^\s*--.*;/.test(l)), `${nome}: ";" em comentário`);
+        assert.match(sql, /^begin;$/m, nome);
+        assert.match(sql, /^commit;$/m, nome);
+    }
+});
+
+test('docs explicam o formato do DataGrip e o histórico de problemas', () => {
+    const agentes = fs.readFileSync('AGENTS.md', 'utf8');
+    const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
+    const checklist = fs.readFileSync('docs/CHECKLIST-PUBLICACAO.md', 'utf8');
+    assert.match(agentes, /Toda migration precisa rodar no DataGrip, que parte o script em \*\*cada\*\* `;`/);
+    assert.match(decisoes, /^## Migrations no DataGrip$/m);
+    assert.match(decisoes, /unterminated dollar-quoted string/);
+    assert.match(decisoes, /^## Limite de geração das séries$/m);
+    assert.match(decisoes, /^## Histórico de problemas e correções$/m);
+    assert.match(regras, /Aplicadas e conferidas por `SELECT` até a 35/);
+    assert.match(checklist, /Se o script abortar, rode `rollback;` antes de tentar de novo\./);
+});

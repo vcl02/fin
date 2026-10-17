@@ -23,6 +23,8 @@
 - Criação, edição, exclusão ou atualização real já são ações do usuário dentro da interface. Fora desse fluxo, não altere dados financeiros no Supabase sem autorização explícita.
 - Preserve migrations aplicadas. Para uma alteração de esquema, crie uma migration nova e numerada; não reescreva migrations históricas.
 - O mantenedor aplica migrations e ajusta dados diretamente no DataGrip; prepare a migration versionada quando ela for necessária, mas não a execute sem a confirmação explícita definida acima.
+- Toda migration precisa rodar no DataGrip, que parte o script em **cada** `;` — inclusive dentro de `$$` e de comentário. Por isso, a partir da 28: nenhum bloco `do $$`, nenhuma função com `;` no corpo (use `language sql` com uma única expressão, ex.: `case`), nenhum `;` em linha de comentário, tudo entre `begin;` e `commit;`. Pré-requisitos são conferidos com comandos que falham sozinhos (`select 'public.x'::regclass;`), e rodar de novo não pode mudar nada. Detalhes e motivos em `docs/DECISOES.md`, seção "Migrations no DataGrip".
+- Antes de entregar uma migration de dados: prévia só de leitura no banco real (quantas linhas e quais grupos ela toca) e teste num PostgreSQL local (PGlite) executando o script partido em `;`, como o DataGrip. Depois que o mantenedor aplicar, confira o resultado com `SELECT` antes de declarar aplicada.
 - O RLS de `fin` permite escrita somente ao mantenedor e leitura a contas logadas; `anon` não tem acesso (migration 20). Nova policy ou grant precisa preservar isso.
 - Não exponha chaves de serviço nem contorne RLS. Toda atualização por nome deve usar a igualdade exata e `encodeURIComponent` no filtro PostgREST.
 

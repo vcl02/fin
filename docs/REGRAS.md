@@ -520,6 +520,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Migrations
 
+- O mantenedor aplica as migrations no DataGrip, que parte o script em cada `;`; da 28 em diante elas não usam `do $$`, função com `;` no corpo nem `;` em comentário, e rodam numa transação com pré-requisitos conferidos (formato e motivos em `docs/DECISOES.md`, "Migrations no DataGrip").
+  Se um script abortar no meio, a sessão do DataGrip fica com a transação abortada até um `rollback;`; mudanças de sequência feitas antes do erro não voltam.
+- Aplicadas e conferidas por `SELECT` até a 35 (17/10/2026); o histórico do que deu errado nelas está em `docs/DECISOES.md`, "Histórico de problemas e correções".
 - `migrations/00-esquema-existente.sql` registra o esquema anterior e não deve ser executado no projeto `fin` existente.
 - `migrations/01-nao-volatil-lancamentos.sql` e `migrations/02-volatil-lancamentos.sql` permanecem somente como histórico das alterações já aplicadas.
 - `migrations/03-remover-fatura-isabella-periodos.sql` registra a remoção de `periodos.fecha_isa` e `periodos.venc_isa`.
