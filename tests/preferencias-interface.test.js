@@ -381,3 +381,9 @@ test('De/Até mostram o mês abreviado, com o nome completo no tooltip', () => {
     assert.match(dadosUi, /usadosNaveg\.map\(opcaoDoCiclo\)/);
     assert.match(regras, /Os seletores \*\*De\*\* e \*\*Até\*\* mostram cada ciclo pelo mês abreviado \(`Out\/26`/);
 });
+
+test('entre De e Até fica só um "-"', () => {
+    assert.match(pagina, /<span class=navCompararAte id=navCompararAte aria-hidden=true>-<\/span>/);
+    assert.doesNotMatch(pagina, /navCompararAte>até</);
+    assert.match(regras, /Entre os dois fica só um `-` \(`Out\/26 - Nov\/26`\)/);
+});
