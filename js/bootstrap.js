@@ -111,19 +111,11 @@ function recarregarAposGravacao() {
 // Botão Recarregar (verde, no cabeçalho): numa só ação, recarrega do banco, volta ao ciclo
 // atual, limpa os filtros e roda o Consolidar tudo (consolidarTudo em form.js, que recarrega
 // primeiro e chama voltarAoCicloAtualELimpar entre a carga e a varredura). A conta restrita
-// nunca grava: recarrega, volta ao ciclo atual e limpa, sem consolidar.
+// não tem esse botão (desenhar o esconde): só a recarga automática traz dados novos.
 el('recarregar').onclick = async () => {
     const bt = el('recarregar');
-    if (bt.disabled) return;
-    if (!modoRestrito()) { await consolidarTudo(bt, voltarAoCicloAtualELimpar); return; }
-    bt.classList.add('carregando');
-    bt.disabled = true;
-    try {
-        if (await load()) voltarAoCicloAtualELimpar();
-    } finally {
-        bt.classList.remove('carregando');
-        bt.disabled = false;
-    }
+    if (bt.disabled || modoRestrito()) return;
+    await consolidarTudo(bt, voltarAoCicloAtualELimpar);
 };
 
 // Recarga automática: 5 min depois da última carga bem-sucedida, os dados voltam do banco

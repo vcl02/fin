@@ -152,6 +152,9 @@ function desenhar() {
     el('btSomenteDif').hidden = simples;   // conta restrita não compara: o botão nem aparece
     popularAlvosVisualizacao();   // reordena do mais perto de acabar pro mais longe a cada redesenho
     el('abreNovo').hidden = simples;
+    el('btDiagnostico').hidden = simples;   // diagnóstico de dados é coisa do mantenedor
+    // Sem Recarregar na conta restrita: os dados chegam só pela recarga automática de 5 min.
+    el('recarregar').hidden = simples;
     el('toggleSimulacao').hidden = simples;
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
 

@@ -122,7 +122,7 @@ test('aparece no título Débito só no ciclo atual, com o Crédito pela MESMA p
     assert.match(visoes, /<span class=limiteRotulo>Acima<\/span> <b class=vm>\$\{brl\(-restante\)\}<\/b>/);
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
     assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
-    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje \? \[/);
+    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje && !modoRestrito\(\) \? \[/);
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {

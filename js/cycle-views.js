@@ -150,15 +150,15 @@ function vCiclo() {
     // justamente o que falta até o teto, então nunca entra nesta conta.
     const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)].filter(r => !r._prev);
     const tetosDoCiclo = limitesCategoriaDoCiclo(i);
-    const limitesCategoria = Estado.idxHoje >= 0 && i >= Estado.idxHoje ? [
+    // A conta restrita não vê os tetos de Besteira/Isabella (pedido do mantenedor).
+    const limitesCategoria = Estado.idxHoje >= 0 && i >= Estado.idxHoje && !modoRestrito() ? [
         { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo.besteira) },
         { chave: 'isabella', rotulo: 'Isabella', teto: tetosDoCiclo.isabella, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo.isabella) },
     ] : [];
     // Teto editável no próprio indicador, como o Aprovado do cartão: grava na linha âncora
-    // do ciclo (ver confirmarLimiteCategoria em interactions.js). Conta restrita só lê.
-    // Largura pelo próprio valor (ver larguraDoCampo no título do Crédito, definido depois).
+    // do ciclo (ver confirmarLimiteCategoria em interactions.js). A conta restrita nem tem
+    // esses indicadores. Largura pelo próprio valor (ver larguraDoCampo no título do Crédito).
     const tetoDoIndicador = limite => {
-        if (modoRestrito()) return brl(limite.teto);
         const texto = limite.teto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-categoria="${limite.chave}" data-ciclo="${i}" ` +
         `style="width:${Math.max(4, texto.length + 1)}ch" value="${texto}" placeholder="padrão" inputmode=decimal ` +

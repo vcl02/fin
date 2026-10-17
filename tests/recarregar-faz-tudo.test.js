@@ -75,12 +75,10 @@ test('carga com falha para tudo: não navega, não limpa nem consolida', async (
     assert.deepEqual(Object.keys(ctx.Estado.filtroTexto), ['nome']);
 });
 
-test('conta restrita: recarrega, volta ao ciclo atual e limpa — nunca consolida', async () => {
-    const { ctx, etapas, elementos } = montaTela(3, { restrito: true });
+test('conta restrita: o botão nem aparece e, se acionado, não faz nada (nunca consolida)', async () => {
+    const { ctx, etapas } = montaTela(3, { restrito: true });
     await ctx.clica();
-    assert.deepEqual(etapas, ['recarregar', 'desenhar']);
-    assert.equal(elementos.compDe.value, 3);
-    assert.equal(elementos.recarregar.disabled, false);
+    assert.deepEqual(etapas, []);
 });
 
 test('sem ciclo atual: limpa os filtros e deixa De/Até vazios, como a página abre', async () => {
@@ -112,7 +110,7 @@ test('o botão verde é o único: sem Atual, Limpar filtros nem Consolidar tudo'
     assert.doesNotMatch(estilos, /\.btHoje\b/);
     assert.match(regras, /O botão verde \*\*Recarregar\*\* do cabeçalho \(mesmo ícone de setas\) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De\/Até ao ciclo atual, limpa os filtros/);
     assert.match(regras, /Não existem mais botões "Atual", "Limpar filtros" nem "Consolidar tudo" separados\./);
-    assert.match(regras, /Na conta restrita, que nunca grava, recarrega, volta ao ciclo atual e limpa, sem consolidar\./);
+    assert.match(regras, /A conta restrita não tem esse botão\./);
 });
 
 test('Todas/Diferentes, Gráfico e Visualizações ficam no bloco de botões, antes da simulação', () => {

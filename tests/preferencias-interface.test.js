@@ -475,3 +475,19 @@ test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica 
     assert.match(base, /#toggleSimulacao:hover,\s*\n\s*#toggleSimulacao\.ativo \{\s*\n\s*color: #10231A;\s*\n\s*background: #F0A83A;/);
     assert.match(regras, /O botão \*\*Simular\*\* \(lançamentos provisórios\) é sempre laranja/);
 });
+
+test('conta restrita sem tetos Besteira/Isabella, sem diagnóstico e sem Recarregar (só a recarga automática)', () => {
+    const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
+    const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
+    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje && !modoRestrito\(\) \? \[/);
+    assert.match(interacoes, /el\('btDiagnostico'\)\.hidden = simples;/);
+    assert.match(interacoes, /el\('recarregar'\)\.hidden = simples;/);
+    assert.match(boot, /if \(bt\.disabled \|\| modoRestrito\(\)\) return;\s*\n\s*await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
+    // A recarga automática continua valendo pra ela (nunca consolida: só modoRestrito() fora).
+    assert.match(boot, /if \(!modoRestrito\(\) && Date\.now\(\) - Estado\.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS\)/);
+    assert.match(boot, /if \(Date\.now\(\) - Estado\.ultimaCarga >= INTERVALO_RECARGA_AUTOMATICA_MS\) recarregarDados\(\);/);
+    assert.match(regras, /os indicadores de teto \*\*Besteira\*\*\/\*\*Isabella\*\* nas faixas Hoje\/Futuro do Débito, o botão de \*\*diagnóstico\*\* e o botão \*\*Recarregar\*\* ficam escondidos/);
+    const agentes = fs.readFileSync('AGENTS.md', 'utf8');
+    assert.match(agentes, /O mobile tem paridade total com o desktop/);
+    assert.doesNotMatch(agentes, /Isabella e mobile usam o mesmo `modoSimples`/);
+});

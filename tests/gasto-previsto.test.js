@@ -127,7 +127,9 @@ test('tabelas e cálculos usam a mesma base; o indicador ignora a prevista', () 
 
 test('teto editável no título do ciclo atual e seguintes; grava em fin_ciclo, vazio = padrão', () => {
     assert.match(visoes, /data-limite-categoria="\$\{limite\.chave\}" data-ciclo="\$\{i\}"/);
-    assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*if \(modoRestrito\(\)\) return brl\(limite\.teto\);/);
+    // A conta restrita nem tem os indicadores: o teto é sempre o campo editável.
+    assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*const texto = limite\.teto\.toLocaleString/);
+    assert.match(visoes, /const limitesCategoria = Estado\.idxHoje >= 0 && i >= Estado\.idxHoje && !modoRestrito\(\) \? \[/);
     assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
     assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
     assert.match(interacoes, /const gravada = !Estado\.simulando \? await salvarLimiteDoCiclo\(cicloId, campo, valor\) : null;/);
