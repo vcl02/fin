@@ -9,7 +9,9 @@ const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 
 test('declara manifest instalável e cores coerentes com a interface', () => {
-    assert.match(html, /<title>fin<\/title>/);
+    // Aba discreta: título "." (vazio faria o navegador mostrar a URL no lugar).
+    assert.match(html, /<title>\.<\/title>/);
+    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /O título da página \(aba do navegador\) é só `\.`/);
     assert.match(html, /<link rel=manifest href="\.\/manifest\.webmanifest">/);
     assert.match(html, /<link rel=icon type="image\/svg\+xml" href="\.\/icons\/fin-192\.svg">/);
     assert.match(html, /<meta name=theme-color content="#1B1E21">/);
