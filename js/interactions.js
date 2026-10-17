@@ -109,6 +109,7 @@ window.addEventListener('resize', () => {
 });
 
 function desenhar() {
+    Estado.redesenhoPendente = false;   // este desenho já mostra os dados (ver desenharQuandoLivre)
     limparCachesFinanceiros();   // recalcula 1x neste render
     const simples = modoSimples();
 

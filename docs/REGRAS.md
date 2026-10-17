@@ -24,6 +24,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Mesma disponibilidade do Valor/Data/Pago: só lançamento real, nunca pra conta restrita.
 - Uma linha real possui `id` positivo e pode ser persistida.
   Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
+- "é investimento" e o ciclo de um lançamento seguem uma regra só (`ehCategoriaInvestimento` e `periodoDoLancamento` em `js/shared.js`), usada na carga, no cadastro, na edição, na materialização e na simulação: investimento é ter `Investimento` como uma das categorias (inclusive `Investimento, Reserva`); o ciclo é o da fatura no Crédito (mesmo sem data), o da data no Débito (inclusive antecipação) e o Backlog sem data nem fatura. Assim a linha aparece no mesmo ciclo e com a mesma classificação antes e depois de recarregar a página.
 
 ### Rede instável
 
@@ -76,6 +77,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase.
   Além de criar compras hipotéticas, permite editar ou ocultar qualquer lançamento selecionado apenas no array do navegador; os cálculos refletem isso até recarregar ou desativar o modo, quando a carga do banco restaura tudo.
+  Desligar a simulação só sai do modo simulação depois que a recarga do banco der certo; se ela falhar (ex.: sem internet), a simulação continua — com os lançamentos simulados e o aviso "A simulação continua" —, em vez de uma tela "real" com lançamentos hipotéticos que um Materializar poderia gravar de verdade.
 
 ### PWA e título da página
 
@@ -373,6 +375,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Espera a tela ficar livre — nenhum campo em edição, nenhum modal aberto, nenhuma carga ou Consolidar em andamento — pra não apagar o que está sendo digitado.
   Gravação sem resposta do banco (pode ter salvado) também recarrega, pra mostrar se entrou.
   Na simulação e na conta restrita nada é gravado, então nada recarrega por isso.
+- **Recarga silenciosa** (automática de 5 min, após gravar, consolidação de 15 min) nunca redesenha por cima de uma célula da tabela em edição: os dados novos entram na memória e a tela espera o campo perder o foco pra redesenhar; se a própria edição já redesenhar ao confirmar, não redesenha de novo. Campo fora da tabela (ex.: cadastro) não segura o redesenho, e o clique no Recarregar redesenha na hora.
 - Recarga automática: 5 minutos depois da última carga bem-sucedida, a tela busca os dados no banco de novo (só a carga — sem voltar ao ciclo atual, limpar filtros nem consolidar, que são só do clique no botão Recarregar), pra mostrar o que mudou em outro aparelho ou no DataGrip.
   Ela só acontece com a tela logada e visível, sem modal aberto, sem campo em edição, sem linha selecionada, sem simulação (apagaria os lançamentos simulados) e sem outra carga ou consolidação em andamento; ocupada, a tela tenta de novo a cada 30 segundos.
   É silenciosa: não mostra toast nem toca som (nem "Carga lenta", nem erro); se falhar, a tela continua com os dados que já tinha, em vez de virar a mensagem de erro, e a próxima verificação tenta de novo.

@@ -233,6 +233,26 @@ function mostrarToast(titulo, texto) {
     setTimeout(remover, 7000);
 }
 
+// Recarga em silêncio (automática, após gravar, consolidação de 15 min) que termina com
+// uma célula da tabela em edição não redesenha por cima: redesenhar apagaria o campo e o que
+// já foi digitado. Os dados novos já estão em Estado; a tela espera a edição acabar. Se a
+// própria edição redesenhar ao confirmar (desenhar zera Estado.redesenhoPendente), não há
+// mais nada a fazer.
+const edicaoNaTabelaEmCurso = () => {
+    const ativo = document.activeElement;
+    return !!ativo?.matches?.('input, select, textarea') && el('out').contains(ativo);
+};
+function desenharQuandoLivre() {
+    if (!edicaoNaTabelaEmCurso()) { desenhar(); return; }
+    Estado.redesenhoPendente = true;
+    const tentar = () => {
+        if (!Estado.redesenhoPendente) return;
+        if (edicaoNaTabelaEmCurso()) { setTimeout(tentar, 300); return; }
+        desenhar();
+    };
+    setTimeout(tentar, 300);
+}
+
 // Devolve true quando a carga deu certo — quem depende de dados frescos (Consolidar tudo)
 // não segue em cima de uma carga que falhou. `silencioso` (recarga automática): sem toast
 // (cada toast toca um som) e, se falhar, mantém a tela como estava em vez de trocá-la pela
@@ -249,7 +269,7 @@ async function load({ silencioso = false } = {}) {
         atualizarCombos(lancamentosCrus);
         const aposCombos = performance.now();
 
-        desenhar();
+        if (silencioso) desenharQuandoLivre(); else desenhar();
         const aposRender = performance.now();
         const cargaMs = Math.round(aposRender - inicioCarga);
         console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);

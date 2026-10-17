@@ -156,7 +156,7 @@ test('recarga automática é silenciosa: sem toast, e falha não troca a tela pe
             API: 'https://x', LIMIAR_CARGA_LENTA_MS: 0, Estado: { ciclos: [], lancamentos: [] },
             performance: { now: () => 0 }, console: { info() {}, warn() {} },
             carregarDados: async () => { if (falhar) throw Error('sem rede'); return { lancamentosCrus: [], diagnosticoDeDados: {} }; },
-            atualizarCombos() {}, desenhar() {}, atualizarBotaoDiagnostico() {}, escapeHtml: String,
+            atualizarCombos() {}, desenhar() {}, desenharQuandoLivre() {}, atualizarBotaoDiagnostico() {}, escapeHtml: String,
             mostrarToast: titulo => toasts.push(titulo),
             el: id => (id === 'out' ? out : { textContent: '' }),
         };

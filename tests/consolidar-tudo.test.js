@@ -84,7 +84,7 @@ test('cada ciclo limpa os caches financeiros antes do próximo, pois o guardado 
     assert.match(financeiro, /Object\.keys\(_cacheSaldo\)\.forEach\(k => delete _cacheSaldo\[k\]\);/);
     assert.match(financeiro, /_baseFiltrada = _abatFiltrada = null;/);
     // desenhar() passou a reaproveitar a mesma função, em vez de repetir as 5 linhas.
-    assert.match(interacoes, /function desenhar\(\) \{\s*limparCachesFinanceiros\(\);/);
+    assert.match(interacoes, /function desenhar\(\) \{\s*Estado\.redesenhoPendente = false;[^\n]*\n\s*limparCachesFinanceiros\(\);/);
 });
 
 test('núcleo retorna consolidado/materializado pro resumo contar cada tipo separadamente', () => {

@@ -946,7 +946,8 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = fa
             limparCachesFinanceiros();
         }
         Estado.selecionados.clear();
-        desenhar();
+        // Automática: nunca redesenha por cima de uma célula em edição (ver desenharQuandoLivre).
+        if (silencioso) desenharQuandoLivre(); else desenhar();
         // Nada aparece na tela pros ciclos fora do atual (não estão renderizados), então o
         // toast é um resumo rápido e o modal (mostrarResultadoConsolidarTudo) traz o detalhe
         // ciclo a ciclo de tudo que a varredura de fato gravou.
@@ -1298,10 +1299,24 @@ function atualizaBotaoSimulacao() {
 el('toggleSimulacao').onclick = async () => {
     if (Estado.simulando) {
         // desligar = descartar: recarrega os dados de verdade do banco, que reconstroi
-        // Estado.lancamentos do zero SEM os simulados (eles nunca foram salvos)
-        Estado.simulando = false;
-        atualizaBotaoSimulacao();
-        await load();
+        // Estado.lancamentos do zero SEM os simulados (eles nunca foram salvos). Só sai da
+        // simulação DEPOIS que a recarga der certo: se falhar (sem internet), os simulados
+        // continuam na memória e a tela segue em modo simulação — nunca uma tela "real" com
+        // lançamentos hipotéticos que um Materializar poderia gravar de verdade.
+        const bt = el('toggleSimulacao');
+        if (bt.disabled) return;
+        bt.disabled = true;
+        try {
+            if (!(await load({ silencioso: true }))) {
+                mostrarToast('A simulação continua', 'Não deu pra recarregar os dados do banco. Tente de novo quando a conexão voltar.');
+                return;
+            }
+            Estado.simulando = false;
+            atualizaBotaoSimulacao();
+            desenhar();
+        } finally {
+            bt.disabled = false;
+        }
     } else {
         Estado.simulando = true;
         atualizaBotaoSimulacao();
