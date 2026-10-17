@@ -131,3 +131,32 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regrasMd, /Um `ciclo=backlog` não imposto quando a opção não existe no combo De \(conta restrita nunca tem Backlog\) mantém o ciclo padrão seguro/);
     assert.match(regrasMd, /Trocar de ciclo único ou entrar\/sair do Backlog empurra uma entrada no histórico do navegador/);
 });
+
+test('tela de login tira ?ciclo da URL e aplica o ciclo pedido depois de entrar', () => {
+    const { contexto, elementos, chamadas, metodos } = criarContexto('https://exemplo.test/?ciclo=2026-10&x=1');
+    vm.runInContext('globalThis.tirar = tirarCicloDaUrl;', contexto);
+    contexto.tirar();
+    assert.equal(chamadas[0][2], '/?x=1');
+    assert.equal(metodos[0], 'replace');
+    // Depois do login a URL já não tem ciclo, mas o pedido guardado vale uma vez.
+    contexto.window.location.search = '?x=1';
+    contexto.regras.aplicarCicloDaUrl();
+    assert.equal(elementos.compDe.value, 1);
+    elementos.compDe.value = 0; elementos.compAte.value = 0;
+    contexto.regras.aplicarCicloDaUrl();
+    assert.equal(elementos.compDe.value, 0);
+});
+
+test('ao sair, o ciclo não fica guardado pro próximo login', () => {
+    const { contexto, elementos, chamadas } = criarContexto('https://exemplo.test/?ciclo=2026-10');
+    vm.runInContext('globalThis.tirar = tirarCicloDaUrl;', contexto);
+    contexto.tirar({ guardar: false });
+    assert.equal(chamadas[0][2], '/');
+    contexto.window.location.search = '';
+    contexto.regras.aplicarCicloDaUrl();
+    assert.equal(elementos.compDe.value, '');
+    const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
+    assert.match(boot, /if \(!logado\) tirarCicloDaUrl\(\{ guardar: lembrarCiclo \}\);/);
+    assert.match(boot, /mostraTela\(0, \{ lembrarCiclo: false \}\); \};/);
+    assert.match(regrasMd, /Na tela de login a URL nunca mostra `\?ciclo`/);
+});

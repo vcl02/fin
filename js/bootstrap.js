@@ -17,9 +17,10 @@ window.addEventListener('popstate', () => {
     desenhar();
 });
 
-const mostraTela = logado => {
+const mostraTela = (logado, { lembrarCiclo = true } = {}) => {
     el('login').style.display = logado ? 'none' : 'flex';
     el('app').style.display = logado ? 'block' : 'none';
+    if (!logado) tirarCicloDaUrl({ guardar: lembrarCiclo });
 };
 
 // ao abrir a pagina: se ja existe sessao salva, entra direto; senao mostra o login
@@ -58,7 +59,7 @@ el('senha').onkeydown = e => {
     if (e.key == 'Enter') entrar();
 };
 
-el('sair').onclick = async () => { await sb.auth.signOut(); Estado.emailSessao = null; el('senha').value = ''; mostraTela(0); };
+el('sair').onclick = async () => { await sb.auth.signOut(); Estado.emailSessao = null; el('senha').value = ''; mostraTela(0, { lembrarCiclo: false }); };
 el('modalDiagnostico').addEventListener('click', e => {
     if (e.target == el('modalDiagnostico')) el('modalDiagnostico').close();
 });

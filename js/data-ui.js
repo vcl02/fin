@@ -67,7 +67,9 @@ function chaveCicloNaUrl(idx) {
 }
 
 function aplicarCicloDaUrl() {
-    const chave = new URLSearchParams(window.location.search).get('ciclo');
+    // Ciclo de um link aberto antes do login (tirado da URL na tela de login): vale uma vez.
+    const chave = new URLSearchParams(window.location.search).get('ciclo') ?? cicloPedidoAntesDoLogin;
+    cicloPedidoAntesDoLogin = null;
     // Backlog só existe no combo De (nunca no Até — "não faz sentido comparar com outro
     // período", ver atualizarCombos); conta restrita nem tem a opção. Só aplica se a opção
     // existir de verdade no combo, senão a tela mantém o ciclo padrão seguro.
@@ -105,6 +107,20 @@ function sincronizarCicloNaUrl() {
         if (trocouDeCiclo) window.history.pushState(window.history.state, '', destino);
         else window.history.replaceState(window.history.state, '', destino);
     }
+}
+
+// Tela de login sem "?ciclo" na URL (pedido do mantenedor): ali não há ciclo nenhum na tela.
+// O ciclo de um link compartilhado fica guardado e é aplicado depois de entrar
+// (aplicarCicloDaUrl); ao sair, não guarda — o próximo login abre no ciclo atual.
+let cicloPedidoAntesDoLogin = null;
+function tirarCicloDaUrl({ guardar = true } = {}) {
+    const url = new URL(window.location.href);
+    const chave = url.searchParams.get('ciclo');
+    _ultimaChaveCicloUrl = undefined;   // a 1ª sincronização depois de entrar substitui, não empilha
+    cicloPedidoAntesDoLogin = guardar ? chave : null;
+    if (chave === null) return;
+    url.searchParams.delete('ciclo');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
 }
 
 // Fluxo completo de carga: busca dados, atualiza os combos, mostra o contador e desenha a tela.
