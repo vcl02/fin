@@ -58,14 +58,14 @@
       margin: 0 0 1rem;
   }
 
-  /* Simular, cadastro, recarregar, diagnóstico e sair: um bloco que nunca se parte — se não
-     couber na linha, desce inteiro; à direita. */
+  /* Botões do cabeçalho: um bloco que nunca se parte — se não couber na linha, desce inteiro.
+     Sem margin-left:auto: na mesma linha, quem o empurra pra direita é a navegação
+     (margin-right:auto) ou os indicadores (flex-grow); sozinho numa linha, fica à esquerda. */
   .acoesCabecalho {
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
       gap: .7rem;
-      margin-left: auto;
   }
 
   /* Gráfico, Visualizações e Todas/Diferentes no mesmo tamanho dos outros botões do bloco. */

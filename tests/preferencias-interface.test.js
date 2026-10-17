@@ -393,5 +393,14 @@ test('botões de ação do cabeçalho ficam num bloco que quebra de linha inteir
     for (const id of ['toggleSimulacao', 'abreNovo', 'recarregar', 'btDiagnostico', 'sair']) assert.match(grupo, new RegExp(`id=${id}\\b`));
     assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.acoesCabecalho \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: nowrap;/);
     assert.doesNotMatch(fs.readFileSync('css/mobile.css', 'utf8'), /#abreNovo \{\s*\n\s*margin-left: auto;/);
-    assert.match(regras, /descem \*\*juntos\*\* pra linha seguinte, nunca separados/);
+    assert.match(regras, /descem \*\*juntos\*\* pra linha seguinte, nunca separados, e lá ficam alinhados \*\*à esquerda\*\*/);
+});
+
+test('botões que descem de linha ficam à esquerda; na mesma linha, à direita', () => {
+    const base = fs.readFileSync('css/base.css', 'utf8');
+    const bloco = base.slice(base.indexOf('.acoesCabecalho {'), base.indexOf('}', base.indexOf('.acoesCabecalho {')));
+    // margin-left:auto empurraria o bloco pra direita também quando ele está sozinho numa linha.
+    assert.doesNotMatch(bloco, /margin-left/);
+    // Na mesma linha da navegação, é a margem automática dela que joga os botões pra direita.
+    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /#fciclNav \{[^}]*margin: 0 auto 0 0;/);
 });
