@@ -114,52 +114,55 @@
         </div>
       </div>
 
-      <button id=toggleSimulacao
-        title="Simular (não salva)"
-        aria-label="Ativar modo simulação">
-        <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-          stroke-linejoin=round>
-          <path d="M12 2a10 10 0 1 0 10 10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
-      </button>
+      <!-- Botões de ação do cabeçalho num grupo só: quebram de linha juntos, nunca separados. -->
+      <div class=acoesCabecalho>
+        <button id=toggleSimulacao
+          title="Simular (não salva)"
+          aria-label="Ativar modo simulação">
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+            stroke-linejoin=round>
+            <path d="M12 2a10 10 0 1 0 10 10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+        </button>
 
-      <button id=abreNovo title="Novo lançamento" aria-label="Novo lançamento">
-        <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-          stroke-linejoin=round>
-          <line x1=12 y1=5 x2=12 y2=19 />
-          <line x1=5 y1=12 x2=19 y2=12 />
-        </svg>
-      </button>
+        <button id=abreNovo title="Novo lançamento" aria-label="Novo lançamento">
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+            stroke-linejoin=round>
+            <line x1=12 y1=5 x2=12 y2=19 />
+            <line x1=5 y1=12 x2=19 y2=12 />
+          </svg>
+        </button>
 
-      <!-- Recarregar: recarrega, volta ao ciclo atual, limpa filtros e consolida tudo (bootstrap.js). -->
-      <button id=recarregar title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"
-        aria-label="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo">
-        <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke="currentColor" stroke-width="2.2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 11a8 8 0 0 0-14.9-4" />
-          <path d="M4 4v5h5" />
-          <path d="M4 13a8 8 0 0 0 14.9 4" />
-          <path d="M20 20v-5h-5" />
-        </svg>
-      </button>
+        <!-- Recarregar: recarrega, volta ao ciclo atual, limpa filtros e consolida tudo (bootstrap.js). -->
+        <button id=recarregar title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"
+          aria-label="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo">
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 11a8 8 0 0 0-14.9-4" />
+            <path d="M4 4v5h5" />
+            <path d="M4 13a8 8 0 0 0 14.9 4" />
+            <path d="M20 20v-5h-5" />
+          </svg>
+        </button>
 
-      <button id=btDiagnostico title="Sem inconsistências na última carga" aria-label="Sem inconsistências na última carga">
-        <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3 2.8 20.5h18.4L12 3Z" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
-      </button>
+        <button id=btDiagnostico title="Sem inconsistências na última carga" aria-label="Sem inconsistências na última carga">
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 2.8 20.5h18.4L12 3Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+        </button>
 
-      <button id=sair title="Encerrar" aria-label="Encerrar">
-        <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
-          stroke-linejoin=round>
-          <path d="M12 3v9" />
-          <path d="M6.4 6.4a8 8 0 1 0 11.2 0" />
-        </svg>
-      </button>
+        <button id=sair title="Encerrar" aria-label="Encerrar">
+          <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
+            stroke-linejoin=round>
+            <path d="M12 3v9" />
+            <path d="M6.4 6.4a8 8 0 1 0 11.2 0" />
+          </svg>
+        </button>
+      </div>
     </div>
     <p class=sub><span id=st></span></p>
 

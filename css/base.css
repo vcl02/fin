@@ -58,6 +58,16 @@
       margin: 0 0 1rem;
   }
 
+  /* Simular, cadastro, recarregar, diagnóstico e sair: um bloco que nunca se parte — se não
+     couber na linha, desce inteiro; à direita. */
+  .acoesCabecalho {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: .7rem;
+      margin-left: auto;
+  }
+
   .sub {
       font-size: .85rem;
       color: var(--mu);

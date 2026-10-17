@@ -387,3 +387,11 @@ test('entre De e Até fica só um "-"', () => {
     assert.doesNotMatch(pagina, /navCompararAte>até</);
     assert.match(regras, /Entre os dois fica só um `-` \(`Out\/26 - Nov\/26`\)/);
 });
+
+test('botões de ação do cabeçalho ficam num bloco que quebra de linha inteiro', () => {
+    const grupo = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'), pagina.indexOf('<p class=sub>'));
+    for (const id of ['toggleSimulacao', 'abreNovo', 'recarregar', 'btDiagnostico', 'sair']) assert.match(grupo, new RegExp(`id=${id}\\b`));
+    assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.acoesCabecalho \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: nowrap;/);
+    assert.doesNotMatch(fs.readFileSync('css/mobile.css', 'utf8'), /#abreNovo \{\s*\n\s*margin-left: auto;/);
+    assert.match(regras, /descem \*\*juntos\*\* pra linha seguinte, nunca separados/);
+});

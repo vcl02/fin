@@ -88,9 +88,18 @@
           overflow-x: auto;
       }
 
-      /* No mobile o Simular fica sozinho à esquerda e as demais ações à direita. */
+      /* "N registros · período" pode quebrar de linha: em tela estreita não cabe inteiro na
+         faixa e, sem quebrar, alargava a página. */
+      .resumoMeta {
+          white-space: normal;
+      }
+
+      /* Ações do cabeçalho juntas, à direita (sem o Simular separado das demais). */
+      .acoesCabecalho {
+          gap: .5rem;
+      }
+
       #abreNovo {
-          margin-left: auto;
           padding: .5rem;
           width: 2rem;
           height: 2rem;
