@@ -546,13 +546,14 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   `UPDATE` que não muda nada não é registrado.
   Só o trigger escreve (função `SECURITY DEFINER`, sem execução pela API); nenhuma conta insere, altera ou apaga o histórico pela API, só o mantenedor lê e o anônimo não acessa.
   Não altera nenhuma linha de `fin` nem de `fin_ciclo` e não muda nada no app; serve pra achar e desfazer à mão, no DataGrip, uma mudança errada (ex.: `select * from fin_historico where tabela = 'fin' and linha_id = 5251 order by em desc`).
-- `migrations/28-recorrencia-sequencial.sql` alinha `fin_recorrencia_seq` ao maior `recorrencia_id` já gravado (nunca volta atrás) e cria `public.proxima_recorrencia()`, que devolve o próximo número da sequência só para o mantenedor (outra conta logada recebe erro; o anônimo nem executa).
+- `migrations/28-recorrencia-sequencial.sql` alinha `fin_recorrencia_seq` ao maior `recorrencia_id` já gravado (nunca volta atrás) e cria `public.proxima_recorrencia()`, que devolve o próximo número da sequência só para o mantenedor (outra conta logada recebe vazio e não consome número; o anônimo nem executa).
   Não altera nenhuma linha de `fin`.
 - `migrations/29-marcar-series-sem-recorrencia.sql` dá `freq` e um `recorrencia_id` novo (da sequência, na ordem da 1ª ocorrência) às séries cadastradas sem os dois: mesmo nome + categoria + `cred`, só entre linhas com data, sem `freq` e sem `recorrencia_id`.
   **Mensal**: 3 ou mais, exatamente uma por mês, em meses seguidos (o dia pode variar); **Anual**: 2 ou mais, uma por ano, no mesmo mês, em anos seguidos.
   No Crédito o valor precisa ser sempre igual (parcela/assinatura), pra compras avulsas que caíram uma vez por mês por acaso ficarem de fora; no Débito o valor pode variar.
   Nunca entram Investimento (Aporte/Resgate), antecipação/pagamento de fatura e Ajuste.
-  Exige a 28 (aborta sem alterar nada se ela faltar), não toca linha que já tem `freq` ou `recorrencia_id` (rodar de novo não muda nada) e lista ao final as séries marcadas; o histórico (migration 27) guarda o antes de cada linha.
+  As duas são escritas sem `;` dentro de bloco `$$` (o DataGrip parte o script em cada `;` e quebrava função/`do` no meio).
+  A 29 exige a 28 (aborta sem alterar nada se ela faltar), não toca linha que já tem `freq` ou `recorrencia_id` (rodar de novo não muda nada) e lista ao final as séries marcadas; o histórico (migration 27) guarda o antes de cada linha.
 
 ## Testes
 

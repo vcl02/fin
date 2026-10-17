@@ -115,14 +115,21 @@ test('migrations 28 e 29: sequência alinhada, número só do dono, séries marc
     const m28 = fs.readFileSync('migrations/28-recorrencia-sequencial.sql', 'utf8');
     const m29 = fs.readFileSync('migrations/29-marcar-series-sem-recorrencia.sql', 'utf8');
     assert.match(m28, /select setval\('public\.fin_recorrencia_seq', greatest\(/);
-    assert.match(m28, /return nextval\('public\.fin_recorrencia_seq'\)::integer;/);
-    assert.match(m28, /security definer\s*\n\s*set search_path = ''/);
-    assert.match(m28, /is distinct from '2f9bc201-9966-4f37-9963-2f4b9ddab849'::uuid then\s*\n\s*raise exception/);
+    assert.match(m28, /select case when \(select auth\.uid\(\)\) = '2f9bc201-9966-4f37-9963-2f4b9ddab849'::uuid\s*\n\s*then nextval\('public\.fin_recorrencia_seq'\)::integer\s*\n\s*end/);
+    assert.match(m28, /language sql\s*\n\s*volatile\s*\n\s*security definer\s*\n\s*set search_path = ''/);
     assert.match(m28, /revoke all on function public\.proxima_recorrencia\(\) from public, anon;/);
-    assert.match(m29, /if to_regprocedure\('public\.proxima_recorrencia\(\)'\) is null then/);
+    assert.match(m29, /select 'public\.proxima_recorrencia\(\)'::regprocedure;/);
     assert.match(m29, /where f\.freq is null and f\.recorrencia_id is null and f\.data is not null/);
     assert.match(m29, /where \(cred is not true or valores = 1\)/);
     assert.match(m29, /!~\* '\(investimento\|antecipa\|pagamento fatura\|ajuste\)'/);
-    assert.match(m29, /for s in select n, c, cred from series_marcadas order by primeira, n, c, cred loop/);
+    assert.match(m29, /\+ row_number\(\) over \(order by primeira, n, c, cred\) recorrencia_id/);
+    assert.match(m29, /-- A sequência continua de onde as séries pararam[^\n]*\nselect setval\('public\.fin_recorrencia_seq', greatest\(/);
+    // DataGrip parte o script em cada ";": nenhum ";" pode ficar dentro de bloco $$ nem de comentário.
+    for (const sql of [m28, m29]) {
+        const semComentarios = sql.replace(/--[^\n]*/g, '');
+        for (const [, corpo] of semComentarios.matchAll(/\$\$([\s\S]*?)\$\$/g)) assert.doesNotMatch(corpo, /;/);
+        assert.doesNotMatch(sql, /^\s*do\s/im);
+        assert.ok(!sql.split('\n').some(l => /^\s*--.*;/.test(l)));
+    }
     assert.match(regras, /`migrations\/29-marcar-series-sem-recorrencia\.sql` dá `freq` e um `recorrencia_id` novo/);
 });
