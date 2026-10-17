@@ -188,6 +188,8 @@ const salvarLimiteDoCiclo = async (cicloId, campo, valor) => comRetentativas(asy
 
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);
+    // fin.pra_sempre vem da migration 31: sem ela, o app não mostra nem grava o campo.
+    Estado.temPraSempre = lancamentosCrus.some(r => 'pra_sempre' in r);
     // Os ciclos são as linhas de fin_ciclo (inicio/fim, migration 26). Sem a tabela nesse
     // formato não há ciclo nenhum pra montar a tela: a carga para com a instrução do que falta.
     let linhasCiclo;

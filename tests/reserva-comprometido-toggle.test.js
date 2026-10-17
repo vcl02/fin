@@ -38,7 +38,7 @@ test('célula de Reserva/Comprometido mostra "—" quando falso, sem repetir tex
 });
 
 test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guarda de simulação', () => {
-    const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido' };");
+    const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };");
     assert.ok(inicio >= 0, 'não achou o handler de togFlag');
     const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
     assert.match(trecho, /const badge = e\.target\.closest\('\[data-tog-flag\]'\);/);
@@ -52,7 +52,7 @@ test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guard
 });
 
 test('marcar/desmarcar Reserva ou Comprometido propaga pros lançamentos com o mesmo nome E a mesma categoria', () => {
-    const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido' };");
+    const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };");
     const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
     const def = trecho.match(/const chaveDoCompromisso = (x => `[^`]*`);/);
     assert.ok(def, 'não achou chaveDoCompromisso');
@@ -77,12 +77,12 @@ test('Duplicar/Editar herdam reserva/comprometido do lançamento de origem; novo
 
 test('submeteNovoLancamento lê os dois checkboxes e propaga pra simulação e pro Supabase', () => {
     assert.match(formulario, /const reserva = el\('fReserva'\)\.checked;\s*\n\s*const comprometido = el\('fComprometido'\)\.checked;/);
-    assert.match(formulario, /simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie \}\);/);
-    assert.match(formulario, /salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie \}\);/);
-    assert.match(formulario, /async function salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = \[\] \}\)/);
+    assert.match(formulario, /simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre, parcelas, valores, faturaIds: faturasDaSerie \}\);/);
+    assert.match(formulario, /salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre, parcelas, valores, faturaIds: faturasDaSerie \}\);/);
+    assert.match(formulario, /async function salvaLancamentoParceladoNoBanco\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre = false, parcelas, valores, faturaIds = \[\] \}\)/);
     assert.match(formulario, /data: dataParcela, freq, cred, pago, reserva, comprometido,/);
-    assert.match(formulario, /function simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = \[\] \}\)/);
-    assert.match(formulario, /cred, pago, reserva, comprometido,\s*\n\s*fatura: faturaVenc,/);
+    assert.match(formulario, /function simulaLancamentoParcelado\(\{ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre = false, parcelas, valores, faturaIds = \[\] \}\)/);
+    assert.match(formulario, /cred, pago, reserva, comprometido, pra_sempre: praSempre,\s*\n\s*fatura: faturaVenc,/);
 });
 
 test('submeteEdicaoLancamento reenvia reserva/comprometido no PATCH, igual aos demais campos', () => {

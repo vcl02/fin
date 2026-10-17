@@ -27,7 +27,7 @@ function carregaColunasAtivas(restrito = false) {
     const inicio = estado.indexOf('const COLS = [');
     const fim = estado.indexOf('\nconst isMobile');
     if (inicio < 0 || fim < 0) throw Error('Não encontrou COLS/colunasAtivas em app-state.js.');
-    const contexto = { modoRestrito: () => restrito };
+    const contexto = { modoRestrito: () => restrito, Estado: { temPraSempre: true } };
     vm.createContext(contexto);
     vm.runInContext(`${estado.slice(inicio, fim)}\nglobalThis.colunasAtivas = colunasAtivas;`, contexto);
     return contexto.colunasAtivas;
@@ -119,9 +119,9 @@ test('regra documentada em REGRAS.md', () => {
 
 test('conta restrita não vê ID, Reserva nem Comprometido; o mantenedor vê tudo', () => {
     const doMantenedor = carregaColunasAtivas(false)('db').map(([chave]) => chave);
-    assert.ok(['id', 'reserva', 'comprometido'].every(c => doMantenedor.includes(c)));
+    assert.ok(['id', 'reserva', 'comprometido', 'pra_sempre'].every(c => doMantenedor.includes(c)));
     const daRestrita = carregaColunasAtivas(true)('db').map(([chave]) => chave);
-    assert.deepEqual([...daRestrita], ['data', 'nome', 'valor', 'categ', 'freq', 'pago', 'obs', 'canal']);
+    assert.deepEqual([...daRestrita], ['data', 'nome', 'valor', 'categ', 'freq', 'pago', 'obs', 'canal']);   // nem Pra sempre
     assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /table\.larguraFixa:not\(:has\(col\.col-id\)\) \{\s*\n\s*min-width: 56rem;/);
-    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /As tabelas dessa conta não têm as colunas \*\*ID\*\*, \*\*Reserva\*\* e \*\*Comprometido\*\*/);
+    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /As tabelas dessa conta não têm as colunas \*\*ID\*\*, \*\*Reserva\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\*/);
 });

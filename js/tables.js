@@ -34,6 +34,7 @@ function ordenarLinhas(linhas, idTabela) {
 const PERGUNTA_DA_COLUNA = {
     reserva: 'Se eu perder o emprego, preciso continuar pagando isso?',
     comprometido: 'Começou o mês, isso já é obrigatório pagar?',
+    pra_sempre: 'Isso se repete sem data pra acabar?',
 };
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
@@ -79,6 +80,7 @@ const ESTADOS_FILTRO_CLIQUE = {
     pago: [['S', 'Pago', 'Só pagos', 'vd'], ['N', 'Aberto', 'Só abertos', 'vm']],
     reserva: [['S', 'Reserva', 'Só com Reserva', 'flagReserva'], ['N', 'Sem', 'Só sem Reserva', '']],
     comprometido: [['S', 'Compr.', 'Só comprometidos', 'flagComprometido'], ['N', 'Sem', 'Só não comprometidos', '']],
+    pra_sempre: [['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'], ['N', 'Com fim', 'Só os que têm fim', '']],
 };
 function botaoFiltroEstado(idTabela, chave, valorAtual) {
     const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
@@ -153,7 +155,7 @@ function passaFiltroTexto(r, idTabela) {
             return termo == '+' ? valorVisivel > 0 : valorVisivel < 0;
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
-        if (coluna == 'reserva' || coluna == 'comprometido') return termo == 'S' ? !!r[coluna] : !r[coluna];
+        if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
         // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
         // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
         if (coluna == 'id') {
@@ -322,17 +324,18 @@ const celCanal = r => {
     return `${texto}${copiar}${link}`;
 };
 
-// Reserva/Comprometido são marcas raras (bit fin.reserva/fin.comprometido — ver migration
-// 22 — a maioria dos lançamentos não é nenhuma das duas): diferente de Pago, que é sempre
+// Reserva/Comprometido/Pra sempre são marcas raras (bits fin.reserva/fin.comprometido —
+// migration 22 — e fin.pra_sempre — migration 31 — a maioria dos lançamentos não é nenhuma): diferente de Pago, que é sempre
 // um estado relevante pra qualquer lançamento real, aqui "falso" fica em "—" em vez de
 // repetir um texto negativo em toda linha; só "verdadeiro" ganha destaque. Mesma permissão
 // de Pago (nunca em linha sintética nem na conta restrita), clicável pra alternar na hora.
-const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido' };
+const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };
 // Cada marca tem a sua cor pra não se confundir com o verde de Pago: Comprometido laranja
-// escuro, Reserva amarelo claro — tons afastados pros dois não se confundirem lado a lado.
+// escuro, Reserva amarelo claro, Pra sempre azul — tons afastados pros três não se
+// confundirem lado a lado.
 // Classes próprias (não o .am dos indicadores) pra mudar o tom sem mexer nos indicadores.
 // Só o texto marcado ganha cor; "—" fica neutro.
-const COR_FLAG = { reserva: 'flagReserva', comprometido: 'flagComprometido' };
+const COR_FLAG = { reserva: 'flagReserva', comprometido: 'flagComprometido', pra_sempre: 'flagPraSempre' };
 const celFlag = (r, chave) => {
     const marcado = !!r[chave];
     const texto = marcado ? ROTULO_FLAG[chave] : '—';

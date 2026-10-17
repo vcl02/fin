@@ -429,14 +429,15 @@ el('out').addEventListener('click', async e => {
     }
 });
 
-// clique no badge Reserva/Comprometido alterna o bit na hora — mesmo esquema do togPago
-// acima, só sem a lógica de data (nenhum dos dois tem relação com vencimento). Um único
-// handler cobre as duas colunas: data-tog-flag="reserva:123" ou "comprometido:123".
+// clique no badge Reserva/Comprometido/Pra sempre alterna o bit na hora — mesmo esquema do
+// togPago acima, só sem a lógica de data (nenhum tem relação com vencimento). Um único
+// handler cobre as três colunas: data-tog-flag="reserva:123", "comprometido:123" ou
+// "pra_sempre:123".
 // Reserva/Comprometido classificam o COMPROMISSO (identificado pelo nome), não só esta
 // ocorrência — alternar um propaga pra TODOS os lançamentos com o mesmo nome (mesma
 // comparação sem acento/caixa de chaveDaRecorrencia), reais ou simulados, sequencial igual
 // salvaLancamentoParceladoNoBanco, pra preservar ordem e simplificar erro no meio do caminho.
-const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido' };
+const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-flag]');
     if (!badge) return;

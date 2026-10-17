@@ -18,7 +18,7 @@ const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
     ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
-    ['reserva', 'Reserva', 'b'], ['comprometido', 'Comprometido', 'b'],
+    ['reserva', 'Reserva', 'b'], ['comprometido', 'Comprometido', 'b'], ['pra_sempre', 'Pra sempre', 'b'],
     ['prio', 'Prio', 'n'], ['obs', 'Obs', 't'], ['canal', 'Canal', 't'], ['id', 'ID', 'n'],
 ];
 // Mesmas colunas do desktop no mobile: a tabela já tinha rolagem horizontal própria
@@ -30,11 +30,14 @@ const COLS = [
 const colunasDaTabela = idTabela => idTabela === 'bk'
     ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio')]
     : COLS.filter(([chave]) => chave !== 'prio');
-// A conta restrita (Isabella) não vê ID, Reserva nem Comprometido (pedido do mantenedor):
-// são colunas de controle do mantenedor, sem uso pra quem só consulta.
-const COLUNAS_FORA_DA_CONTA_RESTRITA = ['id', 'reserva', 'comprometido'];
+// A conta restrita (Isabella) não vê ID, Reserva, Comprometido nem Pra sempre (pedido do
+// mantenedor): são colunas de controle do mantenedor, sem uso pra quem só consulta.
+const COLUNAS_FORA_DA_CONTA_RESTRITA = ['id', 'reserva', 'comprometido', 'pra_sempre'];
+// Pra sempre só aparece quando o banco já tem a coluna (migration 31): antes dela, mostrar
+// ou gravar o campo faria o cadastro e o toggle falharem.
 const colunasAtivas = idTabela => colunasDaTabela(idTabela)
-    .filter(([chave]) => !(modoRestrito() && COLUNAS_FORA_DA_CONTA_RESTRITA.includes(chave)));
+    .filter(([chave]) => !(modoRestrito() && COLUNAS_FORA_DA_CONTA_RESTRITA.includes(chave)))
+    .filter(([chave]) => chave !== 'pra_sempre' || Estado.temPraSempre);
 const isMobile = () => matchMedia('(max-width: 640px)').matches;
 
 // Único estado mutável da tela. Dados vindos do banco são normalizados em carregarDados;
@@ -47,6 +50,7 @@ const Estado = {
     // id do ciclo -> linha de fin_ciclo (escolhas vazias = padrões/herança).
     limitesPorCiclo: new Map(),
     ultimaCarga: 0, ultimaConsolidacao: 0, gravacoes: 0, gravacoesNaUltimaCarga: 0, cargasEmAndamento: 0,
+    temPraSempre: false,   // o banco já tem fin.pra_sempre (migration 31)? Ver carregarDados.
 };
 
 // Única conta que enxerga a interface restrita: só Débito, só ciclo atual e próximo, somente

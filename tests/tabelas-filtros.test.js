@@ -260,7 +260,7 @@ test('filtro numérico normal de Valor continua intacto, sem olhar o sinal', () 
 test('filtros por clique e de Data documentados em REGRAS.md', () => {
     assert.match(regras, /O sinal se escolhe por clique, no botão ao lado do campo[^:]*: cada clique avança \*\*±\*\* \(todos\) → \*\*\+\*\* \(só positivos\) → \*\*−\*\* \(só negativos\)/);
     assert.match(regras, /\*\*Data\*\* tem campo de busca como as colunas de texto/);
-    assert.match(regras, /\*\*Pago\*\*, \*\*Reserva\*\* e \*\*Comprometido\*\* filtram por clique, sem digitar/);
+    assert.match(regras, /\*\*Pago\*\*, \*\*Reserva\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\* filtram por clique, sem digitar/);
 });
 
 test('exclusão de Categoria fornece ao saldo diário a mesma base, sem obedecer outros filtros', () => {
@@ -299,7 +299,7 @@ test('colunas de largura fixa: não mudam conforme o filtro', () => {
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(fonte, /const colunas = colunasAtivas\(idTabela\)\.map\(\(\[chave\]\) => `<col class=col-\$\{chave\}>`\)\.join\(''\);/);
     assert.match(fonte, /<div class=wrap><table class=larguraFixa><colgroup>\$\{colunas\}<\/colgroup><thead>/);
-    assert.match(estilos, /table\.larguraFixa \{\s*\n\s*table-layout: fixed;\s*\n\s*min-width: 74rem;/);
+    assert.match(estilos, /table\.larguraFixa \{\s*\n\s*table-layout: fixed;\s*\n\s*min-width: 81rem;/);
     for (const [coluna, largura] of [['data', '7rem'], ['valor', '9\\.75rem'], ['pago', '5rem'], ['reserva', '6rem'], ['comprometido', '8\\.25rem'], ['prio', '4\\.5rem'], ['id', '4rem']]) {
         assert.match(estilos, new RegExp(`\\.col-${coluna} \\{ width: ${largura}; \\}`));
     }

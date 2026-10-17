@@ -108,7 +108,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Zero não entra em positivos nem negativos.
   Linha de Investimento sugerido (`r._sug`) usa o mesmo valor que já aparece na célula.
   Os dois combinam (ex.: só negativos perto de R$ 150,00).
-- As tabelas de lançamentos (Débito, Crédito, Backlog) têm colunas de largura fixa, que não mudam conforme o filtro (Reserva, Comprometido, sinal, busca): Data, Valor, Pago, Reserva, Comprometido, Prio e ID têm a largura do maior conteúdo possível (cabeçalho, botão de filtro ou célula); Nome, Categoria, Frequência, Obs e Canal dividem igualmente o espaço que sobra.
+- As tabelas de lançamentos (Débito, Crédito, Backlog) têm colunas de largura fixa, que não mudam conforme o filtro (Reserva, Comprometido, Pra sempre, sinal, busca): Data, Valor, Pago, Reserva, Comprometido, Pra sempre, Prio e ID têm a largura do maior conteúdo possível (cabeçalho, botão de filtro ou célula); Nome, Categoria, Frequência, Obs e Canal dividem igualmente o espaço que sobra.
   **Nome** e **Obs** ficam numa linha só, cortados com "…" quando não cabem, e mostram o texto inteiro ao passar o mouse; no Nome, só o texto é cortado — as marcas ao lado (MP, ↳ Fat., ⚠ Resgatou tudo) ficam sempre inteiras; clicar continua editando o texto completo.
   Categoria e Frequência quebram linha dentro da própria coluna; Canal já era cortado com "…".
   Débito e Crédito ficam com as colunas alinhadas entre si.
@@ -116,8 +116,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - **ID** tem campo de busca exata: `4` acha só o lançamento de id 4 (nunca 14 ou 40); `|` aceita vários (`12|40`).
   Linhas calculadas também podem ser achadas pelo id delas (ex.: `-3`, Fatura Nubank).
 - **Data** tem campo de busca como as colunas de texto: procura no que a célula mostra (`DD/MM/AAAA`), então `10/2026` acha outubro de 2026 e `15/10` o dia 15; aceita `|` (OU) e `vazio`.
-- **Pago**, **Reserva** e **Comprometido** filtram por clique, sem digitar, num botão na linha de filtros: cada clique avança **Todos** → marcado → não marcado → **Todos** (Pago: Pago → Aberto; Reserva: Reserva → Sem; Comprometido: Compr. → Sem), com a cor do próprio estado quando ligado.
-  Em Pago, linha sem status (`—`) não entra em Pago nem em Aberto; em Reserva/Comprometido, ausência conta como não marcado.
+- **Pago**, **Reserva**, **Comprometido** e **Pra sempre** filtram por clique, sem digitar, num botão na linha de filtros: cada clique avança **Todos** → marcado → não marcado → **Todos** (Pago: Pago → Aberto; Reserva: Reserva → Sem; Comprometido: Compr. → Sem; Pra sempre: Sempre → Com fim), com a cor do próprio estado quando ligado.
+  Em Pago, linha sem status (`—`) não entra em Pago nem em Aberto; em Reserva/Comprometido/Pra sempre, ausência conta como não marcado.
   Como as outras buscas por coluna, são só visuais (não mudam saldo nem cálculos) e o botão Recarregar limpa todos.
 
 ### Cadastro: padrões, Frequência, Vezes e faturas
@@ -164,6 +164,11 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Reserva/Comprometido classificam o **compromisso**, identificado pelo **nome e pela categoria juntos**, não só a ocorrência clicada: marcar ou desmarcar pela tabela propaga pra todos os lançamentos com o mesmo nome **e** a mesma categoria (sem acento/caixa; a ordem das categorias não importa — `Lazer, Isabella` = `Isabella, Lazer`), reais ou simulados, em qualquer ciclo.
   Mesmo nome com outra categoria não muda (ex.: `Uber` de `Transporte` × `Uber` de `Besteira`).
   Sem caixa de confirmação, o próprio clique já é a confirmação da varredura, igual ao "Consolidar tudo".
+- **Pra sempre** (`fin.pra_sempre`, migration 31) separa a recorrência **sem data pra acabar** (assinatura, conta de consumo, data comemorativa) da que tem fim (parcelas, financiamento, dívida).
+  Necessário porque o app gera as séries de Frequência só até `DATA_LIMITE_RECORRENCIA` (31/12/2029): sem a marca, "sem fim" e "termina em dez/2029" ficavam iguais.
+  Segue exatamente o padrão de Reserva/Comprometido: checkbox próprio no cadastro (ícone de infinito, **desmarcado** por padrão), herdado por Editar/Duplicar, gravado em todas as ocorrências da série cadastrada; coluna própria nas tabelas Débito, Crédito e Backlog, que mostra `Pra sempre` em **azul** quando marcado e "—" quando não, clicável com a mesma propagação por **nome e categoria juntos**; filtro por clique; tooltip do cabeçalho "Isso se repete sem data pra acabar?".
+  A conta restrita não vê a coluna, e linha calculada ou simulada só lê, como nas outras marcas.
+  Enquanto o banco não tem a coluna (migration 31 não aplicada), o app não mostra a coluna nem o checkbox e não envia o campo — cadastro e toggle continuam funcionando.
 
 ### Editar pela barra de seleção
 
@@ -492,7 +497,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - A interface fica somente leitura: tabelas sem edição inline, sem Editar/Duplicar/Excluir/Materializar na barra de seleção (só soma e Limpar), sem cadastro de novo lançamento (`#abreNovo` escondido) e sem simulação (`#toggleSimulacao` escondido).
   Tocar uma linha ainda seleciona/desmarca pra somar valores — isso não grava nada.
 - Os indicadores financeiros (`#rowVis` inteiro), Gráfico, Visualizações, os indicadores de teto **Besteira**/**Isabella** nas faixas Hoje/Futuro do Débito, o botão de **diagnóstico** e o botão **Recarregar** ficam escondidos; não há filtro por coluna nas tabelas.
-  As tabelas dessa conta não têm as colunas **ID**, **Reserva** e **Comprometido**.
+  As tabelas dessa conta não têm as colunas **ID**, **Reserva**, **Comprometido** e **Pra sempre**.
   Dados novos chegam só pela recarga automática de 5 minutos (que nunca consolida nessa conta).
 - A casca somente leitura é só a interface; a garantia real vem do RLS de `fin` (migration 20): somente o mantenedor grava — `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele —, qualquer outra conta logada (inclusive a restrita) apenas lê e o papel anônimo não tem nenhum acesso.
   Uma escrita negada volta vazia ou com erro e a tela mostra o toast de falha, sem fingir sucesso.
@@ -556,6 +561,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   A 29 exige a 28 (aborta sem alterar nada se ela faltar), não toca linha que já tem `freq` ou `recorrencia_id` (rodar de novo não muda nada) e lista ao final as séries marcadas; o histórico (migration 27) guarda o antes de cada linha.
 - `migrations/30-renumerar-recorrencias.sql` renumera `recorrencia_id` de 1 em diante, sem buracos, mantendo a ordem (o menor vira 1, o seguinte 2…) e os lotes juntos, e põe `fin_recorrencia_seq` no último número, pra o próximo lote continuar a contagem.
   Trava gravações em `fin` durante a transação (rodar com o app fechado), não muda saldo nem tela (o número é só marca de lote) e rodar de novo não muda nada; o histórico (migration 27) guarda o número antigo.
+- `migrations/31-pra-sempre.sql` cria `fin.pra_sempre` (bool, não nulo, falso por padrão) e marca como pra sempre todo grupo de mesmo nome + categoria que tem Frequência e cuja última ocorrência cai em dez/2029 (o limite de geração).
+  Fica de fora o que vai além (ex.: dívida até 2031), o que acaba antes, grupo sem Frequência e Investimento, antecipação/pagamento de fatura e Ajuste; rodar de novo não muda nada e o fim lista os grupos marcados.
 
 ## Testes
 

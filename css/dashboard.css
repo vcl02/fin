@@ -626,10 +626,11 @@
      tabela evita espremer o texto: abaixo dele a própria .wrap rola de lado. */
   table.larguraFixa {
       table-layout: fixed;
-      min-width: 74rem;
+      min-width: 81rem;
   }
 
-  /* Sem ID, Reserva e Comprometido (conta restrita), a soma das colunas cai ~18rem. */
+  /* Sem ID, Reserva, Comprometido e Pra sempre (conta restrita), a soma das colunas cai
+     ~25rem. */
   table.larguraFixa:not(:has(col.col-id)) {
       min-width: 56rem;
   }
@@ -639,6 +640,7 @@
   .col-pago { width: 5rem; }
   .col-reserva { width: 6rem; }
   .col-comprometido { width: 8.25rem; }
+  .col-pra_sempre { width: 7rem; }
   .col-prio { width: 4.5rem; }
   .col-id { width: 4rem; }
 
@@ -811,7 +813,7 @@
       border-color: currentColor;
   }
 
-  .filtroEstado.ligado:not(.vd):not(.vm):not(.flagReserva):not(.flagComprometido) {
+  .filtroEstado.ligado:not(.vd):not(.vm):not(.flagReserva):not(.flagComprometido):not(.flagPraSempre) {
       color: var(--fg);
   }
 
@@ -976,6 +978,12 @@
 
   .flagReserva {
       color: #F6E58D;
+      font-weight: 600;
+  }
+
+  /* Pra sempre: azul, longe do amarelo/laranja das outras marcas e do verde de Pago. */
+  .flagPraSempre {
+      color: #6CB8F0;
       font-weight: 600;
   }
 

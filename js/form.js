@@ -444,6 +444,8 @@ function abreModalNovo(prefill, modoEdicao) {
         ? 'Simular compra'
         : (modoEdicao ? 'Editar lançamento' : (prefill ? 'Duplicar lançamento' : 'Novo lançamento'));
     el('salvaNovo').textContent = Estado.simulando ? 'Simular' : 'Salvar';
+    // Pra sempre só aparece com a coluna no banco (migration 31), como na tabela.
+    el('fPraSempreRotulo').hidden = !Estado.temPraSempre;
 
     // Editar e' sempre a PROPRIA linha, nunca gera parcela nova — Vezes/Dividir somem em
     // atualizaModoFrequencia (chamada no fim desta funcao), que le o editandoId abaixo.
@@ -463,6 +465,7 @@ function abreModalNovo(prefill, modoEdicao) {
         el('fPago').checked = prefill.pago !== false;   // so' desmarca se for explicitamente false
         el('fReserva').checked = !!prefill.reserva;
         el('fComprometido').checked = !!prefill.comprometido;
+        el('fPraSempre').checked = !!prefill.pra_sempre;
         // so' herda a frequencia do original se ela for uma das regras conhecidas; senao
         // cai em "sem recorrencia" — lancamento antigo pode ter freq vazia ou um texto
         // livre qualquer, e atribuir isso a um <select> deixaria o campo em branco de
@@ -1072,6 +1075,7 @@ async function submeteNovoLancamento() {
     const pago = el('fPago').checked;
     const reserva = el('fReserva').checked;
     const comprometido = el('fComprometido').checked;
+    const praSempre = el('fPraSempre').checked;
     const freq = el('fFreq').value || null;   // "" (sem recorrencia) vira null, pra coluna freq ficar vazia no banco
     // Com Frequência, a série vai da 1ª data até DATA_LIMITE_RECORRENCIA — sem data não há
     // de onde contar nem onde parar.
@@ -1112,8 +1116,8 @@ async function submeteNovoLancamento() {
 
     try {
         let aviso = '';
-        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
-        else aviso = await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds: faturasDaSerie });
+        if (Estado.simulando) simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre, parcelas, valores, faturaIds: faturasDaSerie });
+        else aviso = await salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre, parcelas, valores, faturaIds: faturasDaSerie });
 
         // sucesso: NAO fecha o modal. Limpa so valor/data e mantem as opcoes do cadastro
         // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
@@ -1170,6 +1174,7 @@ async function submeteEdicaoLancamento(r) {
     const pago = el('fPago').checked;
     const reserva = el('fReserva').checked;
     const comprometido = el('fComprometido').checked;
+    const praSempre = el('fPraSempre').checked;
     const freq = el('fFreq').value || null;
 
     if ((cred || ehAntecip) && (faturaIds.length !== 1 || !faturaIds[0])) {
@@ -1186,6 +1191,7 @@ async function submeteEdicaoLancamento(r) {
 
     const campos = {
         nome, categ: normalizaCategorias(categ), freq, data, cred, pago, reserva, comprometido,
+        ...(Estado.temPraSempre ? { pra_sempre: praSempre } : {}),
         valor: valorTotal ? valorTotal * (sinalPositivo ? 1 : -1) : null,
         fatura: (cred || ehAntecip) ? dataISO(faturaIds[0]) : null,
     };
@@ -1216,7 +1222,7 @@ async function submeteEdicaoLancamento(r) {
 // memoria logo apos o cadastro. Por isso o periodoIdx de cada parcela aqui usa a MESMA
 // regra de classificacao que carregarDados() usa: debito pela propria data, credito pelo
 // vencimento da fatura escolhida. Assim o que aparece na hora e' igual ao recarregamento.
-async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = [] }) {
+async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre = false, parcelas, valores, faturaIds = [] }) {
     const ehAntecip = ehAntecipacaoFatura(categ || '');
     // Vezes > 1 cria o lote inteiro nesta mesma submissão (cartão parcelado ou várias
     // ocorrências futuras de um débito recorrente) num único INSERT (inserirLancamentos):
@@ -1231,6 +1237,8 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
         const faturaVenc = (cred || ehAntecip) && faturaIds[p] ? dataISO(faturaIds[p]) : null;
         return {
             data: dataParcela, freq, cred, pago, reserva, comprometido,
+            // Sem a coluna no banco (migration 31 não aplicada), o campo nem vai no INSERT.
+            ...(Estado.temPraSempre ? { pra_sempre: praSempre } : {}),
             nome,
             categ, valor: valores[p],
             fatura: faturaVenc,
@@ -1308,7 +1316,7 @@ el('toggleSimulacao').onclick = async () => {
 // derivado dessa data com a MESMA regra de qualquer lancamento real, em vez de so' somar
 // +1 no indice: sem isso a coluna Data mostrava a mesma data em todas as parcelas
 // enquanto elas apareciam espalhadas em ciclos diferentes, incoerente na tela.
-function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, parcelas, valores, faturaIds = [] }) {
+function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserva, comprometido, praSempre = false, parcelas, valores, faturaIds = [] }) {
     const grupoSimulado = ++Estado._proxIdSimulado;   // contador curto, so' pra diferenciar cada "compra simulada" das outras
     const ehAntecip = ehAntecipacaoFatura(categ || '');
 
@@ -1321,7 +1329,7 @@ function simulaLancamentoParcelado({ nome, categ, freq, data, cred, pago, reserv
             id: `sim-${grupoSimulado}-${p}`,
             nome,
             categ, freq, data: dataParcela,
-            cred, pago, reserva, comprometido,
+            cred, pago, reserva, comprometido, pra_sempre: praSempre,
             fatura: faturaVenc,
             valor: valorAssinado, v: +valorAssinado || 0,   // v numerico seguro, igual carregarDados() faz com dados reais
             inv: /^investimento$/i.test(categ.trim()),

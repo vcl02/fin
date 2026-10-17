@@ -59,7 +59,7 @@ test('título do cadastro é só pra leitor de tela (.srOnly); Crédito/Pago/Res
     assert.doesNotMatch(pagina, /class=modalHead>\s*\n\s*<h2 id=tituloNovo/);
     // os 4 ícones E o fechar (nessa ordem) ficam juntos na mesma .fmChecks.
     assert.match(pagina, /<div class=fmChecks>\s*\n\s*<label class="fmChk fmChkIco" title="Crédito">/);
-    assert.match(pagina, /title="Comprometido">[\s\S]{0,300}<\/label>\s*\n\s*<button type=button id=fechaNovo/);
+    assert.match(pagina, /title="Pra sempre" id=fPraSempreRotulo>[\s\S]{0,400}<\/label>\s*\n\s*<button type=button id=fechaNovo/);
     assert.doesNotMatch(pagina, /class=modalTituloAcoes>[\s\S]{0,200}id=fCred/);
     assert.match(pagina, /class=moneyLinha>[\s\S]*class=moneyWrap[\s\S]*id=fValor[\s\S]*<\/div>\s*<button type=button id=fSinal/);
     assert.doesNotMatch(pagina, /id=abreCalc|id=modalCalc/);
