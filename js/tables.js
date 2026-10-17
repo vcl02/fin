@@ -375,9 +375,20 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
                             : (chave == 'obs' ? celObs(r)
                                 : (chave == 'canal' ? celCanal(r) : textoOuTraco(r[chave])))))))}`
 ).join('');
+// Critério de cada teto por categoria (Besteira, Isabella): o mesmo pro indicador do título
+// e pro filtro do clique no nome dele. Função, e não objeto no topo, porque ehGastoIsabella
+// vem de charts.js, carregado depois deste arquivo.
+const criterioDoTeto = chave => chave === 'isabella' ? ehGastoIsabella : CATEGORIA_BESTEIRA;
+// Clique no nome Besteira/Isabella do título do Débito: Débito e Crédito do ciclo mostram só
+// o que conta naquele teto (contaNoTeto, a mesma regra do indicador), sem as linhas
+// previstas, que o indicador também ignora — a soma do que sobra é o Usado de Futuro.
+// Soma-se aos outros filtros; outras tabelas (Backlog, Comparar) não mudam.
+const TABELAS_DO_FILTRO_TETO = ['db', 'cr'];
+const passaFiltroTeto = (r, idTabela) => !Estado.filtroTeto || !TABELAS_DO_FILTRO_TETO.includes(idTabela) ||
+    (!r._prev && contaNoTeto(r, criterioDoTeto(Estado.filtroTeto)));
 // renderiza uma tabela completa (cabecalho + linhas). 'selecionavel' liga o clique-pra-somar por linha.
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
-    const linhas = linhasBrutas.filter(r => passaFiltroTexto(r, idTabela));
+    const linhas = linhasBrutas.filter(r => passaFiltroTexto(r, idTabela) && passaFiltroTeto(r, idTabela));
     if (!linhasBrutas.length) { Estado.linhasVisiveis[idTabela] = []; return '<p class=empty>Vazio</p>'; }
     if (!linhas.length) { Estado.linhasVisiveis[idTabela] = []; return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead></table></div><p class=empty>Nenhum resultado com esse filtro.</p>`; }
     const ordenadas = ordenarLinhas(linhas, idTabela);

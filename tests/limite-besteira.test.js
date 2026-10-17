@@ -118,8 +118,8 @@ test('aparece no título Débito de qualquer ciclo (inclusive passados), com o C
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
     // A compra prevista (_prev) é justamente o que falta até o teto: nunca entra no indicador.
     assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\]\.filter\(r => !r\._prev\);/);
-    assert.match(visoes, /rotulo: 'Besteira', teto: tetosDoCiclo\.besteira, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo\.besteira\)/);
-    assert.match(visoes, /rotulo: 'Isabella', teto: tetosDoCiclo\.isabella, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo\.isabella\)/);
+    assert.match(visoes, /rotulo: 'Besteira', teto: tetosDoCiclo\.besteira, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, criterioDoTeto\('besteira'\), tetosDoCiclo\.besteira\)/);
+    assert.match(visoes, /rotulo: 'Isabella', teto: tetosDoCiclo\.isabella, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, criterioDoTeto\('isabella'\), tetosDoCiclo\.isabella\)/);
     assert.match(visoes, /spansLimitesCategoria\(cicloDebitoPassado \? 'percentualTotal' : 'percentualPago'\)/);
     assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
     assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
@@ -197,7 +197,9 @@ test('nome de Besteira e Isabella no título explica o que entra no teto (toolti
     const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
     const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
     assert.match(dominio, /const DESCRICAO_LIMITE_CATEGORIA = \{\s*\n\s*besteira: 'Besteira: [^']*café[^']*',\s*\n\s*isabella: 'Isabella: tudo com a categoria Isabella[^']*fatura do cartão dela e o que estiver marcado Comprometido[^']*',/);
-    assert.match(visoes, /<span class=rotuloComDica title="\$\{escapeHtml\(descricao\)\}">\$\{limite\.rotulo\}<\/span>/);
+    // O nome continua com a dica no hover, agora num botão (toggle do filtro de teto).
+    assert.match(visoes, /<button type=button class="rotuloComDica filtroTeto\$\{ativo \? ' ativo' : ''\}" data-filtro-teto="\$\{limite\.chave\}" /);
+    assert.match(visoes, /title="\$\{escapeHtml\(dica\)\}" aria-label="Filtrar \$\{limite\.rotulo\}">\$\{limite\.rotulo\}<\/button>/);
     assert.match(regras, /Passar o mouse no nome \*\*Besteira\*\* ou \*\*Isabella\*\* do indicador mostra o que entra naquele teto/);
 });
 

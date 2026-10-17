@@ -551,6 +551,28 @@
       text-underline-offset: .2em;
   }
 
+  /* Nome do teto como toggle de filtro: parece texto (mesmo sublinhado da dica), mas é botão;
+     ligado ganha o verde de "ativo" do restante da tela. */
+  .filtroTeto {
+      padding: 0 .2rem;
+      margin: 0 -.2rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+  }
+  .filtroTeto:hover {
+      background: var(--field-hover);
+  }
+  .filtroTeto.ativo {
+      color: var(--vd);
+      background: var(--green-soft);
+      border-color: var(--vd);
+      text-decoration: none;
+  }
+
   /* Aviso no Resgate que levou todo o guardado. */
   .tagAviso {
       display: inline-block;

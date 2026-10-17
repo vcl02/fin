@@ -69,7 +69,7 @@ test('recarga após gravar espera a simulação acabar (a carga apagaria os simu
 });
 
 test('teto Besteira compara item inteiro da categoria, sem substring', () => {
-    assert.match(graficos, /r => ehCategoria\(r\.categ, categoria\)/);
+    assert.match(graficos, /x => ehCategoria\(x\.categ, categoria\)/);
     assert.doesNotMatch(graficos, /categoriaContemCompromisso/);
 });
 

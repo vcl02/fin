@@ -484,6 +484,20 @@ el('out').addEventListener('click', async e => {
     }
 });
 
+// Clique no nome Besteira/Isabella do título do Débito: liga o filtro daquele teto nas
+// tabelas Débito e Crédito (passaFiltroTeto em tables.js); clicar de novo desliga, e clicar
+// no outro troca. Só lê, então vale também na simulação. Ao ligar, reabre os dois blocos,
+// senão um bloco recolhido esconderia justamente o que foi pedido.
+el('out').addEventListener('click', e => {
+    const botao = e.target.closest('[data-filtro-teto]');
+    if (!botao) return;
+    e.stopImmediatePropagation();
+    const chave = botao.dataset.filtroTeto;
+    Estado.filtroTeto = Estado.filtroTeto === chave ? null : chave;
+    if (Estado.filtroTeto) { delete Estado.fechados.db; delete Estado.fechados.cr; }
+    desenhar();
+});
+
 // clique no botao +/- inverte o sinal na hora, sem abrir o campo de valor — mesmo esquema
 // do toggle Pago acima (stopImmediatePropagation pra nao vazar pra selecao da linha).
 el('out').addEventListener('click', async e => {

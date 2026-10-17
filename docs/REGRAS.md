@@ -440,6 +440,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Também dá pra editar direto no DataGrip (tabela `fin_ciclo`).
   A conta restrita só vê o teto, sem campo.
   Passar o mouse no nome **Besteira** ou **Isabella** do indicador mostra o que entra naquele teto (`DESCRICAO_LIMITE_CATEGORIA` em `js/domain.js`); o nome tem sublinhado pontilhado discreto pra indicar a dica.
+  **Clicar no nome** é um toggle de filtro: as tabelas Débito e Crédito do ciclo exibido passam a mostrar só o que conta naquele teto — pela mesma regra do indicador (`contaNoTeto`: gasto negativo, sem antecipação/pagamento de fatura, Besteira como item inteiro, Isabella por `ehGastoIsabella`) e sem as linhas previstas, que o indicador também ignora; somando o que sobra dá o Usado de Futuro.
+  O nome ligado fica em verde, como os outros controles ativos; clicar de novo mostra tudo e clicar no outro troca de teto.
+  O filtro soma-se às buscas por coluna, vale em qualquer ciclo navegado (Hoje, Futuro e Passado mostram o mesmo toggle), reabre os blocos Débito/Crédito se estiverem recolhidos, só lê (funciona também na simulação) e sai com o clique no Recarregar; Backlog e Comparar não mudam.
+  A conta restrita não tem os indicadores, então também não tem o filtro.
   Um botão de ajuda (ícone "?") ao lado do campo Categorias no cadastro (`#ajudaCategorias`, abre `#modalAjudaCategorias`) repete esse guia na hora de digitar, sem precisar consultar este arquivo.
 - A pizza de gastos usa o ciclo inteiro conforme seu escopo próprio descrito em **Escopo e exclusões das visões**.
   As demais categorias separadas por vírgula ficam selecionáveis individualmente; `*` vermelho indica classificação compartilhada e aparece primeiro no seletor.
@@ -486,7 +490,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
   Os botões (Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
   A navegação de ciclo (setas, De/Até) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.
-  O botão verde **Recarregar** do cabeçalho (mesmo ícone de setas) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De/Até ao ciclo atual, limpa os filtros — buscas por coluna, Linhas, ordenação, blocos recolhidos, seleção e categorias excluídas do gráfico —, devolvendo a tela ao estado em que ela abre, e roda o **Consolidar tudo** (ver **Aportes e resgates**).
+  O botão verde **Recarregar** do cabeçalho (mesmo ícone de setas) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De/Até ao ciclo atual, limpa os filtros — buscas por coluna, filtro de teto (Besteira/Isabella), Linhas, ordenação, blocos recolhidos, seleção e categorias excluídas do gráfico —, devolvendo a tela ao estado em que ela abre, e roda o **Consolidar tudo** (ver **Aportes e resgates**).
   Não existem mais botões "Atual", "Limpar filtros" nem "Consolidar tudo" separados.
   Enquanto roda, o ícone gira e fica desabilitado.
   Se a recarga falhar, para ali: não navega nem consolida em cima de dado desatualizado.

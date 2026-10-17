@@ -6,6 +6,7 @@ const FILTROS_PADRAO = { somenteDif: 'N' };
 function limparFiltros() {
     Object.entries(FILTROS_PADRAO).forEach(([id, valor]) => { el(id).value = valor; });
     Estado.filtroTexto = {};      // buscas por coluna (Data/Nome/Valor/Categoria/Frequência)
+    Estado.filtroTeto = null;     // clique em Besteira/Isabella no título do Débito
     Estado.fechados = {};         // blocos recolhidos voltam a abrir
     Estado.selecionados.clear();  // as linhas marcadas somem junto com o recorte que as gerou
     Estado.ordenacaoPorTabela = {};   // volta pra ordenacao padrao (data ascendente)
@@ -322,9 +323,14 @@ const ehGastoIsabella = r => {
 // no ciclo, não só o que já aconteceu. `categoria` aceita um texto — item INTEIRO da lista de
 // categorias (ehCategoria): "Besteira" conta, a antiga "Besteira Isabella" não — OU uma função
 // que recebe a linha inteira e decide sozinha (ex.: ehGastoIsabella, que combina mais de uma).
+// `contaNoTeto` é a regra de uma linha só: o indicador soma por ela e o filtro do clique no
+// nome do teto (passaFiltroTeto em tables.js) mostra exatamente as mesmas linhas.
+function contaNoTeto(r, categoria) {
+    const combina = typeof categoria === 'function' ? categoria : x => ehCategoria(x.categ, categoria);
+    return r.v < 0 && !ehTransferenciaFatura(r) && combina(r);
+}
 function dadosLimiteCategoriaDoCiclo(linhas, categoria, limite) {
-    const combina = typeof categoria === 'function' ? categoria : r => ehCategoria(r.categ, categoria);
-    const gastos = linhas.filter(r => r.v < 0 && !ehTransferenciaFatura(r) && combina(r));
+    const gastos = linhas.filter(r => contaNoTeto(r, categoria));
     const valorPago = gastos.filter(r => r.pago).reduce((soma, r) => soma + -r.v, 0);
     const valorTotal = gastos.reduce((soma, r) => soma + -r.v, 0);
     return {

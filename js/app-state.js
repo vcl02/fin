@@ -55,6 +55,8 @@ const Estado = {
     // Materializar/Consolidar (um clique) ou Consolidar tudo (clique ou automático) gravando
     // Aporte/Resgate: só um por vez, senão os dois leem "sem Aporte no ciclo" e cada um insere.
     gravandoAjuste: false,
+    // Clique em Besteira/Isabella no título do Débito: 'besteira' | 'isabella' | null.
+    filtroTeto: null,
 };
 
 // Única conta que enxerga a interface restrita: só Débito, só ciclo atual e próximo, somente

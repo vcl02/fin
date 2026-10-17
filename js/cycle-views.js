@@ -153,8 +153,8 @@ function vCiclo() {
     // A conta restrita não vê os tetos de Besteira/Isabella (pedido do mantenedor). Ciclo
     // passado também mostra os dele, na linha Passado (ver linhaHojeDebito).
     const limitesCategoria = i >= 0 && !modoRestrito() ? [
-        { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, CATEGORIA_BESTEIRA, tetosDoCiclo.besteira) },
-        { chave: 'isabella', rotulo: 'Isabella', teto: tetosDoCiclo.isabella, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, ehGastoIsabella, tetosDoCiclo.isabella) },
+        { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, criterioDoTeto('besteira'), tetosDoCiclo.besteira) },
+        { chave: 'isabella', rotulo: 'Isabella', teto: tetosDoCiclo.isabella, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, criterioDoTeto('isabella'), tetosDoCiclo.isabella) },
     ] : [];
     // Teto editável no próprio indicador, como o Aprovado do cartão: grava na linha âncora
     // do ciclo (ver confirmarLimiteCategoria em interactions.js). A conta restrita nem tem
@@ -177,8 +177,13 @@ function vCiclo() {
         // Sem teto (zero), não há "quanto ultrapassou" em %: só o valor acima aparece.
         const percentual = dentro ? `${Math.round(limite[chave])}%`
             : limite.teto > 0 ? `${Math.max(1, Math.round(limite[chave] - 100))}%` : '—';
+        // O nome é um toggle: liga/desliga o filtro do teto nas tabelas (ver passaFiltroTeto
+        // em tables.js); o hover continua explicando o que entra no teto.
         const descricao = DESCRICAO_LIMITE_CATEGORIA[limite.chave];
-        const rotulo = descricao ? `<span class=rotuloComDica title="${escapeHtml(descricao)}">${limite.rotulo}</span>` : limite.rotulo;
+        const ativo = Estado.filtroTeto === limite.chave;
+        const dica = `${descricao ? descricao + ' ' : ''}${ativo ? 'Clique para voltar a mostrar tudo.' : 'Clique para mostrar só o que conta neste teto.'}`;
+        const rotulo = `<button type=button class="rotuloComDica filtroTeto${ativo ? ' ativo' : ''}" data-filtro-teto="${limite.chave}" ` +
+            `aria-pressed="${ativo}" title="${escapeHtml(dica)}" aria-label="Filtrar ${limite.rotulo}">${limite.rotulo}</button>`;
         // Em pedaços que nunca se partem: com a faixa estreita, o item quebra entre eles.
         return `<span class="besteiraIndicador temPedacos"><span class=pedaco>${rotulo} <b class="pct ${cor}">${percentual}</b> ` +
             `<span class=limiteRotulo>${dentro ? 'Usado' : 'Ultrapassado'}</span></span>` +
